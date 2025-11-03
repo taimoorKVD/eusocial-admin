@@ -1,0 +1,71 @@
+<header class="navbar bg-white shadow-sm px-3">
+  <!-- Sidebar toggle for mobile -->
+  <button class="btn btn-link d-md-none me-2" id="sidebarToggle">
+    <i class="bi bi-list" style="font-size: 1.5rem;"></i>
+  </button>
+
+  <!-- App title -->
+  <h6 class="navbar-title flex-grow-1 mb-0">AI Assistance Message</h6>
+
+  <!-- Right section -->
+  <div class="navbar-right d-flex align-items-center gap-3">
+
+    <!-- Search icon -->
+    <button class="btn btn-light btn-sm rounded-circle shadow-sm">
+      <i class="bi bi-search"></i>
+    </button>
+
+    <!-- User dropdown (only if logged in) -->
+    <div class="dropdown" *ngIf="user; else guest">
+      <button
+        class="user-btn dropdown-toggle d-flex align-items-center border-0 bg-transparent"
+        id="userDropdown"
+        data-bs-toggle="dropdown"
+        aria-expanded="false"
+      >
+        <img
+          [src]="'assets/no-image.png'"
+          alt="User"
+          class="avatar rounded-circle"
+          width="32"
+          height="32"
+          appDefaultImage
+        />
+        <span class="user-name ms-2">
+          {{ user.first_name || user.email }}
+        </span>
+      </button>
+
+      <ul
+        class="dropdown-menu dropdown-menu-end shadow user-dropdown"
+        aria-labelledby="userDropdown"
+      >
+        <li>
+          <a class="dropdown-item d-flex align-items-center gap-2" routerLink="/profile">
+            <i class="bi bi-person"></i> Profile
+          </a>
+        </li>
+        <li>
+          <a class="dropdown-item d-flex align-items-center gap-2" routerLink="/settings">
+            <i class="bi bi-gear"></i> Settings
+          </a>
+        </li>
+        <li><hr class="dropdown-divider" /></li>
+        <li>
+          <button
+            class="dropdown-item text-danger d-flex align-items-center gap-2"
+            (click)="logout()"
+          >
+            <i class="bi bi-box-arrow-right"></i> Logout
+          </button>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Guest state (no user logged in) -->
+    <ng-template #guest>
+      <a routerLink="/login" class="btn btn-outline-primary btn-sm px-3">Login</a>
+      <a routerLink="/register" class="btn btn-primary btn-sm px-3">Register</a>
+    </ng-template>
+  </div>
+</header>

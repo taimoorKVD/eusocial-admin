@@ -1,0 +1,65 @@
+<div class="register-wrapper">
+    <div class="register-card">
+        <img src="assets/eusocial-logo.png" alt="Eusocial Logo" class="brand-logo" />
+
+        <form #registerForm="ngForm" (ngSubmit)="onSubmit(registerForm)">
+            <!-- Row 1: First Name & Last Name -->
+            <div class="form-row">
+                <div class="form-group">
+                    <div class="floating-label">
+                        <input [(ngModel)]="firstName" name="first_name" id="firstName" required placeholder=" " />
+                        <label for="firstName">First Name<span class="required">*</span></label>
+                    </div>
+                    <div class="error" *ngIf="submitted && !firstName">First name is required.</div>
+                </div>
+
+                <div class="form-group">
+                    <div class="floating-label">
+                        <input [(ngModel)]="lastName" name="last_name" id="lastName" required placeholder=" " />
+                        <label for="lastName">Last Name<span class="required">*</span></label>
+                    </div>
+                    <div class="error" *ngIf="submitted && !lastName">Last name is required.</div>
+                </div>
+            </div>
+
+            <!-- Row 2: Email & Password -->
+            <div class="form-row">
+                <div class="form-group">
+                    <div class="floating-label">
+                        <input [(ngModel)]="email" name="email" id="email" type="email" required placeholder=" " />
+                        <label for="email">Email<span class="required">*</span></label>
+                    </div>
+                    <div class="error" *ngIf="submitted && !email">Email is required.</div>
+                </div>
+
+                <div class="form-group">
+                    <div class="floating-label">
+                        <input [(ngModel)]="password" name="password" id="password" type="password" required
+                            placeholder=" " />
+                        <label for="password">Password<span class="required">*</span></label>
+                    </div>
+                    <div class="error" *ngIf="submitted && !password">Password is required.</div>
+                </div>
+            </div>
+
+            <!-- Row 3: Confirm Password -->
+            <div class="form-group">
+                <div class="floating-label">
+                    <input [(ngModel)]="passwordConfirm" name="password_confirm" id="confirmPassword" type="password"
+                        required placeholder=" " />
+                    <label for="confirmPassword">Confirm Password<span class="required">*</span></label>
+                </div>
+                <div class="error" *ngIf="submitted && password !== passwordConfirm">
+                    Passwords do not match.
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" class="btn-register">Register</button>
+
+            <p class="login-link">
+                Already have an account? <a href="/login">Sign in</a>
+            </p>
+        </form>
+    </div>
+</div>

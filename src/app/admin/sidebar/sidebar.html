@@ -1,0 +1,59 @@
+<nav class="sidebar">
+    <div class="sidebar-header text-center py-3">
+        <img src="assets/eusocial-logo.png" alt="Eusocial Logo" class="sidebar-logo" />
+    </div>
+
+    <ul class="nav flex-column">
+        <!-- Dashboard -->
+        <li class="nav-item">
+            <a class="nav-link" routerLink="/dashboard" routerLinkActive="active"
+                [routerLinkActiveOptions]="{ exact: true }">
+                <i class="bi bi-speedometer2"></i> Dashboard
+            </a>
+        </li>
+
+        <li class="sidebar-heading">SETUP</li>
+
+        <!-- Users -->
+        <li class="nav-item">
+            <a class="nav-link" routerLink="/users" routerLinkActive="active">
+                <i class="bi bi-people"></i> Users
+            </a>
+        </li>
+
+        <!-- Roles -->
+        <li class="nav-item">
+            <a class="nav-link" routerLink="/roles" routerLinkActive="active">
+                <i class="bi bi-shield-lock"></i> Roles
+            </a>
+        </li>
+
+        <!-- Products -->
+        <li class="nav-item">
+            <a class="nav-link" routerLink="/products" routerLinkActive="active">
+                <i class="bi bi-box-seam"></i> Products
+            </a>
+        </li>
+
+        <!-- Job Positions -->
+        <li class="nav-item">
+            <a class="nav-link" routerLink="/positions" routerLinkActive="active">
+                <i class="bi bi-briefcase"></i> Job Positions
+            </a>
+        </li>
+
+        <!-- Vendors -->
+        <li class="nav-item">
+            <a class="nav-link" routerLink="/vendors" routerLinkActive="active">
+                <i class="bi bi-box"></i> Vendors
+            </a>
+        </li>
+
+        <!-- Reports -->
+        <li class="nav-item">
+            <a class="nav-link" routerLink="/reports" routerLinkActive="active">
+                <i class="bi bi-bar-chart"></i> Reporting Groups
+            </a>
+        </li>
+    </ul>
+</nav>

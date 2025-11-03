@@ -1,4 +1,5 @@
-import { Component, signal } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
+import { Auth } from './services/auth';
 
 @Component({
   selector: 'app-root',
@@ -6,6 +7,13 @@ import { Component, signal } from '@angular/core';
   standalone: false,
   styleUrl: './app.scss'
 })
-export class App {
+export class App implements OnInit {
   protected readonly title = signal('eusocial-admin');
+
+  constructor(public auth: Auth) { }
+
+  ngOnInit(): void {
+    // Restore session (local + cookie check)
+    // this.auth.initUser();
+  }
 }

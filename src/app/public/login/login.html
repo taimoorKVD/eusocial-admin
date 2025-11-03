@@ -1,0 +1,45 @@
+<div class="login-wrapper">
+    <div class="login-card">
+        <img src="assets/eusocial-logo.png" alt="Eusocial Logo" class="brand-logo" />
+
+
+        <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+            <!-- Email Field -->
+            <div class="form-group">
+                <label for="email">Email<span class="required">*</span></label>
+                <input id="email" type="email" formControlName="email" class="form-control"
+                    placeholder="Enter your email" />
+                <div class="error" *ngIf="submitted && f['email']?.errors">
+                    <small *ngIf="f['email']?.errors?.['required']">Email is required.</small>
+                    <small *ngIf="f['email']?.errors?.['email']">Enter a valid email.</small>
+                </div>
+            </div>
+
+            <!-- Password Field -->
+            <div class="form-group">
+                <label for="password">Password<span class="required">*</span></label>
+                <input id="password" type="password" formControlName="password" class="form-control"
+                    placeholder="Enter your password" />
+                <div class="error" *ngIf="submitted && f['password']?.errors">
+                    <small *ngIf="f['password']?.errors?.['required']">Password is required.</small>
+                    <small *ngIf="f['password']?.errors?.['minlength']">Minimum 6 characters.</small>
+                </div>
+            </div>
+
+            <!-- Forgot Password -->
+            <div class="forgot-password">
+                <a routerLink="/forgot-password">Forgot your password?</a>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" class="btn-login" [disabled]="loading">
+                {{ loading ? 'Signing in…' : 'Login' }}
+            </button>
+
+            <!-- Register Link -->
+            <!-- <p class="register-link">
+                Don’t have an account? <a routerLink="/register">Create one</a>
+            </p> -->
+        </form>
+    </div>
+</div>

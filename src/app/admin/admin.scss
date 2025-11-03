@@ -1,0 +1,26 @@
+.admin-wrapper {
+  display: flex;
+  height: 100vh;
+  background-color: #f6f7f8;
+}
+
+.admin-main {
+  margin-left: 250px;
+  margin-top: 64px;
+  padding: 2rem;
+  flex-grow: 1;
+  background: linear-gradient(#f6f7f8, #f8f9fb);
+  min-height: calc(100vh - 64px);
+}
+
+
+.admin-card {
+  background: #fff;
+  padding: 3rem;
+  border-radius: 10px;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  max-width: 900px;
+  margin: 0 auto;
+  color: #202124;
+}

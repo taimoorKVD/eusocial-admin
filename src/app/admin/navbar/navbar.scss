@@ -1,0 +1,58 @@
+.navbar {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+  background-color: #fff;
+  border-bottom: 1px solid #e6e6e6;
+
+  /* 👇 fix alignment gap */
+  position: fixed;
+  top: 0;
+  left: 250px; /* exactly matches sidebar width */
+  right: 0;
+  z-index: 1000;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+
+.navbar-title {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #444;
+  font-weight: 500;
+}
+
+.user-btn {
+  border: none;
+  background: #f8f9fa;
+  padding: 0.4rem 0.8rem;
+  border-radius: 25px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.user-btn:hover {
+  background: #ebebeb;
+}
+
+.avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.user-name {
+  font-weight: 500;
+  color: #222;
+  font-size: 0.85rem;
+}
+
+.user-dropdown {
+  border-radius: 10px;
+  overflow: hidden;
+}

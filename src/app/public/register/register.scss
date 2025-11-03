@@ -1,0 +1,151 @@
+/* === Eusocial Register (Carbon Floating Input Style) === */
+
+.register-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - 64px);
+  background: #f4f4f4;
+  padding: 2rem;
+}
+
+.register-card {
+  background: #ffffff;
+  padding: 2.5rem 2rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  width: 100%;
+  max-width: 640px;
+  font-family: "IBM Plex Sans", "Inter", system-ui, sans-serif;
+}
+
+.brand-logo {
+  display: block;
+  height: 48px;
+  margin: 0 auto 1.5rem;
+}
+
+/* === Form Rows === */
+.form-row {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+
+  .form-group {
+    flex: 1;
+  }
+}
+
+/* === Floating Label Input === */
+.floating-label {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.floating-label input {
+  border: none;
+  border-bottom: 1px solid #8d8d8d;
+  background: transparent;
+  padding: 1.25rem 0.5rem 0.25rem;
+  font-size: 14px;
+  color: #161616;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.floating-label input:focus {
+  border-bottom: 2px solid #0f62fe;
+}
+
+.floating-label label {
+  position: absolute;
+  top: 1.25rem;
+  left: 0.5rem;
+  color: #6f6f6f;
+  font-size: 14px;
+  pointer-events: none;
+  transition: 0.2s ease all;
+}
+
+.floating-label input:focus + label,
+.floating-label input:not(:placeholder-shown) + label {
+  top: 0.1rem;
+  font-size: 12px;
+  color: #0f62fe;
+}
+
+/* === Required Asterisk === */
+.required {
+  color: #da1e28;
+  margin-left: 2px;
+}
+
+/* === Checkbox === */
+.form-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 13px;
+  margin: 1.5rem 0;
+
+  input {
+    margin-top: 0.2rem;
+  }
+
+  label {
+    color: #525252;
+  }
+
+  .terms-link {
+    color: #0f62fe;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+/* === Button === */
+.btn-register {
+  display: block;
+  width: 100%;
+  background: #ff9900;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 500;
+  border: none;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  margin-top: 1.25rem; /* keeps button slightly below input group */
+
+  &:hover {
+    background: #e68900;
+  }
+}
+.error {
+  color: #da1e28;
+  font-size: 12px;
+  margin-top: 0.25rem;
+}
+
+/* === Footer Link === */
+.login-link {
+  font-size: 13px;
+  color: #6f6f6f;
+  text-align: center;
+  margin-top: 1.5rem;
+
+  a {
+    color: #0f62fe;
+    text-decoration: none;
+    font-weight: 500;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}

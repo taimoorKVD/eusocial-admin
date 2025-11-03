@@ -1,0 +1,101 @@
+<div class="page-wrapper">
+    <!-- Header -->
+    <div class="page-header d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h3 class="fw-semibold mb-0">Product Management</h3>
+            <small class="text-muted">Total products: <strong>{{ total }}</strong></small>
+        </div>
+
+        <button class="btn btn-primary btn-sm" (click)="addProduct()">
+            <i class="bi bi-plus-lg me-1"></i> Add Product
+        </button>
+    </div>
+
+    <!-- Products Table -->
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <!-- Loader -->
+            <div *ngIf="loading" class="text-center py-5">
+                <div class="spinner-border text-primary" role="status"></div>
+            </div>
+
+            <!-- Table -->
+            <table *ngIf="!loading && products.length" class="table table-hover align-middle mb-0">
+                <thead class="table-light border-bottom">
+                    <tr>
+                        <th style="width: 50px;">#</th>
+                        <th>Name</th>
+                        <th>Price</th>
+                        <th>Image</th>
+                        <th>Created</th>
+                        <th class="text-end" style="width: 60px;"></th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <tr *ngFor="let p of products; index as i">
+                        <td>{{ (page - 1) * 15 + i + 1 }}</td>
+                        <td>{{ p.name }}</td>
+                        <td>£{{ p.price | number: '1.2-2' }}</td>
+                        <td>
+                            <img *ngIf="p.image" [src]="p.image.startsWith('/') ? (baseUrl + p.image) : p.image"
+                                alt="Product" class="img-thumbnail rounded shadow-sm" width="50" height="50" />
+                            <span *ngIf="!p.image" class="text-muted">—</span>
+                        </td>
+                        <td>{{ p.createdAt | date: 'medium' }}</td>
+
+                        <!-- Dropdown Actions -->
+                        <td class="text-end">
+                            <div class="dropdown">
+                                <button class="btn btn-light btn-sm p-1 border-0" type="button"
+                                    data-bs-toggle="dropdown" aria-expanded="false" title="Actions">
+                                    <i class="bi bi-gear-fill fs-5 text-secondary"></i>
+                                </button>
+
+                                <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                    <li>
+                                        <a class="dropdown-item text-primary"
+                                            [routerLink]="['/products', p.id, 'edit']">
+                                            <i class="bi bi-pencil me-2"></i>Edit
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <hr class="dropdown-divider" />
+                                    </li>
+                                    <li>
+                                        <button class="dropdown-item text-danger" (click)="deleteProduct(p.id)">
+                                            <i class="bi bi-trash me-2"></i>Delete
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Empty -->
+            <div *ngIf="!loading && !products.length" class="text-center text-muted py-4">
+                No products found.
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        <div class="card-footer d-flex justify-content-between align-items-center">
+            <span class="small text-muted">Page {{ page }} of {{ lastPage }}</span>
+            <div>
+                <button class="btn btn-outline-secondary btn-sm me-1" [disabled]="page === 1" (click)="prevPage()">
+                    ← Prev
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" [disabled]="page === lastPage" (click)="nextPage()">
+                    Next →
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Message -->
+    <div *ngIf="message" class="alert alert-info mt-3 py-2 text-center small mb-0">
+        {{ message }}
+    </div>
+</div>

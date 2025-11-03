@@ -1,0 +1,101 @@
+<!-- <div class="admin-content-container"> -->
+    <div class="page-wrapper">
+        <!-- Header -->
+        <div class="page-header d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h3 class="fw-semibold mb-0">Users Management</h3>
+                <small class="text-muted">Total users: <strong>{{ total }}</strong></small>
+            </div>
+
+            <button class="btn btn-primary btn-sm" (click)="addUser()">
+                <i class="bi bi-plus-lg me-1"></i> Add User
+            </button>
+        </div>
+
+        <!-- Users Table Card -->
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-0">
+                <!-- Loading -->
+                <div *ngIf="loading" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status"></div>
+                </div>
+
+                <!-- Table -->
+                <table *ngIf="!loading && users.length" class="table table-hover align-middle mb-0">
+                    <thead class="table-light border-bottom">
+                        <tr>
+                            <th style="width: 50px;">#</th>
+                            <th>First Name</th>
+                            <th>Last Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Created at</th>
+                            <th class="text-end" style="width: 60px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let user of users; index as i">
+                            <td>{{ (page - 1) * 15 + i + 1 }}</td>
+                            <td>{{ user.first_name }}</td>
+                            <td>{{ user.last_name }}</td>
+                            <td>{{ user.email }}</td>
+                            <td>{{ user.role?.name || '—' }}</td>
+                            <td>{{ user.createdAt | date: 'medium' }}</td>
+
+
+                            <!-- Actions -->
+                            <td class="text-end">
+                                <div class="dropdown">
+                                    <button class="btn btn-light btn-sm p-1 border-0" type="button"
+                                        data-bs-toggle="dropdown" aria-expanded="false" title="Actions">
+                                        <i class="bi bi-gear-fill fs-5 text-secondary"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                        <li>
+                                            <a class="dropdown-item text-primary"
+                                                [routerLink]="['/users', user.id, 'edit']">
+                                                <i class="bi bi-pencil me-2"></i>Edit
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <hr class="dropdown-divider" />
+                                        </li>
+                                        <li>
+                                            <button class="dropdown-item text-danger" (click)="deleteUser(user.id)">
+                                                <i class="bi bi-trash me-2"></i>Delete
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- Empty -->
+                <div *ngIf="!loading && !users.length" class="text-center text-muted py-4">
+                    No users found.
+                </div>
+            </div>
+
+            <!-- Footer Pagination -->
+            <div class="card-footer d-flex justify-content-between align-items-center">
+                <span class="small text-muted">Page {{ page }} of {{ lastPage }}</span>
+                <div>
+                    <button class="btn btn-outline-secondary btn-sm me-1" [disabled]="page === 1" (click)="prevPage()">
+                        ← Prev
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm" [disabled]="page === lastPage"
+                        (click)="nextPage()">
+                        Next →
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Message -->
+        <div *ngIf="message" class="alert alert-info mt-3 py-2 text-center small mb-0">
+            {{ message }}
+        </div>
+    </div>
+<!-- </div> -->

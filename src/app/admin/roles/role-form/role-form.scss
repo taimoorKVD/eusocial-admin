@@ -1,0 +1,162 @@
+.role-form {
+  font-family: "IBM Plex Sans", "Inter", sans-serif;
+
+  h3 {
+    font-weight: 600;
+    color: #161616;
+  }
+
+  .back-btn {
+    border-color: #c6c6c6;
+    color: #525252;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 0.45rem 1.2rem;
+    background: transparent;
+    transition: all 0.2s ease;
+
+    i {
+      font-size: 15px;
+      vertical-align: middle;
+    }
+
+    &:hover {
+      background: #f4f4f4;
+    }
+  }
+
+  .carbon-form {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .section-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #6f6f6f;
+    text-transform: uppercase;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+
+    label {
+      font-size: 12px;
+      color: #525252;
+      margin-bottom: 4px;
+    }
+
+    input {
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid #c6c6c6;
+      padding: 8px 0;
+      font-size: 14px;
+      color: #161616;
+      width: 100%;
+      transition: all 0.2s ease;
+
+      &::placeholder {
+        color: #a8a8a8;
+      }
+
+      &:focus {
+        outline: none;
+        border-bottom: 2px solid #0f62fe;
+      }
+
+      &.ng-invalid.ng-touched {
+        border-bottom-color: #da1e28;
+      }
+    }
+
+    .error {
+      color: #da1e28;
+      font-size: 12px;
+      margin-top: 3px;
+    }
+  }
+
+  .form-actions {
+    margin-top: 3rem;
+
+    .btn {
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 500;
+      padding: 0.5rem 1.8rem;
+    }
+
+    .btn-primary {
+      background: #0f62fe;
+      border-color: #0f62fe;
+
+      &:hover {
+        background: #0353e9;
+      }
+    }
+
+    .btn-outline-secondary {
+      border-color: #c6c6c6;
+      color: #525252;
+
+      &:hover {
+        background: #f4f4f4;
+      }
+    }
+
+    .btn-outline-danger {
+      border-color: #da1e28;
+      color: #da1e28;
+
+      &:hover {
+        background: #da1e28;
+        color: #fff;
+      }
+    }
+  }
+
+  .alert {
+    border-radius: 6px;
+    padding: 0.5rem 1rem;
+  }
+}
+
+.section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6f6f6f;
+  text-transform: uppercase;
+}
+
+.fw-semibold {
+  font-size: 14px;
+  color: #0f62fe;
+}
+
+.form-check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  .form-check-input {
+    width: 2em;
+    height: 1.1em;
+    cursor: pointer;
+    background-color: #c6c6c6;
+    border: none;
+    transition: all 0.2s ease;
+
+    &:checked {
+      background-color: #0f62fe;
+    }
+  }
+
+  .form-check-label {
+    font-size: 13px;
+    color: #161616;
+    cursor: pointer;
+  }
+}
