@@ -4,38 +4,53 @@ import { Router } from '@angular/router';
 import { environment } from '../../environments/environment';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { User } from '../interfaces/user';
+import { AuthResponse } from '../interfaces/authresponse';
 
 @Injectable({ providedIn: 'root' })
 export class Auth {
+  private justLoggedIn = false;
   private apiUrl = `${environment.apiUrl}`;
   private userKey = 'user';
+  private tokenKey = 'access_token';
   private currentUserSubject = new BehaviorSubject<User | null>(this.getStoredUser());
   currentUser$: Observable<User | null> = this.currentUserSubject.asObservable();
 
-  constructor(private http: HttpClient, private router: Router) { }
+  constructor(private http: HttpClient, private router: Router) {}
 
   // --------------------------
   // LOGIN
   // --------------------------
-  login(credentials: { email: string; password: string }): Observable<User> {
-    return this.http
-      .post<User>(`${this.apiUrl}/login`, credentials, { withCredentials: true })
-      .pipe(
-        tap((res: User) => {
-          localStorage.setItem(this.userKey, JSON.stringify(res));
-          this.currentUserSubject.next(res);
-        })
-      );
+  login(credentials: { email: string; password: string }): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.apiUrl}/login`, credentials).pipe(
+      tap({
+        next: (res: AuthResponse) => {
+          // Make sure we have a valid token response
+          if (res && res.access_token) {
+            // ✅ Save token & user info locally
+            localStorage.setItem(this.tokenKey, res.access_token);
+            localStorage.setItem(this.userKey, JSON.stringify(res.user));
+
+            // ✅ Update BehaviorSubject so components see the new user immediately
+            this.currentUserSubject.next(res.user);
+            this.justLoggedIn = true; // ✅ mark as just logged in
+          }
+        },
+        error: (err) => {
+          console.error('Login failed:', err);
+        },
+      })
+    );
   }
 
   // --------------------------
   // LOGOUT
   // --------------------------
   logout(): void {
-    this.http.post(`${this.apiUrl}/logout`, {}, { withCredentials: true }).subscribe({
-      next: () => this.clearAndRedirect(),
-      error: () => this.clearAndRedirect(),
-    });
+    // Just clear locally (no cookies now)
+    localStorage.removeItem(this.userKey);
+    localStorage.removeItem(this.tokenKey);
+    this.currentUserSubject.next(null);
+    this.router.navigate(['/login']);
   }
 
   private clearAndRedirect(): void {
@@ -53,38 +68,30 @@ export class Auth {
     email: string;
     password: string;
   }): Observable<User> {
-    return this.http
-      .post<User>(`${this.apiUrl}/register`, data, { withCredentials: true })
-      .pipe(
-        tap((res: User) => {
-          localStorage.setItem(this.userKey, JSON.stringify(res));
-          this.currentUserSubject.next(res);
-          this.router.navigate(['/dashboard']);
-        })
-      );
+    return this.http.post<User>(`${this.apiUrl}/register`, data, { withCredentials: true }).pipe(
+      tap((res: User) => {
+        localStorage.setItem(this.userKey, JSON.stringify(res));
+        this.currentUserSubject.next(res);
+        this.router.navigate(['/dashboard']);
+      })
+    );
   }
 
   // -----------------------------
-  // FETCH USER FROM COOKIE
+  // FETCH USER FROM API (USING TOKEN)
   // -----------------------------
   user(): Observable<User> {
-    return this.http
-      .get<User>(`${this.apiUrl}/user`, { withCredentials: true })
-      .pipe(
-        tap({
-          next: (res: User) => {
-            localStorage.setItem(this.userKey, JSON.stringify(res));
-            this.currentUserSubject.next(res);
-          },
-          error: (err) => {
-            if (err.status === 401) {
-              // ❌ unauthorized session
-              localStorage.removeItem(this.userKey);
-              this.currentUserSubject.next(null);
-            }
-          },
-        })
-      );
+    return this.http.get<User>(`${this.apiUrl}/auth/user`).pipe(
+      tap({
+        next: (res: User) => {
+          localStorage.setItem(this.userKey, JSON.stringify(res));
+          this.currentUserSubject.next(res);
+        },
+        error: (err) => {
+          if (err.status === 401) this.logout();
+        },
+      })
+    );
   }
 
   // -----------------------------
@@ -95,29 +102,32 @@ export class Auth {
       const localUser = this.getStoredUser();
       if (localUser) this.currentUserSubject.next(localUser);
 
-      this.http.get<User>(`${this.apiUrl}/user`, { withCredentials: true }).subscribe({
-        next: (res) => {
-          localStorage.setItem(this.userKey, JSON.stringify(res));
-          this.currentUserSubject.next(res);
-          resolve();
-        },
-        error: (err) => {
-          if (err.status === 401) {
-            localStorage.removeItem(this.userKey);
-            this.currentUserSubject.next(null);
-          }
-          resolve(); // ✅ always resolve
-        },
+      const token = localStorage.getItem(this.tokenKey);
+      if (!token) return resolve();
+
+      // ✅ Skip if just logged in
+      if (this.justLoggedIn) {
+        this.justLoggedIn = false;
+        return resolve();
+      }
+
+      this.user().subscribe({
+        next: () => resolve(),
+        error: () => resolve(),
       });
     });
   }
 
-  refreshUser() {
-    this.http
-      .get<User>(`${environment.apiUrl}/auth/user`, { withCredentials: true })
-      .subscribe({
-        next: (user) => this.currentUserSubject.next(user),
-      });
+  refreshUser(): void {
+    this.http.get<User>(`${this.apiUrl}/auth/user`).subscribe({
+      next: (user) => {
+        localStorage.setItem(this.userKey, JSON.stringify(user));
+        this.currentUserSubject.next(user);
+      },
+      error: (err) => {
+        if (err.status === 401) this.logout();
+      },
+    });
   }
 
   // --------------------------
@@ -128,8 +138,12 @@ export class Auth {
     return stored ? (JSON.parse(stored) as User) : null;
   }
 
+  getToken(): string | null {
+    return localStorage.getItem(this.tokenKey);
+  }
+
   isLoggedIn(): boolean {
-    return !!this.currentUserSubject.value;
+    return !!this.getToken();
   }
 
   currentUser(): User | null {

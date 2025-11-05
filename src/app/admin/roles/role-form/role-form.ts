@@ -14,10 +14,12 @@ import { Permission } from '../../../interfaces/permission';
 export class RoleForm {
   form!: FormGroup;
   permissions: { module: string; perms: Permission[] }[] = [];
+  selectedPermissions: number[] = [];
   isEditMode = false;
   roleId!: number;
   message = '';
   saving = false;
+  loadingPermissions = false;
 
   constructor(
     private fb: FormBuilder,
@@ -25,7 +27,7 @@ export class RoleForm {
     private router: Router,
     private route: ActivatedRoute,
     private permissionService: PermissionService
-  ) { }
+  ) {}
 
   ngOnInit(): void {
     this.form = this.fb.group({
@@ -33,14 +35,10 @@ export class RoleForm {
       permissions: [[]],
     });
 
-    this.loadPermissions();
-
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
       this.isEditMode = true;
       this.roleId = +id;
-
-      // Step 1: Load all permissions first
       this.loadPermissions(() => this.loadRole(this.roleId));
     } else {
       this.loadPermissions();
@@ -53,14 +51,18 @@ export class RoleForm {
 
   /** Load and group permissions, then optionally run a callback */
   loadPermissions(callback?: () => void): void {
+    this.loadingPermissions = true;
+
     this.permissionService.getAll().subscribe({
-      next: (data) => {
+      next: (res) => {
+        const permissions = Array.isArray(res) ? res : res.data;
         const grouped: { [key: string]: Permission[] } = {};
 
-        data.forEach((perm) => {
-          const parts = perm.name.split('_');
+        permissions.forEach((perm: Permission) => {
+          const parts = perm.name.split('-');
           const entity = parts.length > 1 ? parts[1] : parts[0];
           const moduleName = entity.charAt(0).toUpperCase() + entity.slice(1);
+
           if (!grouped[moduleName]) grouped[moduleName] = [];
           grouped[moduleName].push(perm);
         });
@@ -70,20 +72,21 @@ export class RoleForm {
           perms,
         }));
 
-        // ✅ Run callback only after permissions are ready
+        this.loadingPermissions = false;
         if (callback) callback();
       },
-      error: () => console.error('Failed to load permissions'),
+      error: () => {
+        this.message = 'Failed to load permissions ❌';
+        this.loadingPermissions = false;
+      },
     });
   }
 
-
   formatPermissionName(name: string): string {
-    const parts = name.split('_');
+    const parts = name.split('-');
     const action = parts[0];
     return action.charAt(0).toUpperCase() + action.slice(1);
   }
-
 
   /** Handle permission checkbox toggle */
   togglePermission(id: number, checked: boolean): void {
@@ -91,7 +94,9 @@ export class RoleForm {
     if (checked) {
       this.form.patchValue({ permissions: [...selected, id] });
     } else {
-      this.form.patchValue({ permissions: selected.filter((p: number) => p !== id) });
+      this.form.patchValue({
+        permissions: selected.filter((p: number) => p !== id),
+      });
     }
   }
 
@@ -99,7 +104,9 @@ export class RoleForm {
     this.saving = true;
     this.roleService.getRole(id).subscribe({
       next: (res) => {
-        const permissionIds = res.permissions?.map((p: any) => p.id) || [];
+        const permissionIds = res.permissions?.map((p: Permission) => p.id) || [];
+
+        this.selectedPermissions = [...permissionIds];
 
         this.form.patchValue({
           name: res.name,
@@ -115,14 +122,18 @@ export class RoleForm {
     });
   }
 
-
-  saveRole() {
-    if (this.form.invalid) return;
+  saveRole(): void {
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
 
     this.saving = true;
+    const payload = this.form.value;
+
     const request = this.isEditMode
-      ? this.roleService.updateRole(this.roleId, this.form.value)
-      : this.roleService.createRole(this.form.value);
+      ? this.roleService.updateRole(this.roleId, payload)
+      : this.roleService.createRole(payload);
 
     request.subscribe({
       next: () => {
@@ -130,7 +141,7 @@ export class RoleForm {
           ? 'Role updated successfully ✅'
           : 'Role created successfully ✅';
         this.saving = false;
-        setTimeout(() => this.router.navigate(['/roles']), 1000);
+        setTimeout(() => this.router.navigate(['/roles']), 1200);
       },
       error: () => {
         this.message = 'Failed to save role ❌';
@@ -139,8 +150,8 @@ export class RoleForm {
     });
   }
 
-  deleteRole() {
-    if (!this.isEditMode) return;
+  deleteRole(): void {
+    if (!this.isEditMode || !this.roleId) return;
     if (!confirm('Are you sure you want to delete this role?')) return;
 
     this.roleService.deleteRole(this.roleId).subscribe({
@@ -152,8 +163,15 @@ export class RoleForm {
     });
   }
 
-  backToList() {
+  backToList(): void {
     this.router.navigate(['/roles']);
   }
 
+  isChecked(id: number): boolean {
+    return this.form.value.permissions?.includes(id);
+  }
+
+  /**
+   * ✅ Format permission name nicely
+   */
 }

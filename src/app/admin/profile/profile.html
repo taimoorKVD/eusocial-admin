@@ -1,102 +1,90 @@
-<div class="container mt-5" *ngIf="!loading; else loadingTpl">
-  <div class="card shadow-sm p-4">
-    <!-- Display section -->
-    <div class="d-flex align-items-center mb-3">
-      <img
-        src="assets/no-image.png"
-        class="rounded-circle me-3"
-        width="70"
-        height="70"
-        alt="Profile"
-      />
-      <div>
-        <h4 class="mb-0">{{ user?.first_name }} {{ user?.last_name }}</h4>
-        <p class="text-muted mb-0">{{ user?.email }}</p>
-      </div>
+<div class="user-form container-fluid py-4 px-5" *ngIf="!loading; else loadingTpl">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="fw-semibold mb-0">My Profile</h3>
     </div>
 
-    <hr />
-
-    <p><strong>Role:</strong> {{ user?.role || 'User' }}</p>
+    <!-- Profile Summary -->
+    <div class="d-flex align-items-center mb-4">
+        <img src="assets/no-image.png" class="rounded-circle me-3" width="70" height="70" alt="Profile" />
+        <div>
+            <h5 class="mb-0">{{ user?.name }}</h5>
+            <small class="text-muted">{{ user?.email }}</small>
+            <p class="text-secondary mt-1">
+                <strong>Role:</strong> {{ user?.role?.name || 'User' }}
+            </p>
+        </div>
+    </div>
 
     <hr class="my-4" />
 
-    <!-- Update Form -->
-    <h5 class="mb-3">Update Profile</h5>
+    <!-- Profile Form -->
+    <form [formGroup]="form" (ngSubmit)="saveProfile()" class="carbon-form">
+        <h6 class="section-title mb-4">Profile Information</h6>
 
-    <form [formGroup]="form" (ngSubmit)="saveProfile()">
-      <div class="mb-3">
-        <label class="form-label">First Name</label>
-        <input
-          type="text"
-          class="form-control"
-          formControlName="first_name"
-          placeholder="Enter first name"
-        />
-        <div class="text-danger" *ngIf="form.get('first_name')?.touched && form.get('first_name')?.invalid">
-          First name is required.
+        <div class="row gx-5 gy-4">
+            <div class="col-md-6">
+                <div class="form-group floating-input">
+                    <label>Name</label>
+                    <input type="text" formControlName="name" placeholder="Enter full name" autocomplete="off" />
+                    <small class="error" *ngIf="f['name'].touched && f['name'].errors?.['required']">
+                        Name is required.
+                    </small>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="form-group floating-input">
+                    <label>Email</label>
+                    <input type="email" formControlName="email" placeholder="Enter email address" autocomplete="off" />
+                    <small class="error" *ngIf="f['email'].touched && f['email'].errors?.['required']">
+                        Email is required.
+                    </small>
+                    <small class="error" *ngIf="f['email'].touched && f['email'].errors?.['email']">
+                        Please enter a valid email.
+                    </small>
+                </div>
+            </div>
         </div>
-      </div>
 
-      <div class="mb-3">
-        <label class="form-label">Last Name</label>
-        <input
-          type="text"
-          class="form-control"
-          formControlName="last_name"
-          placeholder="Enter last name"
-        />
-        <div class="text-danger" *ngIf="form.get('last_name')?.touched && form.get('last_name')?.invalid">
-          Last name is required.
+        <div class="row gx-5 gy-4 mt-2">
+            <div class="col-md-6">
+                <div class="form-group password-field floating-input">
+                    <label>New Password</label>
+                    <input [type]="showPassword ? 'text' : 'password'" formControlName="password"
+                        placeholder="Leave blank to keep current password" autocomplete="new-password" autocorrect="off"
+                        autocapitalize="off" spellcheck="false" />
+                    <i class="bi" [ngClass]="showPassword ? 'bi-eye-slash' : 'bi-eye'"
+                        (click)="togglePasswordVisibility()"></i>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="form-group password-field floating-input">
+                    <label>Confirm Password</label>
+                    <input [type]="showConfirmPassword ? 'text' : 'password'" formControlName="password_confirm"
+                        placeholder="Re-enter password" autocomplete="new-password" autocorrect="off"
+                        autocapitalize="off" spellcheck="false" />
+                    <i class="bi" [ngClass]="showConfirmPassword ? 'bi-eye-slash' : 'bi-eye'"
+                        (click)="toggleConfirmPasswordVisibility()"></i>
+                </div>
+            </div>
         </div>
-      </div>
 
-      <div class="mb-3">
-        <label class="form-label">Email</label>
-        <input
-          type="email"
-          class="form-control"
-          formControlName="email"
-          placeholder="Enter email address"
-        />
-        <div class="text-danger" *ngIf="form.get('email')?.touched && form.get('email')?.invalid">
-          Please enter a valid email.
+        <div class="form-actions mt-5 d-flex justify-content-end gap-3">
+            <button type="submit" class="btn btn-primary" [disabled]="saving || form.invalid">
+                {{ saving ? 'Saving...' : 'Save Changes' }}
+            </button>
         </div>
-      </div>
 
-      <div class="mb-3">
-        <label class="form-label">New Password</label>
-        <input
-          type="password"
-          class="form-control"
-          formControlName="password"
-          placeholder="Leave blank to keep current password"
-        />
-      </div>
-
-      <div class="mb-3">
-        <label class="form-label">Confirm Password</label>
-        <input
-          type="password"
-          class="form-control"
-          formControlName="password_confirm"
-          placeholder="Confirm new password"
-        />
-      </div>
-
-      <button class="btn btn-primary" type="submit" [disabled]="saving || form.invalid">
-        {{ saving ? 'Saving...' : 'Save Changes' }}
-      </button>
+        <div *ngIf="message" class="alert alert-info text-center mt-4 small">
+            {{ message }}
+        </div>
     </form>
-
-    <div class="mt-3 text-center" *ngIf="message">
-      <small>{{ message }}</small>
-    </div>
-  </div>
 </div>
 
 <ng-template #loadingTpl>
-  <div class="d-flex justify-content-center align-items-center vh-100">
-    <div class="spinner-border text-primary" role="status"></div>
-  </div>
+    <div class="d-flex justify-content-center align-items-center vh-100">
+        <div class="spinner-border text-primary" role="status"></div>
+    </div>
 </ng-template>

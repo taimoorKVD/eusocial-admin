@@ -17,7 +17,7 @@ export class Roles {
   page = 1;
   lastPage = 1;
 
-  constructor(private roleService: RoleService, private router: Router) { }
+  constructor(private roleService: RoleService, private router: Router) {}
 
   ngOnInit(): void {
     this.allRoles();
@@ -26,10 +26,11 @@ export class Roles {
 
   allRoles(page: number = 1): void {
     this.loading = true;
+
     this.roleService.getRoles(page).subscribe({
-      next: (res) => {
-        this.roles = res.data;
-        this.total = res.meta?.total || this.roles.length;
+      next: (roles) => {
+        this.roles = roles;
+        this.total = roles.length; // ✅ we no longer have res.meta
         this.loading = false;
       },
       error: () => {
@@ -65,5 +66,4 @@ export class Roles {
   nextPage(): void {
     if (this.page < this.lastPage) this.allRoles(this.page + 1);
   }
-
 }

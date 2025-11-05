@@ -17,24 +17,14 @@
         <div class="row gx-5 gy-4">
             <div class="col-md-6">
                 <div class="form-group">
-                    <label>First Name</label>
-                    <input type="text" formControlName="first_name" placeholder="Enter first name" />
-                    <small class="error" *ngIf="f['first_name'].touched && f['first_name'].errors?.['required']">
-                        First name is required.
+                    <label>Name</label>
+                    <input type="text" formControlName="name" placeholder="Enter full name" />
+                    <small class="error" *ngIf="f['name'].touched && f['name'].errors?.['required']">
+                        Name is required.
                     </small>
                 </div>
             </div>
 
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label>Last Name</label>
-                    <input type="text" formControlName="last_name" placeholder="Enter last name" />
-                </div>
-            </div>
-        </div>
-
-        <!-- Row 2 -->
-        <div class="row gx-5 gy-4 mt-2">
             <div class="col-md-6">
                 <div class="form-group">
                     <label>Email</label>
@@ -44,19 +34,6 @@
                     </small>
                     <small class="error" *ngIf="f['email'].touched && f['email'].errors?.['email']">
                         Please enter a valid email address.
-                    </small>
-                </div>
-            </div>
-
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label>Role</label>
-                    <select formControlName="role_id">
-                        <option value="" disabled>Select Role</option>
-                        <option *ngFor="let r of roles" [value]="r.id">{{ r.name }}</option>
-                    </select>
-                    <small class="error" *ngIf="f['role_id'].touched && f['role_id'].errors?.['required']">
-                        Role selection is required.
                     </small>
                 </div>
             </div>
@@ -74,7 +51,8 @@
                             (click)="togglePasswordVisibility()"></i>
                     </div>
 
-                    <small class="error" *ngIf="f['password'].touched && f['password'].errors?.['required']">
+                    <small class="error"
+                        *ngIf="!isEditMode && f['password'].touched && f['password'].errors?.['required']">
                         Password is required.
                     </small>
 
@@ -95,7 +73,7 @@
                     </div>
 
                     <small class="error"
-                        *ngIf="f['password_confirm'].touched && f['password_confirm'].errors?.['required']">
+                        *ngIf="!isEditMode && f['password_confirm'].touched && f['password_confirm'].errors?.['required']">
                         Confirm password is required.
                     </small>
 
@@ -105,6 +83,24 @@
                 </div>
             </div>
         </div>
+
+        <!-- Row 2 -->
+        <div class="row gx-5 gy-4 mt-2">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label>Role</label>
+                    <select formControlName="role_id">
+                        <option value="" disabled>Select Role</option>
+                        <option *ngFor="let r of roles" [ngValue]="r.id">{{ r.name }}</option>
+                    </select>
+                    <small class="error" *ngIf="f['role_id'].touched && f['role_id'].errors?.['required']">
+                        Role selection is required.
+                    </small>
+                </div>
+            </div>
+        </div>
+
+
 
         <!-- Action Buttons -->
         <div class="form-actions mt-5 d-flex justify-content-end gap-3">

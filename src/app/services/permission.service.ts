@@ -4,19 +4,18 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Permission } from '../interfaces/permission';
 
-
 @Injectable({
   providedIn: 'root',
 })
 export class PermissionService {
-  private baseUrl = `${environment.apiUrl}/permission`;
+  private baseUrl = `${environment.apiUrl}/permissions`;
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient) {}
 
   /** Get all permissions (for dropdowns / checkboxes) */
-  getAll(): Observable<Permission[]> {
-    return this.http.get<Permission[]>(this.baseUrl, {
-      withCredentials: true,
-    });
+  getAll(): Observable<{ success: boolean; count: number; data: Permission[] }> {
+    return this.http.get<{ success: boolean; count: number; data: Permission[] }>(
+      `${this.baseUrl}`
+    );
   }
 }

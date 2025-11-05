@@ -34,6 +34,7 @@ export class Users {
     this.userService.getUsers(page).subscribe({
       next: (res) => {
         this.users = res.data;
+        console.log(this.users);
         this.total = res.meta.total;
         this.lastPage = res.meta.lastPage;
         this.page = res.meta.page;

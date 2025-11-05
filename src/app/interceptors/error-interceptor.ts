@@ -4,7 +4,7 @@ import {
   HttpHandler,
   HttpRequest,
   HttpEvent,
-  HttpErrorResponse
+  HttpErrorResponse,
 } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
@@ -18,13 +18,13 @@ export class ErrorInterceptor implements HttpInterceptor {
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     return next.handle(req).pipe(
       catchError((error: HttpErrorResponse) => {
-        // ⚠️ Handle Unauthorized (401)
-        if (error.status === 401) {
-          console.warn('401 Unauthorized → logging out...');
-          this.auth.logout(); // clears user + redirects
+        // ⚠️ Handle Unauthorized (401) or Forbidden (403)
+        if ([401, 403].includes(error.status)) {
+          console.warn(`${error.status} → logging out user`);
+          this.auth.logout(); // clear localStorage and redirect
         }
 
-        // Optionally handle other errors
+        // Optionally handle server errors
         if (error.status >= 500) {
           console.error('Server error:', error.message);
         }

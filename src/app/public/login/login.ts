@@ -44,7 +44,7 @@ export class Login {
     const credentials = this.loginForm.value;
     this.auth.login(credentials).subscribe({
       next: (res: any) => {
-        alert(`Welcome back ${res.first_name || ''}!`);
+        alert(`Welcome back ${res.name || ''}!`);
         this.router.navigate(['/dashboard']);
       },
       error: (err) => {

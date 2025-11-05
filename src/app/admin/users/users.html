@@ -25,8 +25,8 @@
                     <thead class="table-light border-bottom">
                         <tr>
                             <th style="width: 50px;">#</th>
-                            <th>First Name</th>
-                            <th>Last Name</th>
+                            <th>Name</th>
+                            <!-- <th>Last Name</th> -->
                             <th>Email</th>
                             <th>Role</th>
                             <th>Created at</th>
@@ -36,8 +36,8 @@
                     <tbody>
                         <tr *ngFor="let user of users; index as i">
                             <td>{{ (page - 1) * 15 + i + 1 }}</td>
-                            <td>{{ user.first_name }}</td>
-                            <td>{{ user.last_name }}</td>
+                            <td>{{ user.name }}</td>
+                            <!-- <td>{{ user.last_name }}</td> -->
                             <td>{{ user.email }}</td>
                             <td>{{ user.role?.name || '—' }}</td>
                             <td>{{ user.createdAt | date: 'medium' }}</td>

@@ -17,11 +17,10 @@ export class Profile {
   saving = false;
   message = '';
   form!: FormGroup;
-  constructor(
-    private auth: Auth,
-    private fb: FormBuilder,
-    private http: HttpClient
-  ) { }
+  showPassword = false;
+  showConfirmPassword = false;
+
+  constructor(private auth: Auth, private fb: FormBuilder, private http: HttpClient) {}
 
   ngOnInit(): void {
     // Load current user
@@ -30,10 +29,9 @@ export class Profile {
         this.user = user;
         this.loading = false;
 
-        // Initialize form after user data is available
+        // Initialize form with existing user data
         this.form = this.fb.group({
-          first_name: [user?.first_name || '', Validators.required],
-          last_name: [user?.last_name || '', Validators.required],
+          name: [user?.name || '', Validators.required],
           email: [user?.email || '', [Validators.required, Validators.email]],
           password: [''],
           password_confirm: [''],
@@ -43,38 +41,70 @@ export class Profile {
     });
   }
 
-  saveProfile() {
-    if (this.form.invalid) return;
+  saveProfile(): void {
+    if (this.form.invalid || this.saving) return;
+
     this.saving = true;
     this.message = '';
 
-    this.http
-      .put(`${environment.apiUrl}/users/info`, this.form.value, {
-        withCredentials: true,
-      })
-      .subscribe({
-        next: (res: any) => {
-          this.message = 'Profile updated successfully ✅';
-          this.saving = false;
+    // 🧹 Prepare clean payload
+    const payload = { ...this.form.value };
 
-          // Optimistically update local user info
-          if (this.user) {
-            Object.assign(this.user, this.form.value);
-          }
+    // Remove empty strings or unnecessary fields
+    Object.keys(payload).forEach((key) => {
+      if (payload[key] === '' || payload[key] === null) {
+        delete payload[key];
+      }
+    });
 
-          // ✅ Refresh the locally stored user data
-          this.auth.refreshUser();
-        },
-        error: (err) => {
-          console.error('Profile update failed:', err);
-          if (err.status === 400 && err.error?.message) {
-            this.message = err.error.message;
-          } else {
-            this.message = 'Failed to update profile ❌';
-          }
-          this.saving = false;
-        },
-      });
+    // Remove empty passwords to prevent backend validation issues
+    if (!payload.password || payload.password.trim() === '') {
+      delete payload.password;
+      delete payload.password_confirm;
+    }
+
+    // Trim name and email
+    if (payload.name) payload.name = payload.name.trim();
+    if (payload.email) payload.email = payload.email.trim();
+
+    // 🚀 Send PUT request
+    this.http.put(`${environment.apiUrl}/users/profile`, payload).subscribe({
+      next: (res: any) => {
+        this.saving = false;
+        this.message = res?.message || 'Profile updated successfully ✅';
+
+        // ✅ Update local state and localStorage
+        if (this.user) {
+          this.user.name = payload.name || this.user.name;
+          this.user.email = payload.email || this.user.email;
+        }
+
+        this.auth.refreshUser(); // Refresh globally stored user
+      },
+      error: (err) => {
+        console.error('Profile update failed:', err);
+        this.saving = false;
+
+        if (err.status === 400 && err.error?.message) {
+          this.message = Array.isArray(err.error.message)
+            ? err.error.message.join(', ')
+            : err.error.message;
+        } else {
+          this.message = 'Failed to update profile ❌';
+        }
+      },
+    });
   }
 
+  togglePasswordVisibility(): void {
+    this.showPassword = !this.showPassword;
+  }
+
+  toggleConfirmPasswordVisibility(): void {
+    this.showConfirmPassword = !this.showConfirmPassword;
+  }
+
+  get f() {
+    return this.form.controls;
+  }
 }
