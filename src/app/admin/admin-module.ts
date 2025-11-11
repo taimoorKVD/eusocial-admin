@@ -14,7 +14,8 @@ import { Roles } from './roles/roles';
 import { RoleForm } from './roles/role-form/role-form';
 import { Products } from './products/products';
 import { ProductForm } from './products/product-form/product-form';
-
+import { Tenants } from './tenants/tenants';
+import { TenantForm } from './tenants/tenant-form/tenant-form';
 
 @NgModule({
   declarations: [
@@ -28,19 +29,14 @@ import { ProductForm } from './products/product-form/product-form';
     Roles,
     RoleForm,
     Products,
-    ProductForm
+    ProductForm,
+    Tenants,
+    TenantForm,
   ],
-  imports: [
-    CommonModule,
-    AdminRoutingModule,
-    ReactiveFormsModule,
-    FormsModule
+  imports: [CommonModule, AdminRoutingModule, ReactiveFormsModule, FormsModule],
+  exports: [Admin],
+  providers: [
+    DatePipe, // ✅ For date: pipe usage
   ],
-  exports: [
-    Admin
-  ],
-   providers: [
-    DatePipe,               // ✅ For date: pipe usage
-  ]
 })
-export class AdminModule { }
+export class AdminModule {}

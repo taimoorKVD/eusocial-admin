@@ -13,6 +13,8 @@ import { Roles } from './admin/roles/roles';
 import { RoleForm } from './admin/roles/role-form/role-form';
 import { Products } from './admin/products/products';
 import { ProductForm } from './admin/products/product-form/product-form';
+import { Tenants } from './admin/tenants/tenants';
+import { TenantForm } from './admin/tenants/tenant-form/tenant-form';
 
 const routes: Routes = [
   // ✅ Protected root (dashboard)
@@ -39,8 +41,16 @@ const routes: Routes = [
           { path: '', component: Products },
           { path: 'create', component: ProductForm },
           { path: ':id/edit', component: ProductForm },
-        ]
-      }
+        ],
+      },
+      {
+        path: 'tenants',
+        children: [
+          { path: '', component: Tenants },
+          { path: 'create', component: TenantForm },
+          { path: ':id/edit', component: TenantForm },
+        ],
+      },
     ],
   },
 
@@ -62,4 +72,4 @@ const routes: Routes = [
   imports: [RouterModule.forRoot(routes, { scrollPositionRestoration: 'enabled' })],
   exports: [RouterModule],
 })
-export class AppRoutingModule { }
+export class AppRoutingModule {}
