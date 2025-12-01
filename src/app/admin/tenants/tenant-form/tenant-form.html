@@ -31,11 +31,11 @@
         </div>
 
         <div class="form-actions mt-5 d-flex justify-content-end gap-3">
-            <button *ngIf="isEditMode" type="button" class="btn btn-outline-danger" (click)="deleteTenant()">
+            <!-- <button *ngIf="isEditMode" type="button" class="btn btn-outline-danger" (click)="deleteTenant()">
                 Delete
-            </button>
+            </button> -->
             <button type="button" class="btn btn-outline-secondary" (click)="backToList()">Cancel</button>
-            <button type="submit" class="btn btn-primary">{{ isEditMode ? 'Update' : 'Save' }}</button>
+            <!-- <button type="submit" class="btn btn-primary">{{ isEditMode ? 'Update' : 'Save' }}</button> -->
         </div>
 
         <div *ngIf="message" class="alert alert-info text-center mt-4 small">{{ message }}</div>
