@@ -35,7 +35,7 @@
                 Delete
             </button> -->
             <button type="button" class="btn btn-outline-secondary" (click)="backToList()">Cancel</button>
-            <!-- <button type="submit" class="btn btn-primary">{{ isEditMode ? 'Update' : 'Save' }}</button> -->
+            <button *ngIf="!isEditMode" type="submit" class="btn btn-primary">{{ isEditMode ? 'Update' : 'Save' }}</button>
         </div>
 
         <div *ngIf="message" class="alert alert-info text-center mt-4 small">{{ message }}</div>
