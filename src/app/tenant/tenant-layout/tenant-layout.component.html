@@ -1,0 +1,18 @@
+<ibm-header [fixed]="true">
+  <app-topbar></app-topbar>
+</ibm-header>
+
+<div class="bx--grid">
+  <div class="bx--row">
+    <!-- Sidebar -->
+    <div class="bx--col-lg-3">
+      <app-sidebar></app-sidebar>
+    </div>
+
+    <!-- Main Content -->
+    <div class="bx--col-lg-9">
+      <!-- Tenant page renders here -->
+      <router-outlet></router-outlet>
+    </div>
+  </div>
+</div>

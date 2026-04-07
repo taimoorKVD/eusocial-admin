@@ -1,0 +1,21 @@
+<ibm-side-nav [expanded]="true">
+  <ibm-side-nav-header>
+    <span>My Project</span>
+  </ibm-side-nav-header>
+
+  <ibm-side-nav-link routerLink="/dashboard" routerLinkActive="bx--side-nav__link--current">
+    <ibm-icon-home size="16"></ibm-icon-home> Dashboard
+  </ibm-side-nav-link>
+
+  <ibm-side-nav-link routerLink="/users" routerLinkActive="bx--side-nav__link--current">
+    <ibm-icon-user size="16"></ibm-icon-user> Users
+  </ibm-side-nav-link>
+
+  <ibm-side-nav-link routerLink="/tenant/home" routerLinkActive="bx--side-nav__link--current">
+    <ibm-icon-data size="16"></ibm-icon-data> Tenant Home
+  </ibm-side-nav-link>
+
+  <ibm-side-nav-link routerLink="/tenant/user-dashboard" routerLinkActive="bx--side-nav__link--current">
+    <ibm-icon-user size="16"></ibm-icon-user> Tenant Dashboard
+  </ibm-side-nav-link>
+</ibm-side-nav>

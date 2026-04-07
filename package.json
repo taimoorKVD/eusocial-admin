@@ -28,6 +28,9 @@
     "@angular/forms": "^20.3.0",
     "@angular/platform-browser": "^20.3.0",
     "@angular/router": "^20.3.0",
+    "@carbon/icons-angular": "^11.2.2",
+    "carbon-components": "^10.58.15",
+    "carbon-components-angular": "^5.65.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.15.0"
