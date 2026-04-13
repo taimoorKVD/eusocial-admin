@@ -55,10 +55,10 @@ const routes: Routes = [
     ],
   },
 
-    // ✅ Lazy-loaded tenant module
-  {
+    {
     path: 'tenant',
-    loadChildren: () => import('./tenant/tenant.module').then(m => m.TenantModule)
+    loadChildren: () =>
+      import('./tenant/tenant.module').then(m => m.TenantModule)
   },
 
   // ✅ Public routes (login/register)

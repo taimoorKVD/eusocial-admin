@@ -9,10 +9,6 @@ import { HTTP_INTERCEPTORS, HttpClientModule, provideHttpClient } from '@angular
 import { AuthInterceptor } from './interceptors/auth-interceptor';
 import { ErrorInterceptor } from './interceptors/error-interceptor';
 
-// Carbon modules
-import { UIShellModule } from 'carbon-components-angular';
-import { ButtonModule } from 'carbon-components-angular';
-import { IconModule } from 'carbon-components-angular';
 
 @NgModule({
   declarations: [
@@ -24,9 +20,6 @@ import { IconModule } from 'carbon-components-angular';
     AdminModule,
     HttpClientModule,
     PublicModule,
-    UIShellModule, // For header & sidebar
-    ButtonModule,
-    IconModule,
   ],
   providers: [
     provideBrowserGlobalErrorListeners(),

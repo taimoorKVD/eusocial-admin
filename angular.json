@@ -35,7 +35,8 @@
               "src/assets",
               {
                 "glob": "**/*",
-                "input": "public"
+                "input": "node_modules/@ibm/plex",
+                "output": "assets/fonts"
               }
             ],
             "styles": [

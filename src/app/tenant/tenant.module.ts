@@ -1,31 +1,26 @@
-import { NgModule, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms'; // ✅ IMPORTANT
+
 
 import { TenantRoutingModule } from './tenant-routing.module';
-import { HomeComponent } from './home/home.component';
-import { UserDashboardComponent } from './user-dashboard/user-dashboard.component';
-import { SidebarComponent } from './sidebar/sidebar.component';
-import { TopbarComponent } from './topbar/topbar.component';
-import { UIShellModule, SideNavModule, IconModule } from 'carbon-components-angular';
 import { TenantLayoutComponent } from './tenant-layout/tenant-layout.component';
+import { TenantSidebarComponent } from './tenant-sidebar/tenant-sidebar.component';
+import { TenantTopbarComponent } from './tenant-topbar/tenant-topbar.component';
+import { UserDashboardComponent } from './pages/user-dashboard/user-dashboard.component';
 
 
 @NgModule({
   declarations: [
-    HomeComponent,
-    UserDashboardComponent,
-    SidebarComponent,
-    TopbarComponent,
-    TenantLayoutComponent
+    TenantLayoutComponent,
+    TenantSidebarComponent,
+    TenantTopbarComponent,
+    UserDashboardComponent
   ],
   imports: [
     CommonModule,
     TenantRoutingModule,
-    UIShellModule,  // For header + layout
-    SideNavModule,  // For ibm-side-nav-link
-    IconModule      // For ibm icons
-  ],
-    schemas: [CUSTOM_ELEMENTS_SCHEMA] // optional, suppresses template errors
-
+    FormsModule
+  ]
 })
 export class TenantModule { }
