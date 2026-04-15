@@ -55,7 +55,7 @@ const routes: Routes = [
     ],
   },
 
-    {
+  {
     path: 'tenant',
     loadChildren: () =>
       import('./tenant/tenant.module').then(m => m.TenantModule)
@@ -66,6 +66,7 @@ const routes: Routes = [
     path: '',
     component: Public,
     children: [
+       { path: '', redirectTo: 'login', pathMatch: 'full' },
       { path: 'login', component: Login },
       { path: 'register', component: Register },
     ],

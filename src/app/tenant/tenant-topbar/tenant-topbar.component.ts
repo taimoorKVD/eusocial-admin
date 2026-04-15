@@ -1,4 +1,5 @@
 import { Component, HostListener, EventEmitter, Output} from '@angular/core';
+import { TenantAuthService } from '../../services/tenant-auth.service';
 
 @Component({
   selector: 'app-tenant-topbar',
@@ -11,6 +12,8 @@ export class TenantTopbarComponent {
   @Output() toggleSidebar = new EventEmitter<void>();
   dropdownOpen = false;
   userName = 'Syed Umar';
+
+  constructor(private tenantAuth: TenantAuthService) {}
 
   toggleDropdown() {
     this.dropdownOpen = !this.dropdownOpen;
@@ -35,6 +38,6 @@ export class TenantTopbarComponent {
   }
 
   logout() {
-    console.log('Logout clicked');
+    this.tenantAuth.logout();
   }
 }

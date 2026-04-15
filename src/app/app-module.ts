@@ -8,6 +8,7 @@ import { PublicModule } from './public/public-module';
 import { HTTP_INTERCEPTORS, HttpClientModule, provideHttpClient } from '@angular/common/http';
 import { AuthInterceptor } from './interceptors/auth-interceptor';
 import { ErrorInterceptor } from './interceptors/error-interceptor';
+import { TenantAuthInterceptor } from './interceptors/tenant-auth.interceptor';
 
 
 @NgModule({
@@ -26,6 +27,7 @@ import { ErrorInterceptor } from './interceptors/error-interceptor';
     // provideHttpClient(),
     { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
     { provide: HTTP_INTERCEPTORS, useClass: ErrorInterceptor, multi: true },
+    { provide: HTTP_INTERCEPTORS, useClass: TenantAuthInterceptor, multi: true },
   ],
   bootstrap: [App]
 })
