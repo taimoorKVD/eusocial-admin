@@ -31,7 +31,7 @@
     "@carbon/icons": "^11.77.1",
     "@carbon/styles": "^1.103.0",
     "@ibm/plex": "^6.4.1",
-    "@ng-select/ng-select": "^21.8.0",
+    "@ng-select/ng-select": "^20.0.0",
     "carbon-components": "^10.58.15",
     "carbon-components-angular": "^5.65.0",
     "rxjs": "~7.8.0",
