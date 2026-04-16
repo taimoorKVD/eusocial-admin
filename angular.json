@@ -35,10 +35,12 @@
               "src/assets",
               {
                 "glob": "**/*",
-                "input": "public"
+                "input": "node_modules/@ibm/plex",
+                "output": "assets/fonts"
               }
             ],
             "styles": [
+               "node_modules/carbon-components/css/carbon-components.min.css",
               "src/styles.scss"
             ]
           },

@@ -1,0 +1,43 @@
+import { Component, HostListener, EventEmitter, Output} from '@angular/core';
+import { TenantAuthService } from '../../services/tenant-auth.service';
+
+@Component({
+  selector: 'app-tenant-topbar',
+  standalone: false,
+
+  templateUrl: './tenant-topbar.component.html',
+  styleUrl: './tenant-topbar.component.scss'
+})
+export class TenantTopbarComponent {
+  @Output() toggleSidebar = new EventEmitter<void>();
+  dropdownOpen = false;
+  userName = 'Syed Umar';
+
+  constructor(private tenantAuth: TenantAuthService) {}
+
+  toggleDropdown() {
+    this.dropdownOpen = !this.dropdownOpen;
+  }
+
+  closeDropdown() {
+    this.dropdownOpen = false;
+  }
+
+  // click outside close
+  @HostListener('document:click', ['$event'])
+  handleClickOutside(event: Event) {
+    const target = event.target as HTMLElement;
+
+    if (!target.closest('.profile-dropdown')) {
+      this.closeDropdown();
+    }
+  }
+
+  goToProfile() {
+    console.log('Profile clicked');
+  }
+
+  logout() {
+    this.tenantAuth.logout();
+  }
+}

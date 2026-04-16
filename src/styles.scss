@@ -1,4 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400..700;1,400..700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&display=swap');
+
 body {
   background-color: #f6f7f8;
   font-family: 'Inter', sans-serif;
+}
+
+.font-libre{
+  font-family: "Libre Baskerville", serif;
+}
+
+.font-ibm{
+  font-family: "IBM Plex Sans", sans-serif;
+}
+
+/* Container */
+.custom-ng-select .ng-select-container {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #6C7172;
+  border-radius: 0;
+  min-height: 40px;
+  box-shadow: none;
+}
+
+/* Focus state */
+.custom-ng-select.ng-select-focused .ng-select-container {
+  border-bottom: 1px solid #000;
+}
+
+/* Value text */
+.custom-ng-select .ng-value {
+  font-size: 14px;
+  color: #000;
+}
+
+/* Placeholder */
+.custom-ng-select .ng-placeholder {
+  font-size: 14px;
+  color: #6C7172;
+}
+
+/* Dropdown panel */
+.ng-dropdown-panel {
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  margin-top: 6px;
+  overflow: hidden;
+  background-color: #f5f5f5;
+}
+
+/* Options */
+.ng-option {
+  padding: 5px 10px;
+  font-size: 14px;
+}
+
+
+/* Selected */
+.ng-option-selected {
+  background-color: #e5e7eb;
+}
+
+/* Search input */
+.ng-select .ng-input input {
+  font-size: 14px;
+}
+
+.vendor .custom-ng-select .ng-placeholder {
+    color: #161616;
+}
+
+.vendor .ng-value-container {
+    padding-left: 15px;
 }

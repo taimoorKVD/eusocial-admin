@@ -28,6 +28,12 @@
     "@angular/forms": "^20.3.0",
     "@angular/platform-browser": "^20.3.0",
     "@angular/router": "^20.3.0",
+    "@carbon/icons": "^11.77.1",
+    "@carbon/styles": "^1.103.0",
+    "@ibm/plex": "^6.4.1",
+    "@ng-select/ng-select": "^21.8.0",
+    "carbon-components": "^10.58.15",
+    "carbon-components-angular": "^5.65.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.15.0"
@@ -37,12 +43,15 @@
     "@angular/cli": "^20.3.8",
     "@angular/compiler-cli": "^20.3.0",
     "@types/jasmine": "~5.1.0",
+    "autoprefixer": "^10.4.27",
     "jasmine-core": "~5.9.0",
     "karma": "~6.4.0",
     "karma-chrome-launcher": "~3.2.0",
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
+    "postcss": "^8.5.9",
+    "tailwindcss": "^3.4.1",
     "typescript": "~5.9.2"
   }
 }

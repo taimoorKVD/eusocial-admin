@@ -14,6 +14,7 @@ import { RoleForm } from './admin/roles/role-form/role-form';
 import { Products } from './admin/products/products';
 import { ProductForm } from './admin/products/product-form/product-form';
 import { Tenants } from './admin/tenants/tenants';
+// import { Tenants } from './admin/tenants/tenants';
 import { TenantForm } from './admin/tenants/tenant-form/tenant-form';
 
 const routes: Routes = [
@@ -21,7 +22,7 @@ const routes: Routes = [
   {
     path: '',
     component: Admin, // main layout
-    canActivate: [AuthGuard],
+    // canActivate: [AuthGuard],
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' }, // ✅ main dashboard
       { path: 'dashboard', component: Dashboard }, // ✅ main dashboard
@@ -54,11 +55,18 @@ const routes: Routes = [
     ],
   },
 
+  {
+    path: 'tenant',
+    loadChildren: () =>
+      import('./tenant/tenant.module').then(m => m.TenantModule)
+  },
+
   // ✅ Public routes (login/register)
   {
     path: '',
     component: Public,
     children: [
+       { path: '', redirectTo: 'login', pathMatch: 'full' },
       { path: 'login', component: Login },
       { path: 'register', component: Register },
     ],

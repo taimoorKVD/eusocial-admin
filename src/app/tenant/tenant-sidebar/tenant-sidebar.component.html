@@ -1,0 +1,138 @@
+<div class="w-64 h-screen bg-white flex flex-col" style="border-right: 1px solid #6c71727a;">
+
+  <!-- Logo -->
+  <div class="p-4 font-bold text-xl border-b">
+    <img src="assets/eusocial-logo.png" alt="Eusocial Logo" class="w-[160px]" />
+  </div>
+
+  <!-- Menu -->
+  <div class="overflow-y-auto px-4 py-2 space-y-1">
+
+    <!-- HOME -->
+    <a [routerLink]="['/tenant', slug, 'home']" routerLinkActive="text-[#333333] border-l-4 border-blue-500 font-bold"
+      class="text-[#525252] font-ibm flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100">
+
+      <!-- SVG -->
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="16" height="16" fill="white" fill-opacity="0.01" style="mix-blend-mode:multiply" />
+        <path
+          d="M12.85 4.65L9.35 1.15C9.25 1.05 9.15 1 9 1H4C3.45 1 3 1.45 3 2V14C3 14.55 3.45 15 4 15H12C12.55 15 13 14.55 13 14V5C13 4.85 12.95 4.75 12.85 4.65ZM9 2.2L11.8 5H9V2.2ZM12 14H4V2H8V5C8 5.55 8.45 6 9 6H12V14Z"
+          fill="#525252" />
+        <path d="M11 11H5V12H11V11Z" fill="#525252" />
+        <path d="M11 8H5V9H11V8Z" fill="#525252" />
+      </svg>
+
+      Home
+    </a>
+
+    <!-- USER DASHBOARD -->
+    <a [routerLink]="['/tenant', slug, 'user-dashboard']" routerLinkActive="text-[#333333] border-l-4 border-blue-500 font-bold"
+      class="text-[#525252] font-ibm flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100">
+
+      <!-- <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-4.4 0-8 2.2-8 5v3h16v-3c0-2.8-3.6-5-8-5z"/>
+      </svg> -->
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="16" height="16" fill="white" fill-opacity="0.01" style="mix-blend-mode:multiply" />
+        <path
+          d="M12.85 4.65L9.35 1.15C9.25 1.05 9.15 1 9 1H4C3.45 1 3 1.45 3 2V14C3 14.55 3.45 15 4 15H12C12.55 15 13 14.55 13 14V5C13 4.85 12.95 4.75 12.85 4.65ZM9 2.2L11.8 5H9V2.2ZM12 14H4V2H8V5C8 5.55 8.45 6 9 6H12V14Z"
+          fill="#525252" />
+        <path d="M11 11H5V12H11V11Z" fill="#525252" />
+        <path d="M11 8H5V9H11V8Z" fill="#525252" />
+      </svg>
+
+      User Dashboard
+    </a>
+
+    <!-- SETUP MENU -->
+    <div>
+
+      <button (click)="toggleSetup()"
+        class="font-ibm w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-100">
+
+        <div class="flex items-center gap-3">
+          <span class="text-[#525252]">{{ openSetup ? '▲' : '▼' }}</span>
+
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="16" height="16" fill="white" fill-opacity="0.01" style="mix-blend-mode:multiply" />
+            <path
+              d="M5.585 3L7.295 4.705L7.585 5H14V13H2V3H5.585ZM5.585 2H2C1.73478 2 1.48043 2.10536 1.29289 2.29289C1.10536 2.48043 1 2.73478 1 3V13C1 13.2652 1.10536 13.5196 1.29289 13.7071C1.48043 13.8946 1.73478 14 2 14H14C14.2652 14 14.5196 13.8946 14.7071 13.7071C14.8946 13.5196 15 13.2652 15 13V5C15 4.73478 14.8946 4.48043 14.7071 4.29289C14.5196 4.10536 14.2652 4 14 4H8L6.295 2.295C6.20197 2.20142 6.09134 2.12717 5.96948 2.07654C5.84763 2.02591 5.71696 1.9999 5.585 2Z"
+              fill="#525252" />
+          </svg>
+          Setup
+        </div>
+      </button>
+
+      <!-- SUB MENU -->
+      <div *ngIf="openSetup" class="ml-8 mt-1 space-y-1">
+
+        <a [routerLink]="['/tenant', slug, 'users']" routerLinkActive= "text-[#333333] border-l-4 border-blue-500 font-bold"
+          class="text-[#525252] font-ibm flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-sm">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="16" height="16" fill="white" fill-opacity="0.01" style="mix-blend-mode:multiply" />
+            <path
+              d="M12.85 4.65L9.35 1.15C9.25 1.05 9.15 1 9 1H4C3.45 1 3 1.45 3 2V14C3 14.55 3.45 15 4 15H12C12.55 15 13 14.55 13 14V5C13 4.85 12.95 4.75 12.85 4.65ZM9 2.2L11.8 5H9V2.2ZM12 14H4V2H8V5C8 5.55 8.45 6 9 6H12V14Z"
+              fill="#525252" />
+            <path d="M11 11H5V12H11V11Z" fill="#525252" />
+            <path d="M11 8H5V9H11V8Z" fill="#525252" />
+          </svg>
+          Users
+        </a>
+
+        <a [routerLink]="['/tenant', slug, 'job-position']" routerLinkActive= "text-[#333333] border-l-4 border-blue-500 font-bold"
+          class="text-[#525252] font-ibm flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-sm">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="16" height="16" fill="white" fill-opacity="0.01" style="mix-blend-mode:multiply" />
+            <path
+              d="M12.85 4.65L9.35 1.15C9.25 1.05 9.15 1 9 1H4C3.45 1 3 1.45 3 2V14C3 14.55 3.45 15 4 15H12C12.55 15 13 14.55 13 14V5C13 4.85 12.95 4.75 12.85 4.65ZM9 2.2L11.8 5H9V2.2ZM12 14H4V2H8V5C8 5.55 8.45 6 9 6H12V14Z"
+              fill="#525252" />
+            <path d="M11 11H5V12H11V11Z" fill="#525252" />
+            <path d="M11 8H5V9H11V8Z" fill="#525252" />
+          </svg>
+          Job Positions
+        </a>
+
+        <a [routerLink]="['/tenant', slug, 'item']" routerLinkActive= "text-[#333333] border-l-4 border-blue-500 font-bold"
+          class="text-[#525252] font-ibm flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-sm">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="16" height="16" fill="white" fill-opacity="0.01" style="mix-blend-mode:multiply" />
+            <path
+              d="M12.85 4.65L9.35 1.15C9.25 1.05 9.15 1 9 1H4C3.45 1 3 1.45 3 2V14C3 14.55 3.45 15 4 15H12C12.55 15 13 14.55 13 14V5C13 4.85 12.95 4.75 12.85 4.65ZM9 2.2L11.8 5H9V2.2ZM12 14H4V2H8V5C8 5.55 8.45 6 9 6H12V14Z"
+              fill="#525252" />
+            <path d="M11 11H5V12H11V11Z" fill="#525252" />
+            <path d="M11 8H5V9H11V8Z" fill="#525252" />
+          </svg>
+          Items
+        </a>
+
+        <a [routerLink]="['/tenant', slug, 'vendor']" routerLinkActive= "text-[#333333] border-l-4 border-blue-500 font-bold"
+          class="text-[#525252] font-ibm flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-sm">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="16" height="16" fill="white" fill-opacity="0.01" style="mix-blend-mode:multiply" />
+            <path
+              d="M12.85 4.65L9.35 1.15C9.25 1.05 9.15 1 9 1H4C3.45 1 3 1.45 3 2V14C3 14.55 3.45 15 4 15H12C12.55 15 13 14.55 13 14V5C13 4.85 12.95 4.75 12.85 4.65ZM9 2.2L11.8 5H9V2.2ZM12 14H4V2H8V5C8 5.55 8.45 6 9 6H12V14Z"
+              fill="#525252" />
+            <path d="M11 11H5V12H11V11Z" fill="#525252" />
+            <path d="M11 8H5V9H11V8Z" fill="#525252" />
+          </svg>
+          Vendors
+        </a>
+
+        <a routerLink="/setup/vendors" routerLinkActive= "text-[#333333] border-l-4 border-blue-500 font-bold"
+          class="text-[#525252] font-ibm flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-sm">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="16" height="16" fill="white" fill-opacity="0.01" style="mix-blend-mode:multiply" />
+            <path
+              d="M12.85 4.65L9.35 1.15C9.25 1.05 9.15 1 9 1H4C3.45 1 3 1.45 3 2V14C3 14.55 3.45 15 4 15H12C12.55 15 13 14.55 13 14V5C13 4.85 12.95 4.75 12.85 4.65ZM9 2.2L11.8 5H9V2.2ZM12 14H4V2H8V5C8 5.55 8.45 6 9 6H12V14Z"
+              fill="#525252" />
+            <path d="M11 11H5V12H11V11Z" fill="#525252" />
+            <path d="M11 8H5V9H11V8Z" fill="#525252" />
+          </svg>
+          Reporting Groups
+        </a>
+
+      </div>
+    </div>
+
+  </div>
+</div>
