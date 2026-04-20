@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { TenantUserService } from '../../../../services/tenant-user.service';
 
 @Component({
   selector: 'app-setup-user',
@@ -8,18 +9,59 @@ import { Component } from '@angular/core';
   styleUrl: './setup-user.component.scss'
 })
 export class SetupUserComponent {
+
+  constructor(private userService: TenantUserService) {}
+
 // Dropdown Data
-selectedUser = null; // selected value
+// selectedUser = null;
 isModalOpen = false;
 modalType: 'delete' | 'exit' | 'save' | null = null;
 modalMessage = '';
 
+  users: any[] = [];
+  selectedUser: any;
 
-users = [
-  { label: 'John Doe', value: 1 },
-  { label: 'Ali Khan', value: 2 },
-  { label: 'Umar', value: 3 }
-];
+  formData: any = {
+    name: '',
+    email: '',
+    phone_number: '',
+    address: '',
+    username: '',
+    password: '',
+    job_position_id: null,
+    location_id: null,
+    availability_days: []
+  };
+
+  ngOnInit(): void {
+    this.loadUsers();
+  }
+
+  loadUsers() {
+    this.userService.getUsers().subscribe((res: any[]) => {
+      this.users = res.map(user => ({
+        label: user.name,
+        value: user.id
+      }));
+    });
+  }
+
+  onUserSelect(userId: number) {
+    if (!userId) return;
+
+    this.userService.getUserById(userId).subscribe(res => {
+      this.formData = {
+        ...res,
+        availability_days: res.availability_days || []
+      };
+    });
+  }
+
+// users = [
+//   { label: 'John Doe', value: 1 },
+//   { label: 'Ali Khan', value: 2 },
+//   { label: 'Umar', value: 3 }
+// ];
 
   jobPositions = [
     { label: 'Admin', value: 'admin' },
