@@ -14,6 +14,8 @@ import { SetupUserComponent } from './pages/setup/setup-user/setup-user.componen
 import { SetupJobPositionComponent } from './pages/setup/setup-job-position/setup-job-position.component';
 import { TenantLoginComponent } from './tenant-login/tenant-login.component';
 import { SetupVendorsComponent } from './pages/setup/setup-vendors/setup-vendors.component';
+import { SetupItems } from './pages/setup/setup-items/setup-items';
+import { SetupReportingGroup } from './pages/setup/setup-reporting-group/setup-reporting-group';
 
 
 
@@ -26,7 +28,9 @@ import { SetupVendorsComponent } from './pages/setup/setup-vendors/setup-vendors
     SetupUserComponent,
     SetupJobPositionComponent,
     TenantLoginComponent,
-    SetupVendorsComponent
+    SetupVendorsComponent,
+    SetupItems,
+    SetupReportingGroup
   ],
   imports: [
     CommonModule,

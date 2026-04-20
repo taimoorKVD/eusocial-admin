@@ -1,0 +1,114 @@
+<div class="p-6">
+
+  <h3 class="font-medium text-[16px] text-[#0054AC] font-ibm mb-[20px]">+ Reporting Groups</h3>
+
+  <div class="grid grid-cols-3 gap-6">
+
+    <div *ngFor="let category of categories" class="space-y-4">
+
+      <!-- Title -->
+      <h3 class="text-[12px] font-medium text-[#525252]">
+        {{ category.name }}
+      </h3>
+
+      <!-- Add Item -->
+      <div class="flex items-center gap-2 pb-2" style="border-bottom: 1px solid #161616;">
+
+        <input
+          [(ngModel)]="category.newItem"
+          (keydown.enter)="handleEnter(category)"
+          placeholder="Add Items"
+          class="flex-1 outline-none text-sm bg-transparent"
+        />
+
+        <button
+          (click)="addItem(category)"
+          class="text-lg font-bold"
+        >
+          +
+        </button>
+      </div>
+
+      <!-- Dropdown Box -->
+      <div class="bg-gray-100 rounded shadow">
+
+        <div class="bg-[#CCE1F7] px-3 py-2 text-sm flex justify-between">
+          <span>Choose an option</span>
+          <span>⌄</span>
+        </div>
+
+        <!-- Items -->
+        <div *ngFor="let item of category.items" class="bg-[#fff] !border-b !border-[#c6c6c6] px-3 py-2 flex justify-between items-center">
+
+          <!-- Name / Input -->
+          <div class="flex-1">
+            <input
+              *ngIf="item.editing"
+              [(ngModel)]="item.name"
+              (keydown.enter)="handleEnter(category, item)"
+              class="w-full bg-white border px-2 py-1 text-sm"
+            />
+
+            <span *ngIf="!item.editing" class="text-sm">
+              {{ item.name }}
+            </span>
+          </div>
+
+          <!-- Actions -->
+          <div class="relative group">
+
+            <button class="px-2">⋯</button>
+
+            <!-- Dropdown -->
+            <div class="absolute right-0 hidden group-hover:block bg-white shadow rounded w-24">
+
+              <button
+                *ngIf="!item.editing"
+                (click)="enableEdit(item)"
+                class="block w-full text-left px-3 py-2 text-sm hover:bg-gray-100"
+              >
+                Edit
+              </button>
+
+              <button
+                *ngIf="item.editing"
+                (click)="saveEdit(item)"
+                class="block w-full text-left px-3 py-2 text-sm hover:bg-gray-100"
+              >
+                Save
+              </button>
+
+              <button
+                (click)="deleteItem(category, item.id)"
+                class="block w-full text-left px-3 py-2 text-sm text-red-500 hover:bg-gray-100"
+              >
+                Delete
+              </button>
+
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Footer Buttons -->
+  <div class="flex justify-end gap-4 mt-10">
+
+    <button class="border border-red-400 text-red-500 px-6 py-2">
+      Delete
+    </button>
+
+    <button class="border border-blue-400 text-blue-500 px-6 py-2">
+      Cancel
+    </button>
+
+    <button (click)="onSave()" class="bg-blue-600 text-white px-6 py-2">
+        Save
+    </button>
+  </div>
+</div>
