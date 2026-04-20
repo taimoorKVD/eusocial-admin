@@ -38,24 +38,38 @@ modalMessage = '';
   }
 
   loadUsers() {
-    this.userService.getUsers().subscribe((res: any[]) => {
-      this.users = res.map(user => ({
-        label: user.name,
-        value: user.id
-      }));
-    });
-  }
+  this.userService.getUsers().subscribe((res: any) => {
 
-  onUserSelect(userId: number) {
-    if (!userId) return;
+    this.users = res.data.map((user: any) => ({
+      label: user.name,
+      value: user.id
+    }));
 
-    this.userService.getUserById(userId).subscribe(res => {
-      this.formData = {
-        ...res,
-        availability_days: res.availability_days || []
-      };
-    });
-  }
+  });
+}
+
+onUserSelect(event: any) {
+  const userId = event?.value ?? event;
+
+  console.log('User ID:', userId);
+
+  if (!userId) return;
+
+  this.userService.getUserById(userId).subscribe((res: any) => {
+    const user = res.data;
+
+    this.formData = {
+      name: user.name,
+      email: user.email,
+      phone_number: user.phoneNumber,
+      address: user.address,
+      username: user.username,
+      job_position_id: user.jobPosition?.id || null,
+      location_id: user.location?.id || null,
+      availability_days: user.availabilityDays || []
+    };
+  });
+}
 
 // users = [
 //   { label: 'John Doe', value: 1 },

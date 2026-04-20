@@ -20,16 +20,24 @@
     </div>
   </div> -->
   <div class="grid grid-cols-3 mb-[60px]">
-    <ng-select
+    <!-- <ng-select
     [items]="users"
     bindLabel="label"
     bindValue="value"
     [(ngModel)]="selectedUser"
-    (change)="onUserSelect($event)"
+    (ngModelChange)="onUserSelect($event)"
     [searchable]="true"
     [clearable]="true"
     [placeholder]="!selectedUser ? 'Select User' : ''" class="custom-ng-select">
-    </ng-select>
+    </ng-select> -->
+    <ng-select
+  [items]="users"
+  bindLabel="label"
+  bindValue="value"
+  [(ngModel)]="selectedUser"
+  (change)="onUserSelect($event)"
+  [placeholder]="!selectedUser ? 'Select User' : ''" class="custom-ng-select">
+</ng-select>
   </div>
 
   <!-- Contact Info -->
