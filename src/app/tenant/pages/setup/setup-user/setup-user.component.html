@@ -1,24 +1,12 @@
+<app-eu-social-loader *ngIf="loading"></app-eu-social-loader>
+
+
 <div class="p-6 min-h-screen">
 
   <!-- Header -->
   <h2 class="text-[16px] font-medium mb-6 font-ibm text-[#0054AC]">
     Create/View Users
   </h2>
-
-  <!-- Select User -->
-  <!-- <div class="grid grid-cols-3 mb-[60px]">
-    <div>
-      <select
-        [(ngModel)]="selectedJob"
-        class="w-full border-b border-[#6C7172] py-2 text-sm bg-transparent focus:outline-none"
-      >
-       <option>Select User</option>
-        <option *ngFor="let user of selectedUser" [ngValue]="user">
-          {{ user.label }}
-        </option>
-      </select>
-    </div>
-  </div> -->
   <div class="grid grid-cols-3 mb-[60px]">
     <!-- <ng-select
     [items]="users"
@@ -30,13 +18,37 @@
     [clearable]="true"
     [placeholder]="!selectedUser ? 'Select User' : ''" class="custom-ng-select">
     </ng-select> -->
+    <!-- <ng-select
+    [items]="users"
+    bindLabel="label"
+    bindValue="value"
+    [(ngModel)]="selectedUser"
+    (change)="onUserSelect($event)"
+    [placeholder]="!selectedUser ? 'Select User' : ''" class="custom-ng-select">
+    </ng-select> -->
+    <!-- <ng-select
+      [items]="users"
+      bindLabel="label"
+      bindValue="value"
+      [(ngModel)]="selectedUser"
+      (change)="onUserSelect($event)"
+      (clear)="onClearUser()"
+      [placeholder]="!selectedUser ? 'Select User' : ''"
+      [clearable]="true"
+      [searchable]="false"
+      class="custom-ng-select">
+    </ng-select> -->
     <ng-select
   [items]="users"
   bindLabel="label"
   bindValue="value"
   [(ngModel)]="selectedUser"
   (change)="onUserSelect($event)"
-  [placeholder]="!selectedUser ? 'Select User' : ''" class="custom-ng-select">
+  (clear)="onClearUser()"
+  [clearable]="true"
+  [searchable]="false"
+  [placeholder]="!selectedUser ? 'Select User' : ''"
+  class="custom-ng-select">
 </ng-select>
   </div>
 
@@ -48,9 +60,13 @@
 
     <!-- Full Name -->
     <div>
-      <input type="text" [(ngModel)]="formData.name" placeholder="Placeholder text"
+      <input #firstInput type="text" [(ngModel)]="formData.name" (ngModelChange)="onFieldChange()"
+        placeholder="Placeholder text"
         class="px-4 w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent" />
       <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">Full Name</label>
+      <p *ngIf="isSubmitted && !formData.name" class="text-red-500 text-sm mt-1">
+        Name is required
+      </p>
     </div>
 
     <!-- Phone -->
@@ -64,16 +80,26 @@
   <div class="grid grid-cols-3 gap-10 mb-[30px]">
     <!-- Address -->
     <div>
-      <input type="text" [(ngModel)]="formData.address" placeholder="*Placeholder text"
+      <input type="text" [(ngModel)]="formData.address" (ngModelChange)="onFieldChange()"
+        placeholder="*Placeholder text"
         class="px-4 w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent" />
       <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">Address</label>
+      <p *ngIf="isSubmitted && !formData.address" class="text-red-500 text-sm mt-1">
+        Address is required
+      </p>
     </div>
 
     <!-- Email -->
     <div>
-      <input type="email" [(ngModel)]="formData.email" placeholder="*Placeholder text"
+      <input type="email" [(ngModel)]="formData.email" (ngModelChange)="onFieldChange()" placeholder="*Placeholder text"
         class="px-4 w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent" />
       <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">Email</label>
+      <p *ngIf="isSubmitted && !formData.email" class="text-red-500 text-sm mt-1">
+        Email is required
+      </p>
+      <p *ngIf="emailFormatError" class="text-red-500 text-sm mt-1">
+        Invalid email format
+      </p>
     </div>
   </div>
 
@@ -81,9 +107,13 @@
 
     <!-- Username -->
     <div>
-      <input type="text" [(ngModel)]="formData.username" placeholder="Placeholder text"
+      <input type="text" [(ngModel)]="formData.username" (ngModelChange)="onFieldChange()"
+        placeholder="Placeholder text"
         class="px-4 w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent" />
       <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">Username</label>
+      <p *ngIf="isSubmitted && !formData.username" class="text-red-500 text-sm mt-1">
+        Username is required
+      </p>
     </div>
 
     <!-- Password -->
@@ -113,7 +143,8 @@
       <!-- Input -->
 
       <div class="relative">
-        <input [(ngModel)]="formData.password" [type]="showPassword ? 'text' : 'password'" value="password123"
+        <input [(ngModel)]="formData.password" (ngModelChange)="onFieldChange()"
+          [type]="showPassword ? 'text' : 'password'" value="password123"
           class="px-4 w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent" />
         <!-- Eye Button -->
         <button type="button" (click)="togglePassword()"
@@ -140,8 +171,37 @@
           </svg>
 
         </button>
+        <p *ngIf="isSubmitted && !formData.password" class="text-red-500 text-sm mt-1">
+          Password is required
+        </p>
       </div>
 
+
+
+    </div>
+  </div>
+
+  <div class="grid grid-cols-3 gap-10 mb-[30px]">
+    <!-- Confirm Password -->
+    <div class="relative">
+
+      <div class="flex gap-1 items-center absolute left-[13px] top-[-10px]">
+        <label class="text-[12px] text-[#6F6F6F] font-ibm px-1">
+          Confirm Password
+        </label>
+      </div>
+
+      <div class="relative">
+        <input [(ngModel)]="formData.password_confirm" (ngModelChange)="onFieldChange()"
+          [type]="showPassword ? 'text' : 'password'"
+          class="px-4 w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent" />
+        <p *ngIf="isSubmitted && !formData.password_confirm" class="text-red-500 text-sm mt-1">
+          Confirm password is required
+        </p>
+        <p *ngIf="passwordMismatch" class="text-red-500 text-sm mt-1">
+          Passwords do not match
+        </p>
+      </div>
     </div>
   </div>
 
@@ -151,22 +211,30 @@
     <div>
       <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">Job Position</label>
 
-      <select [(ngModel)]="selectedJob" class="w-full border-b py-2 text-sm bg-transparent focus:outline-none">
-        <option *ngFor="let job of jobPositions" [ngValue]="job">
+      <select [(ngModel)]="formData.job_position_id" (ngModelChange)="onFieldChange()"
+        class="w-full border-b border-[#161616] py-2 text-sm bg-transparent focus:outline-none">
+        <option *ngFor="let job of jobPositions" [ngValue]="job.value">
           {{ job.label }}
         </option>
       </select>
+      <p *ngIf="isSubmitted && !formData.job_position_id" class="text-red-500 text-sm mt-1">
+        Job position is required
+      </p>
     </div>
 
     <!-- Location Dropdown -->
     <div>
       <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">Location</label>
 
-      <select [(ngModel)]="selectedLocation" class="w-full border-b py-2 text-sm bg-transparent focus:outline-none">
-        <option *ngFor="let loc of locations" [ngValue]="loc">
+      <select [(ngModel)]="formData.location_id" (ngModelChange)="onFieldChange()"
+        class="w-full border-b border-[#161616] py-2 text-sm bg-transparent focus:outline-none">
+        <option *ngFor="let loc of locations" [ngValue]="loc.value">
           {{ loc.label }}
         </option>
       </select>
+      <p *ngIf="isSubmitted && !formData.location_id" class="text-red-500 text-sm mt-1">
+        Location is required
+      </p>
     </div>
   </div>
 
@@ -174,9 +242,14 @@
   <div class="mt-10">
     <label class="text-sm text-gray-600">Availability</label>
 
-    <div class="flex gap-2 mt-3 flex-wrap">
-      <button *ngFor="let day of availabilityDays" (click)="selectDay(day)" class="px-3 py-1 text-xs border rounded"
-        [class.bg-blue-100]="selectedDay === day" [class.border-blue-500]="selectedDay === day">
+    <div class="flex mt-3 flex-wrap">
+
+      <button *ngFor="let day of availabilityDays" (click)="selectDay(day)" class="px-3 py-2 transition"
+        [ngClass]="
+        selectedDays.includes(day)
+          ? 'bg-white border-t-2 border-[#0069D7] text-[#161616] font-semibold font-ibm text-[11px]'
+          : 'bg-gray-200 border-r border-[#8d8d8d] text-[#525252] text-[11px] font-regular border border-transparent'
+      ">
         {{ day }}
       </button>
     </div>

@@ -16,6 +16,7 @@ import { TenantLoginComponent } from './tenant-login/tenant-login.component';
 import { SetupVendorsComponent } from './pages/setup/setup-vendors/setup-vendors.component';
 import { SetupItems } from './pages/setup/setup-items/setup-items';
 import { SetupReportingGroup } from './pages/setup/setup-reporting-group/setup-reporting-group';
+import { EuSocialLoader } from './eu-social-loader/eu-social-loader';
 
 
 
@@ -30,7 +31,8 @@ import { SetupReportingGroup } from './pages/setup/setup-reporting-group/setup-r
     TenantLoginComponent,
     SetupVendorsComponent,
     SetupItems,
-    SetupReportingGroup
+    SetupReportingGroup,
+    EuSocialLoader
   ],
   imports: [
     CommonModule,
