@@ -1,0 +1,71 @@
+<div class="bg-white p-4 rounded-xl shadow-sm">
+
+  <!-- Header -->
+  <div class="flex justify-between items-center mb-4">
+    <h2 class="text-lg font-semibold text-[#161616]">Users</h2>
+
+    <button
+       routerLink="create"
+      class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm">
+      + Create User
+    </button>
+  </div>
+
+  <!-- Loader -->
+  <div *ngIf="loading" class="text-center py-10">
+    <p class="text-gray-500 text-sm">Loading users...</p>
+  </div>
+
+  <!-- Table -->
+  <div *ngIf="!loading && users.length > 0" class="overflow-x-auto">
+    <table class="w-full text-sm text-left border-collapse">
+
+      <thead>
+        <tr class="border-b bg-gray-50 text-[#525252]">
+          <th class="px-4 py-3">ID</th>
+          <th class="px-4 py-3">Name</th>
+          <th class="px-4 py-3">Email</th>
+          <th class="px-4 py-3 text-right">Actions</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr *ngFor="let user of users" class="border-b hover:bg-gray-50">
+
+          <td class="px-4 py-3">{{ user.id }}</td>
+          <td class="px-4 py-3 font-medium text-[#161616]">
+            {{ user.name }}
+          </td>
+          <td class="px-4 py-3 text-[#525252]">
+            {{ user.email }}
+          </td>
+
+          <td class="px-4 py-3 text-right flex justify-end gap-2">
+
+            <!-- Edit -->
+           <button
+              [routerLink]="['edit', user.id]"
+              class="text-blue-500 hover:underline text-sm">
+              Edit
+            </button>
+
+            <!-- Delete -->
+            <button
+              (click)="deleteUser(user.id)"
+              class="text-red-500 hover:underline text-sm">
+              Delete
+            </button>
+
+          </td>
+        </tr>
+      </tbody>
+
+    </table>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!loading && users.length === 0" class="text-center py-10">
+    <p class="text-gray-400 text-sm">No users found</p>
+  </div>
+
+</div>

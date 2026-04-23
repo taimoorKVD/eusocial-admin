@@ -9,6 +9,8 @@ import { HTTP_INTERCEPTORS, HttpClientModule, provideHttpClient } from '@angular
 import { AuthInterceptor } from './interceptors/auth-interceptor';
 import { ErrorInterceptor } from './interceptors/error-interceptor';
 import { TenantAuthInterceptor } from './interceptors/tenant-auth.interceptor';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { ToastrModule } from 'ngx-toastr';
 
 
 @NgModule({
@@ -21,6 +23,13 @@ import { TenantAuthInterceptor } from './interceptors/tenant-auth.interceptor';
     AdminModule,
     HttpClientModule,
     PublicModule,
+    BrowserAnimationsModule, // ✅ REQUIRED
+    ToastrModule.forRoot({
+      positionClass: 'toast-top-right',
+      timeOut: 3000,
+      closeButton: true,
+      progressBar: true
+    })
   ],
   providers: [
     provideBrowserGlobalErrorListeners(),

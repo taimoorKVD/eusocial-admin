@@ -40,8 +40,8 @@
               }
             ],
             "styles": [
-               "node_modules/carbon-components/css/carbon-components.min.css",
-              "src/styles.scss"
+              "src/styles.scss",
+              "node_modules/ngx-toastr/toastr.css"
             ]
           },
           "configurations": {

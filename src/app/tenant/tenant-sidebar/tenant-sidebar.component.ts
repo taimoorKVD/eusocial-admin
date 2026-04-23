@@ -1,5 +1,6 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { TenantSessionService } from '../../services/tenant-session.service';
 
 @Component({
   selector: 'app-tenant-sidebar',
@@ -12,15 +13,17 @@ export class TenantSidebarComponent {
   @Input() isOpen = false;
   @Output() closeSidebar = new EventEmitter<void>();
 
-  constructor(private route: ActivatedRoute) {}
+  constructor(private route: ActivatedRoute, public session: TenantSessionService) {}
 
   openSetup = false;
   openTraining = false;
-  slug: string = '';
+  // slug: string = '';
 
-  ngOnInit() {
-  this.slug = this.route.snapshot.paramMap.get('slug') || '';
-}
+  // ngOnInit() {
+  //   this.route.firstChild?.paramMap.subscribe(params => {
+  //     this.slug = params.get('slug') || '';
+  //   });
+  // }
 
   toggleSetup() {
     this.openSetup = !this.openSetup;
