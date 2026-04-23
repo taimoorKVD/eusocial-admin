@@ -1,36 +1,57 @@
 <div class="min-h-screen bg-gray-100 p-6 flex flex-col justify-between">
 
+  <!-- Loader -->
+  <div *ngIf="isLoading" class="fixed inset-0 bg-white/50 flex items-center justify-center z-50">
+    <div class="text-blue-600 text-lg">Loading...</div>
+  </div>
+
   <!-- Top Section -->
   <div>
+
     <!-- Header -->
-      <div class="pt-[30px] grid grid-cols-3 gap-x-12 gap-y-6 mb-[60px] items-center">
-      <div class="">
-        <!-- Select Items -->
-        <div class="">
-          <label class="text-[16px] font-medium text-[#0054AC] font-ibm mt-1 mb-4 block">Job Positions</label>
-          <select
-            class="w-full border-b border-gray-400 bg-transparent outline-none text-sm py-1 cursor-pointer">
-            <option disabled selected>Choose an option</option>
-            <option>Shift Manager</option>
-            <option>Supervisor</option>
-          </select>
-        </div>
+    <div class="pt-[30px] grid grid-cols-3 gap-x-12 gap-y-6 mb-[60px] items-center">
+
+      <!-- Dropdown -->
+      <div>
+        <label class="text-[16px] font-medium text-[#0054AC] font-ibm mt-1 mb-4 block">
+          Job Positions
+        </label>
+
+        <select
+          [(ngModel)]="selectedJobId"
+          (change)="onSelectJob()"
+          class="w-full border-b border-gray-400 bg-transparent outline-none text-sm py-1 cursor-pointer"
+        >
+          <option [ngValue]="null" disabled>Choose an option</option>
+
+          <option *ngFor="let job of jobPositions" [ngValue]="job.id">
+            {{ job.name }}
+          </option>
+        </select>
       </div>
+
       <div></div>
+
+      <!-- Reset Button -->
       <div class="text-right">
-        <button class="bg-orange-600 text-white px-4 py-2 text-sm w-fit">
-          Edit +
+        <button
+          (click)="resetForm()"
+          class="bg-orange-600 text-white px-4 py-2 text-sm"
+        >
+          Create New
         </button>
       </div>
+
     </div>
 
-    <!-- Input Field -->
+    <!-- Input -->
     <div class="grid grid-cols-3 gap-x-12 gap-y-6">
       <div class="mb-6">
         <input
           type="text"
-          placeholder="Shift Manager"
-          class="border border-blue-500 font-ibm px-3 w-full placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent"
+          [(ngModel)]="jobTitle"
+          placeholder="Enter Job Title"
+          class="border border-blue-500 px-3 w-full placeholder-[#A8A8A8] text-[#161616] focus:outline-none py-3 text-[14px] bg-transparent"
         />
         <p class="text-xs text-gray-400 mt-1">Job Position Field</p>
       </div>
@@ -38,55 +59,52 @@
 
     <!-- Permissions -->
     <div>
-      <h3 class="text-sm text-gray-600 mb-3 font-ibm">Job Related Permissions</h3>
+      <h3 class="text-sm text-gray-600 mb-3">Job Related Permissions</h3>
 
       <div class="space-y-2">
-        <label class="flex items-center gap-2 text-[#161616] text-[14px] font-ibm">
-          <input type="checkbox" checked class="accent-black" />
-          Checkbox label
+
+        <label *ngFor="let perm of allPermissions"
+          class="flex items-center gap-2 text-[#161616] text-[14px]">
+
+          <input
+            type="checkbox"
+            class="accent-black"
+            [checked]="selectedPermissions.includes(perm.id)"
+            (change)="onPermissionChange($event, perm.id)"
+          />
+
+          {{ perm.name }}
         </label>
 
-        <label class="flex items-center gap-2 text-[#161616] text-[14px] font-ibm">
-          <input type="checkbox" checked class="accent-black" />
-          Checkbox label
-        </label>
-
-        <label class="flex items-center gap-2 text-[#161616] text-[14px] font-ibm">
-          <input type="checkbox" class="accent-black" />
-          Checkbox label
-        </label>
-
-        <label class="flex items-center gap-2 text-[#161616] text-[14px]">
-          <input type="checkbox" class="accent-black" />
-          Checkbox label
-        </label>
-
-        <label class="flex items-center gap-2 text-[#161616] text-[14px]">
-          <input type="checkbox" class="accent-black" />
-          Checkbox label
-        </label>
-
-        <label class="flex items-center gap-2 text-sm text-[#161616] text-[14px]">
-          <input type="checkbox" class="accent-black" />
-          Checkbox label
-        </label>
       </div>
     </div>
+
   </div>
 
   <!-- Bottom Buttons -->
   <div class="flex justify-end gap-3 mt-10">
-    <button class="border border-red-400 text-red-500 px-6 py-2 text-sm">
+
+    <button
+      (click)="deleteJob()"
+      class="border border-red-400 text-red-500 px-6 py-2 text-sm"
+    >
       Delete
     </button>
 
-    <button class="border border-blue-400 text-blue-500 px-6 py-2 text-sm">
+    <button
+      (click)="resetForm()"
+      class="border border-blue-400 text-blue-500 px-6 py-2 text-sm"
+    >
       Cancel
     </button>
 
-    <button class="bg-blue-600 text-white px-6 py-2 text-sm">
+    <button
+      (click)="saveJob()"
+      class="bg-blue-600 text-white px-6 py-2 text-sm"
+    >
       Save
     </button>
+
   </div>
 
 </div>

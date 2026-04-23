@@ -32,7 +32,7 @@ ngOnInit(): void {
   const slug = localStorage.getItem('tenant_slug');
 
   if (token && slug) {
-    this.router.navigate([`/tenant/${slug}/home`]);
+    this.router.navigate(['/tenant', slug, 'home']);
   }
 }
 
@@ -59,7 +59,7 @@ ngOnInit(): void {
         this.session.setSession(token, slug, user);
 
         // 🚀 redirect
-        this.router.navigate([`/tenant/${slug}/home`]);
+        this.router.navigate(['/tenant', slug, 'home']);
       },
 
       error: (err) => {

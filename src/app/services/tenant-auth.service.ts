@@ -18,10 +18,10 @@ export class TenantAuthService {
 
     return this.http.post<any>(this.apiUrl, body).pipe(
       tap((response) => {
-        if (response && response.access_token) {
+        if (response && response.accessToken) {
 
           // ✅ IMPORTANT: different key from admin
-          localStorage.setItem('tenant_token', response.access_token);
+          localStorage.setItem('tenant_token', response.accessToken);
 
           if (response.user) {
             localStorage.setItem('tenant_user', JSON.stringify(response.user));

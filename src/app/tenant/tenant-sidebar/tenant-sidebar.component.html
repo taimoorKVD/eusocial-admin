@@ -9,7 +9,7 @@
   <div class="overflow-y-auto px-4 py-2 space-y-1">
 
     <!-- HOME -->
-    <a [routerLink]="['/tenant', slug, 'home']" routerLinkActive="text-[#333333] border-l-4 border-blue-500 font-bold"
+    <a [routerLink]="['/tenant',  session.getSlug(), 'home']" routerLinkActive="text-[#333333] border-l-4 border-blue-500 font-bold"
       class="text-[#525252] font-ibm flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100">
 
       <!-- SVG -->
@@ -26,7 +26,7 @@
     </a>
 
     <!-- USER DASHBOARD -->
-    <a [routerLink]="['/tenant', slug, 'user-dashboard']"
+    <a [routerLink]="['/tenant',  session.getSlug(), 'user-dashboard']"
       routerLinkActive="text-[#333333] border-l-4 border-blue-500 font-bold"
       class="text-[#525252] font-ibm flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100">
 
@@ -67,7 +67,7 @@
       <!-- SUB MENU -->
       <div *ngIf="openSetup" class="ml-8 mt-1 space-y-1">
 
-        <a [routerLink]="['/tenant', slug, 'users']"
+        <a [routerLink]="['/tenant', session.getSlug(), 'users']"
           routerLinkActive="text-[#333333] border-l-4 border-blue-500 font-bold"
           class="text-[#525252] font-ibm flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-sm">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -81,7 +81,7 @@
           Users
         </a>
 
-        <a [routerLink]="['/tenant', slug, 'job-position']"
+        <a [routerLink]="['/tenant',  session.getSlug(), 'job-position']"
           routerLinkActive="text-[#333333] border-l-4 border-blue-500 font-bold"
           class="text-[#525252] font-ibm flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-sm">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -95,7 +95,7 @@
           Job Positions
         </a>
 
-        <a [routerLink]="['/tenant', slug, 'item']"
+        <a [routerLink]="['/tenant',  session.getSlug(), 'item']"
           routerLinkActive="text-[#333333] border-l-4 border-blue-500 font-bold"
           class="text-[#525252] font-ibm flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-sm">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -109,7 +109,7 @@
           Items
         </a>
 
-        <a [routerLink]="['/tenant', slug, 'vendor']"
+        <a [routerLink]="['/tenant',  session.getSlug(), 'vendor']"
           routerLinkActive="text-[#333333] border-l-4 border-blue-500 font-bold"
           class="text-[#525252] font-ibm flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-sm">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -123,7 +123,7 @@
           Vendors
         </a>
 
-        <a [routerLink]="['/tenant', slug, 'reporting-group']"
+        <a [routerLink]="['/tenant',  session.getSlug(), 'reporting-group']"
           routerLinkActive="text-[#333333] border-l-4 border-blue-500 font-bold"
           class="text-[#525252] font-ibm flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-sm">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">

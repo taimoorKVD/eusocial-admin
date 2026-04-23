@@ -39,7 +39,7 @@ export class TenantUserService {
     return this.http.delete(`${this.baseUrl}/${id}`);
   }
 
-  getJobPositions() {
+getJobPositions() {
   return this.http.get(this.jobPosition);
 }
 

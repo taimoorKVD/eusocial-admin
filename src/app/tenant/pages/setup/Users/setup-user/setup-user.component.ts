@@ -1,6 +1,6 @@
 import { Component, ElementRef, ViewChild } from '@angular/core';
-import { TenantUserService } from '../../../../services/tenant-user.service';
 import { ToastrService } from 'ngx-toastr';
+import { TenantUserService } from '../../../../../services/tenant-user.service';
 
 @Component({
   selector: 'app-setup-user',
