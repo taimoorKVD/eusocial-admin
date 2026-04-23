@@ -41,30 +41,32 @@ ngOnInit(): void {
     return this.loginForm.controls;
   }
 
-  onSubmit(): void {
+ onSubmit(): void {
+  this.submitted = true;
 
-    this.submitted = true;
-    if (this.loginForm.invalid) return;
+  if (this.loginForm.invalid) return;
 
-    const { email, password } = this.loginForm.value;
+  this.loading = true; // ✅ start loader
 
-    this.tenantAuth.login(email, password).subscribe({
-      next: (res) => {
+  const { email, password } = this.loginForm.value;
 
-        const token = res.accessToken;
-        const slug = res.tenant_slug;
-        const user = res.user;
+  this.tenantAuth.login(email, password).subscribe({
+    next: (res) => {
+      const token = res.accessToken;
+      const slug = res.tenant_slug;
+      const user = res.user;
 
-        // ✅ STORE VIA HELPER
-        this.session.setSession(token, slug, user);
+      this.session.setSession(token, slug, user);
 
-        // 🚀 redirect
-        this.router.navigate(['/tenant', slug, 'home']);
-      },
+      this.router.navigate(['/tenant', slug, 'home']);
 
-      error: (err) => {
-        console.error(err);
-      }
-    });
-  }
+      this.loading = false; // ✅ stop loader
+    },
+
+    error: (err) => {
+      console.error(err);
+      this.loading = false; // ✅ stop loader on error
+    }
+  });
+}
 }
