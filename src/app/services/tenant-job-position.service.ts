@@ -1,12 +1,14 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class TenantJobPositionService {
 
-  private jobPosition = 'http://localhost:3001/api/jobpositions ';
+  private jobPosition = `${environment.tenantApiUrl}/jobpositions`;
+
 
   constructor(private http: HttpClient) {}
 

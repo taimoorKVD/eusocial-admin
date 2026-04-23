@@ -1,14 +1,16 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class TenantUserService {
 
-  private baseUrl = 'http://localhost:3001/api/users';
-  private jobPosition = 'http://localhost:3001/api/jobpositions ';
-  private locations = 'http://localhost:3001/api/locations ';
+  private baseUrl = `${environment.tenantApiUrl}/users`;
+  private jobPosition = `${environment.tenantApiUrl}/jobpositions`;
+  private locations = `${environment.tenantApiUrl}/locations`;
+
 
   constructor(private http: HttpClient) {}
 
