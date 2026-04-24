@@ -1,12 +1,16 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class TenantUserService {
 
-  private baseUrl = 'http://localhost:3001/api/users';
+  private baseUrl = `${environment.tenantApiUrl}/users`;
+  private jobPosition = `${environment.tenantApiUrl}/jobpositions`;
+  private locations = `${environment.tenantApiUrl}/locations`;
+
 
   constructor(private http: HttpClient) {}
 
@@ -21,9 +25,13 @@ export class TenantUserService {
   }
 
   // Optional (future use)
-  createUser(data: any) {
-    return this.http.post(this.baseUrl, data);
-  }
+  // createUser(data: any) {
+  //   return this.http.post(this.baseUrl, data);
+  // }
+
+  createUser(payload: any) {
+  return this.http.post(this.baseUrl, payload);
+}
 
   updateUser(id: number, data: any) {
     return this.http.put(`${this.baseUrl}/${id}`, data);
@@ -32,4 +40,21 @@ export class TenantUserService {
   deleteUser(id: number) {
     return this.http.delete(`${this.baseUrl}/${id}`);
   }
+
+getJobPositions() {
+  return this.http.get(this.jobPosition);
+}
+
+getJobPositionById(id: number) {
+  return this.http.get(`${this.jobPosition}/${id}`);
+}
+
+getLocations() {
+  return this.http.get(this.locations);
+}
+
+getLocationById(id: number) {
+  return this.http.get(`${this.locations}/${id}`);
+}
+
 }

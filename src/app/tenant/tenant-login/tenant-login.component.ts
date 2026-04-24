@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { TenantAuthService } from '../../services/tenant-auth.service';
 import { Router } from '@angular/router';
 import { TenantSessionService } from '../../services/tenant-session.service';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-tenant-login',
@@ -17,7 +18,7 @@ export class TenantLoginComponent {
   loading = false;
   errorMessage = '';
 
-    constructor( private session: TenantSessionService, private fb: FormBuilder, private tenantAuth: TenantAuthService, private router: Router ) {}
+    constructor( private session: TenantSessionService, private fb: FormBuilder, private tenantAuth: TenantAuthService, private router: Router, private toastr: ToastrService ) {}
 
 ngOnInit(): void {
 
@@ -32,7 +33,7 @@ ngOnInit(): void {
   const slug = localStorage.getItem('tenant_slug');
 
   if (token && slug) {
-    this.router.navigate([`/tenant/${slug}/home`]);
+    this.router.navigate(['/tenant', slug, 'home']);
   }
 }
 
@@ -41,30 +42,34 @@ ngOnInit(): void {
     return this.loginForm.controls;
   }
 
-  onSubmit(): void {
+ onSubmit(): void {
+  this.submitted = true;
 
-    this.submitted = true;
-    if (this.loginForm.invalid) return;
+  if (this.loginForm.invalid) return;
 
-    const { email, password } = this.loginForm.value;
+  this.loading = true; // ✅ start loader
 
-    this.tenantAuth.login(email, password).subscribe({
-      next: (res) => {
+  const { email, password } = this.loginForm.value;
 
-        const token = res.accessToken;
-        const slug = res.tenant_slug;
-        const user = res.user;
+  this.tenantAuth.login(email, password).subscribe({
+    next: (res) => {
+      const token = res.accessToken;
+      const slug = res.tenant_slug;
+      const user = res.user;
 
-        // ✅ STORE VIA HELPER
-        this.session.setSession(token, slug, user);
+      this.session.setSession(token, slug, user);
+      this.toastr.success('Login successful');
+      this.router.navigate(['/tenant', slug, 'home']);
+      this.loading = false; // ✅ stop loader
+    },
 
-        // 🚀 redirect
-        this.router.navigate([`/tenant/${slug}/home`]);
-      },
-
-      error: (err) => {
-        console.error(err);
-      }
-    });
-  }
+    error: (err) => {
+      console.error(err);
+      const message =
+      err?.error?.message || 'Invalid credentials';
+      this.toastr.error(message);
+      this.loading = false; // ✅ stop loader on error
+    }
+  });
+}
 }
