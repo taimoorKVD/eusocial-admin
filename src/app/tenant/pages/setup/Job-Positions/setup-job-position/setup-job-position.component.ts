@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
-import { TenantJobPositionService } from '../../../../services/tenant-job-position.service';
+import { TenantJobPositionService } from '../../../../../services/tenant-job-position.service';
+import { ActivatedRoute } from '@angular/router';
 
 @Component({
   selector: 'app-setup-job-position',
@@ -9,7 +10,7 @@ import { TenantJobPositionService } from '../../../../services/tenant-job-positi
   styleUrl: './setup-job-position.component.scss'
 })
 export class SetupJobPositionComponent {
-constructor(private tenantJobPosition: TenantJobPositionService) {}
+constructor(private tenantJobPosition: TenantJobPositionService, private route: ActivatedRoute) {}
   jobPositions: any[] = [];
   selectedJobId: number | null = null;
 
@@ -29,6 +30,12 @@ constructor(private tenantJobPosition: TenantJobPositionService) {}
 
   ngOnInit() {
     this.loadJobPositions();
+    const id = this.route.snapshot.paramMap.get('id');
+
+  if (id) {
+    this.selectedJobId = +id;
+    this.onSelectJob(); // load data
+  }
   }
 
   // 🔹 Load all job positions
@@ -88,10 +95,11 @@ constructor(private tenantJobPosition: TenantJobPositionService) {}
       return;
     }
 
-    const payload = {
-      name: this.jobTitle,
-      permissions: this.selectedPermissions
-    };
+  const payload = {
+    name: this.jobTitle,
+    description: 'Supervises day-to-day floor operations.', // or bind from input
+    permissionIds: this.selectedPermissions
+  };
 
     this.isLoading = true;
 

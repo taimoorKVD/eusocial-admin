@@ -1,5 +1,6 @@
 import { Component, HostListener, EventEmitter, Output} from '@angular/core';
 import { TenantAuthService } from '../../services/tenant-auth.service';
+import { TenantSessionService } from '../../services/tenant-session.service';
 
 @Component({
   selector: 'app-tenant-topbar',
@@ -11,9 +12,13 @@ import { TenantAuthService } from '../../services/tenant-auth.service';
 export class TenantTopbarComponent {
   @Output() toggleSidebar = new EventEmitter<void>();
   dropdownOpen = false;
-  userName = 'Syed Umar';
+  userName: string = '';
 
-  constructor(private tenantAuth: TenantAuthService) {}
+  constructor(private tenantAuth: TenantAuthService, private tenantSession: TenantSessionService) {}
+
+  ngOnInit() {
+  this.userName = this.tenantSession.getSlug() || '';
+}
 
   toggleDropdown() {
     this.dropdownOpen = !this.dropdownOpen;

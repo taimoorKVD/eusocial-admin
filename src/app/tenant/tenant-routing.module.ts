@@ -4,13 +4,14 @@ import { TenantLayoutComponent } from './tenant-layout/tenant-layout.component';
 import { HomeComponent } from './pages/home/home.component';
 import { UserDashboardComponent } from './pages/user-dashboard/user-dashboard.component';
 // import { SetupUserComponent } from './pages/setup/setup-user/setup-user.component';
-import { SetupJobPositionComponent } from './pages/setup/setup-job-position/setup-job-position.component';
+import { SetupJobPositionComponent } from './pages/setup/Job-Positions/setup-job-position/setup-job-position.component';
 import { TenantLoginComponent } from './tenant-login/tenant-login.component';
 import { SetupVendorsComponent } from './pages/setup/setup-vendors/setup-vendors.component';
 import { SetupItems } from './pages/setup/setup-items/setup-items';
 import { SetupReportingGroup } from './pages/setup/setup-reporting-group/setup-reporting-group';
 import { SetupUserComponent } from './pages/setup/Users/setup-user/setup-user.component';
 import { SetupUsersListing } from './pages/setup/Users/setup-users-listing/setup-users-listing';
+import { SetupJobPositionListingComponent } from './pages/setup/Job-Positions/setup-job-position-listing/setup-job-position-listing.component';
 
 const routes: Routes = [
 
@@ -27,14 +28,16 @@ const routes: Routes = [
       { path: 'users/create', component: SetupUserComponent },
       { path: 'users/edit/:id', component: SetupUserComponent },
 
-      { path: 'job-position', component: SetupJobPositionComponent },
+      { path: 'job-position', component: SetupJobPositionListingComponent },
+      { path: 'job-position/create', component: SetupJobPositionComponent },
+      { path: 'job-position/edit/:id', component: SetupJobPositionComponent },
       { path: 'vendor', component: SetupVendorsComponent },
       { path: 'item', component: SetupItems },
       { path: 'reporting-group', component: SetupReportingGroup },
     ]
   },
     // fallback
-  { path: '**', redirectTo: 'login' }
+  { path: '**', redirectTo: '/tenant/login' }
 ];
 
 @NgModule({

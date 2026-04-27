@@ -20,8 +20,10 @@ export class TenantAuthService {
       tap((response) => {
         if (response && response.accessToken) {
 
-          // ✅ IMPORTANT: different key from admin
           localStorage.setItem('tenant_token', response.accessToken);
+
+          // ✅ FIX: store slug
+          localStorage.setItem('tenant_slug', response.tenant_slug);
 
           if (response.user) {
             localStorage.setItem('tenant_user', JSON.stringify(response.user));

@@ -1,6 +1,8 @@
 import { Component, ElementRef, ViewChild } from '@angular/core';
 import { ToastrService } from 'ngx-toastr';
 import { TenantUserService } from '../../../../../services/tenant-user.service';
+import { ActivatedRoute, Router } from '@angular/router';
+import { TenantSessionService } from '../../../../../services/tenant-session.service';
 
 @Component({
   selector: 'app-setup-user',
@@ -11,7 +13,7 @@ import { TenantUserService } from '../../../../../services/tenant-user.service';
 })
 export class SetupUserComponent {
 
-  constructor(private userService: TenantUserService,  private toastr: ToastrService) {}
+constructor(private userService: TenantUserService,  private toastr: ToastrService, private route: ActivatedRoute, private router: Router, private tenantSession : TenantSessionService ) {}
   @ViewChild('firstInput') firstInput!: ElementRef;
   isModalOpen = false;
   modalType: 'delete' | 'exit' | 'save' | null = null;
@@ -24,6 +26,8 @@ export class SetupUserComponent {
   isSubmitted = false;
   emailFormatError = false;
   passwordMismatch = false;
+  mode: 'create' | 'edit' = 'create';
+  editingUserId: number | null = null;
 
   startLoading() {
     this.loadingCount++;
@@ -60,10 +64,68 @@ export class SetupUserComponent {
     availability_days: []
   };
 
+  // ngOnInit(): void {
+  //   this.loadUsers();
+  //   this.loadJobPositions();
+  //  this.loadLocations();
+  // }
+
   ngOnInit(): void {
-    this.loadUsers();
-    this.loadJobPositions();
-   this.loadLocations();
+
+  this.loadUsers();
+  this.loadJobPositions();
+  this.loadLocations();
+
+  this.route.paramMap.subscribe(params => {
+
+    const id = params.get('id');
+
+    if (id) {
+      this.mode = 'edit';
+      this.editingUserId = Number(id);
+      this.selectedUser = Number(id);
+
+      this.loadUserData(Number(id)); // ✅ yahan call hoga
+    } else {
+      this.handleCreateUser();
+    }
+
+  });
+}
+
+  loadUserData(userId: number) {
+
+    this.startLoading();
+
+    this.userService.getUserById(userId).subscribe({
+
+      next: (res: any) => {
+
+        const user = res.data;
+
+        this.formData = {
+          name: user.name,
+          email: user.email,
+          phone_number: user.phoneNumber,
+          address: user.address,
+          username: user.username,
+          password: '',
+          password_confirm: '',
+          job_position_id: user.jobPosition?.id || null,
+          location_id: user.location?.id || null,
+          availability_days: user.availabilityDays || []
+        };
+
+        this.selectedDays = [...(user.availabilityDays || [])];
+
+        this.stopLoading();
+      },
+
+      error: () => {
+        this.toastr.error('Failed to load user');
+        this.stopLoading();
+      }
+    });
   }
 
   loadUsers() {
@@ -111,10 +173,14 @@ export class SetupUserComponent {
 
     if (userId === 'create') {
       this.handleCreateUser();
+      this.mode = 'create';
+      this.editingUserId = null;
       return;
     }
 
     if (!userId) return;
+    this.mode = 'edit';
+    this.editingUserId = userId;
 
     this.userService.getUserById(userId).subscribe((res: any) => {
 
@@ -127,6 +193,7 @@ export class SetupUserComponent {
         address: user.address,
         username: user.username,
         password: '',
+        password_confirm: '',
         job_position_id: user.jobPosition?.id || null,
         location_id: user.location?.id || null,
         availability_days: user.availabilityDays || []
@@ -138,7 +205,11 @@ export class SetupUserComponent {
     });
   }
 
+
+
   handleCreateUser() {
+    this.mode = 'create';
+    this.editingUserId = null;
     this.selectedUser = 'create';
 
     this.formData = {
@@ -153,11 +224,6 @@ export class SetupUserComponent {
       location_id: null,
       availability_days: []
     };
-
-    // focus after DOM update
-    setTimeout(() => {
-      this.firstInput?.nativeElement.focus();
-    });
   }
 
   loadJobPositions() {
@@ -287,68 +353,113 @@ export class SetupUserComponent {
     // ================= SAVE =================
     if (this.modalType === 'save') {
 
-      this.isSubmitted = true;
+  this.isSubmitted = true;
 
-      if (!this.validateForm()) return;
+  if (!this.validateForm()) return;
 
-      if (!this.formData.password) return;
-      if (!this.formData.password_confirm) return;
-      if (this.formData.password !== this.formData.password_confirm) return;
+  // password check sirf CREATE ke liye
+  if (this.mode === 'create') {
+    if (!this.formData.password) return;
+    if (!this.formData.password_confirm) return;
+    if (this.formData.password !== this.formData.password_confirm) return;
+  }
 
-      this.startLoading();
+  this.startLoading();
 
-      const payload = {
-        ...this.formData,
-        role_id: 1,
-        job_position_id: Number(this.formData.job_position_id),
-        location_id: Number(this.formData.location_id),
-        password_confirm: this.formData.password_confirm
-      };
+  const payload = {
+    ...this.formData,
+    role_id: 1,
+    job_position_id: Number(this.formData.job_position_id),
+    location_id: Number(this.formData.location_id),
+    password_confirm: this.formData.password_confirm
+  };
 
-      this.userService.createUser(payload).subscribe({
+  // ================= CREATE =================
+  if (this.mode === 'create') {
 
-        next: (res: any) => {
+    this.userService.createUser(payload).subscribe({
 
-          const newUser = res.data;
+      next: (res: any) => {
 
-          const formattedUser = {
-            label: newUser.name,
-            value: newUser.id
-          };
+        const newUser = res.data;
 
-          this.users = [
-            this.users[0],
-            formattedUser,
-            ...this.users.slice(1)
-          ];
+        const formattedUser = {
+          label: newUser.name,
+          value: newUser.id
+        };
 
-          this.selectedUser = newUser.id;
+        this.users = [
+          this.users[0],
+          formattedUser,
+          ...this.users.slice(1)
+        ];
 
-          this.formData = {
-            name: newUser.name,
-            email: newUser.email,
-            phone_number: newUser.phoneNumber,
-            address: newUser.address,
-            username: newUser.username,
-            password: '',
-            password_confirm: '',
-            job_position_id: newUser.jobPosition?.id || null,
-            location_id: newUser.location?.id || null,
-            availability_days: newUser.availabilityDays || []
-          };
+        this.selectedUser = newUser.id;
 
-          this.closeModal();
-          this.toastr.success('User created successfully'); // ✅ ADD HERE
-          this.stopLoading();
-        },
+        this.formData = {
+          name: newUser.name,
+          email: newUser.email,
+          phone_number: newUser.phoneNumber,
+          address: newUser.address,
+          username: newUser.username,
+          password: '',
+          password_confirm: '',
+          job_position_id: newUser.jobPosition?.id || null,
+          location_id: newUser.location?.id || null,
+          availability_days: newUser.availabilityDays || []
+        };
 
-        error: (err) => {
-          console.error('Create user error:', err);
-          this.toastr.error(err?.error?.message || 'Failed to create user'); // ✅ ADD HERE
-          this.stopLoading();
-        }
-      });
-    }
+        this.closeModal();
+        this.toastr.success('User created successfully');
+        this.stopLoading();
+
+        // this.router.navigate(['/tenant/users']);
+        const slug = this.tenantSession.getSlug();
+        this.router.navigate(['/tenant', slug, 'users']);
+      },
+
+      error: (err) => {
+        console.error('Create user error:', err);
+        this.toastr.error(err?.error?.message || 'Failed to create user');
+        this.stopLoading();
+      }
+    });
+  }
+
+  // ================= UPDATE =================
+  else if (this.mode === 'edit' && this.editingUserId) {
+
+    this.userService.updateUser(this.editingUserId, payload).subscribe({
+
+      next: (res: any) => {
+
+        const updatedUser = res.data;
+
+        // update dropdown label without reload
+        this.users = this.users.map(u =>
+          u.value === updatedUser.id
+            ? { label: updatedUser.name, value: updatedUser.id }
+            : u
+        );
+
+        this.selectedUser = updatedUser.id;
+
+        this.formData.password = '';
+        this.formData.password_confirm = '';
+
+        this.closeModal();
+        this.toastr.success('User updated successfully');
+        this.stopLoading();
+      },
+
+      error: (err) => {
+        console.error('Update user error:', err);
+        this.toastr.error(err?.error?.message || 'Failed to update user');
+        this.stopLoading();
+      }
+    });
+  }
+}
   }
 
   validateForm(): boolean {
