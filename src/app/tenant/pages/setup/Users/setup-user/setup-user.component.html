@@ -9,7 +9,7 @@
   </h2>
   <div class="grid grid-cols-3 mb-[60px]">
     <ng-select [items]="users" bindLabel="label" bindValue="value" [(ngModel)]="selectedUser"
-      (change)="onUserSelect($event)" (clear)="onClearUser()" [clearable]="true" [searchable]="false"
+      (change)="onUserSelect($event)" (clear)="onClearUser()" [clearable]="true" [searchable]="true"
       [placeholder]="!selectedUser ? 'Select User' : ''" class="custom-ng-select">
     </ng-select>
   </div>

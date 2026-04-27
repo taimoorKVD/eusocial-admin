@@ -315,6 +315,11 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
     this.modalType = null;
   }
 
+  redirectToUserListing() {
+  const slug = this.tenantSession.getSlug();
+  this.router.navigate(['/tenant', slug, 'users']);
+  }
+
   confirmAction() {
 
     // ================= DELETE =================
@@ -329,19 +334,20 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
         next: () => {
 
           // ✅ remove user from dropdown
-          this.users = this.users.filter(u => u.value !== this.selectedUser);
+          // this.users = this.users.filter(u => u.value !== this.selectedUser);
 
           // ✅ reset form + selection
-          this.handleCreateUser();
+          // this.handleCreateUser();
 
           this.closeModal();
-          this.toastr.success('User deleted successfully'); // ✅ ADD HERE
+          this.toastr.success('User deleted successfully');
           this.stopLoading();
+          this.redirectToUserListing();
         },
 
         error: (err) => {
           console.error('Delete error:', err);
-          this.toastr.error(err?.error?.message || 'Failed to delete user'); // ✅ ADD HERE
+          this.toastr.error(err?.error?.message || 'Failed to delete user');
           this.stopLoading();
         }
       });
@@ -388,34 +394,35 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
           value: newUser.id
         };
 
-        this.users = [
-          this.users[0],
-          formattedUser,
-          ...this.users.slice(1)
-        ];
+        // this.users = [
+        //   this.users[0],
+        //   formattedUser,
+        //   ...this.users.slice(1)
+        // ];
 
-        this.selectedUser = newUser.id;
+        // this.selectedUser = newUser.id;
 
-        this.formData = {
-          name: newUser.name,
-          email: newUser.email,
-          phone_number: newUser.phoneNumber,
-          address: newUser.address,
-          username: newUser.username,
-          password: '',
-          password_confirm: '',
-          job_position_id: newUser.jobPosition?.id || null,
-          location_id: newUser.location?.id || null,
-          availability_days: newUser.availabilityDays || []
-        };
+        // this.formData = {
+        //   name: newUser.name,
+        //   email: newUser.email,
+        //   phone_number: newUser.phoneNumber,
+        //   address: newUser.address,
+        //   username: newUser.username,
+        //   password: '',
+        //   password_confirm: '',
+        //   job_position_id: newUser.jobPosition?.id || null,
+        //   location_id: newUser.location?.id || null,
+        //   availability_days: newUser.availabilityDays || []
+        // };
 
         this.closeModal();
         this.toastr.success('User created successfully');
         this.stopLoading();
 
+          this.redirectToUserListing(); // ✅ ADD
         // this.router.navigate(['/tenant/users']);
-        const slug = this.tenantSession.getSlug();
-        this.router.navigate(['/tenant', slug, 'users']);
+        // const slug = this.tenantSession.getSlug();
+        // this.router.navigate(['/tenant', slug, 'users']);
       },
 
       error: (err) => {
@@ -436,20 +443,21 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
         const updatedUser = res.data;
 
         // update dropdown label without reload
-        this.users = this.users.map(u =>
-          u.value === updatedUser.id
-            ? { label: updatedUser.name, value: updatedUser.id }
-            : u
-        );
+        // this.users = this.users.map(u =>
+        //   u.value === updatedUser.id
+        //     ? { label: updatedUser.name, value: updatedUser.id }
+        //     : u
+        // );
 
-        this.selectedUser = updatedUser.id;
+        // this.selectedUser = updatedUser.id;
 
-        this.formData.password = '';
-        this.formData.password_confirm = '';
+        // this.formData.password = '';
+        // this.formData.password_confirm = '';
 
         this.closeModal();
         this.toastr.success('User updated successfully');
         this.stopLoading();
+        this.redirectToUserListing();
       },
 
       error: (err) => {
