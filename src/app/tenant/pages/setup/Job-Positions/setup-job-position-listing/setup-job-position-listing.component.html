@@ -1,0 +1,84 @@
+<div class="min-h-screen bg-gray-100 p-6">
+
+  <!-- Loader -->
+  <div *ngIf="isLoading" class="fixed inset-0 bg-white/50 flex items-center justify-center z-50">
+    <div class="text-blue-600 text-lg">Loading...</div>
+  </div>
+
+  <!-- Header -->
+  <div class="flex justify-between items-center mb-6">
+    <h2 class="text-xl font-semibold text-[#161616]">Job Positions</h2>
+
+    <button (click)="goToCreate()" class="bg-blue-600 text-white px-4 py-2 text-sm">
+      + Create
+    </button>
+  </div>
+
+  <!-- Table -->
+  <div class="bg-white rounded shadow overflow-hidden">
+
+    <table class="w-full text-left text-sm">
+
+      <thead class="bg-gray-200 text-gray-700">
+        <tr>
+          <th class="px-4 py-3">ID</th>
+          <th class="px-4 py-3">Name</th>
+          <th class="px-4 py-3">Description</th>
+          <th class="px-4 py-3">Permissions</th>
+          <th class="px-4 py-3 text-right">Action</th>
+        </tr>
+      </thead>
+
+      <tbody>
+
+        <tr *ngFor="let job of jobPositions" class="border-t">
+
+          <td class="px-4 py-3">
+            {{ job.id }}
+          </td>
+
+          <td class="px-4 py-3">
+            {{ job.name }}
+          </td>
+
+          <td class="px-4 py-3">
+            {{ job.description }}
+          </td>
+
+          <td class="px-4 py-3">
+            <span *ngFor="let perm of job.permissions; let last = last"
+              class="inline-block text-xs bg-gray-200 px-2 py-1 mr-1 mb-1">
+              {{ perm.name }}<span *ngIf="!last">,</span>
+            </span>
+          </td>
+
+          <td class="px-4 py-3 text-right space-x-3">
+
+            <!-- Edit -->
+            <button (click)="goToEdit(job.id)" class="text-blue-600 hover:underline text-sm">
+              Edit
+            </button>
+
+            <!-- Delete -->
+            <button (click)="deleteJob(job.id)" class="text-red-500 hover:underline text-sm">
+              Delete
+            </button>
+
+          </td>
+
+        </tr>
+
+        <!-- Empty State -->
+        <tr *ngIf="jobPositions.length === 0">
+          <td colspan="5" class="text-center py-6 text-gray-400">
+            No job positions found
+          </td>
+        </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+</div>

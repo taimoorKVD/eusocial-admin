@@ -72,4 +72,39 @@ ngOnInit(): void {
     }
   });
 }
+
+// onSubmit(): void {
+//   this.submitted = true;
+
+//   if (this.loginForm.invalid) return;
+
+//   this.loading = true;
+
+//   const { email, password } = this.loginForm.value;
+
+//   this.tenantAuth.login(email, password).subscribe({
+//     next: (res) => {
+//       const token = res.accessToken;
+//       const slug = res.tenant_slug;
+//       const user = res.user;
+
+//       this.session.setSession(token, slug, user);
+
+//       // ❌ Toastr removed
+//       // this.toastr.success(res.message);
+
+//       this.router.navigate(['/tenant', slug, 'home']);
+//       this.loading = false;
+//     },
+
+//     error: (err) => {
+//       console.error(err);
+
+//       // ❌ Toastr removed
+//       // this.toastr.error(err?.error?.message);
+
+//       this.loading = false;
+//     }
+//   });
+// }
 }
