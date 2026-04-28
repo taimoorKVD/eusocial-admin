@@ -1,5 +1,5 @@
-<app-eu-social-loader *ngIf="loading"></app-eu-social-loader>
-
+<!-- <app-eu-social-loader *ngIf="loading"></app-eu-social-loader> -->
+<app-eu-loader *ngIf="loading"></app-eu-loader>
 
 <div class="p-6 min-h-screen">
 
@@ -8,48 +8,10 @@
     Create/View Users
   </h2>
   <div class="grid grid-cols-3 mb-[60px]">
-    <!-- <ng-select
-    [items]="users"
-    bindLabel="label"
-    bindValue="value"
-    [(ngModel)]="selectedUser"
-    (ngModelChange)="onUserSelect($event)"
-    [searchable]="true"
-    [clearable]="true"
-    [placeholder]="!selectedUser ? 'Select User' : ''" class="custom-ng-select">
-    </ng-select> -->
-    <!-- <ng-select
-    [items]="users"
-    bindLabel="label"
-    bindValue="value"
-    [(ngModel)]="selectedUser"
-    (change)="onUserSelect($event)"
-    [placeholder]="!selectedUser ? 'Select User' : ''" class="custom-ng-select">
-    </ng-select> -->
-    <!-- <ng-select
-      [items]="users"
-      bindLabel="label"
-      bindValue="value"
-      [(ngModel)]="selectedUser"
-      (change)="onUserSelect($event)"
-      (clear)="onClearUser()"
-      [placeholder]="!selectedUser ? 'Select User' : ''"
-      [clearable]="true"
-      [searchable]="false"
-      class="custom-ng-select">
-    </ng-select> -->
-    <ng-select
-  [items]="users"
-  bindLabel="label"
-  bindValue="value"
-  [(ngModel)]="selectedUser"
-  (change)="onUserSelect($event)"
-  (clear)="onClearUser()"
-  [clearable]="true"
-  [searchable]="false"
-  [placeholder]="!selectedUser ? 'Select User' : ''"
-  class="custom-ng-select">
-</ng-select>
+    <ng-select [items]="users" bindLabel="label" bindValue="value" [(ngModel)]="selectedUser"
+      (change)="onUserSelect($event)" (clear)="onClearUser()" [clearable]="true" [searchable]="true"
+      [placeholder]="!selectedUser ? 'Select User' : ''" class="custom-ng-select">
+    </ng-select>
   </div>
 
   <!-- Contact Info -->
@@ -244,8 +206,7 @@
 
     <div class="flex mt-3 flex-wrap">
 
-      <button *ngFor="let day of availabilityDays" (click)="selectDay(day)" class="px-3 py-2 transition"
-        [ngClass]="
+      <button *ngFor="let day of availabilityDays" (click)="selectDay(day)" class="px-3 py-2 transition" [ngClass]="
         selectedDays.includes(day)
           ? 'bg-white border-t-2 border-[#0069D7] text-[#161616] font-semibold font-ibm text-[11px]'
           : 'bg-gray-200 border-r border-[#8d8d8d] text-[#525252] text-[11px] font-regular border border-transparent'
@@ -271,7 +232,6 @@
     </button>
   </div>
 
-
   <!-- Modal -->
   <div *ngIf="isModalOpen" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
     <div class="bg-white border border-[#0054AC] border-l-[5px] p-6 w-[400px]">
@@ -291,5 +251,4 @@
       </div>
     </div>
   </div>
-
 </div>

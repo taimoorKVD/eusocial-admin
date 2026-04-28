@@ -1,5 +1,7 @@
 import { Component } from '@angular/core';
-import { TenantJobPositionService } from '../../../../services/tenant-job-position.service';
+import { TenantJobPositionService } from '../../../../../services/tenant-job-position.service';
+import { ActivatedRoute, Router } from '@angular/router';
+import { TenantSessionService } from '../../../../../services/tenant-session.service';
 
 @Component({
   selector: 'app-setup-job-position',
@@ -9,7 +11,7 @@ import { TenantJobPositionService } from '../../../../services/tenant-job-positi
   styleUrl: './setup-job-position.component.scss'
 })
 export class SetupJobPositionComponent {
-constructor(private tenantJobPosition: TenantJobPositionService) {}
+constructor(private tenantJobPosition: TenantJobPositionService, private router:Router, private route: ActivatedRoute, private tenantSession: TenantSessionService) {}
   jobPositions: any[] = [];
   selectedJobId: number | null = null;
 
@@ -29,6 +31,12 @@ constructor(private tenantJobPosition: TenantJobPositionService) {}
 
   ngOnInit() {
     this.loadJobPositions();
+    const id = this.route.snapshot.paramMap.get('id');
+
+  if (id) {
+    this.selectedJobId = +id;
+    this.onSelectJob(); // load data
+  }
   }
 
   // 🔹 Load all job positions
@@ -80,6 +88,11 @@ constructor(private tenantJobPosition: TenantJobPositionService) {}
     }
   }
 
+  redirectToListing() {
+  const slug = this.tenantSession.getSlug();
+  this.router.navigate(['/tenant', slug, 'job-position']);
+}
+
   // 🔹 Save (Create / Update)
   saveJob() {
 
@@ -88,10 +101,11 @@ constructor(private tenantJobPosition: TenantJobPositionService) {}
       return;
     }
 
-    const payload = {
-      name: this.jobTitle,
-      permissions: this.selectedPermissions
-    };
+  const payload = {
+    name: this.jobTitle,
+    description: 'Supervises day-to-day floor operations.', // or bind from input
+    permissionIds: this.selectedPermissions
+  };
 
     this.isLoading = true;
 
@@ -101,7 +115,7 @@ constructor(private tenantJobPosition: TenantJobPositionService) {}
         next: () => {
           this.isLoading = false;
           alert('Updated successfully');
-          this.loadJobPositions();
+          this.redirectToListing();
         },
         error: () => {
           this.isLoading = false;
@@ -115,8 +129,7 @@ constructor(private tenantJobPosition: TenantJobPositionService) {}
         next: () => {
           this.isLoading = false;
           alert('Created successfully');
-          this.loadJobPositions();
-          this.resetForm();
+          this.redirectToListing(); // ✅ redirect instead of reset
         },
         error: () => {
           this.isLoading = false;
@@ -148,8 +161,7 @@ constructor(private tenantJobPosition: TenantJobPositionService) {}
       next: () => {
         this.isLoading = false;
         alert('Deleted successfully');
-        this.resetForm();
-        this.loadJobPositions();
+        this.redirectToListing(); // ✅ redirect instead
       },
       error: () => {
         this.isLoading = false;
