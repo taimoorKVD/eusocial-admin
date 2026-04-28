@@ -205,8 +205,6 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
     });
   }
 
-
-
   handleCreateUser() {
     this.mode = 'create';
     this.editingUserId = null;

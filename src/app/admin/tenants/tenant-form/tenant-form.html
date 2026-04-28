@@ -1,43 +1,91 @@
 <div class="user-form container-fluid py-4 px-5">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3 class="fw-semibold mb-0">
-            {{ isEditMode ? 'Edit Tenant' : 'Create Tenant' }}
-        </h3>
-        <button class="btn btn-outline-secondary back-btn" (click)="backToList()">
-            <i class="bi bi-arrow-left me-2"></i> Back
-        </button>
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-semibold mb-0">
+      {{ isEditMode ? 'Edit Tenant' : 'Create Tenant' }}
+    </h3>
+    <button class="btn btn-outline-secondary back-btn" (click)="backToList()">
+      <i class="bi bi-arrow-left me-2"></i> Back
+    </button>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="saveTenant()" class="carbon-form">
+    <h6 class="section-title mb-4">Tenant Information</h6>
+
+    <div class="row gx-5 gy-4">
+      <div class="col-md-6">
+        <div class="form-group">
+          <label>Tenant Name</label>
+          <input type="text" formControlName="name" placeholder="Enter tenant name" />
+          <small class="error" *ngIf="f['name'].touched && f['name'].errors?.['required']">
+            Tenant name is required.
+          </small>
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="form-group">
+          <label>Custom Domain (optional)</label>
+          <input type="text" formControlName="customDomain" placeholder="e.g. mycompany.com" />
+        </div>
+      </div>
     </div>
 
-    <form [formGroup]="form" (ngSubmit)="saveTenant()" class="carbon-form">
-        <h6 class="section-title mb-4">Tenant Information</h6>
-
-        <div class="row gx-5 gy-4">
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label>Tenant Name</label>
-                    <input type="text" formControlName="name" placeholder="Enter tenant name" />
-                    <small class="error" *ngIf="f['name'].touched && f['name'].errors?.['required']">
-                        Tenant name is required.
-                    </small>
-                </div>
-            </div>
-
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label>Custom Domain (optional)</label>
-                    <input type="text" formControlName="customDomain" placeholder="e.g. mycompany.com" />
-                </div>
-            </div>
-        </div>
-
-        <div class="form-actions mt-5 d-flex justify-content-end gap-3">
-            <!-- <button *ngIf="isEditMode" type="button" class="btn btn-outline-danger" (click)="deleteTenant()">
+    <div class="form-actions mt-5 d-flex justify-content-end gap-3">
+      <!-- <button *ngIf="isEditMode" type="button" class="btn btn-outline-danger" (click)="deleteTenant()">
                 Delete
             </button> -->
-            <button type="button" class="btn btn-outline-secondary" (click)="backToList()">Cancel</button>
-            <button *ngIf="!isEditMode" type="submit" class="btn btn-primary">{{ isEditMode ? 'Update' : 'Save' }}</button>
-        </div>
+      <button type="button" class="btn btn-outline-secondary" (click)="backToList()">Cancel</button>
+      <button *ngIf="!isEditMode" type="submit" class="btn btn-primary">{{ isEditMode ? 'Update' : 'Save' }}</button>
+    </div>
 
-        <div *ngIf="message" class="alert alert-info text-center mt-4 small">{{ message }}</div>
-    </form>
+    <div *ngIf="message" class="alert alert-info text-center mt-4 small">{{ message }}</div>
+  </form>
+</div>
+
+<div class="modal-backdrop" *ngIf="showCredentialModal">
+  <div class="custom-modal">
+
+    <h5 class="mb-3">Tenant Credentials</h5>
+
+    <!-- Email -->
+    <div class="mb-3">
+      <label>Email</label>
+      <div class="d-flex gap-2">
+        <input type="text" [value]="generatedEmail" readonly class="form-control" />
+        <button class="btn btn-outline-primary" (click)="copy(generatedEmail)">Copy</button>
+      </div>
+    </div>
+
+    <!-- Password -->
+    <div class="mb-3">
+      <label>Password</label>
+      <div class="d-flex gap-2">
+        <input type="text" [value]="generatedPassword" readonly class="form-control" />
+        <button class="btn btn-outline-primary" (click)="copy(generatedPassword)">Copy</button>
+      </div>
+    </div>
+
+    <p class="small text-muted">
+      Please input email to send tenant login credentials
+    </p>
+
+    <!-- Send -->
+    <div class="d-flex gap-2">
+      <input
+        type="email"
+        [(ngModel)]="sendToEmail"
+        placeholder="Enter email"
+        class="form-control"
+      />
+      <button class="btn btn-success" (click)="sendCredentials()" [disabled]="sending">
+        {{ sending ? 'Sending...' : 'Send' }}
+      </button>
+    </div>
+
+    <!-- Footer -->
+    <div class="mt-4 text-end">
+      <button class="btn btn-primary" (click)="closeModal()">Done</button>
+    </div>
+
+  </div>
 </div>

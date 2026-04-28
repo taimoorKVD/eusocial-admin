@@ -7,9 +7,12 @@
         <!-- Select Userss -->
         <div class="">
           <label class="text-[16px] font-medium text-[#0054AC] font-ibm mt-1 mb-4 block">Vendors</label>
-          <ng-select [items]="vendors" bindLabel="label" bindValue="value" [(ngModel)]="chooseVendor"
+          <!-- <ng-select [items]="vendors" bindLabel="label" bindValue="value" [(ngModel)]="chooseVendor"
             [searchable]="true" [clearable]="true" [placeholder]="!chooseVendor ? 'Choose an option' : ''"
             class="custom-ng-select text-[#161616]">
+          </ng-select> -->
+          <ng-select [items]="vendors" bindLabel="label" bindValue="value" [(ngModel)]="chooseVendor"
+            [clearable]="true" [searchable]="true" (change)="onVendorChange()" class="custom-ng-select">
           </ng-select>
         </div>
       </div>
@@ -24,7 +27,7 @@
     <!-- Form Grid -->
     <div class="grid lg:grid-cols-3 grid-cols-1 gap-x-12 gap-y-6 mb-[24px]">
       <div>
-        <input type="text" placeholder="Placeholder text"
+        <input [(ngModel)]="formData.name" type="text" placeholder="Placeholder text"
           class="px-4 w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent">
         <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">Vendor Name</label>
       </div>
@@ -36,21 +39,21 @@
       <div class="space-y-6">
 
         <div>
-          <input type="text" placeholder="Placeholder text"
+          <input [(ngModel)]="formData.address" type="text" placeholder="Placeholder text"
             class="px-4 w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent">
           <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">Address</label>
         </div>
 
         <div>
 
-          <input type="text" placeholder="Placeholder text"
+          <input [(ngModel)]="formData.city" type="text" placeholder="Placeholder text"
             class="px-4 w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent">
           <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">City</label>
         </div>
 
         <div>
 
-          <input type="text" placeholder="Placeholder text"
+          <input [(ngModel)]="formData.phone_number" type="text" placeholder="Placeholder text"
             class="px-4 w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent">
           <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">Phone Number</label>
         </div>
@@ -75,7 +78,7 @@
         </div>
 
         <div>
-          <input type="email" placeholder="Placeholder text"
+          <input [(ngModel)]="formData.email" type="email" placeholder="Placeholder text"
             class="px-4 w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent">
           <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">Email Address</label>
         </div>
@@ -87,19 +90,19 @@
 
     <div class="grid grid-cols-3 gap-8 mt-4">
       <div>
-        <input placeholder="Contact Person"
+        <input [(ngModel)]="formData.contacts[0].name" placeholder="Contact Person"
           class="px-4 w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent">
         <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">Contact Person</label>
       </div>
 
       <div>
-        <input placeholder="Phone Number"
+        <input [(ngModel)]="formData.contacts[0].phone_number" placeholder="Phone Number"
           class="px-4 w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent">
         <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">Phone Number</label>
       </div>
 
       <div>
-        <input placeholder="Email Address"
+        <input [(ngModel)]="formData.contacts[0].email" placeholder="Email Address"
           class="px-4 w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent">
         <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">Email Address</label>
       </div>
@@ -174,13 +177,11 @@
       <label class="text-[16px] text-[#525252] font-ibm mt-1 block block mb-2">Order Deadline</label>
 
       <div class="flex gap-2 flex-wrap">
-        <button class="px-3 py-1 text-xs bg-gray-200">Monday</button>
-        <button class="px-3 py-1 text-xs bg-gray-200">Tuesday</button>
-        <button class="px-3 py-1 text-xs bg-gray-200">Wednesday</button>
-        <button class="px-3 py-1 text-xs bg-gray-200">Thursday</button>
-        <button class="px-3 py-1 text-xs bg-gray-200">Friday</button>
-        <button class="px-3 py-1 text-xs bg-blue-500 text-white">Saturday</button>
-        <button class="px-3 py-1 text-xs bg-gray-200">Sunday</button>
+        <button *ngFor="let day of ['monday','tuesday','wednesday','thursday','friday','saturday','sunday']"
+          (click)="toggleDay(day)"
+          [ngClass]="formData.order_deadlines.includes(day) ? 'bg-blue-500 text-white' : 'bg-gray-200'">
+          {{ day }}
+        </button>
       </div>
     </div>
 

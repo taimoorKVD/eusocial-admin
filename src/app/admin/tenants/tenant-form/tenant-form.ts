@@ -19,6 +19,14 @@ export class TenantForm {
   loading = false;
   saving = false;
 
+  showCredentialModal = false;
+
+generatedEmail = '';
+generatedPassword = '';
+
+sendToEmail = '';
+sending = false;
+
   constructor(
     private fb: FormBuilder,
     private router: Router,
@@ -55,8 +63,26 @@ export class TenantForm {
     });
   }
 
+  // saveTenant(): void {
+  //   if (this.form.invalid) return;
+  //   const payload = this.form.value;
+
+  //   const request$ = this.isEditMode
+  //     ? this.tenantService.update(this.tenantId, payload)
+  //     : this.tenantService.create(payload);
+
+  //   request$.subscribe({
+  //     next: (res) => {
+  //       this.message = res.message || 'Saved successfully ✅';
+  //       setTimeout(() => this.router.navigate(['/tenants']), 800);
+  //     },
+  //     error: () => (this.message = 'Failed to save tenant ❌'),
+  //   });
+  // }
+
   saveTenant(): void {
     if (this.form.invalid) return;
+
     const payload = this.form.value;
 
     const request$ = this.isEditMode
@@ -64,13 +90,51 @@ export class TenantForm {
       : this.tenantService.create(payload);
 
     request$.subscribe({
-      next: (res) => {
+      next: (res: any) => {
         this.message = res.message || 'Saved successfully ✅';
-        setTimeout(() => this.router.navigate(['/tenants']), 800);
+
+        if (!this.isEditMode) {
+           this.tenantId = res.data?.id; // ✅ REQUIRED
+          // ✅ FIXED PATH
+          this.generatedEmail = res.data?.admin?.email || '';
+          this.generatedPassword = res.data?.admin?.password || '';
+
+          this.showCredentialModal = true;
+        } else {
+          setTimeout(() => this.router.navigate(['/tenants']), 800);
+        }
       },
       error: () => (this.message = 'Failed to save tenant ❌'),
     });
   }
+
+copy(value: string) {
+  navigator.clipboard.writeText(value);
+}
+
+sendCredentials() {
+  if (!this.sendToEmail) return;
+
+  this.sending = true;
+
+  this.tenantService
+    .sendCredentials(this.tenantId, this.sendToEmail)
+    .subscribe({
+      next: () => {
+        this.sending = false;
+        alert('Credentials sent ✅');
+      },
+      error: () => {
+        this.sending = false;
+        alert('Failed ❌');
+      }
+    });
+}
+
+closeModal() {
+  this.showCredentialModal = false;
+  this.router.navigate(['/tenants']);
+}
 
   deleteTenant(): void {
     if (!confirm('Are you sure you want to delete this tenant?')) return;

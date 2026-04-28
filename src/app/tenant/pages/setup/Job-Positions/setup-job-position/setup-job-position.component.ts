@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { TenantJobPositionService } from '../../../../../services/tenant-job-position.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TenantSessionService } from '../../../../../services/tenant-session.service';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-setup-job-position',
@@ -11,7 +12,7 @@ import { TenantSessionService } from '../../../../../services/tenant-session.ser
   styleUrl: './setup-job-position.component.scss'
 })
 export class SetupJobPositionComponent {
-constructor(private tenantJobPosition: TenantJobPositionService, private router:Router, private route: ActivatedRoute, private tenantSession: TenantSessionService) {}
+constructor(private tenantJobPosition: TenantJobPositionService, private router:Router, private route: ActivatedRoute, private tenantSession: TenantSessionService, private toastr: ToastrService,) {}
   jobPositions: any[] = [];
   selectedJobId: number | null = null;
 
@@ -114,12 +115,14 @@ constructor(private tenantJobPosition: TenantJobPositionService, private router:
       this.tenantJobPosition.updateJobPosition(this.selectedJobId, payload).subscribe({
         next: () => {
           this.isLoading = false;
-          alert('Updated successfully');
+          // alert('Updated successfully');
+          this.toastr.success('Job Updated Successfully');
           this.redirectToListing();
         },
-        error: () => {
+        error: (err) => {
           this.isLoading = false;
-          alert('Update failed');
+          this.toastr.error(err?.error?.message || 'Failed to update Job');
+          // alert('Update failed');
         }
       });
 
@@ -128,12 +131,14 @@ constructor(private tenantJobPosition: TenantJobPositionService, private router:
       this.tenantJobPosition.createJobPosition(payload).subscribe({
         next: () => {
           this.isLoading = false;
-          alert('Created successfully');
+          // alert('Created successfully');
+          this.toastr.success('Job Created Successfully');
           this.redirectToListing(); // ✅ redirect instead of reset
         },
-        error: () => {
+        error: (err) => {
           this.isLoading = false;
-          alert('Creation failed');
+          this.toastr.error(err?.error?.message || 'Failed to create Job');
+          // alert('Creation failed');
         }
       });
     }
@@ -146,27 +151,51 @@ constructor(private tenantJobPosition: TenantJobPositionService, private router:
     this.selectedPermissions = [];
   }
 
-  // 🔹 Delete (optional)
   deleteJob() {
-    if (!this.selectedJobId) {
-      alert('Select a job to delete');
-      return;
-    }
-
-    if (!confirm('Are you sure you want to delete this job?')) return;
-
-    this.isLoading = true;
-
-    this.tenantJobPosition.deleteJobPosition(this.selectedJobId).subscribe({
-      next: () => {
-        this.isLoading = false;
-        alert('Deleted successfully');
-        this.redirectToListing(); // ✅ redirect instead
-      },
-      error: () => {
-        this.isLoading = false;
-        alert('Delete failed');
-      }
-    });
+  if (!this.selectedJobId) {
+    this.toastr.warning('Please select a job first');
+    return;
   }
+
+  this.isLoading = true;
+
+  this.tenantJobPosition.deleteJobPosition(this.selectedJobId).subscribe({
+    next: () => {
+      this.isLoading = false;
+      this.toastr.success('Job Deleted Successfully');
+      this.redirectToListing();
+    },
+    error: (err) => {
+      this.isLoading = false;
+      this.toastr.error(err?.error?.message || 'Failed to Delete Job');
+    }
+  });
+  }
+
+  // 🔹 Delete (optional)
+  // deleteJob() {
+  //   if (!this.selectedJobId) {
+  //     alert('Select a job to delete');
+  //     return;
+  //   }
+
+  //   if (!confirm('Are you sure you want to delete this job?')) return;
+
+  //   this.isLoading = true;
+
+  //   this.tenantJobPosition.deleteJobPosition(this.selectedJobId).subscribe({
+  //     next: () => {
+  //       this.isLoading = false;
+  //       this.toastr.success('Job Deleted Successfully');
+  //       // alert('Deleted successfully');
+
+  //       this.redirectToListing(); // ✅ redirect instead
+  //     },
+  //     error: (err) => {
+  //       this.isLoading = false;
+  //       this.toastr.error(err?.error?.message || 'Failed to Delete Job');
+  //       // alert('Delete failed');
+  //     }
+  //   });
+  // }
 }
