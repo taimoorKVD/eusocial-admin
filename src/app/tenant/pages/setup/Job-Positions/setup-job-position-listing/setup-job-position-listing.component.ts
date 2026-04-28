@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { TenantJobPositionService } from '../../../../../services/tenant-job-position.service';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-setup-job-position-listing',
@@ -12,10 +13,7 @@ export class SetupJobPositionListingComponent {
   jobPositions: any[] = [];
   isLoading = false;
 
-  constructor(
-    private tenantJobPosition: TenantJobPositionService,
-    private router: Router
-  ) {}
+  constructor( private tenantJobPosition: TenantJobPositionService, private router: Router, private toastr: ToastrService,) {}
 
   ngOnInit(): void {
     this.loadJobPositions();
@@ -39,9 +37,9 @@ export class SetupJobPositionListingComponent {
 
   deleteJob(id: number) {
 
-  const confirmDelete = confirm('Are you sure you want to delete this job position?');
+  // const confirmDelete = confirm('Are you sure you want to delete this job position?');
 
-  if (!confirmDelete) return;
+  // if (!confirmDelete) return;
 
   this.isLoading = true;
 
@@ -52,11 +50,13 @@ export class SetupJobPositionListingComponent {
       // Remove from UI instantly (no reload needed)
       this.jobPositions = this.jobPositions.filter(job => job.id !== id);
 
-      alert('Deleted successfully');
+      // alert('Deleted successfully');
+      this.toastr.success('Job deleted successfully');
     },
-    error: () => {
+    error: (err) => {
       this.isLoading = false;
       alert('Delete failed');
+      this.toastr.error(err?.error?.message || 'Failed to delete Job');
     }
   });
 }

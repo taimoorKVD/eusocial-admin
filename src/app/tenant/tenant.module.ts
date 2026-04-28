@@ -12,7 +12,7 @@ import { TenantTopbarComponent } from './tenant-topbar/tenant-topbar.component';
 import { UserDashboardComponent } from './pages/user-dashboard/user-dashboard.component';
 import { SetupJobPositionComponent } from './pages/setup/Job-Positions/setup-job-position/setup-job-position.component';
 import { TenantLoginComponent } from './tenant-login/tenant-login.component';
-import { SetupVendorsComponent } from './pages/setup/setup-vendors/setup-vendors.component';
+import { SetupVendorsComponent } from './pages/setup/Vendor/setup-vendors/setup-vendors.component';
 import { SetupItems } from './pages/setup/setup-items/setup-items';
 import { SetupReportingGroup } from './pages/setup/setup-reporting-group/setup-reporting-group';
 import { SetupUserComponent } from './pages/setup/Users/setup-user/setup-user.component';
