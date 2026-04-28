@@ -353,6 +353,13 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
       return; // 🔥 important (stop further execution)
     }
 
+      // ================= EXIT =================
+    if (this.modalType === 'exit') {
+      this.closeModal();
+      this.redirectToUserListing();
+      return;
+    }
+
 
     // ================= SAVE =================
     if (this.modalType === 'save') {
