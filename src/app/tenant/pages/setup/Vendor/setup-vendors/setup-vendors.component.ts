@@ -12,6 +12,8 @@ import { ToastrService } from 'ngx-toastr';
 export class SetupVendorsComponent {
 vendors: any[] = [];
 chooseVendor: number | null = null;
+statesList: any[] = [];
+countriesList: any[] = [];
 
 mode: 'create' | 'edit' = 'create';
 selectedVendorId: number | null = null;
@@ -49,6 +51,20 @@ getEmptyForm() {
 
 ngOnInit() {
   this.loadVendors();
+  this.loadStates();
+  this.loadCountries();
+}
+
+loadStates() {
+  this.vendorService.getStates().subscribe((res: any) => {
+    this.statesList = res.data || res;
+  });
+}
+
+loadCountries() {
+  this.vendorService.getCountries().subscribe((res: any) => {
+    this.countriesList = res.data || res;
+  });
 }
 
 loadVendors() {
@@ -168,6 +184,14 @@ deleteVendor() {
       this.formData = this.getEmptyForm();
     }
   });
+}
+
+cancelForm() {
+  this.chooseVendor = null;
+  this.selectedVendorId = null;
+  this.mode = 'create';
+  this.formData = this.getEmptyForm();
+  this.paymentType = 'COD';
 }
 
 }

@@ -1,3 +1,9 @@
+<!-- <div *ngIf="isLoading" class="fixed inset-0 bg-white/50 flex items-center justify-center z-50">
+  <div class="text-blue-600">Loading...</div>
+</div> -->
+
+
+
 <div class="p-6 min-h-screen vendor">
   <div class="">
 
@@ -11,8 +17,8 @@
             [searchable]="true" [clearable]="true" [placeholder]="!chooseVendor ? 'Choose an option' : ''"
             class="custom-ng-select text-[#161616]">
           </ng-select> -->
-          <ng-select [items]="vendors" bindLabel="label" bindValue="value" [(ngModel)]="chooseVendor"
-            [clearable]="true" [searchable]="true" (change)="onVendorChange()" class="custom-ng-select">
+          <ng-select [items]="vendors" bindLabel="label" bindValue="value" [(ngModel)]="chooseVendor" [clearable]="true"
+            [searchable]="true" (change)="onVendorChange()" class="custom-ng-select">
           </ng-select>
         </div>
       </div>
@@ -62,19 +68,29 @@
       <!-- Right Column -->
       <div class="space-y-6">
         <div>
-          <select
-            class="px-4 w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent">
-            <option>Choose an option</option>
+          <select [(ngModel)]="formData.state_id" name="state_id"
+            class="px-4 w-full border-b border-[#161616] py-3 bg-transparent">
+
+            <option [ngValue]="null">Choose an option</option>
+
+            <option *ngFor="let state of statesList" [ngValue]="state.id">
+              {{ state.name }}
+            </option>
+
           </select>
-          <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">State</label>
+          <label class="text-[12px] text-[#6F6F6F] mt-1 block">State</label>
         </div>
 
         <div>
-          <select
-            class="px-4 w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent">
-            <option>Choose an option</option>
+          <select [(ngModel)]="formData.country_id" name="country_id"
+            class="px-4 w-full border-b border-[#161616] py-3 bg-transparent">
+            <option [ngValue]="null">Choose an option</option>
+            <option *ngFor="let country of countriesList" [ngValue]="country.id">
+              {{ country.name }}
+            </option>
+
           </select>
-          <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">Country</label>
+          <label class="text-[12px] text-[#6F6F6F] mt-1 block">Country</label>
         </div>
 
         <div>
@@ -197,17 +213,23 @@
 
     <!-- Footer Buttons -->
     <div class="flex justify-end gap-3 mt-8">
-      <button class="px-6 py-2 border border-red-500 text-red-500 text-sm">
+
+      <!-- DELETE -->
+      <button (click)="deleteVendor()" class="px-6 py-2 border border-red-500 text-red-500 text-sm">
         Delete
       </button>
 
-      <button class="px-6 py-2 border border-gray-400 text-gray-600 text-sm">
+      <!-- CANCEL -->
+      <button (click)="cancelForm()" class="px-6 py-2 border border-gray-400 text-gray-600 text-sm">
         Cancel
       </button>
 
-      <button class="px-6 py-2 bg-blue-600 text-white text-sm">
+      <!-- SAVE -->
+      <button (click)="saveVendor()" [disabled]="!formData.name"
+        class="px-6 py-2 bg-blue-600 text-white text-sm disabled:opacity-40">
         Save
       </button>
+
     </div>
 
   </div>
