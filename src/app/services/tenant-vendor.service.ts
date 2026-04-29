@@ -7,6 +7,8 @@ import { HttpClient } from '@angular/common/http';
 })
 export class TenantVendorService {
     private vendor = `${environment.tenantApiUrl}/vendors`;
+    private states = `${environment.tenantApiUrl}/states`;
+    private countries = `${environment.tenantApiUrl}/countries`;
 
   constructor(private http: HttpClient) {}
 
@@ -34,4 +36,12 @@ export class TenantVendorService {
   deleteVendor(id: number) {
     return this.http.delete(`${this.vendor}/${id}`);
   }
+
+  getStates() {
+  return this.http.get<any>(this.states);
+}
+
+getCountries() {
+  return this.http.get<any>(this.countries);
+}
 }
