@@ -1,11 +1,11 @@
-<div class="bg-white p-4 rounded-xl shadow-sm">
+<div class="p-4">
 
   <!-- Header -->
   <div class="flex justify-between items-center mb-4">
     <h2 class="text-lg font-semibold text-[#161616]">Users</h2>
 
     <button routerLink="create" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm">
-      + Create User
+      + Create
     </button>
   </div>
 
@@ -15,11 +15,11 @@
   </div>
 
   <!-- Table -->
-  <div *ngIf="!loading && users.length > 0" class="overflow-x-auto">
-    <table class="w-full text-sm text-left border-collapse">
+  <div *ngIf="!loading && users.length > 0" class="bg-white rounded shadow overflow-hidden">
+    <table class="w-full text-left text-sm font-ibm">
 
-      <thead>
-        <tr class="border-b bg-gray-50 text-[#525252]">
+      <thead class="bg-gray-200 text-gray-700">
+        <tr class="">
           <th class="px-4 py-3">ID</th>
           <th class="px-4 py-3">Name</th>
           <th class="px-4 py-3">Email</th>
@@ -31,10 +31,10 @@
         <tr *ngFor="let user of users" class="border-b hover:bg-gray-50">
 
           <td class="px-4 py-3">{{ user.id }}</td>
-          <td class="px-4 py-3 font-medium text-[#161616]">
+          <td class="px-4 py-3">
             {{ user.name }}
           </td>
-          <td class="px-4 py-3 text-[#525252]">
+          <td class="px-4 py-3">
             {{ user.email }}
           </td>
 

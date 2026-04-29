@@ -1,4 +1,4 @@
-<div class="min-h-screen bg-gray-100 p-6">
+<div class="min-h-screen bg-gray-100 p-4">
 
   <!-- Loader -->
   <div *ngIf="isLoading" class="fixed inset-0 bg-white/50 flex items-center justify-center z-50">
@@ -9,7 +9,7 @@
   <div class="flex justify-between items-center mb-6">
     <h2 class="text-xl font-semibold text-[#161616]">Job Positions</h2>
 
-    <button (click)="goToCreate()" class="bg-blue-600 text-white px-4 py-2 text-sm">
+    <button (click)="goToCreate()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm">
       + Create
     </button>
   </div>
@@ -17,14 +17,14 @@
   <!-- Table -->
   <div class="bg-white rounded shadow overflow-hidden">
 
-    <table class="w-full text-left text-sm">
+    <table class="w-full text-left text-sm font-ibm">
 
       <thead class="bg-gray-200 text-gray-700">
         <tr>
           <th class="px-4 py-3">ID</th>
           <th class="px-4 py-3">Name</th>
           <th class="px-4 py-3">Description</th>
-          <th class="px-4 py-3">Permissions</th>
+          <th class="px-4 py-3 w-[360px]">Permissions</th>
           <th class="px-4 py-3 text-right">Action</th>
         </tr>
       </thead>
