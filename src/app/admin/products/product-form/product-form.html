@@ -1,69 +1,69 @@
-<div class="product-form container-fluid py-4 px-5">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3 class="fw-semibold mb-0">
+<div class="product-form p-4 md:px-6 md:py-4">
+    <div class="flex justify-between items-center mb-4">
+        <h3 class="text-xl font-semibold text-gray-800 m-0">
             {{ isEditMode ? 'Edit Product' : 'Add Product' }}
         </h3>
-        <button class="btn btn-outline-secondary" (click)="backToList()">
-            <i class="bi bi-arrow-left me-2"></i> Back
+        <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition duration-150" (click)="backToList()">
+            <i class="bi bi-arrow-left mr-2"></i> Back
         </button>
     </div>
 
-    <form [formGroup]="form" (ngSubmit)="saveProduct()" novalidate>
-        <div class="row gx-4 gy-3">
-            <div class="col-md-6">
+    <form [formGroup]="form" (ngSubmit)="saveProduct()" novalidate class="bg-white rounded-xl shadow-sm p-4 border border-gray-100 space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
                 <div class="form-group">
-                    <label>Product Name</label>
-                    <input type="text" formControlName="name" placeholder="Enter product name" />
-                    <small class="error" *ngIf="f['name'].touched && f['name'].hasError('required')">
+                    <label class="block mb-1 text-sm font-medium text-gray-700">Product Name</label>
+                    <input class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none" type="text" formControlName="name" placeholder="Enter product name" />
+                    <small class="error text-red-600" *ngIf="f['name'].touched && f['name'].hasError('required')">
                         Product name is required.
                     </small>
                 </div>
             </div>
 
-            <div class="col-md-6">
+            <div>
                 <div class="form-group">
-                    <label>Price</label>
-                    <input type="number" formControlName="price" placeholder="Enter price" />
-                    <small class="error" *ngIf="f['price'].touched && f['price'].hasError('required')">
+                    <label class="block mb-1 text-sm font-medium text-gray-700">Price</label>
+                    <input class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none" type="number" formControlName="price" placeholder="Enter price" />
+                    <small class="error text-red-600" *ngIf="f['price'].touched && f['price'].hasError('required')">
                         Price is required.
                     </small>
-                    <small class="error" *ngIf="f['price'].hasError('min')">
+                    <small class="error text-red-600" *ngIf="f['price'].hasError('min')">
                         Price must be greater than 0.
                     </small>
                 </div>
             </div>
 
-            <div class="col-12">
+            <div class="md:col-span-2">
                 <div class="form-group">
-                    <label>Description</label>
-                    <textarea rows="3" formControlName="description" placeholder="Enter description"></textarea>
+                    <label class="block mb-1 text-sm font-medium text-gray-700">Description</label>
+                    <textarea class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none" rows="3" formControlName="description" placeholder="Enter description"></textarea>
                 </div>
             </div>
 
-            <div class="col-md-6">
+            <div>
                 <div class="form-group">
-                    <label>Product Image</label>
-                    <input type="file" accept="image/*" (change)="onFileChange($event)" />
+                    <label class="block mb-1 text-sm font-medium text-gray-700">Product Image</label>
+                    <input class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none" type="file" accept="image/*" (change)="onFileChange($event)" />
                 </div>
             </div>
 
-            <div class="col-md-6" *ngIf="imagePreview">
-                <div class="image-preview text-center">
-                    <img [src]="imagePreview" class="img-thumbnail rounded shadow-sm" alt="Preview" />
+            <div *ngIf="imagePreview">
+                <div class="image-preview flex justify-center md:justify-start">
+                    <img [src]="imagePreview" class="h-24 w-24 object-cover rounded-lg border border-gray-200 shadow-sm" alt="Preview" />
                 </div>
             </div>
         </div>
 
-        <div class="form-actions mt-5 d-flex justify-content-end gap-3">
-            <button type="button" class="btn btn-outline-secondary" (click)="backToList()">
+        <div class="form-actions mt-5 flex justify-end gap-3">
+            <button type="button" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition duration-150" (click)="backToList()">
                 Cancel
             </button>
-            <button type="submit" class="btn btn-primary" [disabled]="loading">
+            <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition duration-150 disabled:opacity-50" [disabled]="loading">
                 {{ isEditMode ? 'Update' : 'Save' }}
             </button>
         </div>
 
-        <div *ngIf="message" class="alert alert-info mt-4 text-center small">
+        <div *ngIf="message" class="mt-4 text-center text-sm text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg py-2 px-3">
             {{ message }}
         </div>
     </form>
