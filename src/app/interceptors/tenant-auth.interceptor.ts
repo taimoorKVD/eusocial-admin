@@ -69,11 +69,11 @@ export class TenantAuthInterceptor implements HttpInterceptor {
     let authReq = req;
 
     // ✅ attach token + tenant slug
-    if (token && slug && !isLoginRequest) {
+    if (token && !isLoginRequest) {
       authReq = req.clone({
         setHeaders: {
           Authorization: `Bearer ${token}`,
-          'X-Tenant-Slug': slug
+          // 'X-Tenant-Slug': slug
         }
       });
     }
