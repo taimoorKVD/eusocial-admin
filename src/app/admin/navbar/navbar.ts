@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit } from '@angular/core';
 import { Auth } from '../../services/auth';
 import { User } from '../../interfaces/user';
 
@@ -10,6 +10,8 @@ import { User } from '../../interfaces/user';
 })
 export class Navbar implements OnInit {
   user: User = null;
+  dropdownOpen = false;
+
   constructor(private auth: Auth) { }
 
   ngOnInit(): void {
@@ -17,7 +19,25 @@ export class Navbar implements OnInit {
   }
 
   logout(): void {
+    this.closeDropdown();
     this.auth.logout();
+  }
+
+  toggleDropdown(): void {
+    this.dropdownOpen = !this.dropdownOpen;
+  }
+
+  closeDropdown(): void {
+    this.dropdownOpen = false;
+  }
+
+  @HostListener('document:click', ['$event'])
+  handleClickOutside(event: Event): void {
+    const target = event.target as HTMLElement;
+
+    if (!target.closest('.profile-dropdown')) {
+      this.closeDropdown();
+    }
   }
 
 }

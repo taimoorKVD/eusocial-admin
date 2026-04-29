@@ -1,90 +1,90 @@
-<div class="user-form container-fluid py-4 px-5">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h3 class="fw-semibold mb-0">
+<div class="user-form p-4 md:px-6 md:py-4">
+  <div class="flex justify-between items-center mb-4">
+    <h3 class="text-xl font-semibold text-gray-800 m-0">
       {{ isEditMode ? 'Edit Tenant' : 'Create Tenant' }}
     </h3>
-    <button class="btn btn-outline-secondary back-btn" (click)="backToList()">
-      <i class="bi bi-arrow-left me-2"></i> Back
+    <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition duration-150" (click)="backToList()">
+      <i class="bi bi-arrow-left mr-2"></i> Back
     </button>
   </div>
 
-  <form [formGroup]="form" (ngSubmit)="saveTenant()" class="carbon-form">
-    <h6 class="section-title mb-4">Tenant Information</h6>
+  <form [formGroup]="form" (ngSubmit)="saveTenant()" class="carbon-form bg-white rounded-xl shadow-sm p-4 border border-gray-100 space-y-4">
+    <h6 class="section-title text-sm font-semibold text-gray-600 uppercase tracking-wide">Tenant Information</h6>
 
-    <div class="row gx-5 gy-4">
-      <div class="col-md-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
         <div class="form-group">
-          <label>Tenant Name</label>
-          <input type="text" formControlName="name" placeholder="Enter tenant name" />
-          <small class="error" *ngIf="f['name'].touched && f['name'].errors?.['required']">
+          <label class="block mb-1 text-sm font-medium text-gray-700">Tenant Name</label>
+          <input class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none" type="text" formControlName="name" placeholder="Enter tenant name" />
+          <small class="error text-red-600" *ngIf="f['name'].touched && f['name'].errors?.['required']">
             Tenant name is required.
           </small>
         </div>
       </div>
 
-      <div class="col-md-6">
+      <div>
         <div class="form-group">
-          <label>Custom Domain (optional)</label>
-          <input type="text" formControlName="customDomain" placeholder="e.g. mycompany.com" />
+          <label class="block mb-1 text-sm font-medium text-gray-700">Custom Domain (optional)</label>
+          <input class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none" type="text" formControlName="customDomain" placeholder="e.g. mycompany.com" />
         </div>
       </div>
     </div>
 
-    <div class="form-actions mt-5 d-flex justify-content-end gap-3">
-      <!-- <button *ngIf="isEditMode" type="button" class="btn btn-outline-danger" (click)="deleteTenant()">
+    <div class="form-actions mt-5 flex justify-end gap-3">
+        <!-- <button *ngIf="isEditMode" type="button" class="text-red-600 hover:text-red-700" (click)="deleteTenant()">
                 Delete
             </button> -->
-      <button type="button" class="btn btn-outline-secondary" (click)="backToList()">Cancel</button>
-      <button *ngIf="!isEditMode" type="submit" class="btn btn-primary">{{ isEditMode ? 'Update' : 'Save' }}</button>
+      <button type="button" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition duration-150" (click)="backToList()">Cancel</button>
+      <button *ngIf="!isEditMode" type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition duration-150">{{ isEditMode ? 'Update' : 'Save' }}</button>
     </div>
 
-    <div *ngIf="message" class="alert alert-info text-center mt-4 small">{{ message }}</div>
+    <div *ngIf="message" class="text-center mt-4 text-sm text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg py-2 px-3">{{ message }}</div>
   </form>
 </div>
 
-<div class="modal-backdrop" *ngIf="showCredentialModal">
-  <div class="custom-modal">
+<div class="fixed inset-0 z-40 bg-black/40 p-4 flex items-center justify-center" *ngIf="showCredentialModal">
+  <div class="custom-modal w-full max-w-lg bg-white rounded-xl shadow-xl border border-gray-100 p-5">
 
-    <h5 class="mb-3">Tenant Credentials</h5>
+    <h5 class="mb-3 text-xl font-semibold text-gray-800">Tenant Credentials</h5>
 
     <!-- Email -->
-    <div class="mb-3">
-      <label>Email</label>
-      <div class="d-flex gap-2">
-        <input type="text" [value]="generatedEmail" readonly class="form-control" />
-        <button class="btn btn-outline-primary" (click)="copy(generatedEmail)">Copy</button>
+    <div class="mb-3 space-y-1">
+      <label class="block text-sm font-medium text-gray-700">Email</label>
+      <div class="flex gap-2">
+        <input type="text" [value]="generatedEmail" readonly class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-700" />
+        <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition duration-150" (click)="copy(generatedEmail)">Copy</button>
       </div>
     </div>
 
     <!-- Password -->
-    <div class="mb-3">
-      <label>Password</label>
-      <div class="d-flex gap-2">
-        <input type="text" [value]="generatedPassword" readonly class="form-control" />
-        <button class="btn btn-outline-primary" (click)="copy(generatedPassword)">Copy</button>
+    <div class="mb-3 space-y-1">
+      <label class="block text-sm font-medium text-gray-700">Password</label>
+      <div class="flex gap-2">
+        <input type="text" [value]="generatedPassword" readonly class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-700" />
+        <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition duration-150" (click)="copy(generatedPassword)">Copy</button>
       </div>
     </div>
 
-    <p class="small text-muted">
+    <p class="text-sm text-gray-500">
       Please input email to send tenant login credentials
     </p>
 
     <!-- Send -->
-    <div class="d-flex gap-2">
+    <div class="flex gap-2">
       <input
         type="email"
         [(ngModel)]="sendToEmail"
         placeholder="Enter email"
-        class="form-control"
+        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
       />
-      <button class="btn btn-success" (click)="sendCredentials()" [disabled]="sending">
+      <button class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition duration-150 disabled:opacity-50" (click)="sendCredentials()" [disabled]="sending">
         {{ sending ? 'Sending...' : 'Send' }}
       </button>
     </div>
 
     <!-- Footer -->
-    <div class="mt-4 text-end">
-      <button class="btn btn-primary" (click)="closeModal()">Done</button>
+    <div class="mt-4 text-right">
+      <button class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition duration-150" (click)="closeModal()">Done</button>
     </div>
 
   </div>
