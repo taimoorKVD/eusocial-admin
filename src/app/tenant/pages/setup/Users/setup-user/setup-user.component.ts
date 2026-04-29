@@ -205,8 +205,6 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
     });
   }
 
-
-
   handleCreateUser() {
     this.mode = 'create';
     this.editingUserId = null;
@@ -353,6 +351,13 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
       });
 
       return; // 🔥 important (stop further execution)
+    }
+
+      // ================= EXIT =================
+    if (this.modalType === 'exit') {
+      this.closeModal();
+      this.redirectToUserListing();
+      return;
     }
 
 

@@ -42,4 +42,12 @@ export class TenantService {
   delete(id: number): Observable<any> {
     return this.http.delete<any>(`${this.baseUrl}/${id}`);
   }
+
+    // ✅ ADD THIS
+sendCredentials(tenantId: number, email: string) {
+  return this.http.post<any>(
+    `${this.baseUrl}/${tenantId}/send-credentials`,
+    { email }
+  );
+}
 }
