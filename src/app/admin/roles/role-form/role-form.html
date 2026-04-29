@@ -1,60 +1,60 @@
-<div class="role-form container-fluid py-4 px-5">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3 class="fw-semibold mb-0">{{ isEditMode ? 'Edit Role' : 'Create Role' }}</h3>
-        <button class="btn btn-outline-secondary back-btn" (click)="backToList()">
-            <i class="bi bi-arrow-left me-2"></i> Back
+<div class="role-form p-4 md:px-6 md:py-4">
+    <div class="flex justify-between items-center mb-4">
+        <h3 class="text-xl font-semibold text-gray-800 m-0">{{ isEditMode ? 'Edit Role' : 'Create Role' }}</h3>
+        <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition duration-150" (click)="backToList()">
+            <i class="bi bi-arrow-left mr-2"></i> Back
         </button>
     </div>
 
-    <form [formGroup]="form" (ngSubmit)="saveRole()" class="carbon-form">
-        <h6 class="section-title mb-4">Role Information</h6>
+    <form [formGroup]="form" (ngSubmit)="saveRole()" class="carbon-form bg-white rounded-xl shadow-sm p-4 border border-gray-100 space-y-4">
+        <h6 class="section-title text-sm font-semibold text-gray-600 uppercase tracking-wide">Role Information</h6>
 
-        <div class="row gx-5 gy-4">
-            <div class="col-md-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
                 <div class="form-group">
-                    <label>Role Name</label>
-                    <input type="text" formControlName="name" placeholder="Enter role name" />
-                    <small class="error" *ngIf="f['name'].touched && f['name'].errors?.['required']">
+                    <label class="block mb-1 text-sm font-medium text-gray-700">Role Name</label>
+                    <input class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none" type="text" formControlName="name" placeholder="Enter role name" />
+                    <small class="error text-red-600" *ngIf="f['name'].touched && f['name'].errors?.['required']">
                         Role name is required.
                     </small>
                 </div>
             </div>
         </div>
 
-        <div class="mt-4">
-            <h6 class="section-title mb-3">Permissions</h6>
+        <div class="mt-4 border-t border-gray-100 pt-4">
+            <h6 class="section-title mb-3 text-sm font-semibold text-gray-600 uppercase tracking-wide">Permissions</h6>
 
-            <div class="row">
-                <div class="col-md-6 mb-4" *ngFor="let group of permissions">
-                    <h6 class="fw-semibold mb-3 text-primary">{{ group.module }} Module</h6>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-gray-50 rounded-xl p-4 border border-gray-100" *ngFor="let group of permissions">
+                    <h6 class="font-semibold mb-3 text-indigo-700">{{ group.module }} Module</h6>
 
-                    <div *ngFor="let p of group.perms" class="form-check form-switch mb-2">
-                        <input class="form-check-input" type="checkbox"
-                            [checked]="form.value.permissions?.includes(p.id)"
-                            (change)="togglePermission(p.id, $event.target.checked)" id="perm-{{ p.id }}" />
-                        <label class="form-check-label" for="perm-{{ p.id }}">
+                    <div *ngFor="let p of group.perms" class="flex items-center justify-between py-2 border-b border-gray-100 last:border-b-0">
+                        <label class="text-sm text-gray-700" for="perm-{{ p.id }}">
                             {{ formatPermissionName(p.name) }}
                         </label>
+                        <input class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" type="checkbox"
+                            [checked]="form.value.permissions?.includes(p.id)"
+                            (change)="togglePermission(p.id, $event.target.checked)" id="perm-{{ p.id }}" />
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="form-actions mt-5 d-flex justify-content-end gap-3">
-            <button *ngIf="isEditMode" type="button" class="btn btn-outline-danger" (click)="deleteRole()">
+        <div class="form-actions mt-5 flex justify-end gap-3">
+            <button *ngIf="isEditMode" type="button" class="text-red-600 hover:text-red-700 hover:bg-red-50 px-4 py-2 rounded-lg transition duration-150" (click)="deleteRole()">
                 Delete
             </button>
 
-            <button type="button" class="btn btn-outline-secondary" (click)="backToList()">
+            <button type="button" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition duration-150" (click)="backToList()">
                 Cancel
             </button>
 
-            <button type="submit" class="btn btn-primary">
+            <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition duration-150">
                 {{ isEditMode ? 'Update' : 'Save' }}
             </button>
         </div>
 
-        <div *ngIf="message" class="alert alert-info text-center mt-4 small">
+        <div *ngIf="message" class="text-center mt-4 text-sm text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg py-2 px-3">
             {{ message }}
         </div>
     </form>
