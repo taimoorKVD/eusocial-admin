@@ -382,8 +382,13 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
     role_id: 1,
     job_position_id: Number(this.formData.job_position_id),
     location_id: Number(this.formData.location_id),
-    password_confirm: this.formData.password_confirm
+    // password_confirm: this.formData.password_confirm
   };
+
+    if (!this.formData.password) {
+    delete payload.password;
+    delete payload.password_confirm;
+  }
 
   // ================= CREATE =================
   if (this.mode === 'create') {
@@ -399,35 +404,11 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
           value: newUser.id
         };
 
-        // this.users = [
-        //   this.users[0],
-        //   formattedUser,
-        //   ...this.users.slice(1)
-        // ];
-
-        // this.selectedUser = newUser.id;
-
-        // this.formData = {
-        //   name: newUser.name,
-        //   email: newUser.email,
-        //   phone_number: newUser.phoneNumber,
-        //   address: newUser.address,
-        //   username: newUser.username,
-        //   password: '',
-        //   password_confirm: '',
-        //   job_position_id: newUser.jobPosition?.id || null,
-        //   location_id: newUser.location?.id || null,
-        //   availability_days: newUser.availabilityDays || []
-        // };
-
         this.closeModal();
         this.toastr.success('User created successfully');
         this.stopLoading();
 
-          this.redirectToUserListing(); // ✅ ADD
-        // this.router.navigate(['/tenant/users']);
-        // const slug = this.tenantSession.getSlug();
-        // this.router.navigate(['/tenant', slug, 'users']);
+          this.redirectToUserListing();
       },
 
       error: (err) => {
@@ -447,18 +428,6 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
 
         const updatedUser = res.data;
 
-        // update dropdown label without reload
-        // this.users = this.users.map(u =>
-        //   u.value === updatedUser.id
-        //     ? { label: updatedUser.name, value: updatedUser.id }
-        //     : u
-        // );
-
-        // this.selectedUser = updatedUser.id;
-
-        // this.formData.password = '';
-        // this.formData.password_confirm = '';
-
         this.closeModal();
         this.toastr.success('User updated successfully');
         this.stopLoading();
@@ -475,31 +444,121 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
 }
   }
 
+  // validateForm(): boolean {
+  //   const f = this.formData;
+
+  //   this.emailFormatError = false;
+  //   this.passwordMismatch = false;
+
+  //   let valid = true;
+
+  //   if (!f.name || !f.email || !f.username || !f.password || !f.password_confirm || !f.address || !f.job_position_id || !f.location_id) {
+  //     valid = false;
+  //   }
+
+  //   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  //   if (f.email && !emailRegex.test(f.email)) {
+  //     this.emailFormatError = true;
+  //     valid = false;
+  //   }
+
+  //   if (f.password && f.password_confirm && f.password !== f.password_confirm) {
+  //     this.passwordMismatch = true;
+  //     valid = false;
+  //   }
+
+  //   return valid;
+  // }
+
   validateForm(): boolean {
-    const f = this.formData;
+  const f = this.formData;
 
-    this.emailFormatError = false;
-    this.passwordMismatch = false;
+  this.emailFormatError = false;
+  this.passwordMismatch = false;
 
-    let valid = true;
+  let valid = true;
 
-    if (!f.name || !f.email || !f.username || !f.password || !f.password_confirm || !f.address || !f.job_position_id || !f.location_id) {
-      valid = false;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (f.email && !emailRegex.test(f.email)) {
-      this.emailFormatError = true;
-      valid = false;
-    }
-
-    if (f.password && f.password_confirm && f.password !== f.password_confirm) {
-      this.passwordMismatch = true;
-      valid = false;
-    }
-
-    return valid;
+  // ✅ Required fields (password remove from here)
+  if (!f.name || !f.email || !f.username || !f.address || !f.job_position_id || !f.location_id) {
+    valid = false;
   }
+
+  // ✅ Email validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (f.email && !emailRegex.test(f.email)) {
+    this.emailFormatError = true;
+    valid = false;
+  }
+
+  // ================= PASSWORD LOGIC =================
+
+  const hasPassword = !!f.password;
+  const hasConfirm = !!f.password_confirm;
+
+  // 🔹 CREATE MODE
+  if (this.mode === 'create') {
+
+    if (!hasPassword || !hasConfirm) {
+      this.toastr.error('Password is required');
+      return false;
+    }
+
+    if (f.password !== f.password_confirm) {
+      this.passwordMismatch = true;
+      return false;
+    }
+  }
+
+  // 🔹 EDIT MODE
+  // if (this.mode === 'edit') {
+
+  //   // ❌ only confirm filled
+  //   if (!hasPassword && hasConfirm) {
+  //     this.toastr.error('Enter new password');
+  //     return false;
+  //   }
+
+  //   // ❌ only password filled
+  //   if (hasPassword && !hasConfirm) {
+  //     this.toastr.error('Confirm new password');
+  //     return false;
+  //   }
+
+  //   // ❌ mismatch
+  //   if (hasPassword && hasConfirm && f.password !== f.password_confirm) {
+  //     this.passwordMismatch = true;
+  //     return false;
+  //   }
+  // }
+
+    // ================= EDIT =================
+  if (this.mode === 'edit') {
+
+    // 🔹 If user starts typing password
+    if (hasPassword || hasConfirm) {
+
+      // ❌ confirm missing
+      if (!hasConfirm) {
+        this.toastr.error('Confirm password is required');
+        return false;
+      }
+
+      // ❌ password missing
+      if (!hasPassword) {
+        this.toastr.error('Enter password');
+        return false;
+      }
+
+      // ❌ mismatch
+      if (f.password !== f.password_confirm) {
+        this.passwordMismatch = true;
+        return false;
+      }
+    }
+  }
+
+  return valid;
+}
 
   onFieldChange() {
 
