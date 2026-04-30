@@ -1,0 +1,111 @@
+<div class="p-6">
+
+  <!-- TITLE -->
+  <h2 class="text-[20px] font-semibold mb-4">Location Management</h2>
+
+  <!-- FORM -->
+  <form [formGroup]="locationForm" (ngSubmit)="submit()" class="bg-white p-5 rounded-xl shadow-sm">
+
+    <div class="grid grid-cols-2 gap-4">
+
+      <!-- NAME -->
+      <div class="flex items-center gap-3">
+        <label class="w-[120px] text-sm text-gray-600">Name</label>
+        <input type="text" formControlName="name"
+          class="flex-1 border rounded-lg px-3 py-2 focus:outline-none">
+      </div>
+
+      <!-- CITY -->
+      <div class="flex items-center gap-3">
+        <label class="w-[120px] text-sm text-gray-600">City</label>
+        <input type="text" formControlName="city"
+          class="flex-1 border rounded-lg px-3 py-2">
+      </div>
+
+      <!-- COUNTRY -->
+      <div class="flex items-center gap-3">
+        <label class="w-[120px] text-sm text-gray-600">Country</label>
+        <input type="text" formControlName="country"
+          class="flex-1 border rounded-lg px-3 py-2">
+      </div>
+
+      <!-- POSTAL -->
+      <div class="flex items-center gap-3">
+        <label class="w-[120px] text-sm text-gray-600">Postal Code</label>
+        <input type="text" formControlName="postalCode"
+          class="flex-1 border rounded-lg px-3 py-2">
+      </div>
+
+      <!-- LAT -->
+      <div class="flex items-center gap-3">
+        <label class="w-[120px] text-sm text-gray-600">Latitude</label>
+        <input type="text" formControlName="latitude"
+          class="flex-1 border rounded-lg px-3 py-2">
+      </div>
+
+      <!-- LNG -->
+      <div class="flex items-center gap-3">
+        <label class="w-[120px] text-sm text-gray-600">Longitude</label>
+        <input type="text" formControlName="longitude"
+          class="flex-1 border rounded-lg px-3 py-2">
+      </div>
+
+    </div>
+
+    <!-- ADDRESS FULL WIDTH -->
+    <div class="flex items-start gap-3 mt-4">
+      <label class="w-[120px] text-sm text-gray-600 pt-2">Address</label>
+      <textarea formControlName="address"
+        class="flex-1 border rounded-lg px-3 py-2 h-[80px] resize-none"></textarea>
+    </div>
+
+    <!-- BUTTONS -->
+    <div class="flex justify-end gap-3 mt-5">
+      <button type="button"
+        (click)="resetForm()"
+        class="px-4 py-2 rounded-lg border text-gray-600">
+        Reset
+      </button>
+
+      <button type="submit"
+        class="px-5 py-2 bg-black text-white rounded-lg">
+        {{ selectedId ? 'Update' : 'Save' }}
+      </button>
+    </div>
+
+  </form>
+
+  <!-- TABLE -->
+  <div class="mt-6 bg-white rounded-xl shadow-sm p-4">
+
+    <h3 class="text-[16px] font-medium mb-3">Locations</h3>
+
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-left border-b">
+          <th class="py-2">Name</th>
+          <th>City</th>
+          <th>Country</th>
+          <th>Postal</th>
+          <th class="text-right">Actions</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr *ngFor="let loc of locations" class="border-b hover:bg-gray-50">
+          <td class="py-2">{{ loc.name }}</td>
+          <td>{{ loc.city }}</td>
+          <td>{{ loc.country }}</td>
+          <td>{{ loc.postalCode }}</td>
+          <td class="text-right space-x-2">
+            <button (click)="editLocation(loc)"
+              class="text-blue-500">Edit</button>
+
+            <button (click)="deleteLocation(loc.id)"
+              class="text-red-500">Delete</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
