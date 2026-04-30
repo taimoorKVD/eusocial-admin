@@ -14,6 +14,7 @@ import { SetupUsersListing } from './pages/setup/Users/setup-users-listing/setup
 import { SetupJobPositionListingComponent } from './pages/setup/Job-Positions/setup-job-position-listing/setup-job-position-listing.component';
 import { LocationComponent } from './pages/extra-management/location/location.component';
 import { LocationListingComponent } from './pages/extra-management/location-listing/location-listing.component';
+import { tenantAuthGuard } from '../guards/tenant-auth-guard';
 
 const routes: Routes = [
 
@@ -24,6 +25,8 @@ const routes: Routes = [
   {
     path: ':slug',
     component: TenantLayoutComponent,
+    canActivate: [tenantAuthGuard],
+    canActivateChild: [tenantAuthGuard],
     children: [
       { path: '', redirectTo: 'home', pathMatch: 'full' },
       { path: 'home', component: HomeComponent },
