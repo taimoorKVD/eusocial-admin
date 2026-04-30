@@ -64,7 +64,7 @@ export class TenantAuthInterceptor implements HttpInterceptor {
     const token = localStorage.getItem('tenant_token');
     const slug = localStorage.getItem('tenant_slug');
 
-    const isLoginRequest = req.url.includes('/tenant/login');
+    const isLoginRequest = /\/login(\?|$)/.test(req.url);
 
     let authReq = req;
 
@@ -83,24 +83,28 @@ export class TenantAuthInterceptor implements HttpInterceptor {
 
         const message = error?.error?.message || '';
 
-        // 🔴 401 → always logout
-        if (error.status === 401) {
-          this.forceLogout('Session expired');
-        }
+        // Only handle auth errors for authenticated requests (not login endpoint, not unauthenticated calls)
+        if (token && !isLoginRequest) {
 
-        // 🔴 403 → smart handling
-        else if (error.status === 403) {
-
-          // tenant/session issue → logout
-          if (
-            message.includes('tenant') ||
-            message.includes('authenticated')
-          ) {
-            this.forceLogout('Session invalid for this tenant');
+          // 🔴 401 → session expired
+          if (error.status === 401) {
+            this.forceLogout('Session expired');
           }
-          else {
-            // permission issue → no logout
-            this.toastr.error('You do not have permission');
+
+          // 🔴 403 → smart handling
+          else if (error.status === 403) {
+
+            // tenant/session issue → logout
+            if (
+              message.includes('tenant') ||
+              message.includes('authenticated')
+            ) {
+              this.forceLogout('Session invalid for this tenant');
+            }
+            else {
+              // permission issue → no logout
+              this.toastr.error('You do not have permission');
+            }
           }
         }
 

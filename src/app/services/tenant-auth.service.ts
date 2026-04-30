@@ -13,10 +13,13 @@ export class TenantAuthService {
 
   constructor(private http: HttpClient, private router: Router) { }
 
-  login(email: string, password: string): Observable<any> {
-    const body = { email, password };
+  login(email: string, password: string, slug?: string): Observable<any> {
+    const body = { email, password, tenant_slug: slug };
+    const normalizedSlug = slug?.trim();
 
-    return this.http.post<any>(this.apiUrl, body).pipe(
+    return this.http.post<any>(this.apiUrl, body, {
+      headers: normalizedSlug ? { 'X-Tenant-Slug': normalizedSlug } : {}
+    }).pipe(
       tap((response) => {
         if (response && response.accessToken) {
 

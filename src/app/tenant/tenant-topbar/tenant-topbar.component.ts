@@ -17,8 +17,17 @@ export class TenantTopbarComponent {
   constructor(private tenantAuth: TenantAuthService, private tenantSession: TenantSessionService) {}
 
   ngOnInit() {
-  this.userName = this.tenantSession.getSlug() || '';
-}
+    // this.userName = this.tenantSession.getSlug() || '';
+    const user = this.tenantSession.getUser();
+    const slug = this.tenantSession.getSlug();
+
+    // Prefer authenticated user identity; keep slug only as fallback.
+    this.userName =
+      user?.name ||
+      user?.email ||
+      slug ||
+      'Tenant User';
+  }
 
   toggleDropdown() {
     this.dropdownOpen = !this.dropdownOpen;
