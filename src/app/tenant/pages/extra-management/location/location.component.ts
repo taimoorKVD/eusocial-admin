@@ -1,6 +1,9 @@
 import { Component } from '@angular/core';
 import { TenantLocationService } from '../../../../services/tenant-location.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
+import { TenantSessionService } from '../../../../services/tenant-session.service';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-location',
@@ -10,24 +13,21 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 })
 export class LocationComponent {
   locationForm!: FormGroup;
-  isLoading = false;
-  locations: any[] = [];
   selectedId: number | null = null;
 
-    constructor(
+  constructor(
     private fb: FormBuilder,
-    private locationService: TenantLocationService
+    private locationService: TenantLocationService,
+    private route: ActivatedRoute,
+    private router: Router,
+    public session: TenantSessionService,
+    private toastr: ToastrService
   ) {}
 
-
   ngOnInit(): void {
-    this.initForm();
-    this.getLocations();
-  }
 
-  initForm() {
     this.locationForm = this.fb.group({
-      name: ['', Validators.required],
+      name: [''],
       address: [''],
       city: [''],
       country: [''],
@@ -35,67 +35,65 @@ export class LocationComponent {
       latitude: [''],
       longitude: ['']
     });
-  }
 
-  // ================= GET =================
-  getLocations() {
-    this.locationService.getLocations().subscribe({
-      next: (res) => {
-        this.locations = res.data || [];
+    // ✅ EDIT MODE
+    this.route.params.subscribe(params => {
+      if (params['id']) {
+        this.selectedId = +params['id'];
+        this.getLocationById(this.selectedId);
       }
     });
   }
 
-  // ================= EDIT =================
-  editLocation(location: any) {
-    this.selectedId = location.id;
-
-    this.locationForm.patchValue(location);
-  }
-
-  // ================= SUBMIT =================
-  submit() {
-    if (this.locationForm.invalid) {
-      this.locationForm.markAllAsTouched();
-      return;
-    }
-
-    this.isLoading = true;
-
-    const payload = this.locationForm.value;
-
-    if (this.selectedId) {
-      // UPDATE
-      this.locationService.updateLocation(this.selectedId, payload).subscribe({
-        next: () => {
-          this.resetForm();
-        },
-        complete: () => this.isLoading = false
-      });
-    } else {
-      // CREATE
-      this.locationService.createLocation(payload).subscribe({
-        next: () => {
-          this.resetForm();
-        },
-        complete: () => this.isLoading = false
-      });
-    }
-  }
-
-  // ================= DELETE =================
-  deleteLocation(id: number) {
-    if (!confirm('Delete this location?')) return;
-
-    this.locationService.deleteLocation(id).subscribe(() => {
-      this.getLocations();
+  getLocationById(id: number) {
+    this.locationService.getLocation(id).subscribe(res => {
+      this.locationForm.patchValue(res.data);
     });
   }
 
-  // ================= RESET =================
-  resetForm() {
-    this.locationForm.reset();
-    this.selectedId = null;
-    this.getLocations();
+  submit() {
+
+    const formValue = this.locationForm.value;
+
+    const payload: any = {
+      ...formValue
+    };
+
+    // remove lat/lng (as you already fixed)
+    delete payload.latitude;
+    delete payload.longitude;
+
+    const redirectToList = () => {
+      this.router.navigate([
+        '/tenant',
+        this.session.getSlug(),
+        'location'
+      ]);
+    };
+
+    // ================= UPDATE =================
+    if (this.selectedId) {
+      this.locationService.updateLocation(this.selectedId, payload).subscribe({
+        next: () => {
+          this.toastr.success('Location updated successfully'); // 👈 HERE
+          redirectToList();
+        }
+      });
+    }
+
+    // ================= CREATE =================
+    else {
+      this.locationService.createLocation(payload).subscribe({
+        next: () => {
+          this.toastr.success('Location created successfully'); // 👈 HERE
+          redirectToList();
+        }
+      });
+    }
   }
+
+  resetForm() {
+  this.locationForm.reset();
+  this.selectedId = null;
+}
 }

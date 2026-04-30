@@ -1,0 +1,60 @@
+<div class="p-6">
+
+  <!-- HEADER -->
+  <div class="flex justify-between items-center mb-4">
+    <h2 class="text-[20px] font-semibold">Locations</h2>
+
+    <button
+      (click)="goToCreate()"
+      class="bg-black text-white px-4 py-2 rounded-lg">
+      + Create Location
+    </button>
+  </div>
+
+  <!-- TABLE -->
+  <div class="bg-white rounded-xl shadow-sm p-4">
+
+    <table class="w-full text-sm">
+
+      <thead>
+        <tr class="border-b text-left">
+          <th class="py-2">Name</th>
+          <th>City</th>
+          <th>Country</th>
+          <th>Postal Code</th>
+          <th class="text-right">Actions</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr *ngFor="let loc of locations" class="border-b hover:bg-gray-50">
+
+          <td class="py-2">{{ loc.name }}</td>
+          <td>{{ loc.city }}</td>
+          <td>{{ loc.country }}</td>
+          <td>{{ loc.postalCode }}</td>
+
+          <td class="text-right space-x-3">
+
+            <button
+              (click)="goToEdit(loc.id)"
+              class="text-blue-500">
+              Edit
+            </button>
+
+            <button
+              (click)="deleteLocation(loc.id)"
+              class="text-red-500">
+              Delete
+            </button>
+
+          </td>
+
+        </tr>
+      </tbody>
+
+    </table>
+
+  </div>
+
+</div>

@@ -74,38 +74,4 @@
     </div>
 
   </form>
-
-  <!-- TABLE -->
-  <div class="mt-6 bg-white rounded-xl shadow-sm p-4">
-
-    <h3 class="text-[16px] font-medium mb-3">Locations</h3>
-
-    <table class="w-full text-sm">
-      <thead>
-        <tr class="text-left border-b">
-          <th class="py-2">Name</th>
-          <th>City</th>
-          <th>Country</th>
-          <th>Postal</th>
-          <th class="text-right">Actions</th>
-        </tr>
-      </thead>
-
-      <tbody>
-        <tr *ngFor="let loc of locations" class="border-b hover:bg-gray-50">
-          <td class="py-2">{{ loc.name }}</td>
-          <td>{{ loc.city }}</td>
-          <td>{{ loc.country }}</td>
-          <td>{{ loc.postalCode }}</td>
-          <td class="text-right space-x-2">
-            <button (click)="editLocation(loc)"
-              class="text-blue-500">Edit</button>
-
-            <button (click)="deleteLocation(loc.id)"
-              class="text-red-500">Delete</button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
 </div>

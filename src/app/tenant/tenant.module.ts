@@ -20,6 +20,7 @@ import { SetupUsersListing } from './pages/setup/Users/setup-users-listing/setup
 import { EuLoaderComponent } from './eu-loader/eu-loader.component';
 import { SetupJobPositionListingComponent } from './pages/setup/Job-Positions/setup-job-position-listing/setup-job-position-listing.component';
 import { LocationComponent } from './pages/extra-management/location/location.component';
+import { LocationListingComponent } from './pages/extra-management/location-listing/location-listing.component';
 
 
 
@@ -38,7 +39,8 @@ import { LocationComponent } from './pages/extra-management/location/location.co
     SetupItems,
     SetupReportingGroup,
     EuLoaderComponent,
-    LocationComponent
+    LocationComponent,
+    LocationListingComponent
   ],
   imports: [
     CommonModule,
