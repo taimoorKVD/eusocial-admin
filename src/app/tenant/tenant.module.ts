@@ -19,6 +19,8 @@ import { SetupUserComponent } from './pages/setup/Users/setup-user/setup-user.co
 import { SetupUsersListing } from './pages/setup/Users/setup-users-listing/setup-users-listing';
 import { EuLoaderComponent } from './eu-loader/eu-loader.component';
 import { SetupJobPositionListingComponent } from './pages/setup/Job-Positions/setup-job-position-listing/setup-job-position-listing.component';
+import { LocationComponent } from './pages/extra-management/location/location.component';
+import { LocationListingComponent } from './pages/extra-management/location-listing/location-listing.component';
 
 
 
@@ -37,6 +39,8 @@ import { SetupJobPositionListingComponent } from './pages/setup/Job-Positions/se
     SetupItems,
     SetupReportingGroup,
     EuLoaderComponent,
+    LocationComponent,
+    LocationListingComponent
   ],
   imports: [
     CommonModule,

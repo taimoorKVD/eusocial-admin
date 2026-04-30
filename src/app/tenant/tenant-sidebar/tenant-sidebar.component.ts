@@ -16,6 +16,7 @@ export class TenantSidebarComponent {
   constructor(private route: ActivatedRoute, public session: TenantSessionService) {}
 
   openSetup = false;
+  openExtraManagement = false;
   openTraining = false;
   // slug: string = '';
 
@@ -27,6 +28,10 @@ export class TenantSidebarComponent {
 
   toggleSetup() {
     this.openSetup = !this.openSetup;
+  }
+
+    toggleExtraManagement() {
+    this.openExtraManagement = !this.openExtraManagement;
   }
 
   toggleTraining() {

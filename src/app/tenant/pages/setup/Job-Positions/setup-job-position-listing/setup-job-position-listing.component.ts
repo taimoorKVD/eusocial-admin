@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { TenantJobPositionService } from '../../../../../services/tenant-job-position.service';
 import { ToastrService } from 'ngx-toastr';
+import { TenantSessionService } from '../../../../../services/tenant-session.service';
 
 @Component({
   selector: 'app-setup-job-position-listing',
@@ -13,7 +14,7 @@ export class SetupJobPositionListingComponent {
   jobPositions: any[] = [];
   isLoading = false;
 
-  constructor( private tenantJobPosition: TenantJobPositionService, private router: Router, private toastr: ToastrService,) {}
+  constructor( private tenantJobPosition: TenantJobPositionService, private router: Router, private toastr: ToastrService, public session: TenantSessionService) {}
 
   ngOnInit(): void {
     this.loadJobPositions();
@@ -62,12 +63,28 @@ export class SetupJobPositionListingComponent {
 }
 
   // 🔹 Navigate to Create
+  // goToCreate() {
+  //   this.router.navigate(['/tenant/eusocial/job-position/create']);
+  // }
+
   goToCreate() {
-    this.router.navigate(['/tenant/eusocial/job-position/create']);
-  }
+  this.router.navigate([
+    '/tenant',
+    this.session.getSlug(),
+    'job-position',
+    'create'
+  ]);
+}
 
   // 🔹 Navigate to Edit
   goToEdit(id: number) {
-    this.router.navigate(['/tenant/eusocial/job-position/edit', id]);
+    // this.router.navigate(['/tenant/eusocial/job-position/edit', id]);
+    this.router.navigate([
+    '/tenant',
+    this.session.getSlug(),
+    'job-position',
+    'edit',
+    id
+  ]);
   }
 }

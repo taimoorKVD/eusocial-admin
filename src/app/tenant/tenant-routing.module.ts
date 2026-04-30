@@ -12,6 +12,8 @@ import { SetupReportingGroup } from './pages/setup/setup-reporting-group/setup-r
 import { SetupUserComponent } from './pages/setup/Users/setup-user/setup-user.component';
 import { SetupUsersListing } from './pages/setup/Users/setup-users-listing/setup-users-listing';
 import { SetupJobPositionListingComponent } from './pages/setup/Job-Positions/setup-job-position-listing/setup-job-position-listing.component';
+import { LocationComponent } from './pages/extra-management/location/location.component';
+import { LocationListingComponent } from './pages/extra-management/location-listing/location-listing.component';
 
 const routes: Routes = [
 
@@ -39,6 +41,11 @@ const routes: Routes = [
 
       { path: 'item', component: SetupItems },
       { path: 'reporting-group', component: SetupReportingGroup },
+
+      { path: 'location', component: LocationListingComponent },
+      { path: 'location/create', component: LocationComponent },
+      { path: 'location/edit/:id', component: LocationComponent },
+
     ]
   },
     // fallback
