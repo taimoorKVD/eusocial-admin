@@ -15,16 +15,15 @@ export class TenantSidebarComponent {
 
   constructor(private route: ActivatedRoute, public session: TenantSessionService) {}
 
-  openSetup = false;
-  openExtraManagement = false;
+  openSetup = true;
+  openExtraManagement = true;
   openTraining = false;
   // slug: string = '';
 
-  // ngOnInit() {
-  //   this.route.firstChild?.paramMap.subscribe(params => {
-  //     this.slug = params.get('slug') || '';
-  //   });
-  // }
+  ngOnInit() {
+    this.openSetup = true;
+    this.openExtraManagement = true;
+  }
 
   toggleSetup() {
     this.openSetup = !this.openSetup;

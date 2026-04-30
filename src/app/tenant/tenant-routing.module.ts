@@ -20,6 +20,8 @@ const routes: Routes = [
 
   // ✅ /tenant/login
   { path: 'login', component: TenantLoginComponent },
+  // ✅ /tenant/:slug/login
+  { path: ':slug/login', component: TenantLoginComponent },
   {
     path: ':slug',
     component: TenantLayoutComponent,
