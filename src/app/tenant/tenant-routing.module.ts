@@ -15,6 +15,7 @@ import { SetupJobPositionListingComponent } from './pages/setup/Job-Positions/se
 import { LocationComponent } from './pages/extra-management/location/location.component';
 import { LocationListingComponent } from './pages/extra-management/location-listing/location-listing.component';
 import { tenantAuthGuard } from '../guards/tenant-auth-guard';
+import { SetupVendorsListingComponent } from './pages/setup/Vendor/setup-vendors-listing/setup-vendors-listing.component';
 
 const routes: Routes = [
 
@@ -40,7 +41,7 @@ const routes: Routes = [
       { path: 'job-position/create', component: SetupJobPositionComponent },
       { path: 'job-position/edit/:id', component: SetupJobPositionComponent },
 
-      { path: 'vendor', component: SetupVendorsComponent },
+      { path: 'vendor', component: SetupVendorsListingComponent },
       { path: 'vendor/create', component: SetupVendorsComponent },
       { path: 'vendor/edit/:id', component: SetupVendorsComponent },
 
