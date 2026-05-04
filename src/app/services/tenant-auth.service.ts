@@ -14,8 +14,12 @@ export class TenantAuthService {
   constructor(private http: HttpClient, private router: Router) { }
 
   login(email: string, password: string, slug?: string): Observable<any> {
-    const body = { email, password, tenant_slug: slug };
     const normalizedSlug = slug?.trim();
+    const body: { email: string; password: string; tenant_slug?: string } = {
+      email,
+      password,
+      ...(normalizedSlug ? { tenant_slug: normalizedSlug } : {})
+    };
 
     return this.http.post<any>(this.apiUrl, body, {
       headers: normalizedSlug ? { 'X-Tenant-Slug': normalizedSlug } : {}
@@ -26,7 +30,9 @@ export class TenantAuthService {
           localStorage.setItem('tenant_token', response.accessToken);
 
           // ✅ FIX: store slug
-          localStorage.setItem('tenant_slug', response.tenant_slug);
+          if (response.tenant_slug) {
+            localStorage.setItem('tenant_slug', response.tenant_slug);
+          }
 
           if (response.user) {
             localStorage.setItem('tenant_user', JSON.stringify(response.user));
