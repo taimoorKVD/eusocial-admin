@@ -57,4 +57,10 @@ getLocationById(id: number) {
   return this.http.get(`${this.locations}/${id}`);
 }
 
+sendCredentials(userId: number, payload: any) {
+  return this.http.post(
+    `${this.baseUrl}/${userId}/send-credentials`,
+    payload
+  );
+}
 }

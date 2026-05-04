@@ -38,6 +38,12 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
   ];
   showPassword = false;
   selectedDays: string[] = [];
+  isCredentialsModalOpen = false;
+  credentialUserId: number | null = null;
+  credentialEmail: string = '';
+  sendEmail: string = '';
+  generatedPassword: string = '';
+
 
   startLoading() {
     this.loadingCount++;
@@ -396,6 +402,10 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
 
         const newUser = res.data;
 
+        this.setCredentials(newUser);
+
+
+
         const formattedUser = {
           label: newUser.name,
           value: newUser.id
@@ -405,7 +415,8 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
         this.toastr.success('User created successfully');
         this.stopLoading();
 
-          this.redirectToUserListing();
+          // this.redirectToUserListing();
+           this.isCredentialsModalOpen = true;
       },
 
       error: (err) => {
@@ -425,10 +436,14 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
 
         const updatedUser = res.data;
 
+         this.setCredentials(updatedUser);
+
         this.closeModal();
+
         this.toastr.success('User updated successfully');
         this.stopLoading();
-        this.redirectToUserListing();
+        // this.redirectToUserListing();
+         this.isCredentialsModalOpen = true;
       },
 
       error: (err) => {
@@ -572,4 +587,88 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
 
     return username ? `${username}@${slug}.com` : '';
   }
+
+  copyText(value: string) {
+  navigator.clipboard.writeText(value);
+  this.toastr.success('Copied');
+}
+
+// sendCredentials() {
+
+//   if (!this.credentialUserId) return;
+
+//   const payload = {
+//     email: this.credentialEmail
+//   };
+
+//   this.userService.sendCredentials(this.credentialUserId, payload).subscribe({
+
+//     next: () => {
+//       this.toastr.success('Credentials sent successfully');
+
+//       this.isCredentialsModalOpen = false;
+
+//       // ✅ FINAL redirect after success
+//       this.redirectToUserListing();
+//     },
+
+//     error: (err) => {
+//       this.toastr.error(err?.error?.message || 'Failed to send credentials');
+//     }
+//   });
+// }
+
+// sendCredentials() {
+
+//   if (!this.credentialUserId) return;
+
+//   const payload = {
+//     email: this.sendEmail
+//   };
+
+//   this.userService.sendCredentials(this.credentialUserId, payload).subscribe({
+
+//     next: () => {
+//       this.toastr.success('Credentials sent successfully');
+//       this.isCredentialsModalOpen = false;
+//       this.redirectToUserListing();
+//     },
+
+//     error: (err) => {
+//       this.toastr.error(err?.error?.message || 'Failed to send credentials');
+//     }
+//   });
+// }
+
+  sendCredentials() {
+
+    if (!this.credentialUserId) return;
+
+    const payload = {
+      recipient_email: this.sendEmail   // ✅ FIXED KEY
+    };
+
+    this.userService.sendCredentials(this.credentialUserId, payload).subscribe({
+
+      next: () => {
+        this.toastr.success('Credentials sent successfully');
+        this.isCredentialsModalOpen = false;
+        this.redirectToUserListing();
+      },
+
+      error: (err) => {
+        this.toastr.error(err?.error?.message || 'Failed to send credentials');
+      }
+    });
+  }
+
+setCredentials(user: any) {
+
+  this.credentialUserId = user.id;
+
+  this.credentialEmail = user.email;
+  this.sendEmail = user.email; // editable send field
+
+  this.generatedPassword = this.formData.password; // from form
+}
 }
