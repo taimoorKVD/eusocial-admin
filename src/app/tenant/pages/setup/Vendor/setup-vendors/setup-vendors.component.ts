@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { TenantVendorService } from '../../../../../services/tenant-vendor.service';
 import { ToastrService } from 'ngx-toastr';
+import { ActivatedRoute } from '@angular/router';
 
 @Component({
   selector: 'app-setup-vendors',
@@ -21,7 +22,7 @@ paymentType: 'COD' | 'EFT' = 'COD';
 
 formData: any = this.getEmptyForm();
 
-constructor(private vendorService: TenantVendorService, private toastr: ToastrService) {}
+constructor(private route: ActivatedRoute,  private vendorService: TenantVendorService, private toastr: ToastrService) {}
 
 getEmptyForm() {
   return {
@@ -49,10 +50,41 @@ getEmptyForm() {
   };
 }
 
-ngOnInit() {
+// ngOnInit() {
+//   this.loadVendors();
+//   this.loadStates();
+//   this.loadCountries();
+// }
+
+ngOnInit(): void {
+
   this.loadVendors();
   this.loadStates();
   this.loadCountries();
+
+  this.route.paramMap.subscribe(params => {
+
+    const id = params.get('id');
+
+    if (id) {
+      this.mode = 'edit';
+      this.selectedVendorId = Number(id);
+      this.chooseVendor = Number(id); // optional (sync dropdown)
+
+      this.loadVendorData(Number(id)); // ✅ SAME AS USERS
+    } else {
+      this.handleCreateVendor();
+    }
+
+  });
+}
+
+handleCreateVendor() {
+  this.mode = 'create';
+  this.selectedVendorId = null;
+  this.chooseVendor = null;
+  this.formData = this.getEmptyForm();
+  this.paymentType = 'COD';
 }
 
 loadStates() {
@@ -76,18 +108,61 @@ loadVendors() {
   });
 }
 
+// onVendorChange() {
+
+//   if (!this.chooseVendor) {
+//     this.mode = 'create';
+//     this.formData = this.getEmptyForm();
+//     return;
+//   }
+
+//   this.mode = 'edit';
+//   this.selectedVendorId = this.chooseVendor;
+
+//   this.vendorService.getVendorById(this.chooseVendor).subscribe((res: any) => {
+
+//     const v = res.data;
+
+//     this.formData = {
+//       name: v.name,
+//       address: v.address,
+//       city: v.city,
+//       email: v.email,
+//       website: v.website,
+//       username: v.username,
+//       instructions: v.instructions,
+//       phone_number: v.phone_number,
+//       country_id: v.country_id,
+//       state_id: v.state_id,
+//       payment_methods: v.payment_methods || [],
+//       min_order: v.min_order,
+//       contacts: v.contacts?.length ? v.contacts : this.getEmptyForm().contacts,
+//       order_deadlines: v.order_deadlines?.map((d: any) => d.day) || []
+//     };
+
+//     // payment toggle sync
+//     this.paymentType = this.formData.payment_methods[0] === 'eft' ? 'EFT' : 'COD';
+//   });
+// }
+
 onVendorChange() {
 
+  // 🔹 CREATE MODE
   if (!this.chooseVendor) {
-    this.mode = 'create';
-    this.formData = this.getEmptyForm();
+    this.handleCreateVendor();
     return;
   }
 
+  // 🔹 EDIT MODE
   this.mode = 'edit';
   this.selectedVendorId = this.chooseVendor;
 
-  this.vendorService.getVendorById(this.chooseVendor).subscribe((res: any) => {
+  this.loadVendorData(this.chooseVendor);
+}
+
+loadVendorData(id: number) {
+
+  this.vendorService.getVendorById(id).subscribe((res: any) => {
 
     const v = res.data;
 
@@ -108,8 +183,8 @@ onVendorChange() {
       order_deadlines: v.order_deadlines?.map((d: any) => d.day) || []
     };
 
-    // payment toggle sync
-    this.paymentType = this.formData.payment_methods[0] === 'eft' ? 'EFT' : 'COD';
+    this.paymentType =
+      this.formData.payment_methods[0] === 'eft' ? 'EFT' : 'COD';
   });
 }
 

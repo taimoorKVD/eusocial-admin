@@ -21,6 +21,7 @@ import { EuLoaderComponent } from './eu-loader/eu-loader.component';
 import { SetupJobPositionListingComponent } from './pages/setup/Job-Positions/setup-job-position-listing/setup-job-position-listing.component';
 import { LocationComponent } from './pages/extra-management/location/location.component';
 import { LocationListingComponent } from './pages/extra-management/location-listing/location-listing.component';
+import { SetupVendorsListingComponent } from './pages/setup/Vendor/setup-vendors-listing/setup-vendors-listing.component';
 
 
 
@@ -36,6 +37,7 @@ import { LocationListingComponent } from './pages/extra-management/location-list
     SetupJobPositionListingComponent,
     TenantLoginComponent,
     SetupVendorsComponent,
+    SetupVendorsListingComponent,
     SetupItems,
     SetupReportingGroup,
     EuLoaderComponent,
