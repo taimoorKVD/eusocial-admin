@@ -20,8 +20,8 @@ const routes: Routes = [
 
   // ✅ /tenant/login
   { path: 'login', component: TenantLoginComponent },
-  // ✅ /tenant/:slug/login
-  { path: ':slug/login', component: TenantLoginComponent },
+  // ✅ legacy URL support: /tenant/:slug/login -> /tenant/login
+  { path: ':slug/login', redirectTo: '/tenant/login', pathMatch: 'full' },
   {
     path: ':slug',
     component: TenantLayoutComponent,
