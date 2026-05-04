@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { TenantAuthService } from '../../services/tenant-auth.service';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Router } from '@angular/router';
 import { TenantSessionService } from '../../services/tenant-session.service';
 import { ToastrService } from 'ngx-toastr';
 
@@ -17,13 +17,10 @@ export class TenantLoginComponent {
   submitted = false;
   loading = false;
   errorMessage = '';
-  routeSlug: string | null = null;
 
-    constructor( private session: TenantSessionService, private fb: FormBuilder, private tenantAuth: TenantAuthService, private router: Router, private route: ActivatedRoute, private toastr: ToastrService ) {}
+    constructor( private session: TenantSessionService, private fb: FormBuilder, private tenantAuth: TenantAuthService, private router: Router, private toastr: ToastrService ) {}
 
 ngOnInit(): void {
-  this.routeSlug = this.route.snapshot.paramMap.get('slug');
-
   // ✅ 1. build form
   this.loginForm = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
@@ -35,11 +32,6 @@ ngOnInit(): void {
   const slug = localStorage.getItem('tenant_slug');
 
   if (token && slug) {
-    if (this.routeSlug && this.routeSlug !== slug) {
-      this.session.clear();
-      return;
-    }
-
     this.router.navigate(['/tenant', slug, 'home']);
   }
 }
@@ -57,21 +49,22 @@ ngOnInit(): void {
   this.loading = true; // ✅ start loader
 
   const { email, password } = this.loginForm.value;
+  const detectedSlug = this.extractTenantSlugFromEmail(email);
 
-  this.tenantAuth.login(email, password, this.routeSlug || undefined).subscribe({
+  if (!detectedSlug) {
+    this.toastr.error('Unable to detect tenant from email domain');
+    this.loading = false;
+    return;
+  }
+
+  this.tenantAuth.login(email, password, detectedSlug).subscribe({
     next: (res) => {
       const token = res.accessToken;
-      const slug = res.tenant_slug || this.routeSlug;
+      const slug = res.tenant_slug || detectedSlug;
       const user = res.user;
 
       if (!slug) {
         this.toastr.error('Tenant slug is missing from login response');
-        this.loading = false;
-        return;
-      }
-
-      if (this.routeSlug && res.tenant_slug && this.routeSlug !== res.tenant_slug) {
-        this.toastr.error('Invalid tenant login URL for this account');
         this.loading = false;
         return;
       }
@@ -90,6 +83,23 @@ ngOnInit(): void {
       this.loading = false; // ✅ stop loader on error
     }
   });
+}
+
+private extractTenantSlugFromEmail(email: string): string | null {
+  if (!email || !email.includes('@')) {
+    return null;
+  }
+
+  const domain = email.split('@')[1]?.trim().toLowerCase();
+
+  if (!domain || !domain.includes('.')) {
+    return null;
+  }
+
+  // Example: user@company.com -> company
+  const slug = domain.split('.')[0]?.trim();
+
+  return slug || null;
 }
 
 // onSubmit(): void {
