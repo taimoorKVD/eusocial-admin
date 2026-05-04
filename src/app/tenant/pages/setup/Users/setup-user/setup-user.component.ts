@@ -645,7 +645,8 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
     if (!this.credentialUserId) return;
 
     const payload = {
-      recipient_email: this.sendEmail   // ✅ FIXED KEY
+      recipient_email: this.sendEmail,
+      password: this.generatedPassword
     };
 
     this.userService.sendCredentials(this.credentialUserId, payload).subscribe({
