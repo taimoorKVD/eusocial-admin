@@ -28,6 +28,16 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
   passwordMismatch = false;
   mode: 'create' | 'edit' = 'create';
   editingUserId: number | null = null;
+  slug: string = '';
+  users: any[] = [];
+  selectedUser: any;
+  jobPositions: any[] = [];
+  locations: any[] = [];
+  availabilityDays = [
+    'Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'
+  ];
+  showPassword = false;
+  selectedDays: string[] = [];
 
   startLoading() {
     this.loadingCount++;
@@ -41,15 +51,6 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
       this.loading = false;
     }
   }
-  users: any[] = [];
-  selectedUser: any;
-  jobPositions: any[] = [];
-  locations: any[] = [];
-  availabilityDays = [
-    'Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'
-  ];
-  showPassword = false;
-  selectedDays: string[] = [];
 
   formData: any = {
     name: '',
@@ -64,17 +65,12 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
     availability_days: []
   };
 
-  // ngOnInit(): void {
-  //   this.loadUsers();
-  //   this.loadJobPositions();
-  //  this.loadLocations();
-  // }
-
   ngOnInit(): void {
 
   this.loadUsers();
   this.loadJobPositions();
   this.loadLocations();
+  this.slug = this.tenantSession.getSlug();
 
   this.route.paramMap.subscribe(params => {
 
@@ -91,7 +87,7 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
     }
 
   });
-}
+  }
 
   loadUserData(userId: number) {
 
@@ -148,24 +144,24 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
     });
   }
 
- onClearUser() {
-  this.selectedUser = null;
+  onClearUser() {
+    this.selectedUser = null;
 
-  this.formData = {
-    name: '',
-    email: '',
-    phone_number: '',
-    address: '',
-    username: '',
-    password: '',
-    password_confirm: '',
-    job_position_id: null,
-    location_id: null,
-    availability_days: []
-  };
+    this.formData = {
+      name: '',
+      email: '',
+      phone_number: '',
+      address: '',
+      username: '',
+      password: '',
+      password_confirm: '',
+      job_position_id: null,
+      location_id: null,
+      availability_days: []
+    };
 
-  this.selectedDays = [];
- }
+    this.selectedDays = [];
+  }
 
   onUserSelect(event: any) {
 
@@ -379,6 +375,7 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
 
   const payload = {
     ...this.formData,
+    email: this.getFullEmail(),
     role_id: 1,
     job_position_id: Number(this.formData.job_position_id),
     location_id: Number(this.formData.location_id),
@@ -444,36 +441,10 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
 }
   }
 
-  // validateForm(): boolean {
-  //   const f = this.formData;
-
-  //   this.emailFormatError = false;
-  //   this.passwordMismatch = false;
-
-  //   let valid = true;
-
-  //   if (!f.name || !f.email || !f.username || !f.password || !f.password_confirm || !f.address || !f.job_position_id || !f.location_id) {
-  //     valid = false;
-  //   }
-
-  //   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  //   if (f.email && !emailRegex.test(f.email)) {
-  //     this.emailFormatError = true;
-  //     valid = false;
-  //   }
-
-  //   if (f.password && f.password_confirm && f.password !== f.password_confirm) {
-  //     this.passwordMismatch = true;
-  //     valid = false;
-  //   }
-
-  //   return valid;
-  // }
-
   validateForm(): boolean {
   const f = this.formData;
 
-  this.emailFormatError = false;
+  // this.emailFormatError = false;
   this.passwordMismatch = false;
 
   let valid = true;
@@ -484,10 +455,32 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
   }
 
   // ✅ Email validation
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (f.email && !emailRegex.test(f.email)) {
+  // const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  // if (f.email && !emailRegex.test(f.email)) {
+  //   this.emailFormatError = true;
+  //   valid = false;
+  // }
+
+  // const usernameRegex = /^[a-zA-Z0-9._]+$/;
+  // if (f.email && !usernameRegex.test(f.email)) {
+  //   this.emailFormatError = true;
+  //   valid = false;
+  // } else {
+  //   this.emailFormatError = false;
+  // }
+  const usernameRegex = /^[a-zA-Z0-9._]+$/;
+
+  // explicitly block @
+  if (f.email && f.email.includes('@')) {
     this.emailFormatError = true;
     valid = false;
+  }
+  else if (f.email && !usernameRegex.test(f.email)) {
+    this.emailFormatError = true;
+    valid = false;
+  }
+  else {
+    this.emailFormatError = false;
   }
 
   // ================= PASSWORD LOGIC =================
@@ -509,27 +502,6 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
     }
   }
 
-  // 🔹 EDIT MODE
-  // if (this.mode === 'edit') {
-
-  //   // ❌ only confirm filled
-  //   if (!hasPassword && hasConfirm) {
-  //     this.toastr.error('Enter new password');
-  //     return false;
-  //   }
-
-  //   // ❌ only password filled
-  //   if (hasPassword && !hasConfirm) {
-  //     this.toastr.error('Confirm new password');
-  //     return false;
-  //   }
-
-  //   // ❌ mismatch
-  //   if (hasPassword && hasConfirm && f.password !== f.password_confirm) {
-  //     this.passwordMismatch = true;
-  //     return false;
-  //   }
-  // }
 
     // ================= EDIT =================
   if (this.mode === 'edit') {
@@ -558,19 +530,46 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
   }
 
   return valid;
-}
+  }
+
+  // onFieldChange() {
+
+  //   // clear email format error when user types
+  //   if (this.formData.email) {
+  //     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  //     this.emailFormatError = emailRegex.test(this.formData.email) ? false : this.emailFormatError;
+  //   }
+
+  //   // password match live check
+  //   if (this.formData.password && this.formData.password_confirm) {
+  //     this.passwordMismatch = this.formData.password === this.formData.password_confirm ? false : true;
+  //   }
+  // }
 
   onFieldChange() {
 
-    // clear email format error when user types
-    if (this.formData.email) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      this.emailFormatError = emailRegex.test(this.formData.email) ? false : this.emailFormatError;
-    }
+    const f = this.formData;
 
-    // password match live check
-    if (this.formData.password && this.formData.password_confirm) {
-      this.passwordMismatch = this.formData.password === this.formData.password_confirm ? false : true;
+    if (f.email !== undefined) {
+
+      // if user typed @ → block it
+      if (f.email.includes('@')) {
+        this.emailFormatError = true;
+        return;
+      }
+
+      const usernameRegex = /^[a-zA-Z0-9._-]+$/;
+
+      this.emailFormatError = f.email ? !usernameRegex.test(f.email) : false;
+
+      // DO NOT build full email here
     }
+  }
+
+  getFullEmail(): string {
+    const username = this.formData.email;
+    const slug = this.tenantSession.getSlug();
+
+    return username ? `${username}@${slug}.com` : '';
   }
 }
