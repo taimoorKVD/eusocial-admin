@@ -26,7 +26,17 @@ export class SetupJobPositionListingComponent {
 
     this.tenantJobPosition.getJobPositions().subscribe({
       next: (res: any) => {
-        this.jobPositions = res.data;
+        const rows = Array.isArray(res?.data) ? res.data : [];
+        this.jobPositions = [...rows].sort((a: any, b: any) => {
+          const aTime = a?.created_at ? new Date(a.created_at).getTime() : 0;
+          const bTime = b?.created_at ? new Date(b.created_at).getTime() : 0;
+
+          if (aTime && bTime && aTime !== bTime) {
+            return bTime - aTime;
+          }
+
+          return (b?.id || 0) - (a?.id || 0);
+        });
         this.isLoading = false;
       },
       error: () => {
@@ -86,5 +96,14 @@ export class SetupJobPositionListingComponent {
     'edit',
     id
   ]);
+  }
+
+  getDescription(job: any): string {
+    return (
+      job?.comment_description ||
+      job?.description ||
+      job?.comment ||
+      '-'
+    );
   }
 }

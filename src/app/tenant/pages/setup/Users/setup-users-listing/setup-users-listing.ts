@@ -25,7 +25,17 @@ export class SetupUsersListing {
 
     this.userService.getUsers().subscribe({
       next: (res: any) => {
-        this.users = res.data || [];
+        const rows = Array.isArray(res?.data) ? res.data : [];
+        this.users = [...rows].sort((a: any, b: any) => {
+          const aTime = a?.created_at ? new Date(a.created_at).getTime() : 0;
+          const bTime = b?.created_at ? new Date(b.created_at).getTime() : 0;
+
+          if (aTime && bTime && aTime !== bTime) {
+            return bTime - aTime;
+          }
+
+          return (b?.id || 0) - (a?.id || 0);
+        });
         this.loading = false;
       },
       error: (err) => {

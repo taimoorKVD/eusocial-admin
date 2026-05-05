@@ -79,6 +79,10 @@
         </label>
 
       </div>
+
+      <p *ngIf="permissionsTouched && selectedPermissions.length === 0" class="text-red-500 text-sm mt-2">
+        Select at least one permission.
+      </p>
     </div>
 
   </div>
