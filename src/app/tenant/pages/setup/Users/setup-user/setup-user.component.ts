@@ -107,7 +107,7 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
 
         this.formData = {
           name: user.name,
-          email: user.email,
+          email: user.email.split('@')[0],
           phone_number: user.phoneNumber,
           address: user.address,
           username: user.username,
@@ -115,10 +115,14 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
           password_confirm: '',
           job_position_id: user.jobPosition?.id || null,
           location_id: user.location?.id || null,
-          availability_days: user.availabilityDays || []
+          // availability_days: user.availabilityDays || []
+            // availability_days: [...(user.availabilityDays || [])]
+          availability_days: Array.isArray(user.availabilityDays)
+          ? [...user.availabilityDays]   // ✅ KEEP ORIGINAL CASE
+          : [],
         };
 
-        this.selectedDays = [...(user.availabilityDays || [])];
+        // this.selectedDays = [...(user.availabilityDays || [])];
 
         this.stopLoading();
       },
@@ -198,11 +202,15 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
         password_confirm: '',
         job_position_id: user.jobPosition?.id || null,
         location_id: user.location?.id || null,
-        availability_days: user.availabilityDays || []
+        // availability_days: user.availability_days || []
+              // 🔥 FIX 2 (normalize + safe)
+      availability_days: Array.isArray(user.availabilityDays)
+        ? user.availabilityDays.map((d: string) => d.toLowerCase())
+        : [],
       };
 
       // ✅ ADD THIS LINE (important)
-      this.selectedDays = [...(user.availabilityDays || [])];
+      // this.selectedDays = [...(user.availabilityDays || [])];
 
     });
   }
@@ -222,7 +230,9 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
       password_confirm: '',
       job_position_id: null,
       location_id: null,
-      availability_days: []
+      availability_days: [],
+      new_password: '',
+      new_password_confirm: ''
     };
   }
 
@@ -251,21 +261,31 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
     });
   }
 
+  // selectDay(day: string) {
+
+  //   const index = this.selectedDays.indexOf(day);
+
+  //   if (index > -1) {
+  //     // remove (inactive)
+  //     this.selectedDays.splice(index, 1);
+  //   } else {
+  //     // add (active)
+  //     this.selectedDays.push(day);
+  //   }
+
+  //   // keep formData in sync
+  //   this.formData.availability_days = [...this.selectedDays];
+  // }
+
   selectDay(day: string) {
+  const index = this.formData.availability_days.indexOf(day);
 
-    const index = this.selectedDays.indexOf(day);
-
-    if (index > -1) {
-      // remove (inactive)
-      this.selectedDays.splice(index, 1);
-    } else {
-      // add (active)
-      this.selectedDays.push(day);
-    }
-
-    // keep formData in sync
-    this.formData.availability_days = [...this.selectedDays];
+  if (index > -1) {
+    this.formData.availability_days.splice(index, 1);
+  } else {
+    this.formData.availability_days.push(day);
   }
+}
 
   togglePassword() {
     this.showPassword = !this.showPassword;
@@ -320,186 +340,305 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
   this.router.navigate(['/tenant', slug, 'users']);
   }
 
-  confirmAction() {
+// confirmAction() {
 
-    // ================= DELETE =================
-    if (this.modalType === 'delete') {
+//   // ================= DELETE =================
+//   if (this.modalType === 'delete') {
 
-      if (!this.selectedUser || this.selectedUser === 'create') return;
+//     if (!this.selectedUser || this.selectedUser === 'create') return;
 
-      this.startLoading();
+//     this.startLoading();
 
-      this.userService.deleteUser(this.selectedUser).subscribe({
+//     this.userService.deleteUser(this.selectedUser).subscribe({
+//       next: () => {
+//         this.closeModal();
+//         this.toastr.success('User deleted successfully');
+//         this.stopLoading();
+//         this.redirectToUserListing();
+//       },
+//       error: (err) => {
+//         console.error('Delete error:', err);
+//         this.toastr.error(err?.error?.message || 'Failed to delete user');
+//         this.stopLoading();
+//       }
+//     });
 
-        next: () => {
+//     return;
+//   }
 
-          // ✅ remove user from dropdown
-          // this.users = this.users.filter(u => u.value !== this.selectedUser);
+//   // ================= EXIT =================
+//   if (this.modalType === 'exit') {
+//     this.closeModal();
+//     this.redirectToUserListing();
+//     return;
+//   }
 
-          // ✅ reset form + selection
-          // this.handleCreateUser();
+//   // ================= SAVE =================
+//   if (this.modalType === 'save') {
+
+//     this.isSubmitted = true;
+
+//     if (!this.validateForm()) return;
+
+//     this.startLoading();
+
+//     const payload: any = {
+//       name: this.formData.name,
+//       username: this.formData.username,
+//       address: this.formData.address,
+//       email: this.getFullEmail(),
+//       role_id: 1,
+//       job_position_id: Number(this.formData.job_position_id),
+//       location_id: Number(this.formData.location_id),
+//     };
+
+//     // ✅ ONLY for CREATE
+//     if (this.mode === 'create') {
+//       payload.password = this.formData.password;
+//       payload.password_confirm = this.formData.password_confirm;
+//     }
+
+//     // ================= CREATE =================
+//     if (this.mode === 'create') {
+
+//       this.userService.createUser(payload).subscribe({
+//         next: (res: any) => {
+
+//           const newUser = res.data;
+
+//           this.setCredentials({
+//             email: payload.email,
+//             password: payload.password
+//           });
+
+//           this.closeModal();
+//           this.toastr.success('User created successfully');
+//           this.stopLoading();
+
+//           this.isCredentialsModalOpen = true;
+//         },
+//         error: (err) => {
+//           console.error('Create user error:', err);
+//           this.toastr.error(err?.error?.message || 'Failed to create user');
+//           this.stopLoading();
+//         }
+//       });
+//     }
+
+//     // ================= UPDATE =================
+//     else if (this.mode === 'edit' && this.editingUserId) {
+
+//       const payload = {
+//         name: this.formData.name,
+//         username: this.formData.username,
+//         address: this.formData.address,
+//         email: this.getFullEmail(),
+//         role_id: 1,
+//         job_position_id: Number(this.formData.job_position_id),
+//         location_id: Number(this.formData.location_id),
+//       };
+
+//       this.userService.updateUser(this.editingUserId, payload).subscribe({
+//         next: (res: any) => {
+
+//           this.setCredentials({
+//             email: payload.email,
+//             password: null
+//           });
+
+//           this.closeModal();
+//           this.toastr.success('User updated successfully');
+//           this.stopLoading();
+
+//           this.isCredentialsModalOpen = true;
+//         },
+
+//         error: (err) => {
+//           console.error('Update user error:', err);
+//           this.toastr.error(err?.error?.message || 'Failed to update user');
+//           this.stopLoading();
+//         }
+//       });
+//     }
+//   }
+// }
+
+confirmAction() {
+
+  // ================= DELETE =================
+  if (this.modalType === 'delete') {
+
+    if (!this.selectedUser || this.selectedUser === 'create') return;
+
+    this.startLoading();
+
+    this.userService.deleteUser(this.selectedUser).subscribe({
+      next: () => {
+        this.closeModal();
+        this.toastr.success('User deleted successfully');
+        this.stopLoading();
+        this.redirectToUserListing();
+      },
+      error: (err) => {
+        console.error('Delete error:', err);
+        this.toastr.error(err?.error?.message || 'Failed to delete user');
+        this.stopLoading();
+      }
+    });
+
+    return;
+  }
+
+  // ================= EXIT =================
+  if (this.modalType === 'exit') {
+    this.closeModal();
+    this.redirectToUserListing();
+    return;
+  }
+
+  // ================= SAVE =================
+  if (this.modalType === 'save') {
+
+    this.isSubmitted = true;
+
+    if (!this.validateForm()) return;
+
+    this.startLoading();
+
+    // ================= BASE PAYLOAD =================
+    const payload: any = {
+      name: this.formData.name,
+      username: this.formData.username,
+      address: this.formData.address,
+      email: this.getFullEmail(),
+      role_id: 1,
+      job_position_id: Number(this.formData.job_position_id),
+      location_id: Number(this.formData.location_id),
+      availability_days: this.formData.availability_days || []
+    };
+
+    // ================= CREATE MODE =================
+    if (this.mode === 'create') {
+
+      payload.password = this.formData.password;
+      payload.password_confirm = this.formData.password_confirm;
+
+      this.userService.createUser(payload).subscribe({
+        next: (res: any) => {
+
+          const newUser = res.data;
+
+          this.setCredentials({
+            email: payload.email,
+            password: payload.password
+          });
 
           this.closeModal();
-          this.toastr.success('User deleted successfully');
+          this.toastr.success('User created successfully');
           this.stopLoading();
-          this.redirectToUserListing();
+
+          this.isCredentialsModalOpen = true;
         },
 
         error: (err) => {
-          console.error('Delete error:', err);
-          this.toastr.error(err?.error?.message || 'Failed to delete user');
+          console.error('Create user error:', err);
+          this.toastr.error(err?.error?.message || 'Failed to create user');
           this.stopLoading();
         }
       });
 
-      return; // 🔥 important (stop further execution)
-    }
-
-      // ================= EXIT =================
-    if (this.modalType === 'exit') {
-      this.closeModal();
-      this.redirectToUserListing();
       return;
     }
 
+    // ================= EDIT MODE =================
+    if (this.mode === 'edit' && this.editingUserId) {
 
-    // ================= SAVE =================
-    if (this.modalType === 'save') {
+      // ✅ OPTIONAL PASSWORD UPDATE
+      const hasNewPassword = this.formData.new_password?.trim();
+      const hasNewConfirm = this.formData.new_password_confirm?.trim();
 
-  this.isSubmitted = true;
+      if (hasNewPassword || hasNewConfirm) {
 
-  if (!this.validateForm()) return;
+        if (!hasNewPassword) {
+          this.toastr.error('New password is required');
+          this.stopLoading();
+          return;
+        }
 
-  // password check sirf CREATE ke liye
-  if (this.mode === 'create') {
-    if (!this.formData.password) return;
-    if (!this.formData.password_confirm) return;
-    if (this.formData.password !== this.formData.password_confirm) return;
-  }
+        if (!hasNewConfirm) {
+          this.toastr.error('Confirm password is required');
+          this.stopLoading();
+          return;
+        }
 
-  this.startLoading();
+        if (this.formData.new_password !== this.formData.new_password_confirm) {
+          this.toastr.error('Passwords do not match');
+          this.stopLoading();
+          return;
+        }
 
-  const payload = {
-    ...this.formData,
-    email: this.getFullEmail(),
-    role_id: 1,
-    job_position_id: Number(this.formData.job_position_id),
-    location_id: Number(this.formData.location_id),
-    // password_confirm: this.formData.password_confirm
-  };
-
-    if (!this.formData.password) {
-    delete payload.password;
-    delete payload.password_confirm;
-  }
-
-  // ================= CREATE =================
-  if (this.mode === 'create') {
-
-    this.userService.createUser(payload).subscribe({
-
-      next: (res: any) => {
-
-        const newUser = res.data;
-
-        this.setCredentials(newUser);
-
-
-
-        const formattedUser = {
-          label: newUser.name,
-          value: newUser.id
-        };
-
-        this.closeModal();
-        this.toastr.success('User created successfully');
-        this.stopLoading();
-
-          // this.redirectToUserListing();
-           this.isCredentialsModalOpen = true;
-      },
-
-      error: (err) => {
-        console.error('Create user error:', err);
-        this.toastr.error(err?.error?.message || 'Failed to create user');
-        this.stopLoading();
+        payload.password = this.formData.new_password;
+        payload.password_confirm = this.formData.new_password_confirm;
       }
-    });
-  }
 
-  // ================= UPDATE =================
-  else if (this.mode === 'edit' && this.editingUserId) {
+      this.userService.updateUser(this.editingUserId, payload).subscribe({
+        next: (res: any) => {
 
-    this.userService.updateUser(this.editingUserId, payload).subscribe({
+          this.setCredentials({
+            email: payload.email,
+            password: payload.password || null
+          });
 
-      next: (res: any) => {
+          // reset optional password fields
+          this.formData.new_password = '';
+          this.formData.new_password_confirm = '';
 
-        const updatedUser = res.data;
+          this.closeModal();
+          this.toastr.success('User updated successfully');
+          this.stopLoading();
 
-         this.setCredentials(updatedUser);
+          this.isCredentialsModalOpen = true;
+        },
 
-        this.closeModal();
-
-        this.toastr.success('User updated successfully');
-        this.stopLoading();
-        // this.redirectToUserListing();
-         this.isCredentialsModalOpen = true;
-      },
-
-      error: (err) => {
-        console.error('Update user error:', err);
-        this.toastr.error(err?.error?.message || 'Failed to update user');
-        this.stopLoading();
-      }
-    });
+        error: (err) => {
+          console.error('Update user error:', err);
+          this.toastr.error(err?.error?.message || 'Failed to update user');
+          this.stopLoading();
+        }
+      });
+    }
   }
 }
-  }
 
-  validateForm(): boolean {
+validateForm(): boolean {
+
   const f = this.formData;
 
-  // this.emailFormatError = false;
   this.passwordMismatch = false;
+  this.emailFormatError = false;
 
   let valid = true;
 
-  // ✅ Required fields (password remove from here)
+  // ================= REQUIRED =================
   if (!f.name || !f.email || !f.username || !f.address || !f.job_position_id || !f.location_id) {
-    valid = false;
+    return false;
   }
 
-  // ✅ Email validation
-  // const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  // if (f.email && !emailRegex.test(f.email)) {
-  //   this.emailFormatError = true;
-  //   valid = false;
-  // }
-
-  // const usernameRegex = /^[a-zA-Z0-9._]+$/;
-  // if (f.email && !usernameRegex.test(f.email)) {
-  //   this.emailFormatError = true;
-  //   valid = false;
-  // } else {
-  //   this.emailFormatError = false;
-  // }
+  // ================= EMAIL =================
   const usernameRegex = /^[a-zA-Z0-9._]+$/;
 
-  // explicitly block @
-  if (f.email && f.email.includes('@')) {
+  // ❌ block @ in username field
+  if (f.email.includes('@')) {
     this.emailFormatError = true;
-    valid = false;
-  }
-  else if (f.email && !usernameRegex.test(f.email)) {
-    this.emailFormatError = true;
-    valid = false;
-  }
-  else {
-    this.emailFormatError = false;
+    return false;
   }
 
-  // ================= PASSWORD LOGIC =================
+  if (!usernameRegex.test(f.email)) {
+    this.emailFormatError = true;
+    return false;
+  }
 
+  // ================= PASSWORD =================
   const hasPassword = !!f.password;
   const hasConfirm = !!f.password_confirm;
 
@@ -517,26 +656,22 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
     }
   }
 
-
-    // ================= EDIT =================
+  // 🔹 EDIT MODE
   if (this.mode === 'edit') {
 
-    // 🔹 If user starts typing password
+    // Only validate if user is typing password
     if (hasPassword || hasConfirm) {
 
-      // ❌ confirm missing
-      if (!hasConfirm) {
-        this.toastr.error('Confirm password is required');
-        return false;
-      }
-
-      // ❌ password missing
       if (!hasPassword) {
         this.toastr.error('Enter password');
         return false;
       }
 
-      // ❌ mismatch
+      if (!hasConfirm) {
+        this.toastr.error('Confirm password is required');
+        return false;
+      }
+
       if (f.password !== f.password_confirm) {
         this.passwordMismatch = true;
         return false;
@@ -545,8 +680,7 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
   }
 
   return valid;
-  }
-
+}
   // onFieldChange() {
 
   //   // clear email format error when user types
@@ -593,52 +727,6 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
   this.toastr.success('Copied');
 }
 
-// sendCredentials() {
-
-//   if (!this.credentialUserId) return;
-
-//   const payload = {
-//     email: this.credentialEmail
-//   };
-
-//   this.userService.sendCredentials(this.credentialUserId, payload).subscribe({
-
-//     next: () => {
-//       this.toastr.success('Credentials sent successfully');
-
-//       this.isCredentialsModalOpen = false;
-
-//       // ✅ FINAL redirect after success
-//       this.redirectToUserListing();
-//     },
-
-//     error: (err) => {
-//       this.toastr.error(err?.error?.message || 'Failed to send credentials');
-//     }
-//   });
-// }
-
-// sendCredentials() {
-
-//   if (!this.credentialUserId) return;
-
-//   const payload = {
-//     email: this.sendEmail
-//   };
-
-//   this.userService.sendCredentials(this.credentialUserId, payload).subscribe({
-
-//     next: () => {
-//       this.toastr.success('Credentials sent successfully');
-//       this.isCredentialsModalOpen = false;
-//       this.redirectToUserListing();
-//     },
-
-//     error: (err) => {
-//       this.toastr.error(err?.error?.message || 'Failed to send credentials');
-//     }
-//   });
-// }
 
   sendCredentials() {
 
