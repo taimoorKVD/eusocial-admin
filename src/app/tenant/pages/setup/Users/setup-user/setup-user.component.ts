@@ -530,7 +530,8 @@ confirmAction() {
 
           this.setCredentials({
             email: payload.email,
-            password: payload.password
+            password: payload.password,
+             userId: newUser.id   // ✅ IMPORTANT
           });
 
           this.closeModal();
@@ -586,6 +587,7 @@ confirmAction() {
 
           this.setCredentials({
             email: payload.email,
+             userId: this.editingUserId,   // ✅ IMPORTANT
             password: payload.password || null
           });
 
@@ -751,13 +753,14 @@ validateForm(): boolean {
     });
   }
 
-setCredentials(user: any) {
+setCredentials(data: any) {
+  this.credentialEmail = data.email;
+  this.generatedPassword = data.password;
 
-  this.credentialUserId = user.id;
+  // ❗ ADD THIS
+  this.credentialUserId = data.userId;
 
-  this.credentialEmail = user.email;
-  this.sendEmail = user.email; // editable send field
-
-  this.generatedPassword = this.formData.password; // from form
+  // optional
+  this.sendEmail = data.email;
 }
 }
