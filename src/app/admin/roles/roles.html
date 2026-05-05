@@ -74,9 +74,9 @@
 
                   <!-- EDIT -->
                   <button [routerLink]="['/roles', role.id, 'edit']" [disabled]="role.name === 'Super Admin'" [ngClass]="{
-        'text-blue-600 hover:text-blue-900': role.name !== 'Super Admin',
-        'text-gray-400 cursor-not-allowed': role.name === 'Super Admin'
-      }" class="transition duration-150" title="Edit role">
+                      'text-blue-600 hover:text-blue-900': role.name !== 'Super Admin',
+                      'text-gray-400 cursor-not-allowed': role.name === 'Super Admin'
+                    }" class="transition duration-150" title="Edit role">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                       stroke="currentColor" class="w-5 h-5">
                       <path stroke-linecap="round" stroke-linejoin="round"
@@ -87,9 +87,9 @@
                   <!-- DELETE -->
                   <button (click)="role.name !== 'Super Admin' && deleteRole(role.id)"
                     [disabled]="role.name === 'Super Admin'" [ngClass]="{
-        'text-red-600 hover:text-red-900': role.name !== 'Super Admin',
-        'text-gray-400 cursor-not-allowed': role.name === 'Super Admin'
-      }" class="transition duration-150" title="Delete role">
+                      'text-red-600 hover:text-red-900': role.name !== 'Super Admin',
+                      'text-gray-400 cursor-not-allowed': role.name === 'Super Admin'
+                    }" class="transition duration-150" title="Delete role">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                       stroke="currentColor" class="w-5 h-5">
                       <path stroke-linecap="round" stroke-linejoin="round"

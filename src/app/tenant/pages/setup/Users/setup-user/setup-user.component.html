@@ -56,8 +56,9 @@
       <!-- <input type="email" [(ngModel)]="formData.email" (ngModelChange)="onFieldChange()" placeholder="*Placeholder text"
         class="px-4 w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent" /> -->
       <input type="text" [(ngModel)]="formData.email" (ngModelChange)="onFieldChange()"
-        class="flex-1 px-2 py-3 focus:outline-none bg-transparent" placeholder="Email" />
-      <span class="text-gray-500 pr-2 absolute top-[10px]">@{{ slug }}.com</span>
+        class="px-4 w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent"
+        placeholder="Email" />
+      <span class="text-gray-500 pr-2 absolute top-[15px] right-0 text-[12px]">@{{ slug }}.com</span>
       <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">Email</label>
       <p *ngIf="isSubmitted && !formData.email" class="text-red-500 text-sm mt-1">
         Email is required
@@ -170,6 +171,20 @@
     </div>
   </div>
 
+  <div *ngIf="mode === 'edit'" class="grid grid-cols-3 gap-10 mb-[30px]">
+    <div>
+      <input type="password" [(ngModel)]="formData.new_password" placeholder="New Password"
+        class="px-4 w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent" />
+      <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">New Password</label>
+    </div>
+
+    <div>
+      <input type="password" [(ngModel)]="formData.new_password_confirm" placeholder="Confirm New Password"
+        class="px-4 w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent" />
+      <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">Confirm New Password</label>
+    </div>
+  </div>
+
   <div class="grid grid-cols-3 gap-10 mb-[30px]">
 
     <!-- Job Position Dropdown -->
@@ -209,11 +224,18 @@
 
     <div class="flex mt-3 flex-wrap">
 
-      <button *ngFor="let day of availabilityDays" (click)="selectDay(day)" class="px-3 py-2 transition" [ngClass]="
+      <!-- <button *ngFor="let day of availabilityDays" (click)="selectDay(day)" class="px-3 py-2 transition" [ngClass]="
         selectedDays.includes(day)
           ? 'bg-white border-t-2 border-[#0069D7] text-[#161616] font-semibold font-ibm text-[11px]'
           : 'bg-gray-200 border-r border-[#8d8d8d] text-[#525252] text-[11px] font-regular border border-transparent'
       ">
+        {{ day }}
+      </button> -->
+      <button *ngFor="let day of availabilityDays" (click)="selectDay(day)" class="px-3 py-2 transition" [ngClass]="
+    formData.availability_days.includes(day)
+      ? 'bg-white border-t-2 border-[#0069D7] text-[#161616] font-semibold font-ibm text-[11px]'
+      : 'bg-gray-200 border-r border-[#8d8d8d] text-[#525252] text-[11px] font-regular border border-transparent'
+  ">
         {{ day }}
       </button>
     </div>

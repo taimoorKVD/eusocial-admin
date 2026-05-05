@@ -107,7 +107,7 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
 
         this.formData = {
           name: user.name,
-          email: user.email,
+          email: user.email.split('@')[0],
           phone_number: user.phoneNumber,
           address: user.address,
           username: user.username,
@@ -115,10 +115,14 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
           password_confirm: '',
           job_position_id: user.jobPosition?.id || null,
           location_id: user.location?.id || null,
-          availability_days: user.availabilityDays || []
+          // availability_days: user.availabilityDays || []
+            // availability_days: [...(user.availabilityDays || [])]
+          availability_days: Array.isArray(user.availabilityDays)
+          ? [...user.availabilityDays]   // ✅ KEEP ORIGINAL CASE
+          : [],
         };
 
-        this.selectedDays = [...(user.availabilityDays || [])];
+        // this.selectedDays = [...(user.availabilityDays || [])];
 
         this.stopLoading();
       },
@@ -198,11 +202,15 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
         password_confirm: '',
         job_position_id: user.jobPosition?.id || null,
         location_id: user.location?.id || null,
-        availability_days: user.availabilityDays || []
+        // availability_days: user.availability_days || []
+              // 🔥 FIX 2 (normalize + safe)
+      availability_days: Array.isArray(user.availabilityDays)
+        ? user.availabilityDays.map((d: string) => d.toLowerCase())
+        : [],
       };
 
       // ✅ ADD THIS LINE (important)
-      this.selectedDays = [...(user.availabilityDays || [])];
+      // this.selectedDays = [...(user.availabilityDays || [])];
 
     });
   }
@@ -222,7 +230,9 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
       password_confirm: '',
       job_position_id: null,
       location_id: null,
-      availability_days: []
+      availability_days: [],
+      new_password: '',
+      new_password_confirm: ''
     };
   }
 
@@ -251,21 +261,31 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
     });
   }
 
+  // selectDay(day: string) {
+
+  //   const index = this.selectedDays.indexOf(day);
+
+  //   if (index > -1) {
+  //     // remove (inactive)
+  //     this.selectedDays.splice(index, 1);
+  //   } else {
+  //     // add (active)
+  //     this.selectedDays.push(day);
+  //   }
+
+  //   // keep formData in sync
+  //   this.formData.availability_days = [...this.selectedDays];
+  // }
+
   selectDay(day: string) {
+  const index = this.formData.availability_days.indexOf(day);
 
-    const index = this.selectedDays.indexOf(day);
-
-    if (index > -1) {
-      // remove (inactive)
-      this.selectedDays.splice(index, 1);
-    } else {
-      // add (active)
-      this.selectedDays.push(day);
-    }
-
-    // keep formData in sync
-    this.formData.availability_days = [...this.selectedDays];
+  if (index > -1) {
+    this.formData.availability_days.splice(index, 1);
+  } else {
+    this.formData.availability_days.push(day);
   }
+}
 
   togglePassword() {
     this.showPassword = !this.showPassword;
@@ -320,6 +340,129 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
   this.router.navigate(['/tenant', slug, 'users']);
   }
 
+// confirmAction() {
+
+//   // ================= DELETE =================
+//   if (this.modalType === 'delete') {
+
+//     if (!this.selectedUser || this.selectedUser === 'create') return;
+
+//     this.startLoading();
+
+//     this.userService.deleteUser(this.selectedUser).subscribe({
+//       next: () => {
+//         this.closeModal();
+//         this.toastr.success('User deleted successfully');
+//         this.stopLoading();
+//         this.redirectToUserListing();
+//       },
+//       error: (err) => {
+//         console.error('Delete error:', err);
+//         this.toastr.error(err?.error?.message || 'Failed to delete user');
+//         this.stopLoading();
+//       }
+//     });
+
+//     return;
+//   }
+
+//   // ================= EXIT =================
+//   if (this.modalType === 'exit') {
+//     this.closeModal();
+//     this.redirectToUserListing();
+//     return;
+//   }
+
+//   // ================= SAVE =================
+//   if (this.modalType === 'save') {
+
+//     this.isSubmitted = true;
+
+//     if (!this.validateForm()) return;
+
+//     this.startLoading();
+
+//     const payload: any = {
+//       name: this.formData.name,
+//       username: this.formData.username,
+//       address: this.formData.address,
+//       email: this.getFullEmail(),
+//       role_id: 1,
+//       job_position_id: Number(this.formData.job_position_id),
+//       location_id: Number(this.formData.location_id),
+//     };
+
+//     // ✅ ONLY for CREATE
+//     if (this.mode === 'create') {
+//       payload.password = this.formData.password;
+//       payload.password_confirm = this.formData.password_confirm;
+//     }
+
+//     // ================= CREATE =================
+//     if (this.mode === 'create') {
+
+//       this.userService.createUser(payload).subscribe({
+//         next: (res: any) => {
+
+//           const newUser = res.data;
+
+//           this.setCredentials({
+//             email: payload.email,
+//             password: payload.password
+//           });
+
+//           this.closeModal();
+//           this.toastr.success('User created successfully');
+//           this.stopLoading();
+
+//           this.isCredentialsModalOpen = true;
+//         },
+//         error: (err) => {
+//           console.error('Create user error:', err);
+//           this.toastr.error(err?.error?.message || 'Failed to create user');
+//           this.stopLoading();
+//         }
+//       });
+//     }
+
+//     // ================= UPDATE =================
+//     else if (this.mode === 'edit' && this.editingUserId) {
+
+//       const payload = {
+//         name: this.formData.name,
+//         username: this.formData.username,
+//         address: this.formData.address,
+//         email: this.getFullEmail(),
+//         role_id: 1,
+//         job_position_id: Number(this.formData.job_position_id),
+//         location_id: Number(this.formData.location_id),
+//       };
+
+//       this.userService.updateUser(this.editingUserId, payload).subscribe({
+//         next: (res: any) => {
+
+//           this.setCredentials({
+//             email: payload.email,
+//             password: null
+//           });
+
+//           this.closeModal();
+//           this.toastr.success('User updated successfully');
+//           this.stopLoading();
+
+//           this.isCredentialsModalOpen = true;
+//         },
+
+//         error: (err) => {
+//           console.error('Update user error:', err);
+//           this.toastr.error(err?.error?.message || 'Failed to update user');
+//           this.stopLoading();
+//         }
+//       });
+//     }
+//   }
+// }
+
 confirmAction() {
 
   // ================= DELETE =================
@@ -362,6 +505,7 @@ confirmAction() {
 
     this.startLoading();
 
+    // ================= BASE PAYLOAD =================
     const payload: any = {
       name: this.formData.name,
       username: this.formData.username,
@@ -370,16 +514,14 @@ confirmAction() {
       role_id: 1,
       job_position_id: Number(this.formData.job_position_id),
       location_id: Number(this.formData.location_id),
+      availability_days: this.formData.availability_days || []
     };
 
-    // ✅ ONLY for CREATE
+    // ================= CREATE MODE =================
     if (this.mode === 'create') {
+
       payload.password = this.formData.password;
       payload.password_confirm = this.formData.password_confirm;
-    }
-
-    // ================= CREATE =================
-    if (this.mode === 'create') {
 
       this.userService.createUser(payload).subscribe({
         next: (res: any) => {
@@ -397,34 +539,59 @@ confirmAction() {
 
           this.isCredentialsModalOpen = true;
         },
+
         error: (err) => {
           console.error('Create user error:', err);
           this.toastr.error(err?.error?.message || 'Failed to create user');
           this.stopLoading();
         }
       });
+
+      return;
     }
 
-    // ================= UPDATE =================
-    else if (this.mode === 'edit' && this.editingUserId) {
+    // ================= EDIT MODE =================
+    if (this.mode === 'edit' && this.editingUserId) {
 
-      const payload = {
-        name: this.formData.name,
-        username: this.formData.username,
-        address: this.formData.address,
-        email: this.getFullEmail(),
-        role_id: 1,
-        job_position_id: Number(this.formData.job_position_id),
-        location_id: Number(this.formData.location_id),
-      };
+      // ✅ OPTIONAL PASSWORD UPDATE
+      const hasNewPassword = this.formData.new_password?.trim();
+      const hasNewConfirm = this.formData.new_password_confirm?.trim();
+
+      if (hasNewPassword || hasNewConfirm) {
+
+        if (!hasNewPassword) {
+          this.toastr.error('New password is required');
+          this.stopLoading();
+          return;
+        }
+
+        if (!hasNewConfirm) {
+          this.toastr.error('Confirm password is required');
+          this.stopLoading();
+          return;
+        }
+
+        if (this.formData.new_password !== this.formData.new_password_confirm) {
+          this.toastr.error('Passwords do not match');
+          this.stopLoading();
+          return;
+        }
+
+        payload.password = this.formData.new_password;
+        payload.password_confirm = this.formData.new_password_confirm;
+      }
 
       this.userService.updateUser(this.editingUserId, payload).subscribe({
         next: (res: any) => {
 
           this.setCredentials({
             email: payload.email,
-            password: null
+            password: payload.password || null
           });
+
+          // reset optional password fields
+          this.formData.new_password = '';
+          this.formData.new_password_confirm = '';
 
           this.closeModal();
           this.toastr.success('User updated successfully');
