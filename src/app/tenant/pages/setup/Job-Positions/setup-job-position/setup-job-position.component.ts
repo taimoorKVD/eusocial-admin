@@ -18,6 +18,7 @@ constructor(private tenantJobPosition: TenantJobPositionService, private router:
 
   jobTitle: string = '';
   selectedPermissions: number[] = [];
+  permissionsTouched = false;
 
   isLoading = false;
 
@@ -68,6 +69,7 @@ constructor(private tenantJobPosition: TenantJobPositionService, private router:
 
         this.jobTitle = job.name;
         this.selectedPermissions = job.permissions.map((p: any) => p.id);
+        this.permissionsTouched = false;
 
         this.isLoading = false;
       },
@@ -80,6 +82,8 @@ constructor(private tenantJobPosition: TenantJobPositionService, private router:
 
   // 🔹 Checkbox handler
   onPermissionChange(event: any, id: number) {
+    this.permissionsTouched = true;
+
     if (event.target.checked) {
       if (!this.selectedPermissions.includes(id)) {
         this.selectedPermissions.push(id);
@@ -98,13 +102,18 @@ constructor(private tenantJobPosition: TenantJobPositionService, private router:
   saveJob() {
 
     if (!this.jobTitle.trim()) {
-      alert('Job title is required');
+      this.toastr.error('Job title is required');
+      return;
+    }
+
+    if (this.selectedPermissions.length === 0) {
+      this.permissionsTouched = true;
+      this.toastr.error('Please select at least one job related permission');
       return;
     }
 
   const payload = {
     name: this.jobTitle,
-    description: 'Supervises day-to-day floor operations.', // or bind from input
     permissionIds: this.selectedPermissions
   };
 
@@ -149,6 +158,7 @@ constructor(private tenantJobPosition: TenantJobPositionService, private router:
     this.selectedJobId = null;
     this.jobTitle = '';
     this.selectedPermissions = [];
+    this.permissionsTouched = false;
   }
 
   deleteJob() {

@@ -12,14 +12,11 @@
     <a [routerLink]="['/tenant',  session.getSlug(), 'home']" routerLinkActive="text-[#333333] border-l-4 border-blue-500 font-bold"
       class="text-[#525252] font-ibm flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100">
 
-      <!-- SVG -->
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect width="16" height="16" fill="white" fill-opacity="0.01" style="mix-blend-mode:multiply" />
-        <path
-          d="M12.85 4.65L9.35 1.15C9.25 1.05 9.15 1 9 1H4C3.45 1 3 1.45 3 2V14C3 14.55 3.45 15 4 15H12C12.55 15 13 14.55 13 14V5C13 4.85 12.95 4.75 12.85 4.65ZM9 2.2L11.8 5H9V2.2ZM12 14H4V2H8V5C8 5.55 8.45 6 9 6H12V14Z"
-          fill="#525252" />
-        <path d="M11 11H5V12H11V11Z" fill="#525252" />
-        <path d="M11 8H5V9H11V8Z" fill="#525252" />
+      <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+        xmlns="http://www.w3.org/2000/svg">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M3 10.5 12 3l9 7.5" />
+        <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 9.75V21h13.5V9.75" />
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 21v-6h4.5v6" />
       </svg>
 
       Home
@@ -33,13 +30,12 @@
       <!-- <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
         <path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-4.4 0-8 2.2-8 5v3h16v-3c0-2.8-3.6-5-8-5z"/>
       </svg> -->
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect width="16" height="16" fill="white" fill-opacity="0.01" style="mix-blend-mode:multiply" />
-        <path
-          d="M12.85 4.65L9.35 1.15C9.25 1.05 9.15 1 9 1H4C3.45 1 3 1.45 3 2V14C3 14.55 3.45 15 4 15H12C12.55 15 13 14.55 13 14V5C13 4.85 12.95 4.75 12.85 4.65ZM9 2.2L11.8 5H9V2.2ZM12 14H4V2H8V5C8 5.55 8.45 6 9 6H12V14Z"
-          fill="#525252" />
-        <path d="M11 11H5V12H11V11Z" fill="#525252" />
-        <path d="M11 8H5V9H11V8Z" fill="#525252" />
+      <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+        xmlns="http://www.w3.org/2000/svg">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 20h16" />
+        <path stroke-linecap="round" stroke-linejoin="round" d="M7 16V9" />
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 16V5" />
+        <path stroke-linecap="round" stroke-linejoin="round" d="M17 16v-3" />
       </svg>
 
       User Dashboard
@@ -54,11 +50,10 @@
         <div class="flex items-center gap-3">
           <span class="text-[#525252]">{{ openSetup ? '▲' : '▼' }}</span>
 
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect width="16" height="16" fill="white" fill-opacity="0.01" style="mix-blend-mode:multiply" />
-            <path
-              d="M5.585 3L7.295 4.705L7.585 5H14V13H2V3H5.585ZM5.585 2H2C1.73478 2 1.48043 2.10536 1.29289 2.29289C1.10536 2.48043 1 2.73478 1 3V13C1 13.2652 1.10536 13.5196 1.29289 13.7071C1.48043 13.8946 1.73478 14 2 14H14C14.2652 14 14.5196 13.8946 14.7071 13.7071C14.8946 13.5196 15 13.2652 15 13V5C15 4.73478 14.8946 4.48043 14.7071 4.29289C14.5196 4.10536 14.2652 4 14 4H8L6.295 2.295C6.20197 2.20142 6.09134 2.12717 5.96948 2.07654C5.84763 2.02591 5.71696 1.9999 5.585 2Z"
-              fill="#525252" />
+          <svg class="w-4 h-4 shrink-0 text-[#525252]" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="1.8" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M3 7.5A1.5 1.5 0 0 1 4.5 6H9l1.5 1.5h9A1.5 1.5 0 0 1 21 9v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18V7.5Z" />
           </svg>
           Setup
         </div>
@@ -70,13 +65,12 @@
         <a [routerLink]="['/tenant', session.getSlug(), 'users']"
           routerLinkActive="text-[#333333] border-l-4 border-blue-500 font-bold"
           class="text-[#525252] font-ibm flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-sm">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect width="16" height="16" fill="white" fill-opacity="0.01" style="mix-blend-mode:multiply" />
-            <path
-              d="M12.85 4.65L9.35 1.15C9.25 1.05 9.15 1 9 1H4C3.45 1 3 1.45 3 2V14C3 14.55 3.45 15 4 15H12C12.55 15 13 14.55 13 14V5C13 4.85 12.95 4.75 12.85 4.65ZM9 2.2L11.8 5H9V2.2ZM12 14H4V2H8V5C8 5.55 8.45 6 9 6H12V14Z"
-              fill="#525252" />
-            <path d="M11 11H5V12H11V11Z" fill="#525252" />
-            <path d="M11 8H5V9H11V8Z" fill="#525252" />
+          <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+            xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M16 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M2.5 20a5.5 5.5 0 0 1 11 0" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 18.5a4.5 4.5 0 0 1 8 1.5" />
           </svg>
           Users
         </a>
@@ -84,13 +78,12 @@
         <a [routerLink]="['/tenant',  session.getSlug(), 'job-position']"
           routerLinkActive="text-[#333333] border-l-4 border-blue-500 font-bold"
           class="text-[#525252] font-ibm flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-sm">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect width="16" height="16" fill="white" fill-opacity="0.01" style="mix-blend-mode:multiply" />
-            <path
-              d="M12.85 4.65L9.35 1.15C9.25 1.05 9.15 1 9 1H4C3.45 1 3 1.45 3 2V14C3 14.55 3.45 15 4 15H12C12.55 15 13 14.55 13 14V5C13 4.85 12.95 4.75 12.85 4.65ZM9 2.2L11.8 5H9V2.2ZM12 14H4V2H8V5C8 5.55 8.45 6 9 6H12V14Z"
-              fill="#525252" />
-            <path d="M11 11H5V12H11V11Z" fill="#525252" />
-            <path d="M11 8H5V9H11V8Z" fill="#525252" />
+          <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+            xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M9 7.5V6A1.5 1.5 0 0 1 10.5 4.5h3A1.5 1.5 0 0 1 15 6v1.5" />
+            <rect x="3" y="7.5" width="18" height="12" rx="1.5" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 12h18" />
           </svg>
           Job Positions
         </a>
@@ -98,13 +91,11 @@
         <a [routerLink]="['/tenant',  session.getSlug(), 'item']"
           routerLinkActive="text-[#333333] border-l-4 border-blue-500 font-bold"
           class="text-[#525252] font-ibm flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-sm">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect width="16" height="16" fill="white" fill-opacity="0.01" style="mix-blend-mode:multiply" />
-            <path
-              d="M12.85 4.65L9.35 1.15C9.25 1.05 9.15 1 9 1H4C3.45 1 3 1.45 3 2V14C3 14.55 3.45 15 4 15H12C12.55 15 13 14.55 13 14V5C13 4.85 12.95 4.75 12.85 4.65ZM9 2.2L11.8 5H9V2.2ZM12 14H4V2H8V5C8 5.55 8.45 6 9 6H12V14Z"
-              fill="#525252" />
-            <path d="M11 11H5V12H11V11Z" fill="#525252" />
-            <path d="M11 8H5V9H11V8Z" fill="#525252" />
+          <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+            xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3 20 7.5 12 12 4 7.5 12 3Z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 12.5 12 17l8-4.5" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 17 12 21l8-4" />
           </svg>
           Items
         </a>
@@ -112,13 +103,12 @@
         <a [routerLink]="['/tenant',  session.getSlug(), 'vendor']"
           routerLinkActive="text-[#333333] border-l-4 border-blue-500 font-bold"
           class="text-[#525252] font-ibm flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-sm">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect width="16" height="16" fill="white" fill-opacity="0.01" style="mix-blend-mode:multiply" />
-            <path
-              d="M12.85 4.65L9.35 1.15C9.25 1.05 9.15 1 9 1H4C3.45 1 3 1.45 3 2V14C3 14.55 3.45 15 4 15H12C12.55 15 13 14.55 13 14V5C13 4.85 12.95 4.75 12.85 4.65ZM9 2.2L11.8 5H9V2.2ZM12 14H4V2H8V5C8 5.55 8.45 6 9 6H12V14Z"
-              fill="#525252" />
-            <path d="M11 11H5V12H11V11Z" fill="#525252" />
-            <path d="M11 8H5V9H11V8Z" fill="#525252" />
+          <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+            xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 8h12l3 4v6H3V8Z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 8V5h4v7" />
+            <circle cx="7" cy="18" r="1.5" />
+            <circle cx="15" cy="18" r="1.5" />
           </svg>
           Vendors
         </a>
@@ -126,13 +116,12 @@
         <a [routerLink]="['/tenant',  session.getSlug(), 'reporting-group']"
           routerLinkActive="text-[#333333] border-l-4 border-blue-500 font-bold"
           class="text-[#525252] font-ibm flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-sm">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect width="16" height="16" fill="white" fill-opacity="0.01" style="mix-blend-mode:multiply" />
-            <path
-              d="M12.85 4.65L9.35 1.15C9.25 1.05 9.15 1 9 1H4C3.45 1 3 1.45 3 2V14C3 14.55 3.45 15 4 15H12C12.55 15 13 14.55 13 14V5C13 4.85 12.95 4.75 12.85 4.65ZM9 2.2L11.8 5H9V2.2ZM12 14H4V2H8V5C8 5.55 8.45 6 9 6H12V14Z"
-              fill="#525252" />
-            <path d="M11 11H5V12H11V11Z" fill="#525252" />
-            <path d="M11 8H5V9H11V8Z" fill="#525252" />
+          <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+            xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 19V9" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10 19V5" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M16 19v-7" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M22 19V3" />
           </svg>
           Reporting Groups
         </a>
@@ -149,11 +138,14 @@
         <div class="flex items-center gap-3">
           <span class="text-[#525252]">{{ openExtraManagement ? '▲' : '▼' }}</span>
 
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect width="16" height="16" fill="white" fill-opacity="0.01" style="mix-blend-mode:multiply" />
-            <path
-              d="M5.585 3L7.295 4.705L7.585 5H14V13H2V3H5.585ZM5.585 2H2C1.73478 2 1.48043 2.10536 1.29289 2.29289C1.10536 2.48043 1 2.73478 1 3V13C1 13.2652 1.10536 13.5196 1.29289 13.7071C1.48043 13.8946 1.73478 14 2 14H14C14.2652 14 14.5196 13.8946 14.7071 13.7071C14.8946 13.5196 15 13.2652 15 13V5C15 4.73478 14.8946 4.48043 14.7071 4.29289C14.5196 4.10536 14.2652 4 14 4H8L6.295 2.295C6.20197 2.20142 6.09134 2.12717 5.96948 2.07654C5.84763 2.02591 5.71696 1.9999 5.585 2Z"
-              fill="#525252" />
+          <svg class="w-4 h-4 shrink-0 text-[#525252]" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="1.8" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 6h14" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h8" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10 18h4" />
+            <circle cx="7" cy="6" r="1" fill="currentColor" stroke="none" />
+            <circle cx="15" cy="12" r="1" fill="currentColor" stroke="none" />
+            <circle cx="13" cy="18" r="1" fill="currentColor" stroke="none" />
           </svg>
           Extra Management
         </div>
@@ -166,13 +158,11 @@
         <a [routerLink]="['/tenant',  session.getSlug(), 'location']"
           routerLinkActive="text-[#333333] border-l-4 border-blue-500 font-bold"
           class="text-[#525252] font-ibm flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-sm">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect width="16" height="16" fill="white" fill-opacity="0.01" style="mix-blend-mode:multiply" />
-            <path
-              d="M12.85 4.65L9.35 1.15C9.25 1.05 9.15 1 9 1H4C3.45 1 3 1.45 3 2V14C3 14.55 3.45 15 4 15H12C12.55 15 13 14.55 13 14V5C13 4.85 12.95 4.75 12.85 4.65ZM9 2.2L11.8 5H9V2.2ZM12 14H4V2H8V5C8 5.55 8.45 6 9 6H12V14Z"
-              fill="#525252" />
-            <path d="M11 11H5V12H11V11Z" fill="#525252" />
-            <path d="M11 8H5V9H11V8Z" fill="#525252" />
+          <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+            xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M12 21s7-6.5 7-11a7 7 0 1 0-14 0c0 4.5 7 11 7 11Z" />
+            <circle cx="12" cy="10" r="2.5" />
           </svg>
           Locations
         </a>
