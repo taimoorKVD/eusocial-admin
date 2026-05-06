@@ -729,6 +729,15 @@ validateForm(): boolean {
   this.toastr.success('Copied');
 }
 
+allowOnlyNumbers(event: KeyboardEvent) {
+  const charCode = event.key;
+
+  // allow only digits 0-9
+  if (!/^[0-9]$/.test(charCode)) {
+    event.preventDefault();
+  }
+}
+
 
   sendCredentials() {
 

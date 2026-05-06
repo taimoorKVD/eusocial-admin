@@ -24,16 +24,21 @@ export class LocationComponent {
     private toastr: ToastrService
   ) {}
 
+
+
   ngOnInit(): void {
 
     this.locationForm = this.fb.group({
-      name: [''],
+      name: ['', [Validators.required, Validators.pattern(/^[a-zA-Z\s]+$/)]],
       address: [''],
-      city: [''],
-      country: [''],
-      postalCode: [''],
-      latitude: [''],
-      longitude: ['']
+
+      city: ['', [Validators.required, Validators.pattern(/^[a-zA-Z\s]+$/)]],
+      country: ['', [Validators.required, Validators.pattern(/^[a-zA-Z\s]+$/)]],
+
+      postalCode: ['', [Validators.required, Validators.pattern(/^[0-9]+$/)]],
+
+      latitude: ['', [Validators.pattern(/^-?\d+(\.\d+)?$/)]],
+      longitude: ['', [Validators.pattern(/^-?\d+(\.\d+)?$/)]]
     });
 
     // ✅ EDIT MODE
@@ -47,46 +52,40 @@ export class LocationComponent {
 
   getLocationById(id: number) {
     this.locationService.getLocation(id).subscribe(res => {
-      this.locationForm.patchValue(res.data);
+      const data = res.data;
+
+      this.locationForm.patchValue({
+        name: data.name || '',
+        address: data.address || '',
+        city: data.city || '',
+        country: data.country || '',
+        postalCode: data.postalCode || '',
+        latitude: data.latitude || '',
+        longitude: data.longitude || ''
+      });
     });
   }
 
   submit() {
+    if (this.locationForm.invalid) {
+      this.locationForm.markAllAsTouched();
+      return;
+    }
 
-    const formValue = this.locationForm.value;
+    const payload = { ...this.locationForm.value };
 
-    const payload: any = {
-      ...formValue
-    };
-
-    // remove lat/lng (as you already fixed)
-    delete payload.latitude;
-    delete payload.longitude;
-
-    const redirectToList = () => {
-      this.router.navigate([
-        '/tenant',
-        this.session.getSlug(),
-        'location'
-      ]);
-    };
-
-    // ================= UPDATE =================
     if (this.selectedId) {
       this.locationService.updateLocation(this.selectedId, payload).subscribe({
         next: () => {
-          this.toastr.success('Location updated successfully'); // 👈 HERE
-          redirectToList();
+          this.toastr.success('Location updated successfully');
+          this.router.navigate(['/tenant', this.session.getSlug(), 'location']);
         }
       });
-    }
-
-    // ================= CREATE =================
-    else {
+    } else {
       this.locationService.createLocation(payload).subscribe({
         next: () => {
-          this.toastr.success('Location created successfully'); // 👈 HERE
-          redirectToList();
+          this.toastr.success('Location created successfully');
+          this.router.navigate(['/tenant', this.session.getSlug(), 'location']);
         }
       });
     }
