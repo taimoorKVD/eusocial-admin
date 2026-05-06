@@ -17,8 +17,9 @@
       <thead>
         <tr class="border-b text-left">
           <th class="py-2">Name</th>
-          <th>City</th>
           <th>Country</th>
+          <th>State</th>
+          <th>City</th>
           <th>Postal Code</th>
           <th class="text-right">Actions</th>
         </tr>
@@ -27,9 +28,10 @@
       <tbody>
         <tr *ngFor="let loc of locations" class="border-b hover:bg-gray-50">
 
-          <td class="py-2">{{ loc.name }}</td>
-          <td>{{ loc.city }}</td>
-          <td>{{ loc.country }}</td>
+          <td>{{ loc.name }}</td>
+          <td>{{ getCountryName(loc.countryId) }}</td>
+          <td>{{ getStateName(loc.stateId) }}</td>
+          <td>{{ getCityName(loc.cityId) }}</td>
           <td>{{ loc.postalCode }}</td>
 
           <td class="text-right space-x-3">

@@ -8,6 +8,9 @@ import { environment } from '../../environments/environment';
 })
 export class TenantLocationService {
      private apiUrl = `${environment.tenantApiUrl}/locations`;
+     private statesUrl  = `${environment.tenantApiUrl}/states`;
+     private citiesUrl  = `${environment.tenantApiUrl}/cities`;
+     private countriesUrl  = `${environment.tenantApiUrl}/countries`;
 
       constructor(private http: HttpClient) {}
 
@@ -36,4 +39,20 @@ export class TenantLocationService {
   deleteLocation(id: number): Observable<any> {
     return this.http.delete(`${this.apiUrl}/${id}`);
   }
+
+  // COUNTRIES
+getCountries(): Observable<any> {
+  return this.http.get(this.countriesUrl);
+}
+
+// STATES (by country)
+getStates(countryId: number): Observable<any> {
+  return this.http.get(`${this.statesUrl}?country_id=${countryId}`);
+}
+
+// CITIES (by state)
+getCities(stateId: number): Observable<any> {
+  return this.http.get(`${this.citiesUrl}?state_id=${stateId}`);
+}
+
 }
