@@ -33,7 +33,7 @@
 
     <!-- Phone -->
     <div>
-      <input type="text" [(ngModel)]="formData.phone_number" placeholder="Placeholder text"
+      <input type="text" [(ngModel)]="formData.phone_number" (keypress)="allowOnlyNumbers($event)" placeholder="Placeholder text"
         class="px-4 w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent" />
       <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">Phone Number</label>
     </div>
