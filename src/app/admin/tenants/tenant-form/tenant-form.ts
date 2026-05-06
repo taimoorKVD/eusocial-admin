@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { TenantService } from '../../../services/tenant.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Tenant } from '../../../interfaces/tenant';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-tenant-form',
@@ -27,17 +28,20 @@ generatedPassword = '';
 sendToEmail = '';
 sending = false;
 
+  private readonly customDomainPattern = /^(?=.{1,253}$)(?!-)(?:[a-zA-Z0-9-]{1,63}\.)+[a-zA-Z]{2,63}$/;
+
   constructor(
     private fb: FormBuilder,
     private router: Router,
     private route: ActivatedRoute,
-    private tenantService: TenantService
+    private tenantService: TenantService,
+    private toastr: ToastrService
   ) {}
 
   ngOnInit(): void {
     this.form = this.fb.group({
       name: ['', Validators.required],
-      customDomain: [''],
+      customDomain: ['', Validators.pattern(this.customDomainPattern)],
     });
 
     this.route.paramMap.subscribe((params) => {
@@ -81,7 +85,10 @@ sending = false;
   // }
 
   saveTenant(): void {
-    if (this.form.invalid) return;
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
 
     const payload = this.form.value;
 
@@ -94,6 +101,7 @@ sending = false;
         this.message = res.message || 'Saved successfully ✅';
 
         if (!this.isEditMode) {
+          this.toastr.success('Tenant created successfully');
            this.tenantId = res.data?.id; // ✅ REQUIRED
           // ✅ FIXED PATH
           this.generatedEmail = res.data?.admin?.email || '';
@@ -101,6 +109,7 @@ sending = false;
 
           this.showCredentialModal = true;
         } else {
+          this.toastr.success('Tenant updated successfully');
           setTimeout(() => this.router.navigate(['/tenants']), 800);
         }
       },
