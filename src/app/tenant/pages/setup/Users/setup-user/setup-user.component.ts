@@ -626,6 +626,11 @@ validateForm(): boolean {
     return false;
   }
 
+  if (!f.availability_days || f.availability_days.length === 0) {
+  this.toastr.error('Availability is required');
+  return false;
+}
+
   // ================= EMAIL =================
   const usernameRegex = /^[a-zA-Z0-9._]+$/;
 

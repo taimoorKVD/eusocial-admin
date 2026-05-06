@@ -14,6 +14,9 @@ import { ToastrService } from 'ngx-toastr';
 export class LocationComponent {
   locationForm!: FormGroup;
   selectedId: number | null = null;
+  countries: any[] = [];
+  states: any[] = [];
+  cities: any[] = [];
 
   constructor(
     private fb: FormBuilder,
@@ -29,16 +32,60 @@ export class LocationComponent {
   ngOnInit(): void {
 
     this.locationForm = this.fb.group({
-      name: ['', [Validators.required, Validators.pattern(/^[a-zA-Z\s]+$/)]],
+      name: ['', Validators.required],
       address: [''],
 
-      city: ['', [Validators.required, Validators.pattern(/^[a-zA-Z\s]+$/)]],
-      country: ['', [Validators.required, Validators.pattern(/^[a-zA-Z\s]+$/)]],
+      country_id: [null, Validators.required],
+      state_id: [null, Validators.required],
+      city_id: [null, Validators.required],
 
       postalCode: ['', [Validators.required, Validators.pattern(/^[0-9]+$/)]],
 
       latitude: ['', [Validators.pattern(/^-?\d+(\.\d+)?$/)]],
       longitude: ['', [Validators.pattern(/^-?\d+(\.\d+)?$/)]]
+    });
+
+     this.loadCountries();
+
+    // this.locationForm.get('country_id')?.valueChanges.subscribe(countryId => {
+    //   if (countryId) {
+    //     this.loadStates(countryId);
+    //     this.locationForm.patchValue({ state_id: null, city_id: null });
+    //     this.cities = [];
+    //   }
+    // });
+
+    // this.locationForm.get('state_id')?.valueChanges.subscribe(stateId => {
+    //   if (stateId) {
+    //     this.loadCities(stateId);
+    //     this.locationForm.patchValue({ city_id: null });
+    //   }
+    // });
+
+    this.locationForm.get('country_id')?.valueChanges.subscribe(countryId => {
+      this.states = [];
+      this.cities = [];
+
+      this.locationForm.patchValue({
+        state_id: null,
+        city_id: null
+      });
+
+      if (countryId) {
+        this.loadStates(countryId);
+      }
+    });
+
+    this.locationForm.get('state_id')?.valueChanges.subscribe(stateId => {
+      this.cities = [];
+
+      this.locationForm.patchValue({
+        city_id: null
+      });
+
+      if (stateId) {
+        this.loadCities(stateId);
+      }
     });
 
     // ✅ EDIT MODE
@@ -50,49 +97,74 @@ export class LocationComponent {
     });
   }
 
+  loadCountries() {
+  this.locationService.getCountries().subscribe(res => {
+    this.countries = res.data || res;
+  });
+}
+
+  loadStates(countryId: number) {
+    this.locationService.getStates(countryId).subscribe(res => {
+      this.states = res.data || res;
+    });
+  }
+
+  loadCities(stateId: number) {
+    this.locationService.getCities(stateId).subscribe(res => {
+      this.cities = res.data || res;
+    });
+  }
+
   getLocationById(id: number) {
     this.locationService.getLocation(id).subscribe(res => {
       const data = res.data;
 
       this.locationForm.patchValue({
-        name: data.name || '',
-        address: data.address || '',
-        city: data.city || '',
-        country: data.country || '',
-        postalCode: data.postalCode || '',
-        latitude: data.latitude || '',
-        longitude: data.longitude || ''
+        name: data.name,
+        address: data.address,
+        country_id: data.country_id,
+        state_id: data.state_id,
+        city_id: data.city_id,
+        postalCode: data.postalCode,
+        latitude: data.latitude,
+        longitude: data.longitude
       });
+
+      // Load dependent dropdowns
+      this.loadStates(data.country_id);
+      this.loadCities(data.state_id);
     });
   }
 
-  submit() {
-    if (this.locationForm.invalid) {
-      this.locationForm.markAllAsTouched();
-      return;
-    }
+submit() {
 
-    const payload = { ...this.locationForm.value };
-
-    if (this.selectedId) {
-      this.locationService.updateLocation(this.selectedId, payload).subscribe({
-        next: () => {
-          this.toastr.success('Location updated successfully');
-          this.router.navigate(['/tenant', this.session.getSlug(), 'location']);
-        }
-      });
-    } else {
-      this.locationService.createLocation(payload).subscribe({
-        next: () => {
-          this.toastr.success('Location created successfully');
-          this.router.navigate(['/tenant', this.session.getSlug(), 'location']);
-        }
-      });
-    }
+  // ✅ trigger validation UI
+  if (this.locationForm.invalid) {
+    this.locationForm.markAllAsTouched();
+    return;
   }
 
-  resetForm() {
-  this.locationForm.reset();
-  this.selectedId = null;
+  const payload = { ...this.locationForm.value };
+
+  if (this.selectedId) {
+    this.locationService.updateLocation(this.selectedId, payload).subscribe({
+      next: () => {
+        this.toastr.success('Location updated successfully');
+        this.router.navigate(['/tenant', this.session.getSlug(), 'location']);
+      }
+    });
+  } else {
+    this.locationService.createLocation(payload).subscribe({
+      next: () => {
+        this.toastr.success('Location created successfully');
+        this.router.navigate(['/tenant', this.session.getSlug(), 'location']);
+      }
+    });
+  }
 }
+
+//   resetForm() {
+//   this.locationForm.reset();
+//   this.selectedId = null;
+// }
 }
