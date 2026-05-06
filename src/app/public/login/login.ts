@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import { Auth } from '../../services/auth';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-login',
@@ -18,7 +19,8 @@ export class Login {
   constructor(
     private fb: FormBuilder,
     private auth: Auth,
-    private router: Router
+    private router: Router,
+    private toastr: ToastrService
   ) {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
@@ -44,12 +46,12 @@ export class Login {
     const credentials = this.loginForm.value;
     this.auth.login(credentials).subscribe({
       next: (res: any) => {
-        alert(`Welcome back ${res.name || ''}!`);
+        this.toastr.success(`Welcome back ${res.name || ''}!`);
         this.router.navigate(['/dashboard']);
       },
       error: (err) => {
         console.error('❌ Login failed:', err);
-        alert('Invalid email or password.');
+        this.toastr.error('Invalid email or password.');
         this.loading = false;
       },
     });

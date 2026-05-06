@@ -26,6 +26,9 @@
         <div class="form-group">
           <label class="block mb-1 text-sm font-medium text-gray-700">Custom Domain (optional)</label>
           <input class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none" type="text" formControlName="customDomain" placeholder="e.g. mycompany.com" />
+          <small class="error text-red-600" *ngIf="f['customDomain'].touched && f['customDomain'].errors?.['pattern']">
+            Enter a valid domain (e.g. mycompany.com).
+          </small>
         </div>
       </div>
     </div>
@@ -35,7 +38,7 @@
                 Delete
             </button> -->
       <button type="button" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition duration-150" (click)="backToList()">Cancel</button>
-      <button *ngIf="!isEditMode" type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition duration-150">{{ isEditMode ? 'Update' : 'Save' }}</button>
+      <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition duration-150">{{ isEditMode ? 'Update' : 'Save' }}</button>
     </div>
 
     <div *ngIf="message" class="text-center mt-4 text-sm text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg py-2 px-3">{{ message }}</div>
