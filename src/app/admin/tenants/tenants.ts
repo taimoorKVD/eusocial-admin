@@ -26,6 +26,7 @@ export class Tenants {
 
   allTenants(page: number = 1): void {
     this.loading = true;
+    this.message = '';
     this.tenantService.getTenants(page).subscribe({
       next: (res) => {
         this.tenants = res.data;
@@ -35,7 +36,8 @@ export class Tenants {
         this.loading = false;
       },
       error: () => {
-        this.message = 'Failed to load tenants ❌';
+        this.tenants = [];
+        this.total = 0;
         this.loading = false;
       },
     });
