@@ -48,9 +48,9 @@ export class SetupJobPositionListingComponent {
 
   deleteJob(id: number) {
 
-  // const confirmDelete = confirm('Are you sure you want to delete this job position?');
+  const confirmDelete = confirm('Are you sure you want to delete this job position?');
 
-  // if (!confirmDelete) return;
+  if (!confirmDelete) return;
 
   this.isLoading = true;
 
