@@ -26,6 +26,7 @@ export class Roles {
 
   allRoles(page: number = 1): void {
     this.loading = true;
+    this.message = '';
 
     this.roleService.getRoles(page).subscribe({
       next: (roles) => {
@@ -34,7 +35,8 @@ export class Roles {
         this.loading = false;
       },
       error: () => {
-        this.message = 'Failed to load roles ❌';
+        this.roles = [];
+        this.total = 0;
         this.loading = false;
       },
     });
