@@ -43,6 +43,7 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
   credentialEmail: string = '';
   sendEmail: string = '';
   generatedPassword: string = '';
+  phoneError: string = '';
 
 
   startLoading() {
@@ -61,7 +62,7 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
   formData: any = {
     name: '',
     email: '',
-    phone_number: '',
+    phone_number: '', // ADD THIS
     address: '',
     username: '',
     password: '',
@@ -510,6 +511,8 @@ confirmAction() {
       name: this.formData.name,
       username: this.formData.username,
       address: this.formData.address,
+      // phoneNumber: this.formData.phone_number,
+        phone_number: this.formData.phone_number,
       email: this.getFullEmail(),
       role_id: 1,
       job_position_id: Number(this.formData.job_position_id),
@@ -627,7 +630,7 @@ validateForm(): boolean {
   }
 
   if (!f.availability_days || f.availability_days.length === 0) {
-  this.toastr.error('Availability is required');
+  // this.toastr.error('Availability is required');
   return false;
 }
 
@@ -735,12 +738,64 @@ validateForm(): boolean {
 }
 
 allowOnlyNumbers(event: KeyboardEvent) {
-  const charCode = event.key;
 
-  // allow only digits 0-9
-  if (!/^[0-9]$/.test(charCode)) {
+  const allowedKeys = [
+    'Backspace',
+    'Delete',
+    'ArrowLeft',
+    'ArrowRight',
+    'Tab'
+  ];
+
+  // allow control keys
+  if (allowedKeys.includes(event.key)) {
+    return;
+  }
+
+  // allow only numbers
+  if (!/^[0-9]$/.test(event.key)) {
     event.preventDefault();
   }
+}
+
+validatePhoneNumber() {
+
+  // remove all non-numeric characters automatically
+  this.formData.phone_number =
+    this.formData.phone_number.replace(/\D/g, '');
+
+  // phone validation
+  const phoneRegex = /^[0-9]{10,15}$/;
+
+  if (!this.formData.phone_number) {
+
+    this.phoneError = 'please enter a valid phone number';
+
+  } else if (!phoneRegex.test(this.formData.phone_number)) {
+
+    this.phoneError =
+      'Phone number must be between 10 and 15 digits';
+
+  } else {
+
+    this.phoneError = '';
+  }
+}
+
+handlePaste(event: ClipboardEvent) {
+
+  event.preventDefault();
+
+  const pastedText =
+    event.clipboardData?.getData('text') || '';
+
+  // keep only numbers
+  const numbersOnly = pastedText.replace(/\D/g, '');
+
+  // append clean value
+  this.formData.phone_number = numbersOnly;
+
+  this.validatePhoneNumber();
 }
 
 
