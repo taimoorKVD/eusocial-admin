@@ -31,6 +31,7 @@ export class Users {
 
   allUsers(page: number = 1): void {
     this.loading = true;
+    this.message = '';
     this.userService.getUsers(page).subscribe({
       next: (res) => {
         this.users = res.data;
@@ -41,7 +42,8 @@ export class Users {
         this.loading = false;
       },
       error: () => {
-        this.message = 'Failed to load users ❌';
+        this.users = [];
+        this.total = 0;
         this.loading = false;
       },
     });

@@ -16,7 +16,7 @@
                 <div class="h-10 w-10 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin"></div>
             </div>
 
-            <div class="overflow-x-auto" *ngIf="!loading && tenants.length">
+            <div class="overflow-x-auto" *ngIf="!loading">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50 text-gray-600 text-sm">
                     <tr>
@@ -52,12 +52,12 @@
                             </div>
                         </td>
                     </tr>
+
+                    <tr *ngIf="!tenants.length">
+                        <td colspan="7" class="px-4 py-10 text-center text-sm text-gray-500">No data found.</td>
+                    </tr>
                 </tbody>
             </table>
-            </div>
-
-            <div *ngIf="!loading && !tenants.length" class="py-10 text-center">
-                <p class="text-sm text-gray-500">No data found.</p>
             </div>
         </div>
 
