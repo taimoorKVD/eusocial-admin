@@ -9,6 +9,9 @@ interface RoleApiResponse {
   data: Role[];
   meta?: {
     total: number;
+    current_page?: number;
+    currentPage?: number;
+    last_page?: number;
     page: number;
     lastPage: number;
   };
@@ -23,10 +26,8 @@ export class RoleService {
   constructor(private http: HttpClient) {}
 
   /** ✅ Get paginated list of roles */
-  getRoles(page: number = 1): Observable<Role[]> {
-    return this.http
-      .get<RoleApiResponse>(`${this.baseUrl}?page=${page}`)
-      .pipe(map((res) => res.data)); // unwrap data
+  getRoles(page: number = 1): Observable<RoleApiResponse> {
+    return this.http.get<RoleApiResponse>(`${this.baseUrl}?page=${page}&sort_by=created_at&sort_order=desc`);
   }
 
   /** ✅ Get all roles (no pagination) */

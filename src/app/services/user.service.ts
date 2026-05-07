@@ -15,9 +15,29 @@ export class UserService {
   /** Fetch paginated list of users */
   getUsers(
     page: number = 1
-  ): Observable<{ data: User[]; meta: { total: number; page: number; lastPage: number } }> {
-    return this.http.get<{ data: User[]; meta: { total: number; page: number; lastPage: number } }>(
-      `${this.baseUrl}?page=${page}`
+  ): Observable<{
+    data: User[];
+    meta: {
+      total?: number;
+      current_page?: number;
+      currentPage?: number;
+      page?: number;
+      last_page?: number;
+      lastPage?: number;
+    };
+  }> {
+    return this.http.get<{
+      data: User[];
+      meta: {
+        total?: number;
+        current_page?: number;
+        currentPage?: number;
+        page?: number;
+        last_page?: number;
+        lastPage?: number;
+      };
+    }>(
+      `${this.baseUrl}?page=${page}&sort_by=created_at&sort_order=desc`
     );
   }
   /** Delete user by ID */

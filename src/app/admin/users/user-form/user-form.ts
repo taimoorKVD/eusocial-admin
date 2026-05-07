@@ -13,6 +13,7 @@ import { HttpClient } from '@angular/common/http';
 import { Role } from '../../../interfaces/role';
 import { User } from '../../../interfaces/user';
 import { RoleService } from '../../../services/role.service';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-user-form',
@@ -45,7 +46,8 @@ export class UserForm {
     private router: Router,
     private userService: UserService,
     private http: HttpClient,
-    private roleService: RoleService
+    private roleService: RoleService,
+    private toastr: ToastrService
   ) {}
 
   ngOnInit(): void {
@@ -104,30 +106,58 @@ export class UserForm {
   saveUser() {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      this.toastr.error('Please fill in all required fields correctly');
       return;
     }
     this.saving = true;
     this.message = '';
 
     const payload = this.form.value;
+    console.log('Sending user payload:', payload);
 
     const request = this.isEditMode
       ? this.userService.updateUser(this.id!, payload)
       : this.userService.createUser(payload);
 
     request.subscribe({
-      next: () => {
-        this.message = this.isEditMode
-          ? 'User updated successfully ✅'
-          : 'User created successfully ✅';
+      next: (res) => {
+        console.log('Success response:', res);
+        this.toastr.success(
+          this.isEditMode ? 'User updated successfully' : 'User created successfully'
+        );
         this.saving = false;
-        setTimeout(() => this.router.navigate(['/users']), 1500);
+        setTimeout(() => this.router.navigate(['/users']), 1000);
       },
-      error: () => {
-        this.message = 'Failed to save user ❌';
+      error: (err: any) => {
+        const msg = this.extractErrorMessage(err);
+        console.error('HTTP Error:', { status: err.status, statusText: err.statusText, body: err.error, extractedMsg: msg });
+        this.toastr.error(msg);
         this.saving = false;
       },
     });
+  }
+
+  private extractErrorMessage(err: any): string {
+    try {
+      const body = err?.error;
+      if (body?.message) {
+        if (Array.isArray(body.message)) return body.message.join(', ');
+        return String(body.message);
+      }
+      if (body?.errors && typeof body.errors === 'object') {
+        const errors = Object.values(body.errors as any);
+        if (errors.length > 0) {
+          const first = errors[0];
+          if (Array.isArray(first)) return String(first[0]);
+          return String(first);
+        }
+      }
+      if (typeof body === 'string') return body;
+      if (err?.statusText) return err.statusText;
+    } catch (e) {
+      console.error('Error extraction failed:', e);
+    }
+    return 'Failed to save user';
   }
 
   deleteUser(): void {
@@ -144,16 +174,12 @@ export class UserForm {
 
     this.userService.deleteUser(this.id).subscribe({
       next: () => {
-        this.message = 'User deleted successfully ✅';
+        this.toastr.success('User deleted successfully');
         this.saving = false;
-
-        // Small delay before navigating back to list
-        setTimeout(() => {
-          this.router.navigate(['/users']);
-        }, 800);
+        this.router.navigate(['/users']);
       },
-      error: () => {
-        this.message = 'Failed to delete user ❌';
+      error: (err) => {
+        this.toastr.error(err?.error?.message || 'Failed to delete user');
         this.saving = false;
       },
     });

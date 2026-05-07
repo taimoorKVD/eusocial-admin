@@ -4,6 +4,7 @@ import { environment } from '../../../environments/environment';
 import { Router } from '@angular/router';
 import { User } from '../../interfaces/user';
 import { UserService } from '../../services/user.service';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-users',
@@ -18,11 +19,14 @@ export class Users {
   total = 0;
   lastPage = 1;
   message = '';
+  showDeleteModal = false;
+  deleteTargetId: number | null = null;
 
   constructor(
     private http: HttpClient,
     private router: Router,
-    private userService: UserService
+    private userService: UserService,
+    private toastr: ToastrService
   ) { }
 
   ngOnInit(): void {
@@ -34,11 +38,19 @@ export class Users {
     this.message = '';
     this.userService.getUsers(page).subscribe({
       next: (res) => {
-        this.users = res.data;
-        console.log(this.users);
-        this.total = res.meta.total;
-        this.lastPage = res.meta.lastPage;
-        this.page = res.meta.page;
+        this.users = Array.isArray(res?.data) ? res.data : [];
+
+        const meta = res?.meta || {};
+        const total = Number(meta.total ?? this.users.length);
+        const lastPage = Number(meta.lastPage ?? meta.last_page ?? 1);
+        const currentPage = Number(
+          meta.currentPage ?? meta.current_page ?? meta.page ?? page
+        );
+
+        this.total = Number.isFinite(total) ? total : this.users.length;
+        this.lastPage = Number.isFinite(lastPage) && lastPage > 0 ? lastPage : 1;
+        const safePage = Number.isFinite(currentPage) && currentPage > 0 ? currentPage : page;
+        this.page = Math.min(safePage, this.lastPage);
         this.loading = false;
       },
       error: () => {
@@ -49,16 +61,29 @@ export class Users {
     });
   }
 
-  deleteUser(id: number): void {
-    if (!confirm('Are you sure you want to delete this user?')) return;
+  openDeleteModal(id: number): void {
+    this.deleteTargetId = id;
+    this.showDeleteModal = true;
+  }
+
+  cancelDelete(): void {
+    this.showDeleteModal = false;
+    this.deleteTargetId = null;
+  }
+
+  confirmDelete(): void {
+    if (this.deleteTargetId === null) return;
+    const id = this.deleteTargetId;
+    this.showDeleteModal = false;
+    this.deleteTargetId = null;
 
     this.userService.deleteUser(id).subscribe({
       next: () => {
-        this.message = 'User deleted successfully ✅';
+        this.toastr.success('User deleted successfully');
         this.allUsers(this.page);
       },
-      error: () => {
-        this.message = 'Failed to delete user ❌';
+      error: (err) => {
+        this.toastr.error(err?.error?.message || 'Failed to delete user');
       },
     });
   }
