@@ -4,29 +4,30 @@
   <h2 class="text-[20px] font-semibold mb-4">Location Management</h2>
 
   <!-- FORM -->
-  <form [formGroup]="locationForm" (ngSubmit)="submit()" class="bg-white p-5 rounded-xl shadow-sm">
+  <form [formGroup]="locationForm" (ngSubmit)="submit()" class="">
 
-    <div class="grid grid-cols-2 gap-4">
-
+    <div class="grid grid-cols-3 gap-10 mb-[30px]">
       <!-- NAME -->
       <div>
-        <div class="flex items-center gap-3">
-          <label class="w-[120px] text-sm text-gray-600">Name</label>
-          <input type="text" formControlName="name" class="flex-1 border rounded-lg px-3 py-2 focus:outline-none">
+        <div class="">
+          <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">Name<span class="text-red-900 text-[12px]">*</span></label>
+          <input type="text" formControlName="name"
+            class="w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent">
         </div>
 
         <div *ngIf="locationForm.get('name')?.touched && locationForm.get('name')?.invalid"
-          class="text-red-500 text-xs mt-1 ml-[120px]">
+          class="text-red-500 mt-1 text-[11px] font-ibm">
           Name is required
         </div>
       </div>
 
       <!-- COUNTRY -->
       <div>
-        <div class="flex items-center gap-3">
-          <label class="w-[120px] text-sm text-gray-600">Country</label>
+        <div class="">
+          <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">Country<span class="text-red-900 text-[12px]">*</span></label>
 
-          <select formControlName="country_id" class="flex-1 border rounded-lg px-3 py-2">
+          <select formControlName="country_id"
+            class="w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent">
             <option [ngValue]="null">Select Country</option>
             <option *ngFor="let c of countries" [ngValue]="c.id">
               {{ c.name }}
@@ -34,17 +35,21 @@
           </select>
         </div>
         <div *ngIf="locationForm.get('country_id')?.touched && locationForm.get('country_id')?.invalid"
-          class="text-red-500 text-xs mt-1 ml-[120px]">
+          class="text-red-500 mt-1 text-[11px] font-ibm">
           Country is required
         </div>
       </div>
 
+    </div>
+
+    <div class="grid grid-cols-3 gap-10 mb-[30px]">
       <!-- STATE -->
       <div>
-        <div class="flex items-center gap-3">
-          <label class="w-[120px] text-sm text-gray-600">State</label>
+        <div class="">
+          <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">State<span class="text-red-900 text-[12px]">*</span></label>
 
-          <select formControlName="state_id" class="flex-1 border rounded-lg px-3 py-2">
+          <select formControlName="state_id"
+            class="w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent">
             <option [ngValue]="null">Select State</option>
             <option *ngFor="let s of states" [ngValue]="s.id">
               {{ s.name }}
@@ -52,17 +57,18 @@
           </select>
         </div>
         <div *ngIf="locationForm.get('state_id')?.touched && locationForm.get('state_id')?.invalid"
-          class="text-red-500 text-xs mt-1 ml-[120px]">
+          class="text-red-500 mt-1 text-[11px] font-ibm">
           State is required
         </div>
       </div>
 
       <!-- CITY -->
       <div>
-        <div class="flex items-center gap-3">
-          <label class="w-[120px] text-sm text-gray-600">City</label>
+        <div class="">
+          <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">City<span class="text-red-900 text-[12px]">*</span></label>
 
-          <select formControlName="city_id" class="flex-1 border rounded-lg px-3 py-2">
+          <select formControlName="city_id"
+            class="w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent">
             <option [ngValue]="null">Select City</option>
             <option *ngFor="let c of cities" [ngValue]="c.id">
               {{ c.name }}
@@ -70,20 +76,24 @@
           </select>
         </div>
         <div *ngIf="locationForm.get('city_id')?.touched && locationForm.get('city_id')?.invalid"
-          class="text-red-500 text-xs mt-1 ml-[120px]">
+          class="text-red-500 mt-1 text-[11px] font-ibm">
           City is required
         </div>
       </div>
 
+    </div>
+
+    <div class="grid grid-cols-3 gap-10 mb-[30px]">
       <!-- POSTAL -->
       <div>
-        <div class="flex items-center gap-3">
-          <label class="w-[120px] text-sm text-gray-600">Postal Code</label>
-          <input type="text" formControlName="postalCode" class="flex-1 border rounded-lg px-3 py-2">
+        <div class="">
+          <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">Postal Code<span class="text-red-900 text-[12px]">*</span></label>
+          <input type="text" formControlName="postalCode"
+            class="w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent">
         </div>
 
         <div *ngIf="locationForm.get('postalCode')?.touched && locationForm.get('postalCode')?.invalid"
-          class="text-red-500 text-xs mt-1 ml-[120px]">
+          class="text-red-500 mt-1 text-[11px] font-ibm">
 
           <span *ngIf="locationForm.get('postalCode')?.errors?.['required']">
             Postal code is required
@@ -98,42 +108,50 @@
 
       <!-- LATITUDE -->
       <div>
-        <div class="flex items-center gap-3">
-          <label class="w-[120px] text-sm text-gray-600">Latitude</label>
-          <input type="text" formControlName="latitude" class="flex-1 border rounded-lg px-3 py-2">
+        <div class="">
+          <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">Latitude</label>
+          <input type="text" formControlName="latitude"
+            class="w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent">
         </div>
 
         <div *ngIf="locationForm.get('latitude')?.touched && locationForm.get('latitude')?.invalid"
-          class="text-red-500 text-xs mt-1 ml-[120px]">
+          class="text-red-500 mt-1 text-[11px] font-ibm">
           Enter valid decimal number
         </div>
       </div>
+    </div>
 
+
+    <div class="grid grid-cols-3 gap-10 mb-[30px]">
       <!-- LONGITUDE -->
       <div>
-        <div class="flex items-center gap-3">
-          <label class="w-[120px] text-sm text-gray-600">Longitude</label>
-          <input type="text" formControlName="longitude" class="flex-1 border rounded-lg px-3 py-2">
+        <div class="">
+          <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">Longitude</label>
+          <input type="text" formControlName="longitude"
+            class="w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent">
         </div>
 
         <div *ngIf="locationForm.get('longitude')?.touched && locationForm.get('longitude')?.invalid"
-          class="text-red-500 text-xs mt-1 ml-[120px]">
+          class="text-red-500 mt-1 text-[11px] font-ibm">
           Enter valid decimal number
         </div>
       </div>
-
     </div>
+
 
     <!-- ADDRESS -->
-    <div class="flex items-start gap-3 mt-4">
-      <label class="w-[120px] text-sm text-gray-600 pt-2">Address</label>
-      <textarea formControlName="address" class="flex-1 border rounded-lg px-3 py-2 h-[80px] resize-none"></textarea>
+     <div class="grid grid-cols-3 gap-10">
+        <div class="">
+          <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">Address</label>
+          <textarea formControlName="address"
+            class="w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent resize-none"></textarea>
+        </div>
     </div>
+
 
     <!-- BUTTONS -->
     <div class="flex justify-end gap-3 mt-5">
-
-      <button type="submit" class="px-5 py-2 bg-black text-white rounded-lg">
+      <button type="submit" class="bg-blue-600 text-white px-6 py-2 text-sm">
         {{ selectedId ? 'Update' : 'Save' }}
       </button>
     </div>
