@@ -13,9 +13,12 @@ import { HttpClient } from '@angular/common/http';
 export class Tenants {
   tenants: Tenant[] = [];
   loading = true;
-  page = 1;
-  total = 0;
-  lastPage = 1;
+  // page = 1;
+  // total = 0;
+  // lastPage = 1;
+  page: number = 1;
+  lastPage: number = 1;
+  total: number = 0;
   message = '';
 
   constructor(private router: Router, private tenantService: TenantService) {}
@@ -30,9 +33,12 @@ export class Tenants {
     this.tenantService.getTenants(page).subscribe({
       next: (res) => {
         this.tenants = res.data;
-        this.total = res.meta.total;
-        this.page = res.meta.page;
-        this.lastPage = res.meta.lastPage;
+        // this.total = res.meta.total;
+        // this.page = res.meta.page;
+        // this.lastPage = res.meta.lastPage;
+        this.total = Number(res.meta.total);
+        this.lastPage = Number(res.meta.lastPage);
+        this.page = Number(res.meta.page);
         this.loading = false;
       },
       error: () => {
