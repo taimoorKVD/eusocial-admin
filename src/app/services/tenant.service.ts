@@ -9,9 +9,12 @@ interface TenantResponse {
   message: string;
   data: Tenant[];
   meta: {
-    total: number;
-    page: number;
-    lastPage: number;
+    total?: number;
+    current_page?: number;
+    currentPage?: number;
+    page?: number;
+    last_page?: number;
+    lastPage?: number;
   };
 }
 
@@ -24,7 +27,7 @@ export class TenantService {
   constructor(private http: HttpClient) {}
 
   getTenants(page: number = 1): Observable<TenantResponse> {
-    return this.http.get<TenantResponse>(`${this.baseUrl}?page=${page}`);
+    return this.http.get<TenantResponse>(`${this.baseUrl}?page=${page}&sort_by=created_at&sort_order=desc`);
   }
 
   getOne(id: number): Observable<{ data: Tenant }> {

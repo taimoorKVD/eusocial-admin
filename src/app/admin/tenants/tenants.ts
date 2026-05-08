@@ -3,6 +3,7 @@ import { Tenant } from '../../interfaces/tenant';
 import { TenantService } from '../../services/tenant.service';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-tenants',
@@ -20,8 +21,10 @@ export class Tenants {
   lastPage: number = 1;
   total: number = 0;
   message = '';
+  showDeleteModal = false;
+  deleteTargetId: number | null = null;
 
-  constructor(private router: Router, private tenantService: TenantService) {}
+  constructor(private router: Router, private tenantService: TenantService, private toastr: ToastrService) {}
 
   ngOnInit(): void {
     this.allTenants();
@@ -57,16 +60,29 @@ export class Tenants {
     this.router.navigate(['/tenants', id, 'edit']);
   }
 
-  deleteTenant(id: number): void {
-    if (!confirm('Are you sure you want to delete this tenant?')) return;
+  openDeleteModal(id: number): void {
+    this.deleteTargetId = id;
+    this.showDeleteModal = true;
+  }
+
+  cancelDelete(): void {
+    this.showDeleteModal = false;
+    this.deleteTargetId = null;
+  }
+
+  confirmDelete(): void {
+    if (this.deleteTargetId === null) return;
+    const id = this.deleteTargetId;
+    this.showDeleteModal = false;
+    this.deleteTargetId = null;
 
     this.tenantService.delete(id).subscribe({
       next: () => {
-        this.message = 'Tenant deleted successfully ✅';
+        this.toastr.success('Tenant deleted successfully');
         this.allTenants(this.page);
       },
-      error: () => {
-        this.message = 'Failed to delete tenant ❌';
+      error: (err) => {
+        this.toastr.error(err?.error?.message || 'Failed to delete tenant');
       },
     });
   }

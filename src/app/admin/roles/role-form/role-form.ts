@@ -4,6 +4,7 @@ import { RoleService } from '../../../services/role.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PermissionService } from '../../../services/permission.service';
 import { Permission } from '../../../interfaces/permission';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-role-form',
@@ -26,7 +27,8 @@ export class RoleForm {
     private roleService: RoleService,
     private router: Router,
     private route: ActivatedRoute,
-    private permissionService: PermissionService
+    private permissionService: PermissionService,
+    private toastr: ToastrService
   ) {}
 
   ngOnInit(): void {
@@ -137,11 +139,11 @@ export class RoleForm {
 
     request.subscribe({
       next: () => {
-        this.message = this.isEditMode
-          ? 'Role updated successfully ✅'
-          : 'Role created successfully ✅';
+        this.toastr.success(
+          this.isEditMode ? 'Role updated successfully' : 'Role created successfully'
+        );
         this.saving = false;
-        setTimeout(() => this.router.navigate(['/roles']), 1200);
+        this.router.navigate(['/roles']);
       },
       error: () => {
         this.message = 'Role name is already Exist ❌';
@@ -152,14 +154,13 @@ export class RoleForm {
 
   deleteRole(): void {
     if (!this.isEditMode || !this.roleId) return;
-    if (!confirm('Are you sure you want to delete this role?')) return;
 
     this.roleService.deleteRole(this.roleId).subscribe({
       next: () => {
-        this.message = 'Role deleted successfully ✅';
-        setTimeout(() => this.router.navigate(['/roles']), 800);
+        this.toastr.success('Role deleted successfully');
+        this.router.navigate(['/roles']);
       },
-      error: () => (this.message = 'Failed to delete role ❌'),
+      error: (err) => this.toastr.error(err?.error?.message || 'Failed to delete role'),
     });
   }
 

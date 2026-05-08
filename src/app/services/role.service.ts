@@ -9,6 +9,9 @@ interface RoleApiResponse {
   data: Role[];
   meta?: {
     total: number;
+    current_page?: number;
+    currentPage?: number;
+    last_page?: number;
     page: number;
     lastPage: number;
   };

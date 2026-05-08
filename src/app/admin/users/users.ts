@@ -4,6 +4,7 @@ import { environment } from '../../../environments/environment';
 import { Router } from '@angular/router';
 import { User } from '../../interfaces/user';
 import { UserService } from '../../services/user.service';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-users',
@@ -21,11 +22,14 @@ export class Users {
 lastPage: number = 1;
 total: number = 0;
   message = '';
+  showDeleteModal = false;
+  deleteTargetId: number | null = null;
 
   constructor(
     private http: HttpClient,
     private router: Router,
-    private userService: UserService
+    private userService: UserService,
+    private toastr: ToastrService
   ) { }
 
   ngOnInit(): void {
@@ -55,16 +59,29 @@ total: number = 0;
     });
   }
 
-  deleteUser(id: number): void {
-    if (!confirm('Are you sure you want to delete this user?')) return;
+  openDeleteModal(id: number): void {
+    this.deleteTargetId = id;
+    this.showDeleteModal = true;
+  }
+
+  cancelDelete(): void {
+    this.showDeleteModal = false;
+    this.deleteTargetId = null;
+  }
+
+  confirmDelete(): void {
+    if (this.deleteTargetId === null) return;
+    const id = this.deleteTargetId;
+    this.showDeleteModal = false;
+    this.deleteTargetId = null;
 
     this.userService.deleteUser(id).subscribe({
       next: () => {
-        this.message = 'User deleted successfully ✅';
+        this.toastr.success('User deleted successfully');
         this.allUsers(this.page);
       },
-      error: () => {
-        this.message = 'Failed to delete user ❌';
+      error: (err) => {
+        this.toastr.error(err?.error?.message || 'Failed to delete user');
       },
     });
   }
