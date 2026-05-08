@@ -124,7 +124,7 @@ export class UserForm {
         setTimeout(() => this.router.navigate(['/users']), 1500);
       },
       error: () => {
-        this.message = 'Failed to save user ❌';
+        this.message = 'User email is Already Exist ❌';
         this.saving = false;
       },
     });

@@ -22,7 +22,7 @@
 
     <!-- Full Name -->
     <div>
-      <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">Full Name<span class="text-red-900 text-[12px]">*</span></label>
+      <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">Full Name<span class="text-red-500 text-[12px]">*</span></label>
       <input #firstInput type="text" [(ngModel)]="formData.name" (ngModelChange)="onFieldChange()"
         placeholder="Placeholder text"
         class=" w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent" />
@@ -51,7 +51,7 @@
   <div class="grid grid-cols-3 gap-10 mb-[30px]">
     <!-- Address -->
     <div>
-      <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">Address<span class="text-red-900 text-[12px]">*</span></label>
+      <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">Address<span class="text-red-500 text-[12px]">*</span></label>
       <input type="text" [(ngModel)]="formData.address" (ngModelChange)="onFieldChange()"
         placeholder="*Placeholder text"
         class=" w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent" />
@@ -64,7 +64,7 @@
     <div class="relative">
       <!-- <input type="email" [(ngModel)]="formData.email" (ngModelChange)="onFieldChange()" placeholder="*Placeholder text"
         class=" w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent" /> -->
-      <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">Email<span class="text-red-900 text-[12px]">*</span></label>
+      <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">Email<span class="text-red-500 text-[12px]">*</span></label>
       <input type="text" [(ngModel)]="formData.email" (ngModelChange)="onFieldChange()"
         class=" w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent"
         placeholder="Email" />
@@ -82,7 +82,7 @@
 
     <!-- Username -->
     <div>
-      <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">Username<span class="text-red-900 text-[12px]">*</span></label>
+      <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">Username<span class="text-red-500 text-[12px]">*</span></label>
       <input type="text" [(ngModel)]="formData.username" (ngModelChange)="onFieldChange()"
         placeholder="Placeholder text"
         class=" w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent" />
@@ -98,7 +98,7 @@
       <div class="flex gap-1 items-center">
 
         <label class="text-[12px] text-[#6F6F6F] font-ibm px-1">
-          Password<span class="text-red-900 text-[12px]">*</span>
+          Password<span class="text-red-500 text-[12px]">*</span>
         </label>
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
           <rect width="16" height="16" fill="white" fill-opacity="0.01" style="mix-blend-mode:multiply" />
@@ -162,7 +162,7 @@
 
       <div class="flex gap-1 items-center absolute left-[13px] top-[-10px]">
         <label class="text-[12px] text-[#6F6F6F] font-ibm px-1">
-          Confirm Password<span class="text-red-900 text-[12px]">*</span>
+          Confirm Password<span class="text-red-500 text-[12px]">*</span>
         </label>
       </div>
 
@@ -198,7 +198,7 @@
 
     <!-- Job Position Dropdown -->
     <div>
-      <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">Job Position<span class="text-red-900 text-[12px]">*</span></label>
+      <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">Job Position<span class="text-red-500 text-[12px]">*</span></label>
 
       <select [(ngModel)]="formData.job_position_id" (ngModelChange)="onFieldChange()"
         class="w-full border-b border-[#161616] py-2 text-sm bg-transparent focus:outline-none">
@@ -213,7 +213,7 @@
 
     <!-- Location Dropdown -->
     <div>
-      <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">Location<span class="text-red-900 text-[12px]">*</span></label>
+      <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">Location<span class="text-red-500 text-[12px]">*</span></label>
 
       <select [(ngModel)]="formData.location_id" (ngModelChange)="onFieldChange()"
         class="w-full border-b border-[#161616] py-2 text-sm bg-transparent focus:outline-none">
@@ -229,7 +229,7 @@
 
   <!-- Availability -->
   <div class="mt-10">
-    <label class="text-sm text-gray-600">Availability<span class="text-red-900 text-[12px]">*</span></label>
+    <label class="text-sm text-gray-600">Availability<span class="text-red-500 text-[12px]">*</span></label>
 
     <div class="flex mt-3 flex-wrap">
 

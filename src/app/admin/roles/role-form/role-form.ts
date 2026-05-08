@@ -144,7 +144,7 @@ export class RoleForm {
         setTimeout(() => this.router.navigate(['/roles']), 1200);
       },
       error: () => {
-        this.message = 'Failed to save role ❌';
+        this.message = 'Role name is already Exist ❌';
         this.saving = false;
       },
     });
