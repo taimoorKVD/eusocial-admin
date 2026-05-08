@@ -29,9 +29,12 @@ export class Roles {
     this.message = '';
 
     this.roleService.getRoles(page).subscribe({
-      next: (roles) => {
-        this.roles = roles;
-        this.total = roles.length; // ✅ we no longer have res.meta
+      next: (res) => {
+        this.roles = res.data;
+        // this.total = roles.length;
+        this.total = Number(res.meta.total);
+        this.page = Number(res.meta.page);
+        this.lastPage = Number(res.meta.lastPage);
         this.loading = false;
       },
       error: () => {
