@@ -14,9 +14,12 @@ import { UserService } from '../../services/user.service';
 export class Users {
   users: User[] = []; // ✅ array of users
   loading = true;
-  page = 1;
-  total = 0;
-  lastPage = 1;
+  // page = 1;
+  // total = 0;
+  // lastPage = 1;
+  page: number = 1;
+lastPage: number = 1;
+total: number = 0;
   message = '';
 
   constructor(
@@ -36,9 +39,12 @@ export class Users {
       next: (res) => {
         this.users = res.data;
         console.log(this.users);
-        this.total = res.meta.total;
-        this.lastPage = res.meta.lastPage;
-        this.page = res.meta.page;
+        // this.total = res.meta.total;
+        // this.lastPage = res.meta.lastPage;
+        // this.page = res.meta.page;
+        this.total = Number(res.meta.total);
+        this.lastPage = Number(res.meta.lastPage);
+        this.page = Number(res.meta.page);
         this.loading = false;
       },
       error: () => {
