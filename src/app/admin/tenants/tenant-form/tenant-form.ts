@@ -113,7 +113,7 @@ sending = false;
           setTimeout(() => this.router.navigate(['/tenants']), 800);
         }
       },
-      error: () => (this.message = 'Failed to save tenant ❌'),
+      error: () => (this.message = 'Tenant name is already Exist ❌'),
     });
   }
 
