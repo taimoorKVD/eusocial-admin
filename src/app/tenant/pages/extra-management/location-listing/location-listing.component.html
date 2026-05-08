@@ -1,3 +1,5 @@
+ <app-eu-loader *ngIf="isLoading"></app-eu-loader>
+
 <div class="p-6">
 
   <!-- HEADER -->
@@ -10,31 +12,31 @@
   </div>
 
   <!-- TABLE -->
-  <div class="bg-white rounded-xl shadow-sm p-4">
+  <div class="bg-white rounded shadow overflow-hidden">
 
-    <table class="w-full text-sm">
+    <table class="w-full text-left text-sm font-ibm">
 
-      <thead>
-        <tr class="border-b text-left">
-          <th class="py-2">Name</th>
-          <th>Country</th>
-          <th>State</th>
-          <th>City</th>
-          <th>Postal Code</th>
-          <th class="text-right">Actions</th>
+      <thead class="bg-gray-200 text-gray-700">
+        <tr>
+          <th class="px-4 py-3">Name</th>
+          <th class="px-4 py-3">Country</th>
+          <th class="px-4 py-3">State</th>
+          <th class="px-4 py-3">City</th>
+          <th class="px-4 py-3">Postal Code</th>
+          <th class="px-4 py-3 text-right">Actions</th>
         </tr>
       </thead>
 
       <tbody>
         <tr *ngFor="let loc of locations" class="border-b hover:bg-gray-50">
 
-          <td>{{ loc.name }}</td>
-          <td>{{ getCountryName(loc.countryId) }}</td>
-          <td>{{ getStateName(loc.stateId) }}</td>
-          <td>{{ getCityName(loc.cityId) }}</td>
-          <td>{{ loc.postalCode }}</td>
+          <td class="px-4 py-3">{{ loc.name }}</td>
+          <td class="px-4 py-3">{{ getCountryName(loc.countryId) }}</td>
+          <td class="px-4 py-3">{{ getStateName(loc.stateId) }}</td>
+          <td class="px-4 py-3">{{ getCityName(loc.cityId) }}</td>
+          <td class="px-4 py-3">{{ loc.postalCode }}</td>
 
-          <td class="text-right space-x-3">
+          <td class="px-4 py-3 text-right flex justify-end gap-2">
 
             <!-- <button
               (click)="goToEdit(loc.id)"
@@ -66,7 +68,36 @@
       </tbody>
 
     </table>
+    <!-- Pagination -->
+    <div class="flex justify-between items-center px-4 py-3 border-t border-gray-200 bg-white">
+
+      <span class="text-sm text-gray-500">
+        Page {{ page }} of {{ lastPage }}
+      </span>
+
+      <div class="flex items-center gap-2">
+
+        <!-- Prev -->
+        <button
+          class="px-3 py-1.5 rounded-lg text-sm font-medium border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition disabled:opacity-40 disabled:cursor-not-allowed"
+          [disabled]="page === 1" (click)="prevPage()">
+
+          ← Prev
+        </button>
+
+        <!-- Next -->
+        <button
+          class="px-3 py-1.5 rounded-lg text-sm font-medium border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition disabled:opacity-40 disabled:cursor-not-allowed"
+          [disabled]="page === lastPage" (click)="nextPage()">
+
+          Next →
+        </button>
+
+      </div>
+    </div>
 
   </div>
+
+
 
 </div>

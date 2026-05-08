@@ -15,6 +15,9 @@ export class LocationListingComponent {
   countries: any[] = [];
   states: any[] = [];
   cities: any[] = [];
+  page = 1;
+  lastPage = 1;
+  total = 0;
 
   constructor(
     private locationService: TenantLocationService,
@@ -29,16 +32,38 @@ export class LocationListingComponent {
   this.loadCities();
   }
 
-  getLocations() {
-    this.isLoading = true;
+  // getLocations() {
+  //   this.isLoading = true;
 
-    this.locationService.getLocations().subscribe({
-      next: (res) => {
-        this.locations = res.data || [];
-      },
-      complete: () => this.isLoading = false
-    });
-  }
+  //   this.locationService.getLocations().subscribe({
+  //     next: (res) => {
+  //       this.locations = res.data || [];
+  //     },
+  //     complete: () => this.isLoading = false
+  //   });
+  // }
+
+  getLocations(page: number = 1) {
+  this.isLoading = true;
+
+  this.locationService.getLocations(page).subscribe({
+    next: (res) => {
+
+      this.locations = res.data || [];
+
+      this.total = res.count || 0;   // if backend gives count
+      this.page = res.page || 1;
+      this.lastPage = res.lastPage || 1;
+
+      this.isLoading = false;
+    },
+
+    error: () => {
+      this.locations = [];
+      this.isLoading = false;
+    }
+  });
+}
 
   goToCreate() {
     // this.router.navigate(['/location/create']);
@@ -77,12 +102,11 @@ export class LocationListingComponent {
   });
 }
 
-// ⚠️ IMPORTANT: these should return ALL data
 loadStates() {
   this.locationService.getStates(0).subscribe(res => {
     this.states = res.data || res;
-    console.log('States:', this.states);
-console.log('Looking for stateId:', 45);
+    // console.log('States:', this.states);
+// console.log('Looking for stateId:', 45);
   });
 }
 
@@ -102,5 +126,17 @@ getStateName(id: number): string {
 
 getCityName(id: number): string {
   return this.cities.find(c => c.id === id)?.name || '-';
+}
+
+prevPage(): void {
+  if (this.page > 1) {
+    this.getLocations(this.page - 1);
+  }
+}
+
+nextPage(): void {
+  if (this.page < this.lastPage) {
+    this.getLocations(this.page + 1);
+  }
 }
 }

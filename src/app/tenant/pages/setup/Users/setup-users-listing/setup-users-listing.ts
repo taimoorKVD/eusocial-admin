@@ -10,7 +10,8 @@ import { ActivatedRoute } from '@angular/router';
 })
 export class SetupUsersListing {
   users: any[] = [];
-  loading: boolean = false;
+  // loading: boolean = false;
+  loading = false;
   slug: string = '';
 
   constructor(private userService: TenantUserService, private route:ActivatedRoute) {}
