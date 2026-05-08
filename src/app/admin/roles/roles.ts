@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { Role } from '../../interfaces/role';
 import { RoleService } from '../../services/role.service';
 import { Router } from '@angular/router';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-roles',
@@ -16,8 +17,10 @@ export class Roles {
   message = '';
   page = 1;
   lastPage = 1;
+  showDeleteModal = false;
+  deleteTargetId: number | null = null;
 
-  constructor(private roleService: RoleService, private router: Router) {}
+  constructor(private roleService: RoleService, private router: Router, private toastr: ToastrService) {}
 
   ngOnInit(): void {
     this.allRoles();
@@ -49,16 +52,29 @@ export class Roles {
     this.router.navigate(['/roles/create']);
   }
 
-  deleteRole(id: number): void {
-    if (!confirm('Are you sure you want to delete this role?')) return;
+  openDeleteModal(id: number): void {
+    this.deleteTargetId = id;
+    this.showDeleteModal = true;
+  }
+
+  cancelDelete(): void {
+    this.showDeleteModal = false;
+    this.deleteTargetId = null;
+  }
+
+  confirmDelete(): void {
+    if (this.deleteTargetId === null) return;
+    const id = this.deleteTargetId;
+    this.showDeleteModal = false;
+    this.deleteTargetId = null;
 
     this.roleService.deleteRole(id).subscribe({
       next: () => {
-        this.message = 'Role deleted successfully ✅';
-        this.allRoles();
+        this.toastr.success('Role deleted successfully');
+        this.allRoles(this.page);
       },
-      error: () => {
-        this.message = 'Failed to delete role ❌';
+      error: (err) => {
+        this.toastr.error(err?.error?.message || 'Failed to delete role');
       },
     });
   }
