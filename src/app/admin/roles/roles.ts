@@ -33,28 +33,11 @@ export class Roles {
 
     this.roleService.getRoles(page).subscribe({
       next: (res) => {
-        this.roles = Array.isArray(res?.data) ? res.data : [];
-
-        const meta =
-          res?.meta ||
-          ({
-            total: undefined,
-            currentPage: undefined,
-            current_page: undefined,
-            page: undefined,
-            lastPage: undefined,
-            last_page: undefined,
-          } as const);
-        const total = Number(meta.total ?? this.roles.length);
-        const lastPage = Number(meta.lastPage ?? meta.last_page ?? 1);
-        const currentPage = Number(
-          meta.currentPage ?? meta.current_page ?? meta.page ?? page
-        );
-
-        this.total = Number.isFinite(total) ? total : this.roles.length;
-        this.lastPage = Number.isFinite(lastPage) && lastPage > 0 ? lastPage : 1;
-        const safePage = Number.isFinite(currentPage) && currentPage > 0 ? currentPage : page;
-        this.page = Math.min(safePage, this.lastPage);
+        this.roles = res.data;
+        // this.total = roles.length;
+        this.total = Number(res.meta.total);
+        this.page = Number(res.meta.page);
+        this.lastPage = Number(res.meta.lastPage);
         this.loading = false;
       },
       error: () => {

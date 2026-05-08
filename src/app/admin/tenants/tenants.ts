@@ -14,9 +14,12 @@ import { ToastrService } from 'ngx-toastr';
 export class Tenants {
   tenants: Tenant[] = [];
   loading = true;
-  page = 1;
-  total = 0;
-  lastPage = 1;
+  // page = 1;
+  // total = 0;
+  // lastPage = 1;
+  page: number = 1;
+  lastPage: number = 1;
+  total: number = 0;
   message = '';
   showDeleteModal = false;
   deleteTargetId: number | null = null;
@@ -32,19 +35,13 @@ export class Tenants {
     this.message = '';
     this.tenantService.getTenants(page).subscribe({
       next: (res) => {
-        this.tenants = Array.isArray(res?.data) ? res.data : [];
-
-        const meta = res?.meta || {};
-        const total = Number(meta.total ?? this.tenants.length);
-        const lastPage = Number(meta.lastPage ?? meta.last_page ?? 1);
-        const currentPage = Number(
-          meta.currentPage ?? meta.current_page ?? meta.page ?? page
-        );
-
-        this.total = Number.isFinite(total) ? total : this.tenants.length;
-        this.lastPage = Number.isFinite(lastPage) && lastPage > 0 ? lastPage : 1;
-        const safePage = Number.isFinite(currentPage) && currentPage > 0 ? currentPage : page;
-        this.page = Math.min(safePage, this.lastPage);
+        this.tenants = res.data;
+        // this.total = res.meta.total;
+        // this.page = res.meta.page;
+        // this.lastPage = res.meta.lastPage;
+        this.total = Number(res.meta.total);
+        this.lastPage = Number(res.meta.lastPage);
+        this.page = Number(res.meta.page);
         this.loading = false;
       },
       error: () => {

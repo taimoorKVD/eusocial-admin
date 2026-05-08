@@ -128,10 +128,8 @@ export class UserForm {
         this.saving = false;
         setTimeout(() => this.router.navigate(['/users']), 1000);
       },
-      error: (err: any) => {
-        const msg = this.extractErrorMessage(err);
-        console.error('HTTP Error:', { status: err.status, statusText: err.statusText, body: err.error, extractedMsg: msg });
-        this.toastr.error(msg);
+      error: () => {
+        this.message = 'User email is Already Exist ❌';
         this.saving = false;
       },
     });

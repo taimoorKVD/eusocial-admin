@@ -145,23 +145,8 @@ export class RoleForm {
         this.saving = false;
         this.router.navigate(['/roles']);
       },
-      error: (err) => {
-        const body = err?.error ?? err?.response ?? err;
-        let msg = 'Failed to save role';
-        if (body?.message) {
-          msg = Array.isArray(body.message) ? body.message.join(', ') : body.message;
-        } else if (body?.response?.message) {
-          const nested = body.response.message;
-          msg = Array.isArray(nested) ? nested.join(', ') : nested;
-        } else if (body?.errors) {
-          const first = Object.values(body.errors as Record<string, string | string[]>)[0];
-          msg = Array.isArray(first) ? first[0] : first;
-        } else if (typeof body === 'string' && body.trim()) {
-          msg = body;
-        } else if (typeof err?.message === 'string' && err.message.trim()) {
-          msg = err.message;
-        }
-        this.toastr.error(msg);
+      error: () => {
+        this.message = 'Role name is already Exist ❌';
         this.saving = false;
       },
     });

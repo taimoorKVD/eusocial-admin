@@ -26,9 +26,16 @@ export class RoleService {
   constructor(private http: HttpClient) {}
 
   /** ✅ Get paginated list of roles */
+  // getRoles(page: number = 1): Observable<Role[]> {
+  //   return this.http
+  //     .get<RoleApiResponse>(`${this.baseUrl}?page=${page}`)
+  //     .pipe(map((res) => res.data)); // unwrap data
+  // }
   getRoles(page: number = 1): Observable<RoleApiResponse> {
-    return this.http.get<RoleApiResponse>(`${this.baseUrl}?page=${page}&sort_by=created_at&sort_order=desc`);
-  }
+  return this.http.get<RoleApiResponse>(
+    `${this.baseUrl}?page=${page}`
+  );
+}
 
   /** ✅ Get all roles (no pagination) */
   getAllRoles(): Observable<Role[]> {
