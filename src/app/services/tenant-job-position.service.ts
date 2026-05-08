@@ -13,8 +13,14 @@ export class TenantJobPositionService {
   constructor(private http: HttpClient) {}
 
 
-  getJobPositions() {
-  return this.http.get(this.jobPosition);
+//   getJobPositions() {
+//   return this.http.get(this.jobPosition);
+// }
+
+getJobPositions(page: number = 1) {
+  return this.http.get(
+    `${this.jobPosition}?page=${page}`
+  );
 }
 
 getJobPositionById(id: number) {

@@ -504,6 +504,9 @@ confirmAction() {
 
     if (!this.validateForm()) return;
 
+      // ✅ close confirm modal first
+    this.closeModal();
+
     this.startLoading();
 
     // ================= BASE PAYLOAD =================
@@ -539,9 +542,9 @@ confirmAction() {
 
           this.closeModal();
           this.toastr.success('User created successfully');
-          this.stopLoading();
 
           this.isCredentialsModalOpen = true;
+          this.stopLoading();
         },
 
         error: (err) => {
@@ -600,9 +603,9 @@ confirmAction() {
 
           this.closeModal();
           this.toastr.success('User updated successfully');
-          this.stopLoading();
 
           this.isCredentialsModalOpen = true;
+          this.stopLoading();
         },
 
         error: (err) => {

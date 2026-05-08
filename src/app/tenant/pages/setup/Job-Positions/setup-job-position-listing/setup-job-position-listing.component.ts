@@ -13,6 +13,9 @@ import { TenantSessionService } from '../../../../../services/tenant-session.ser
 export class SetupJobPositionListingComponent {
   jobPositions: any[] = [];
   isLoading = false;
+  page = 1;
+  lastPage = 1;
+  total = 0;
 
   constructor( private tenantJobPosition: TenantJobPositionService, private router: Router, private toastr: ToastrService, public session: TenantSessionService) {}
 
@@ -21,15 +24,27 @@ export class SetupJobPositionListingComponent {
   }
 
   // 🔹 Fetch all job positions
-  loadJobPositions() {
+  loadJobPositions(page: number = 1) {
+
     this.isLoading = true;
 
-    this.tenantJobPosition.getJobPositions().subscribe({
+    this.tenantJobPosition.getJobPositions(page).subscribe({
+
       next: (res: any) => {
-        const rows = Array.isArray(res?.data) ? res.data : [];
+
+        const rows = Array.isArray(res?.data)
+          ? res.data
+          : [];
+
         this.jobPositions = [...rows].sort((a: any, b: any) => {
-          const aTime = a?.created_at ? new Date(a.created_at).getTime() : 0;
-          const bTime = b?.created_at ? new Date(b.created_at).getTime() : 0;
+
+          const aTime = a?.created_at
+            ? new Date(a.created_at).getTime()
+            : 0;
+
+          const bTime = b?.created_at
+            ? new Date(b.created_at).getTime()
+            : 0;
 
           if (aTime && bTime && aTime !== bTime) {
             return bTime - aTime;
@@ -37,14 +52,23 @@ export class SetupJobPositionListingComponent {
 
           return (b?.id || 0) - (a?.id || 0);
         });
+
+        this.total = Number(res?.meta?.total || 0);
+        this.page = Number(res?.meta?.page || 1);
+        this.lastPage = Number(res?.meta?.lastPage || 1);
+
         this.isLoading = false;
       },
+
       error: () => {
+
         this.isLoading = false;
         alert('Failed to load job positions');
       }
     });
   }
+
+
 
   deleteJob(id: number) {
 
@@ -71,11 +95,6 @@ export class SetupJobPositionListingComponent {
     }
   });
 }
-
-  // 🔹 Navigate to Create
-  // goToCreate() {
-  //   this.router.navigate(['/tenant/eusocial/job-position/create']);
-  // }
 
   goToCreate() {
   this.router.navigate([
@@ -106,4 +125,18 @@ export class SetupJobPositionListingComponent {
       '-'
     );
   }
+
+  prevPage(): void {
+
+  if (this.page > 1) {
+    this.loadJobPositions(this.page - 1);
+  }
+}
+
+nextPage(): void {
+
+  if (this.page < this.lastPage) {
+    this.loadJobPositions(this.page + 1);
+  }
+}
 }

@@ -20,10 +20,14 @@ export class TenantLocationService {
     return this.http.post(this.apiUrl, data);
   }
 
-  // GET ALL
-  getLocations(): Observable<any> {
-    return this.http.get(this.apiUrl);
-  }
+  // // GET ALL
+  // getLocations(): Observable<any> {
+  //   return this.http.get(this.apiUrl);
+  // }
+
+  getLocations(page: number = 1): Observable<any> {
+  return this.http.get(`${this.apiUrl}?page=${page}`);
+}
 
   // GET BY ID
   getLocation(id: number): Observable<any> {

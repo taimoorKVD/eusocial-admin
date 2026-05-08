@@ -1,9 +1,11 @@
 <div class="min-h-screen bg-gray-100 p-4">
 
   <!-- Loader -->
-  <div *ngIf="isLoading" class="fixed inset-0 bg-white/50 flex items-center justify-center z-50">
+  <!-- <div *ngIf="isLoading" class="fixed inset-0 bg-white/50 flex items-center justify-center z-50">
     <div class="text-blue-600 text-lg">Loading...</div>
-  </div>
+  </div> -->
+
+   <app-eu-loader *ngIf="isLoading"></app-eu-loader>
 
   <!-- Header -->
   <div class="flex justify-between items-center mb-6">
@@ -34,7 +36,7 @@
         <tr *ngFor="let job of jobPositions; let i = index" class="border-t">
 
           <td class="px-4 py-3">
-            {{ i + 1 }}
+            {{ (page - 1) * 15 + i + 1 }}
           </td>
 
           <td class="px-4 py-3">
@@ -55,9 +57,6 @@
           <td class="px-4 py-3 text-right space-x-3">
 
             <!-- Edit -->
-            <!-- <button (click)="goToEdit(job.id)" class="text-blue-600 hover:underline text-sm">
-              Edit
-            </button> -->
             <button (click)="goToEdit(job.id)" class="text-blue-600 hover:text-blue-900">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                 stroke="currentColor" class="w-5 h-5">
@@ -67,9 +66,6 @@
             </button>
 
             <!-- Delete -->
-            <!-- <button (click)="deleteJob(job.id)" class="text-red-500 hover:underline text-sm">
-              Delete
-            </button> -->
             <button (click)="deleteJob(job.id)" class="text-red-600 hover:text-red-900">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                 stroke="currentColor" class="w-5 h-5">
@@ -86,11 +82,35 @@
             No job positions found
           </td>
         </tr>
-
       </tbody>
-
     </table>
+    <!-- Pagination -->
+    <div class="flex justify-between items-center px-4 py-3 border-t border-gray-200 bg-white">
 
+      <span class="text-sm text-gray-500">
+        Page {{ page }} of {{ lastPage }}
+      </span>
+
+      <div class="flex items-center gap-2">
+
+        <!-- Prev -->
+        <button
+          class="px-3 py-1.5 rounded-lg text-sm font-medium border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition disabled:opacity-40 disabled:cursor-not-allowed"
+          [disabled]="page === 1" (click)="prevPage()">
+
+          ← Prev
+        </button>
+
+        <!-- Next -->
+        <button
+          class="px-3 py-1.5 rounded-lg text-sm font-medium border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition disabled:opacity-40 disabled:cursor-not-allowed"
+          [disabled]="page === lastPage" (click)="nextPage()">
+
+          Next →
+        </button>
+
+      </div>
+    </div>
   </div>
 
 </div>
