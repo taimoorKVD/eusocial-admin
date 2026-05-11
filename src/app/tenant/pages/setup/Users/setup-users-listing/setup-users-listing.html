@@ -3,13 +3,16 @@
 <div class="p-4">
 
   <!-- Header -->
-  <div class="flex justify-between items-center mb-4">
+  <div class="flex justify-between items-center mb-5">
     <h2 class="text-lg font-semibold text-[#161616]">Users</h2>
 
     <button routerLink="create" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm">
       + Create
     </button>
   </div>
+
+  <!-- Filter -->
+  <app-user-filter (search)="onFilterSearch($event)" (clear)="onFilterClear()"></app-user-filter>
 
   <!-- Loader -->
   <div *ngIf="loading" class="text-center py-10">
@@ -18,7 +21,7 @@
 
   <!-- Table -->
   <!-- <div *ngIf="!loading && users.length > 0" class="bg-white rounded shadow overflow-hidden"> -->
-  <div class="bg-white rounded shadow overflow-hidden">
+  <div class="bg-white rounded shadow overflow-hidden mt-5">
     <table class="w-full text-left text-sm font-ibm">
 
       <thead class="bg-gray-200 text-gray-700">
@@ -67,7 +70,7 @@
 
     </table>
 
-    <div class="flex justify-between items-center px-4 py-3 border-t border-gray-200 bg-white">
+    <div *ngIf="!loading && users.length > 0" class="flex justify-between items-center px-4 py-3 border-t border-gray-200 bg-white">
 
       <span class="text-sm text-gray-500">
         Page {{ page }} of {{ lastPage }}

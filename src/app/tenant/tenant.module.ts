@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms'; // ✅ IMPORTANT
 import { NgSelectModule } from '@ng-select/ng-select';
 import { ReactiveFormsModule } from '@angular/forms';
+import { SharedModule } from '../shared/shared.module';
 
 
 import { TenantRoutingModule } from './tenant-routing.module';
@@ -49,7 +50,8 @@ import { SetupVendorsListingComponent } from './pages/setup/Vendor/setup-vendors
     TenantRoutingModule,
     FormsModule,
     NgSelectModule,
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    SharedModule
   ]
 })
 export class TenantModule { }
