@@ -15,9 +15,15 @@ export class TenantUserService {
   constructor(private http: HttpClient) {}
 
   // Get all users (dropdown)
-  getUsers() {
-    return this.http.get<any[]>(this.baseUrl);
-  }
+  // getUsers() {
+  //   return this.http.get<any[]>(this.baseUrl);
+  // }
+
+  getUsers(page: number = 1) {
+  return this.http.get<any>(
+    `${this.baseUrl}?page=${page}`
+  );
+}
 
   // Get single user
   getUserById(id: number) {
