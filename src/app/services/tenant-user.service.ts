@@ -20,10 +20,20 @@ export class TenantUserService {
   // }
 
   getUsers(page: number = 1) {
-  return this.http.get<any>(
-    `${this.baseUrl}?page=${page}`
-  );
-}
+    return this.http.get<any>(
+      `${this.baseUrl}?page=${page}`
+    );
+  }
+
+  searchUsers(
+    limit: number = 15,
+    name: string = '',
+    email: string = ''
+  ) {
+    return this.http.get<any>(
+      `${this.baseUrl}/search?limit=${limit}&name=${name}&email=${email}`
+    );
+  }
 
   // Get single user
   getUserById(id: number) {

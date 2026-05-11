@@ -2,6 +2,7 @@ import { NgModule } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 
 import { AdminRoutingModule } from './admin-routing-module';
+import { SharedModule } from '../shared/shared.module';
 import { Navbar } from './navbar/navbar';
 import { Sidebar } from './sidebar/sidebar';
 import { Dashboard } from './dashboard/dashboard';
@@ -33,7 +34,7 @@ import { TenantForm } from './tenants/tenant-form/tenant-form';
     Tenants,
     TenantForm,
   ],
-  imports: [CommonModule, AdminRoutingModule, ReactiveFormsModule, FormsModule],
+  imports: [CommonModule, AdminRoutingModule, ReactiveFormsModule, FormsModule, SharedModule],
   exports: [Admin],
   providers: [
     DatePipe, // ✅ For date: pipe usage
