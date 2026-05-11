@@ -57,7 +57,7 @@ getEmptyForm() {
   return {
     name: '',
     address: '',
-    city: '',
+    // city: '',
     city_id: null,
     email: '',
     website: '',
@@ -289,7 +289,7 @@ loadVendorData(id: number) {
     this.formData = {
       name: data.name,
       address: data.address,
-      city: data.city,
+      // city: data.city,
       city_id: data.city_id,
       country_id: data.country_id,
       state_id: data.state_id,
