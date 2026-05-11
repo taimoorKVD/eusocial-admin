@@ -8,64 +8,79 @@
   <div class="">
 
     <!-- Header -->
-    <div class="grid grid-cols-3 gap-x-12 gap-y-6 mb-[60px] items-center">
+    <div class="grid grid-cols-3 mb-[60px]">
       <div class="">
         <!-- Select Userss -->
         <div class="">
           <label class="text-[16px] font-medium text-[#0054AC] font-ibm mt-1 mb-4 block">Vendors</label>
-          <!-- <ng-select [items]="vendors" bindLabel="label" bindValue="value" [(ngModel)]="chooseVendor"
-            [searchable]="true" [clearable]="true" [placeholder]="!chooseVendor ? 'Choose an option' : ''"
-            class="custom-ng-select text-[#161616]">
-          </ng-select> -->
-          <ng-select [items]="vendors" bindLabel="label" bindValue="value" [(ngModel)]="chooseVendor" [clearable]="true"
+          <!-- <ng-select [items]="vendors" bindLabel="label" bindValue="value" [(ngModel)]="chooseVendor" [clearable]="true"
             [searchable]="true" (change)="onVendorChange()" class="custom-ng-select">
+          </ng-select> -->
+          <!-- <div class=""> -->
+          <ng-select [items]="vendors" bindLabel="label" bindValue="value" [(ngModel)]="chooseVendor"
+            (change)="onVendorChange()" [clearable]="true" [searchable]="true"
+            [placeholder]="!chooseVendor ? 'Choose Vendor' : ''" class="custom-ng-select">
           </ng-select>
+          <!-- </div> -->
         </div>
       </div>
-      <div></div>
-      <div class="text-right">
+      <!-- <div></div> -->
+      <!-- <div class="text-right">
         <button class="bg-orange-600 text-white px-4 py-2 text-sm w-fit">
           Edit +
         </button>
-      </div>
+      </div> -->
     </div>
 
     <!-- Form Grid -->
-    <div class="grid lg:grid-cols-3 grid-cols-1 gap-x-12 gap-y-6 mb-[24px]">
+    <div class="grid grid-cols-3 gap-10 mb-[30px]">
       <div>
-        <input [(ngModel)]="formData.name" type="text" placeholder="Placeholder text"
+        <input id="vendorName" [(ngModel)]="formData.name" type="text" placeholder="Placeholder text"
           class="px-4 w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent">
         <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">Vendor Name</label>
       </div>
     </div>
 
-    <div class="grid lg:grid-cols-3 grid-cols-1 gap-x-12 gap-y-6">
+    <!-- <div class="grid lg:grid-cols-3 grid-cols-1 gap-x-12 gap-y-6"> -->
 
-      <!-- Left Column -->
-      <div class="space-y-6">
+    <!-- Left Column -->
+    <div class="grid grid-cols-3 gap-10 mb-[30px]">
 
-        <div>
-          <input [(ngModel)]="formData.address" type="text" placeholder="Placeholder text"
-            class="px-4 w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent">
-          <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">Address</label>
+      <!-- ADDRESS -->
+      <div>
+        <input [(ngModel)]="formData.address" type="text" placeholder="Placeholder text"
+          class="px-4 w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent">
+        <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">Address</label>
+      </div>
+
+      <!-- COUNTRY -->
+      <div>
+        <div class="">
+          <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">Country<span
+              class="text-red-500 text-[12px]">*</span></label>
+
+          <select [(ngModel)]="formData.country_id" name="country_id" #country="ngModel" required
+            (change)="onCountryChange()"
+            class="px-4 w-full border-b border-[#161616] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent">
+
+            <option [ngValue]="null">Choose Country</option>
+
+            <option *ngFor="let c of countries" [ngValue]="c.id">
+              {{ c.name }}
+            </option>
+
+          </select>
         </div>
+        <div *ngIf="country.invalid && country.touched" class="text-red-500 mt-1 text-[11px] font-ibm">
 
-        <div>
+          Country is required
 
-          <input [(ngModel)]="formData.city" type="text" placeholder="Placeholder text"
-            class="px-4 w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent">
-          <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">City</label>
-        </div>
-
-        <div>
-
-          <input [(ngModel)]="formData.phone_number" type="text" placeholder="Placeholder text"
-            class="px-4 w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent">
-          <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">Phone Number</label>
         </div>
       </div>
 
-      <!-- Right Column -->
+    </div>
+
+    <!-- Right Column
       <div class="space-y-6">
         <div>
           <select [(ngModel)]="formData.state_id" name="state_id"
@@ -98,8 +113,66 @@
             class="px-4 w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent">
           <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">Email Address</label>
         </div>
+      </div> -->
+    <div class="grid grid-cols-3 gap-10 mb-[30px]">
+      <!-- STATE -->
+      <div>
+        <div class="">
+          <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">State<span
+              class="text-red-500 text-[12px]">*</span></label>
+
+          <select [(ngModel)]="formData.state_id" name="state_id" #state="ngModel" required (change)="onStateChange()"
+            class="px-4 w-full border-b border-[#161616] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent">
+
+            <option [ngValue]="null">Choose State</option>
+
+            <option *ngFor="let s of states" [ngValue]="s.id">
+              {{ s.name }}
+            </option>
+
+          </select>
+        </div>
+        <div *ngIf="state.invalid && state.touched" class="text-red-500 mt-1 text-[11px] font-ibm">
+
+          State is required
+
+        </div>
+      </div>
+
+      <!-- CITY -->
+      <div>
+        <div class="">
+          <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">City<span
+              class="text-red-500 text-[12px]">*</span></label>
+
+          <select [(ngModel)]="formData.city_id" name="city_id" #city="ngModel" required
+            class="px-4 w-full border-b border-[#161616] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent">
+
+            <option [ngValue]="null">Choose City</option>
+
+            <option *ngFor="let c of cities" [ngValue]="c.id">
+              {{ c.name }}
+            </option>
+
+          </select>
+        </div>
+        <div *ngIf="city.invalid && city.touched" class="text-red-500 mt-1 text-[11px] font-ibm">
+
+          City is required
+
+        </div>
       </div>
     </div>
+
+    <div class="grid grid-cols-3 gap-10 mb-[30px]">
+            <!-- PHONE NUMBER -->
+      <div>
+        <input [(ngModel)]="formData.phone_number" type="text" placeholder="Placeholder text"
+          class="px-4 w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent">
+        <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">Phone Number</label>
+      </div>
+    </div>
+    <!-- </div> -->
 
     <!-- Same Address -->
     <h3 class="mt-8 text-[16px] font-semibold text-[#525252]">Same Address</h3>

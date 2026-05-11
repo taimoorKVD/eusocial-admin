@@ -1,14 +1,18 @@
 import { Injectable } from '@angular/core';
 import { environment } from '../../environments/environment';
 import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
 })
 export class TenantVendorService {
     private vendor = `${environment.tenantApiUrl}/vendors`;
-    private states = `${environment.tenantApiUrl}/states`;
-    private countries = `${environment.tenantApiUrl}/countries`;
+    // private states = `${environment.tenantApiUrl}/states`;
+    // private countries = `${environment.tenantApiUrl}/countries`;
+    private statesUrl  = `${environment.tenantApiUrl}/states`;
+     private citiesUrl  = `${environment.tenantApiUrl}/cities`;
+     private countriesUrl  = `${environment.tenantApiUrl}/countries`;
 
   constructor(private http: HttpClient) {}
 
@@ -18,9 +22,15 @@ export class TenantVendorService {
   }
 
   // GET ALL (for dropdown)
-  getVendors() {
-    return this.http.get<any>(this.vendor);
-  }
+  // getVendors() {
+  //   return this.http.get<any>(this.vendor);
+  // }
+
+  getVendors(page: number = 1) {
+  return this.http.get<any>(
+    `${this.vendor}?page=${page}`
+  );
+}
 
   // GET SINGLE
   getVendorById(id: number) {
@@ -37,11 +47,26 @@ export class TenantVendorService {
     return this.http.delete(`${this.vendor}/${id}`);
   }
 
-  getStates() {
-  return this.http.get<any>(this.states);
+//   getStates() {
+//   return this.http.get<any>(this.states);
+// }
+
+// getCountries() {
+//   return this.http.get<any>(this.countries);
+// }
+
+  // COUNTRIES
+getCountries(): Observable<any> {
+  return this.http.get(this.countriesUrl);
 }
 
-getCountries() {
-  return this.http.get<any>(this.countries);
+// STATES (by country)
+getStates(countryId: number): Observable<any> {
+  return this.http.get(`${this.statesUrl}?country_id=${countryId}`);
+}
+
+// CITIES (by state)
+getCities(stateId: number): Observable<any> {
+  return this.http.get(`${this.citiesUrl}?state_id=${stateId}`);
 }
 }

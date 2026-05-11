@@ -12,23 +12,53 @@ import { ActivatedRoute } from '@angular/router';
 })
 export class SetupVendorsComponent {
 vendors: any[] = [];
-chooseVendor: number | null = null;
+chooseVendor: number | string | null = null;
 statesList: any[] = [];
 countriesList: any[] = [];
 
 mode: 'create' | 'edit' = 'create';
 selectedVendorId: number | null = null;
 paymentType: 'COD' | 'EFT' = 'COD';
+countries: any[] = [];
+states: any[] = [];
+cities: any[] = [];
 
 formData: any = this.getEmptyForm();
 
 constructor(private route: ActivatedRoute,  private vendorService: TenantVendorService, private toastr: ToastrService) {}
+
+// getEmptyForm() {
+//   return {
+//     name: '',
+//     address: '',
+//     city: '',
+//     email: '',
+//     website: '',
+//     username: '',
+//     instructions: '',
+//     phone_number: '',
+//     country_id: null,
+//     state_id: null,
+//     payment_methods: [],
+//     min_order: '',
+//     contacts: [
+//       {
+//         name: '',
+//         phone_number: '',
+//         email: '',
+//         is_primary: true
+//       }
+//     ],
+//     order_deadlines: []
+//   };
+// }
 
 getEmptyForm() {
   return {
     name: '',
     address: '',
     city: '',
+    city_id: null,
     email: '',
     website: '',
     username: '',
@@ -50,16 +80,10 @@ getEmptyForm() {
   };
 }
 
-// ngOnInit() {
-//   this.loadVendors();
-//   this.loadStates();
-//   this.loadCountries();
-// }
-
 ngOnInit(): void {
 
   this.loadVendors();
-  this.loadStates();
+  // this.loadStates();
   this.loadCountries();
 
   this.route.paramMap.subscribe(params => {
@@ -82,44 +106,155 @@ ngOnInit(): void {
 handleCreateVendor() {
   this.mode = 'create';
   this.selectedVendorId = null;
-  this.chooseVendor = null;
+  this.chooseVendor = 'create' ;
   this.formData = this.getEmptyForm();
   this.paymentType = 'COD';
 }
 
-loadStates() {
-  this.vendorService.getStates().subscribe((res: any) => {
-    this.statesList = res.data || res;
-  });
-}
+// loadStates() {
+//   this.vendorService.getStates().subscribe((res: any) => {
+//     this.statesList = res.data || res;
+//   });
+// }
+
+// loadCountries() {
+//   this.vendorService.getCountries().subscribe((res: any) => {
+//     this.countriesList = res.data || res;
+//   });
+// }
 
 loadCountries() {
   this.vendorService.getCountries().subscribe((res: any) => {
-    this.countriesList = res.data || res;
+    this.countries = res.data || res;
   });
 }
 
+loadStates(countryId: number) {
+
+  if (!countryId) {
+    this.states = [];
+    this.cities = [];
+    return;
+  }
+
+  this.vendorService.getStates(countryId).subscribe((res: any) => {
+    this.states = res.data || res;
+  });
+}
+
+loadCities(stateId: number) {
+
+  if (!stateId) {
+    this.cities = [];
+    return;
+  }
+
+  this.vendorService.getCities(stateId).subscribe((res: any) => {
+    this.cities = res.data || res;
+  });
+}
+
+onCountryChange() {
+
+  this.formData.state_id = null;
+  this.formData.city_id = null;
+
+  this.states = [];
+  this.cities = [];
+
+  this.loadStates(this.formData.country_id);
+}
+
+onStateChange() {
+
+  this.formData.city_id = null;
+
+  this.cities = [];
+
+  this.loadCities(this.formData.state_id);
+}
+
+
+// loadVendors() {
+//   this.vendorService.getVendors().subscribe((res: any) => {
+//     this.vendors = res.data.map((v: any) => ({
+//       label: v.name,
+//       value: v.id
+//     }));
+//   });
+// }
+
 loadVendors() {
+
   this.vendorService.getVendors().subscribe((res: any) => {
-    this.vendors = res.data.map((v: any) => ({
+
+    const vendorOptions = res.data.map((v: any) => ({
       label: v.name,
       value: v.id
     }));
+
+    this.vendors = [
+      { label: 'Create Vendor +', value: 'create' },
+      ...vendorOptions
+    ];
   });
 }
 
+
 // onVendorChange() {
 
+//   // 🔹 CREATE MODE
 //   if (!this.chooseVendor) {
-//     this.mode = 'create';
-//     this.formData = this.getEmptyForm();
+//     this.handleCreateVendor();
 //     return;
 //   }
 
+//   // 🔹 EDIT MODE
 //   this.mode = 'edit';
 //   this.selectedVendorId = this.chooseVendor;
 
-//   this.vendorService.getVendorById(this.chooseVendor).subscribe((res: any) => {
+//   this.loadVendorData(this.chooseVendor);
+// }
+
+onVendorChange() {
+
+  // ✅ CREATE VENDOR
+  if (this.chooseVendor === 'create') {
+
+    this.handleCreateVendor();
+
+    // keep dropdown selected
+    this.chooseVendor = 'create';
+
+    // focus first field
+    setTimeout(() => {
+      const el = document.getElementById('vendorName');
+
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        (el as HTMLInputElement).focus();
+      }
+    }, 100);
+
+    return;
+  }
+
+  // ✅ EMPTY
+  if (!this.chooseVendor) {
+    this.handleCreateVendor();
+    return;
+  }
+
+  // ✅ EDIT
+  this.mode = 'edit';
+  this.selectedVendorId = Number(this.chooseVendor);
+
+  this.loadVendorData(Number(this.chooseVendor));
+}
+
+// loadVendorData(id: number) {
+
+//   this.vendorService.getVendorById(id).subscribe((res: any) => {
 
 //     const v = res.data;
 
@@ -140,51 +275,45 @@ loadVendors() {
 //       order_deadlines: v.order_deadlines?.map((d: any) => d.day) || []
 //     };
 
-//     // payment toggle sync
-//     this.paymentType = this.formData.payment_methods[0] === 'eft' ? 'EFT' : 'COD';
+//     this.paymentType =
+//       this.formData.payment_methods[0] === 'eft' ? 'EFT' : 'COD';
 //   });
 // }
-
-onVendorChange() {
-
-  // 🔹 CREATE MODE
-  if (!this.chooseVendor) {
-    this.handleCreateVendor();
-    return;
-  }
-
-  // 🔹 EDIT MODE
-  this.mode = 'edit';
-  this.selectedVendorId = this.chooseVendor;
-
-  this.loadVendorData(this.chooseVendor);
-}
 
 loadVendorData(id: number) {
 
   this.vendorService.getVendorById(id).subscribe((res: any) => {
 
-    const v = res.data;
+    const data = res.data;
 
     this.formData = {
-      name: v.name,
-      address: v.address,
-      city: v.city,
-      email: v.email,
-      website: v.website,
-      username: v.username,
-      instructions: v.instructions,
-      phone_number: v.phone_number,
-      country_id: v.country_id,
-      state_id: v.state_id,
-      payment_methods: v.payment_methods || [],
-      min_order: v.min_order,
-      contacts: v.contacts?.length ? v.contacts : this.getEmptyForm().contacts,
-      order_deadlines: v.order_deadlines?.map((d: any) => d.day) || []
+      name: data.name,
+      address: data.address,
+      city: data.city,
+      city_id: data.city_id,
+      country_id: data.country_id,
+      state_id: data.state_id,
+      phone_number: data.phone_number,
+      email: data.email,
+      website: data.website,
+      username: data.username,
+      instructions: data.instructions,
+      payment_methods: data.payment_methods || [],
+      min_order: data.min_order,
+      contacts: data.contacts?.length
+        ? data.contacts
+        : this.getEmptyForm().contacts,
+      order_deadlines:
+        data.order_deadlines?.map((d: any) => d.day) || []
     };
 
-    this.paymentType =
-      this.formData.payment_methods[0] === 'eft' ? 'EFT' : 'COD';
+    // ✅ load dependent dropdowns
+    this.loadStates(data.country_id);
+
+    setTimeout(() => {
+      this.loadCities(data.state_id);
+    }, 300);
+
   });
 }
 
