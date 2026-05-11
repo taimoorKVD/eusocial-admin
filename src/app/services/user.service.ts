@@ -12,7 +12,7 @@ export class UserService {
 
   constructor(private http: HttpClient) {}
 
-  /** Fetch paginated list of users */
+  /** Fetch paginated list of users with optional filters */
   getUsers(
     page: number = 1
   ): Observable<{
@@ -40,6 +40,17 @@ export class UserService {
       `${this.baseUrl}?page=${page}&sort_by=created_at&sort_order=desc`
     );
   }
+
+  searchUsers(
+    limit: number = 15,
+    name: string = '',
+    email: string = ''
+  ) {
+    return this.http.get<any>(
+      `${this.baseUrl}/search?limit=${limit}&name=${name}&email=${email}`
+    );
+  }
+
   /** Delete user by ID */
   deleteUser(id: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);

@@ -13,17 +13,20 @@ import { ToastrService } from 'ngx-toastr';
   styleUrl: './users.scss',
 })
 export class Users {
-  users: User[] = []; // ✅ array of users
+  users: User[] = [];
   loading = true;
   // page = 1;
   // total = 0;
   // lastPage = 1;
   page: number = 1;
-lastPage: number = 1;
-total: number = 0;
+  lastPage: number = 1;
+  total: number = 0;
   message = '';
   showDeleteModal = false;
   deleteTargetId: number | null = null;
+
+  filterName = '';
+  filterEmail = '';
 
   constructor(
     private http: HttpClient,
@@ -33,22 +36,24 @@ total: number = 0;
   ) { }
 
   ngOnInit(): void {
-    this.allUsers();
+    this.allUsers(this.page);
   }
 
   allUsers(page: number = 1): void {
     this.loading = true;
     this.message = '';
-    this.userService.getUsers(page).subscribe({
+    const hasFilter = this.filterName || this.filterEmail;
+
+    const apiCall = hasFilter
+      ? this.userService.searchUsers(15, this.filterName, this.filterEmail)
+      : this.userService.getUsers(page);
+
+    apiCall.subscribe({
       next: (res) => {
         this.users = res.data;
-        console.log(this.users);
-        // this.total = res.meta.total;
-        // this.lastPage = res.meta.lastPage;
-        // this.page = res.meta.page;
-        this.total = Number(res.meta.total);
-        this.lastPage = Number(res.meta.lastPage);
-        this.page = Number(res.meta.page);
+        this.total = Number(res?.meta?.total) || 1;
+        this.page = Number(res?.meta?.page) || 1;
+        this.lastPage = Number(res?.meta?.lastPage) || 1;
         this.loading = false;
       },
       error: () => {
@@ -102,5 +107,16 @@ total: number = 0;
     this.router.navigate(['/users/create']);
   }
 
+  onFilterSearch(filters: { name: string; email: string }): void {
+    this.filterName = filters.name;
+    this.filterEmail = filters.email;
+    this.allUsers(this.page);
+  }
 
+  onFilterClear(): void {
+    this.filterName = '';
+    this.filterEmail = '';
+    this.allUsers(this.page);
+  }
 }
+
