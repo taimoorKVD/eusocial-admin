@@ -22,36 +22,17 @@ paymentType: 'COD' | 'EFT' = 'COD';
 countries: any[] = [];
 states: any[] = [];
 cities: any[] = [];
+isSubmitted = false;
+// validation flags (used in HTML)
+phonePatternValid = true;
+emailPatternValid = true;
+contactPhonePatternValid = true;
+contactEmailPatternValid = true;
+minOrderPatternValid = true;
 
 formData: any = this.getEmptyForm();
 
 constructor(private route: ActivatedRoute,  private vendorService: TenantVendorService, private toastr: ToastrService) {}
-
-// getEmptyForm() {
-//   return {
-//     name: '',
-//     address: '',
-//     city: '',
-//     email: '',
-//     website: '',
-//     username: '',
-//     instructions: '',
-//     phone_number: '',
-//     country_id: null,
-//     state_id: null,
-//     payment_methods: [],
-//     min_order: '',
-//     contacts: [
-//       {
-//         name: '',
-//         phone_number: '',
-//         email: '',
-//         is_primary: true
-//       }
-//     ],
-//     order_deadlines: []
-//   };
-// }
 
 getEmptyForm() {
   return {
@@ -111,18 +92,6 @@ handleCreateVendor() {
   this.paymentType = 'COD';
 }
 
-// loadStates() {
-//   this.vendorService.getStates().subscribe((res: any) => {
-//     this.statesList = res.data || res;
-//   });
-// }
-
-// loadCountries() {
-//   this.vendorService.getCountries().subscribe((res: any) => {
-//     this.countriesList = res.data || res;
-//   });
-// }
-
 loadCountries() {
   this.vendorService.getCountries().subscribe((res: any) => {
     this.countries = res.data || res;
@@ -174,16 +143,6 @@ onStateChange() {
   this.loadCities(this.formData.state_id);
 }
 
-
-// loadVendors() {
-//   this.vendorService.getVendors().subscribe((res: any) => {
-//     this.vendors = res.data.map((v: any) => ({
-//       label: v.name,
-//       value: v.id
-//     }));
-//   });
-// }
-
 loadVendors() {
 
   this.vendorService.getVendors().subscribe((res: any) => {
@@ -199,22 +158,6 @@ loadVendors() {
     ];
   });
 }
-
-
-// onVendorChange() {
-
-//   // 🔹 CREATE MODE
-//   if (!this.chooseVendor) {
-//     this.handleCreateVendor();
-//     return;
-//   }
-
-//   // 🔹 EDIT MODE
-//   this.mode = 'edit';
-//   this.selectedVendorId = this.chooseVendor;
-
-//   this.loadVendorData(this.chooseVendor);
-// }
 
 onVendorChange() {
 
@@ -251,34 +194,6 @@ onVendorChange() {
 
   this.loadVendorData(Number(this.chooseVendor));
 }
-
-// loadVendorData(id: number) {
-
-//   this.vendorService.getVendorById(id).subscribe((res: any) => {
-
-//     const v = res.data;
-
-//     this.formData = {
-//       name: v.name,
-//       address: v.address,
-//       city: v.city,
-//       email: v.email,
-//       website: v.website,
-//       username: v.username,
-//       instructions: v.instructions,
-//       phone_number: v.phone_number,
-//       country_id: v.country_id,
-//       state_id: v.state_id,
-//       payment_methods: v.payment_methods || [],
-//       min_order: v.min_order,
-//       contacts: v.contacts?.length ? v.contacts : this.getEmptyForm().contacts,
-//       order_deadlines: v.order_deadlines?.map((d: any) => d.day) || []
-//     };
-
-//     this.paymentType =
-//       this.formData.payment_methods[0] === 'eft' ? 'EFT' : 'COD';
-//   });
-// }
 
 loadVendorData(id: number) {
 
@@ -336,12 +251,187 @@ toggleDay(day: string) {
   }
 }
 
+// saveVendor() {
+
+//   const payload = {
+//     ...this.formData,
+//     order_deadlines: this.formData.order_deadlines.map((d: string) => ({ day: d }))
+//   };
+
+//   if (this.mode === 'create') {
+
+//     this.vendorService.createVendor(payload).subscribe({
+//       next: (res: any) => {
+
+//         this.toastr.success('Vendor Created');
+
+//         this.loadVendors();
+
+//         // auto select new vendor
+//         this.chooseVendor = res.data.id;
+//         this.onVendorChange();
+//       }
+//     });
+
+//   } else {
+
+//     this.vendorService.updateVendor(this.selectedVendorId!, payload).subscribe({
+//       next: () => {
+//         this.toastr.success('Vendor Updated');
+//         this.loadVendors();
+//       }
+//     });
+
+//   }
+// }
+
+// saveVendor() {
+
+//   this.isSubmitted = true;
+
+//   // ================= VALIDATION =================
+
+//   if (
+//     !this.formData.name ||
+//     !this.formData.address ||
+//     !this.formData.country_id ||
+//     !this.formData.state_id ||
+//     !this.formData.city_id ||
+//     !this.formData.phone_number ||
+//     !this.formData.email ||
+//     !this.formData.min_order
+//   ) {
+//     this.toastr.error('Please fix validation errors');
+//     return;
+//   }
+
+//   const phonePattern = /^[0-9]{10,15}$/;
+//   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+//   const numberPattern = /^[0-9]+$/;
+
+//   if (!phonePattern.test(this.formData.phone_number)) {
+//     this.toastr.error('Invalid phone number');
+//     return;
+//   }
+
+//   if (!emailPattern.test(this.formData.email)) {
+//     this.toastr.error('Invalid email');
+//     return;
+//   }
+
+//   if (!numberPattern.test(this.formData.min_order)) {
+//     this.toastr.error('Min order must be numeric');
+//     return;
+//   }
+
+//   // ================= PAYLOAD =================
+
+//   const payload = {
+//     ...this.formData,
+//     order_deadlines: this.formData.order_deadlines.map((d: string) => ({ day: d }))
+//   };
+
+//   if (this.mode === 'create') {
+//     this.vendorService.createVendor(payload).subscribe({
+//       next: (res: any) => {
+//         this.toastr.success('Vendor Created');
+//         this.loadVendors();
+//         this.chooseVendor = res.data.id;
+//         this.onVendorChange();
+//       }
+//     });
+//   } else {
+//     this.vendorService.updateVendor(this.selectedVendorId!, payload).subscribe({
+//       next: () => {
+//         this.toastr.success('Vendor Updated');
+//         this.loadVendors();
+//       }
+//     });
+//   }
+// }
+
+// ================= SAVE =================
+
 saveVendor() {
+
+  this.isSubmitted = true;
+
+  // ================= PATTERNS =================
+  const phonePattern = /^[0-9]{10,15}$/;
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const numberPattern = /^[0-9]+$/;
+
+  // ================= FIELD VALIDATION =================
+
+  // basic required check
+  if (
+    !this.formData.name ||
+    !this.formData.address ||
+    !this.formData.country_id ||
+    !this.formData.state_id ||
+    !this.formData.city_id ||
+    !this.formData.phone_number ||
+    !this.formData.email ||
+    !this.formData.min_order ||
+    !this.formData.website ||
+    !this.formData.username ||
+    !this.formData.contacts?.length
+  ) {
+    this.toastr.error('Please fix validation errors');
+    return;
+  }
+
+  // ================= PHONE =================
+  this.phonePatternValid = phonePattern.test(this.formData.phone_number);
+
+  if (!this.phonePatternValid) {
+    this.toastr.error('Invalid phone number');
+    return;
+  }
+
+  // ================= EMAIL =================
+  this.emailPatternValid = emailPattern.test(this.formData.email);
+
+  if (!this.emailPatternValid) {
+    this.toastr.error('Invalid email');
+    return;
+  }
+
+  // ================= MIN ORDER =================
+  this.minOrderPatternValid = numberPattern.test(this.formData.min_order);
+
+  if (!this.minOrderPatternValid) {
+    this.toastr.error('Min order must be numeric');
+    return;
+  }
+
+  // ================= CONTACT VALIDATION =================
+
+  const contact = this.formData.contacts[0];
+
+  this.contactPhonePatternValid = phonePattern.test(contact.phone_number);
+  this.contactEmailPatternValid = emailPattern.test(contact.email);
+
+  if (!this.contactPhonePatternValid) {
+    this.toastr.error('Invalid contact phone number');
+    return;
+  }
+
+  if (!this.contactEmailPatternValid) {
+    this.toastr.error('Invalid contact email');
+    return;
+  }
+
+  // ================= PAYLOAD =================
 
   const payload = {
     ...this.formData,
-    order_deadlines: this.formData.order_deadlines.map((d: string) => ({ day: d }))
+    order_deadlines: this.formData.order_deadlines.map((d: string) => ({
+      day: d
+    }))
   };
+
+  // ================= API CALL =================
 
   if (this.mode === 'create') {
 
@@ -352,9 +442,12 @@ saveVendor() {
 
         this.loadVendors();
 
-        // auto select new vendor
         this.chooseVendor = res.data.id;
+
         this.onVendorChange();
+      },
+      error: () => {
+        this.toastr.error('Failed to create vendor');
       }
     });
 
@@ -362,8 +455,13 @@ saveVendor() {
 
     this.vendorService.updateVendor(this.selectedVendorId!, payload).subscribe({
       next: () => {
+
         this.toastr.success('Vendor Updated');
+
         this.loadVendors();
+      },
+      error: () => {
+        this.toastr.error('Failed to update vendor');
       }
     });
 
