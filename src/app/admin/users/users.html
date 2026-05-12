@@ -7,11 +7,14 @@
       <small class="text-sm text-gray-500">Total users: <strong>{{ total }}</strong></small>
     </div>
 
-    <button class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm transition duration-150"
+    <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition duration-150"
       (click)="addUser()">
       <i class="bi bi-plus-lg mr-1"></i> Add User
     </button>
   </div>
+
+  <!-- Filter -->
+  <app-user-filter (search)="onFilterSearch($event)" (clear)="onFilterClear()"></app-user-filter>
 
   <!-- Users Table Card -->
   <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -87,7 +90,7 @@
     </div>
 
     <!-- Footer Pagination -->
-    <div class="flex justify-between items-center px-4 py-3 border-t border-gray-100 bg-white">
+    <div *ngIf="users.length" class="flex justify-between items-center px-4 py-3 border-t border-gray-100 bg-white">
       <span class="text-sm text-gray-500">Page {{ page }} of {{ lastPage }}</span>
       <div class="flex items-center gap-2">
         <button
