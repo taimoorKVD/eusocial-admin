@@ -24,6 +24,28 @@ export class Tenants {
   showDeleteModal = false;
   deleteTargetId: number | null = null;
 
+  filters: any = {};
+  filterFields = [
+    {
+      key: 'name',
+      label: 'Name',
+      type: 'text',
+      placeholder: 'Search by name...'
+    },
+    {
+      key: 'db_name',
+      label: 'Database',
+      type: 'text',
+      placeholder: 'Search by database...'
+    },
+    // {
+    //   key: 'subdomain',
+    //   label: 'Subdomain',
+    //   type: 'text',
+    //   placeholder: 'Search by subdomain...'
+    // }
+  ];
+
   constructor(private router: Router, private tenantService: TenantService, private toastr: ToastrService) {}
 
   ngOnInit(): void {
@@ -33,23 +55,29 @@ export class Tenants {
   allTenants(page: number = 1): void {
     this.loading = true;
     this.message = '';
-    this.tenantService.getTenants(page).subscribe({
-      next: (res) => {
-        this.tenants = res.data;
-        // this.total = res.meta.total;
-        // this.page = res.meta.page;
-        // this.lastPage = res.meta.lastPage;
-        this.total = Number(res.meta.total);
-        this.lastPage = Number(res.meta.lastPage);
-        this.page = Number(res.meta.page);
-        this.loading = false;
-      },
-      error: () => {
-        this.tenants = [];
-        this.total = 0;
-        this.loading = false;
-      },
-    });
+
+    const activeFilters = Object.fromEntries(
+      Object.entries(this.filters).filter(([_, value]) => value)
+    );
+
+     const apiCall = Object.keys(activeFilters).length
+      ? this.tenantService.searchTenants(activeFilters, 15)
+      : this.tenantService.getTenants(page);
+
+      apiCall.subscribe({
+        next: (res) => {
+          this.tenants = res.data;
+          this.total = Number(res?.meta?.total) || 1;
+          this.page = Number(res?.meta?.page) || 1;
+          this.lastPage = Number(res?.meta?.lastPage) || 1;
+          this.loading = false;
+        },
+        error: () => {
+          this.tenants = [];
+          this.total = 0;
+          this.loading = false;
+        },
+      });
   }
 
   addTenant(): void {
@@ -94,4 +122,17 @@ export class Tenants {
   nextPage(): void {
     if (this.page < this.lastPage) this.allTenants(this.page + 1);
   }
+
+  onFilterSearch(filters: any): void {
+    this.filters = filters;
+    this.page = 1;
+    this.allTenants(this.page);
+  }
+
+  onFilterClear(): void {
+    this.filters = {};
+    this.page = 1;
+    this.allTenants(this.page);
+  }
+
 }

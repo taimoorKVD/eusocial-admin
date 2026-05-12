@@ -30,6 +30,16 @@ export class TenantService {
     return this.http.get<TenantResponse>(`${this.baseUrl}?page=${page}&sort_by=created_at&sort_order=desc`);
   }
 
+  searchTenants(filters: any = {}, limit: number = 15) {
+    const params = new URLSearchParams({
+      limit: limit.toString(),
+      ...filters
+    });
+    return this.http.get<any>(
+      `${this.baseUrl}/search?${params.toString()}`
+    );
+  }
+
   getOne(id: number): Observable<{ data: Tenant }> {
     return this.http.get<{ data: Tenant }>(`${this.baseUrl}/${id}`);
   }
