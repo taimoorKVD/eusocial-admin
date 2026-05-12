@@ -14,7 +14,11 @@
   </div>
 
   <!-- Filter -->
-  <app-user-filter (search)="onFilterSearch($event)" (clear)="onFilterClear()"></app-user-filter>
+  <app-global-filter
+    [fields]="filterFields"
+    (search)="onFilterSearch($event)"
+    (clear)="onFilterClear()">
+  </app-global-filter>
 
   <!-- Users Table Card -->
   <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">

@@ -17,8 +17,21 @@ export class SetupUsersListing {
   lastPage = 1;
   total = 0;
 
-  filterName = '';
-  filterEmail = '';
+  filters: any = {};
+  filterFields = [
+    {
+      key: 'name',
+      label: 'Name',
+      type: 'text',
+      placeholder: 'Search by name...'
+    },
+    {
+      key: 'email',
+      label: 'Email',
+      type: 'email',
+      placeholder: 'Search by email...'
+    }
+  ];
 
   constructor(private userService: TenantUserService, private route:ActivatedRoute) {}
 
@@ -30,11 +43,13 @@ export class SetupUsersListing {
   allUsers(page: number = 1): void {
     this.loading = true;
 
-    const hasFilter = this.filterName || this.filterEmail;
+    const activeFilters = Object.fromEntries(
+      Object.entries(this.filters).filter(([_, value]) => value)
+    );
 
-    const apiCall = hasFilter
-      ? this.userService.searchUsers(15, this.filterName, this.filterEmail)
-      : this.userService.getUsers(page);
+     const apiCall = Object.keys(activeFilters).length
+    ? this.userService.searchUsers(activeFilters, 15)
+    : this.userService.getUsers(page);
 
     apiCall.subscribe({
       next: (res) => {
@@ -51,49 +66,6 @@ export class SetupUsersListing {
       },
     });
   }
-
-  // getUsers(page: number = 1) {
-  //   this.loading = true;
-
-  //   this.userService.getUsers(page).subscribe({
-
-  //     next: (res: any) => {
-
-  //       const rows = Array.isArray(res?.data)
-  //         ? res.data
-  //         : [];
-
-  //       this.users = [...rows].sort((a: any, b: any) => {
-
-  //         const aTime = a?.created_at
-  //           ? new Date(a.created_at).getTime()
-  //           : 0;
-
-  //         const bTime = b?.created_at
-  //           ? new Date(b.created_at).getTime()
-  //           : 0;
-
-  //         if (aTime && bTime && aTime !== bTime) {
-  //           return bTime - aTime;
-  //         }
-
-  //         return (b?.id || 0) - (a?.id || 0);
-  //       });
-
-  //       this.total = Number(res?.count || 0);
-  //       this.page = Number(res?.page || 1);
-  //       this.lastPage = Number(res?.lastPage || 1);
-
-  //       this.loading = false;
-  //     },
-
-  //     error: (err) => {
-
-  //       console.error(err);
-  //       this.loading = false;
-  //     }
-  //   });
-  // }
 
   deleteUser(id: number) {
     if (!confirm('Are you sure you want to delete this user?')) return;
@@ -115,15 +87,15 @@ export class SetupUsersListing {
     }
   }
 
-  onFilterSearch(filters: { name: string; email: string }): void {
-    this.filterName = filters.name;
-    this.filterEmail = filters.email;
+  onFilterSearch(filters: any): void {
+    this.filters = filters;
+    this.page = 1;
     this.allUsers(this.page);
   }
 
   onFilterClear(): void {
-    this.filterName = '';
-    this.filterEmail = '';
+    this.filters = {};
+    this.page = 1;
     this.allUsers(this.page);
   }
 }
