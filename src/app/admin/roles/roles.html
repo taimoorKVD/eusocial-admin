@@ -1,20 +1,26 @@
 <!-- <div class="admin-content-container"> -->
 <div class="page-wrapper p-4 md:px-6 md:py-4 space-y-4">
   <!-- Header -->
-  <div class="page-header flex justify-between items-center">
+  <div class="page-header flex justify-between items-center mb-5">
     <div>
       <h3 class="text-xl font-semibold text-gray-800 m-0">Roles Management</h3>
       <small class="text-sm text-gray-500">Total roles: <strong>{{ total }}</strong></small>
     </div>
 
-    <button class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm transition duration-150"
+    <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition duration-150"
       (click)="addRole()">
       <i class="bi bi-plus-lg mr-1"></i> Add Role
     </button>
   </div>
 
+  <app-global-filter
+    [fields]="filterFields"
+    (search)="onFilterSearch($event)"
+    (clear)="onFilterClear()">
+  </app-global-filter>
+
   <!-- Roles Table Card -->
-  <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mt-5">
     <div>
       <!-- Loading -->
       <div *ngIf="loading" class="py-10 flex justify-center">

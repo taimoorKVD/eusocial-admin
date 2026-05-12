@@ -25,8 +25,27 @@ export class Users {
   showDeleteModal = false;
   deleteTargetId: number | null = null;
 
-  filterName = '';
-  filterEmail = '';
+  filters: any = {};
+  filterFields = [
+    {
+      key: 'name',
+      label: 'Name',
+      type: 'text',
+      placeholder: 'Search by name...'
+    },
+    {
+      key: 'email',
+      label: 'Email',
+      type: 'email',
+      placeholder: 'Search by email...'
+    },
+    {
+      key: 'role',
+      label: 'Role',
+      type: 'text',
+      placeholder: 'Search by role...'
+    }
+  ];
 
   constructor(
     private http: HttpClient,
@@ -42,11 +61,13 @@ export class Users {
   allUsers(page: number = 1): void {
     this.loading = true;
     this.message = '';
-    const hasFilter = this.filterName || this.filterEmail;
+    const activeFilters = Object.fromEntries(
+      Object.entries(this.filters).filter(([_, value]) => value)
+    );
 
-    const apiCall = hasFilter
-      ? this.userService.searchUsers(15, this.filterName, this.filterEmail)
-      : this.userService.getUsers(page);
+     const apiCall = Object.keys(activeFilters).length
+    ? this.userService.searchUsers(activeFilters, 15)
+    : this.userService.getUsers(page);
 
     apiCall.subscribe({
       next: (res) => {
@@ -107,15 +128,15 @@ export class Users {
     this.router.navigate(['/users/create']);
   }
 
-  onFilterSearch(filters: { name: string; email: string }): void {
-    this.filterName = filters.name;
-    this.filterEmail = filters.email;
+  onFilterSearch(filters: any): void {
+    this.filters = filters;
+    this.page = 1;
     this.allUsers(this.page);
   }
 
   onFilterClear(): void {
-    this.filterName = '';
-    this.filterEmail = '';
+    this.filters = {};
+    this.page = 1;
     this.allUsers(this.page);
   }
 }

@@ -37,6 +37,16 @@ export class RoleService {
   );
 }
 
+ searchRoles(filters: any = {}, limit: number = 15) {
+    const params = new URLSearchParams({
+      limit: limit.toString(),
+      ...filters
+    });
+    return this.http.get<any>(
+      `${this.baseUrl}/search?${params.toString()}`
+    );
+  }
+
   /** ✅ Get all roles (no pagination) */
   getAllRoles(): Observable<Role[]> {
     return this.http.get<RoleApiResponse>(this.baseUrl).pipe(map((res) => res.data)); // unwrap data

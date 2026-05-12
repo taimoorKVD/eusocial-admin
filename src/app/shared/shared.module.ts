@@ -2,11 +2,11 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
-import { UserFilterComponent } from './user-filter/user-filter';
+import { GlobalFilterComponent } from './global-filter/global-filter';
 
 @NgModule({
-  declarations: [UserFilterComponent],
+  declarations: [GlobalFilterComponent],
   imports: [CommonModule, FormsModule],
-  exports: [UserFilterComponent],
+  exports: [GlobalFilterComponent],
 })
 export class SharedModule {}

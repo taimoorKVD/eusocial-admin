@@ -19,6 +19,15 @@ export class Roles {
   lastPage = 1;
   showDeleteModal = false;
   deleteTargetId: number | null = null;
+  filters: any = {};
+  filterFields = [
+    {
+      key: 'name',
+      label: 'Name',
+      type: 'text',
+      placeholder: 'Search by Role name...'
+    }
+  ];
 
   constructor(private roleService: RoleService, private router: Router, private toastr: ToastrService) {}
 
@@ -31,13 +40,20 @@ export class Roles {
     this.loading = true;
     this.message = '';
 
-    this.roleService.getRoles(page).subscribe({
+     const activeFilters = Object.fromEntries(
+      Object.entries(this.filters).filter(([_, value]) => value)
+    );
+
+     const apiCall = Object.keys(activeFilters).length
+    ? this.roleService.searchRoles(activeFilters, 15)
+    : this.roleService.getRoles(page);
+
+    apiCall.subscribe({
       next: (res) => {
         this.roles = res.data;
-        // this.total = roles.length;
-        this.total = Number(res.meta.total);
-        this.page = Number(res.meta.page);
-        this.lastPage = Number(res.meta.lastPage);
+        this.total = Number(res?.meta?.total) || 1;
+        this.page = Number(res?.meta?.page) || 1;
+        this.lastPage = Number(res?.meta?.lastPage) || 1;
         this.loading = false;
       },
       error: () => {
@@ -86,5 +102,17 @@ export class Roles {
 
   nextPage(): void {
     if (this.page < this.lastPage) this.allRoles(this.page + 1);
+  }
+
+  onFilterSearch(filters: any): void {
+    this.filters = filters;
+    this.page = 1;
+    this.allRoles(this.page);
+  }
+
+  onFilterClear(): void {
+    this.filters = {};
+    this.page = 1;
+    this.allRoles(this.page);
   }
 }
