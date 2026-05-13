@@ -8,7 +8,7 @@ import { catchError, Observable, tap, throwError } from 'rxjs';
   providedIn: 'root'
 })
 export class TenantAuthService {
-  private apiUrl = `${environment.tenantApiUrl}/login`;
+  private apiUrl = `${environment.tenantApiUrl}`;
 
 
   constructor(private http: HttpClient, private router: Router) { }
@@ -21,7 +21,7 @@ export class TenantAuthService {
       ...(normalizedSlug ? { tenant_slug: normalizedSlug } : {})
     };
 
-    return this.http.post<any>(this.apiUrl, body, {
+    return this.http.post<any>(`${this.apiUrl}/login`, body, {
       headers: normalizedSlug ? { 'X-Tenant-Slug': normalizedSlug } : {}
     }).pipe(
       tap((response) => {
@@ -43,6 +43,48 @@ export class TenantAuthService {
         }
       })
     );
+  }
+
+  forgotPassword(email: string): Observable<any> {
+    const slug = this.extractTenantSlugFromEmail(email);
+    const body: { email: string; tenant_slug?: string } = {
+      email,
+      ...(slug ? { tenant_slug: slug } : {}),
+    };
+
+    return this.http.post<any>(`${this.apiUrl}/forgot-password`, body, {
+      headers: slug ? { 'X-Tenant-Slug': slug } : {},
+    });
+  }
+
+  verifyResetToken(email: string, token: string): Observable<any> {
+    const slug = this.extractTenantSlugFromEmail(email);
+    const body: { email: string; token: string; tenant_slug?: string } = {
+      email,
+      token,
+      ...(slug ? { tenant_slug: slug } : {}),
+    };
+
+    return this.http.post<any>(`${this.apiUrl}/verify-reset-token`, body, {
+      headers: slug ? { 'X-Tenant-Slug': slug } : {},
+    });
+  }
+
+  resetPassword(payload: {
+    email: string;
+    token: string;
+    password: string;
+    password_confirm: string;
+  }): Observable<any> {
+    const slug = this.extractTenantSlugFromEmail(payload.email);
+    const body = {
+      ...payload,
+      ...(slug ? { tenant_slug: slug } : {}),
+    };
+
+    return this.http.post<any>(`${this.apiUrl}/reset-password`, body, {
+      headers: slug ? { 'X-Tenant-Slug': slug } : {},
+    });
   }
 
 logout(): void {
@@ -74,5 +116,13 @@ logout(): void {
 
   private handleUnauthorized() {
     this.logout();
+  }
+
+  private extractTenantSlugFromEmail(email: string): string | null {
+    if (!email || !email.includes('@')) return null;
+    const domain = email.split('@')[1]?.trim().toLowerCase();
+    if (!domain || !domain.includes('.')) return null;
+    const slug = domain.split('.')[0]?.trim();
+    return slug || null;
   }
 }
