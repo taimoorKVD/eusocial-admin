@@ -17,12 +17,18 @@ loading = false;
 page = 1;
 lastPage = 1;
 total = 0;
+countries: any[] = [];
+states: any[] = [];
+cities: any[] = [];
 
 constructor(private route: ActivatedRoute, private tenantSession: TenantSessionService,  private router: Router, private vendorService: TenantVendorService, private toastr: ToastrService ) {}
 
 ngOnInit() {
   this.slug = this.route.snapshot.paramMap.get('slug') || '';
   this.getVendors();
+  this.loadCountries();
+  this.loadStates();
+  this.loadCities();
 }
 
 // getVendors() {
@@ -68,6 +74,38 @@ deleteVendor(id: number) {
       this.getVendors();
     }
   });
+}
+
+  loadCountries() {
+  this.vendorService.getCountries().subscribe(res => {
+    this.countries = res.data || res;
+  });
+}
+
+loadStates() {
+  this.vendorService.getStates(0).subscribe(res => {
+    this.states = res.data || res;
+    // console.log('States:', this.states);
+// console.log('Looking for stateId:', 45);
+  });
+}
+
+loadCities() {
+  this.vendorService.getCities(0).subscribe(res => {
+    this.cities = res.data || res;
+  });
+}
+
+  getCountryName(id: number): string {
+  return this.countries.find(c => c.id === id)?.name || '-';
+}
+
+getStateName(id: number): string {
+  return this.states.find(s => s.id === id)?.name || '-';
+}
+
+getCityName(id: number): string {
+  return this.cities.find(c => c.id === id)?.name || '-';
 }
 
 prevPage(): void {
