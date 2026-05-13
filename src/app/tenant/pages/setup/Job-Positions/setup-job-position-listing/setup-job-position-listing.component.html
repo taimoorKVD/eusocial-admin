@@ -16,8 +16,14 @@
     </button>
   </div>
 
+  <app-global-filter
+    [fields]="filterFields"
+    (search)="onFilterSearch($event)"
+    (clear)="onFilterClear()">
+  </app-global-filter>
+
   <!-- Table -->
-  <div class="bg-white rounded shadow overflow-hidden">
+  <div class="bg-white rounded shadow overflow-hidden mt-5">
 
     <table class="w-full text-left text-sm font-ibm">
 

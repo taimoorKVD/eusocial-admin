@@ -13,10 +13,10 @@
 
   <!-- Filter -->
     <app-global-filter
-    [fields]="filterFields"
-    (search)="onFilterSearch($event)"
-    (clear)="onFilterClear()">
-  </app-global-filter>
+      [fields]="filterFields"
+      (search)="onFilterSearch($event)"
+      (clear)="onFilterClear()">
+    </app-global-filter>
 
   <!-- Loader -->
   <div *ngIf="loading" class="text-center py-10">
