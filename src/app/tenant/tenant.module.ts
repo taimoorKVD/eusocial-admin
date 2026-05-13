@@ -23,6 +23,8 @@ import { SetupJobPositionListingComponent } from './pages/setup/Job-Positions/se
 import { LocationComponent } from './pages/extra-management/location/location.component';
 import { LocationListingComponent } from './pages/extra-management/location-listing/location-listing.component';
 import { SetupVendorsListingComponent } from './pages/setup/Vendor/setup-vendors-listing/setup-vendors-listing.component';
+import { TenantForgotPasswordComponent } from './tenant-forgot-password/tenant-forgot-password.component';
+import { TenantResetPasswordComponent } from './tenant-reset-password/tenant-reset-password.component';
 
 
 
@@ -37,6 +39,8 @@ import { SetupVendorsListingComponent } from './pages/setup/Vendor/setup-vendors
     SetupJobPositionComponent,
     SetupJobPositionListingComponent,
     TenantLoginComponent,
+    TenantForgotPasswordComponent,
+    TenantResetPasswordComponent,
     SetupVendorsComponent,
     SetupVendorsListingComponent,
     SetupItems,
