@@ -87,6 +87,26 @@ export class Auth {
     );
   }
 
+  forgotPassword(email: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/forgot-password`, { email });
+  }
+
+  verifyResetToken(email: string, token: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/verify-reset-token`, {
+      email,
+      token,
+    });
+  }
+
+  resetPassword(payload: {
+    email: string;
+    token: string;
+    password: string;
+    password_confirm: string;
+  }): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/reset-password`, payload);
+  }
+
   // -----------------------------
   // FETCH USER FROM API (USING TOKEN)
   // -----------------------------

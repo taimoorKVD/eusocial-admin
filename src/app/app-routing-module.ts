@@ -2,6 +2,8 @@ import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { Login } from './public/login/login';
 import { Register } from './public/register/register';
+import { ForgotPassword } from './public/forgot-password/forgot-password';
+import { ResetPassword } from './public/reset-password/reset-password';
 import { Public } from './public/public';
 import { Admin } from './admin/admin';
 import { Profile } from './admin/profile/profile';
@@ -69,6 +71,8 @@ const routes: Routes = [
        { path: '', redirectTo: 'login', pathMatch: 'full' },
       { path: 'login', component: Login },
       { path: 'register', component: Register },
+      { path: 'forgot-password', component: ForgotPassword },
+      { path: 'reset-password', component: ResetPassword },
     ],
   },
 

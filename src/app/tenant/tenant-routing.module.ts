@@ -16,11 +16,15 @@ import { LocationComponent } from './pages/extra-management/location/location.co
 import { LocationListingComponent } from './pages/extra-management/location-listing/location-listing.component';
 import { tenantAuthGuard } from '../guards/tenant-auth-guard';
 import { SetupVendorsListingComponent } from './pages/setup/Vendor/setup-vendors-listing/setup-vendors-listing.component';
+import { TenantForgotPasswordComponent } from './tenant-forgot-password/tenant-forgot-password.component';
+import { TenantResetPasswordComponent } from './tenant-reset-password/tenant-reset-password.component';
 
 const routes: Routes = [
 
   // ✅ /tenant/login
   { path: 'login', component: TenantLoginComponent },
+  { path: 'forgot-password', component: TenantForgotPasswordComponent },
+  { path: 'reset-password', component: TenantResetPasswordComponent },
   // ✅ legacy URL support: /tenant/:slug/login -> /tenant/login
   { path: ':slug/login', redirectTo: '/tenant/login', pathMatch: 'full' },
   {

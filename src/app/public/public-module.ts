@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { Public } from './public';
 import { Login } from './login/login';
 import { Register } from './register/register';
+import { ForgotPassword } from './forgot-password/forgot-password';
+import { ResetPassword } from './reset-password/reset-password';
 import { AdminRoutingModule } from "../admin/admin-routing-module";
 import { RouterModule } from '@angular/router';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -13,7 +15,9 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
   declarations: [
     Public,
     Login,
-    Register
+    Register,
+    ForgotPassword,
+    ResetPassword
   ],
   imports: [
     CommonModule,
