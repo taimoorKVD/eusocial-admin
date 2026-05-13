@@ -23,41 +23,50 @@ export class SetupVendorsListingComponent {
       key: 'name',
       label: 'Name',
       type: 'text',
-      placeholder: 'Search by name...'
+      placeholder: 'Search by name...',
     },
     {
       key: 'email',
       label: 'Email',
       type: 'text',
-      placeholder: 'Search by email...'
+      placeholder: 'Search by email...',
     },
     {
       key: 'phone',
       label: 'Phone',
       type: 'number',
-      placeholder: 'Search by phone...'
-    }
+      placeholder: 'Search by phone...',
+    },
   ];
+  countries: any[] = [];
+  states: any[] = [];
+  cities: any[] = [];
 
-  constructor(private route: ActivatedRoute, private tenantSession: TenantSessionService,  private router: Router, private vendorService: TenantVendorService, private toastr: ToastrService ) {}
+  constructor(
+    private route: ActivatedRoute,
+    private tenantSession: TenantSessionService,
+    private router: Router,
+    private vendorService: TenantVendorService,
+    private toastr: ToastrService,
+  ) {}
 
   ngOnInit() {
     this.slug = this.route.snapshot.paramMap.get('slug') || '';
     this.getVendors();
+    this.loadCountries();
+    this.loadStates();
+    this.loadCities();
   }
 
-
   getVendors(page: number = 1) {
-
     this.loading = true;
     const activeFilters = Object.fromEntries(
-      Object.entries(this.filters).filter(([_, value]) => value)
+      Object.entries(this.filters).filter(([_, value]) => value),
     );
 
     const apiCall = Object.keys(activeFilters).length
-    ? this.vendorService.searchVendors(activeFilters, 15)
-    : this.vendorService.getVendors(page);
-
+      ? this.vendorService.searchVendors(activeFilters, 15)
+      : this.vendorService.getVendors(page);
 
     apiCall.subscribe({
       next: (res: any) => {
@@ -70,31 +79,58 @@ export class SetupVendorsListingComponent {
       error: (err: any) => {
         this.vendors = [];
         this.loading = false;
-      }
+      },
     });
   }
 
   deleteVendor(id: number) {
-
     if (!confirm('Delete this vendor?')) return;
 
     this.vendorService.deleteVendor(id).subscribe({
       next: () => {
         this.toastr.success('Vendor deleted');
         this.getVendors();
-      }
+      },
     });
   }
 
   prevPage(): void {
-
     if (this.page > 1) {
       this.getVendors(this.page - 1);
     }
   }
 
-  nextPage(): void {
+  loadCountries() {
+    this.vendorService.getCountries().subscribe((res) => {
+      this.countries = res.data || res;
+    });
+  }
 
+  loadStates() {
+    this.vendorService.getStates(0).subscribe((res) => {
+      this.states = res.data || res;
+    });
+  }
+
+  loadCities() {
+    this.vendorService.getCities(0).subscribe((res) => {
+      this.cities = res.data || res;
+    });
+  }
+
+  getCountryName(id: number): string {
+    return this.countries.find((c) => c.id === id)?.name || '-';
+  }
+
+  getStateName(id: number): string {
+    return this.states.find((s) => s.id === id)?.name || '-';
+  }
+
+  getCityName(id: number): string {
+    return this.cities.find((c) => c.id === id)?.name || '-';
+  }
+
+  nextPage(): void {
     if (this.page < this.lastPage) {
       this.getVendors(this.page + 1);
     }
