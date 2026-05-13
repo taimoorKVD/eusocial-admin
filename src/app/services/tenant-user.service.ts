@@ -26,12 +26,14 @@ export class TenantUserService {
   }
 
   searchUsers(
-    limit: number = 15,
-    name: string = '',
-    email: string = ''
+   filters: any = {}, limit: number = 15
   ) {
+    const params = new URLSearchParams({
+      limit: limit.toString(),
+      ...filters
+    });
     return this.http.get<any>(
-      `${this.baseUrl}/search?limit=${limit}&name=${name}&email=${email}`
+      `${this.baseUrl}/search?${params.toString()}`
     );
   }
 
