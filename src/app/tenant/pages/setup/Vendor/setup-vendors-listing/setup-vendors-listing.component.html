@@ -3,7 +3,7 @@
 <div class="p-6 font-ibm">
 
   <!-- Header -->
-  <div class="flex justify-between items-center mb-6">
+  <div class="flex justify-between items-center mb-5">
 
     <h2 class="text-xl font-semibold text-gray-800">
       Vendors Listing
@@ -16,8 +16,16 @@
 
   </div>
 
+   <app-global-filter
+      [fields]="filterFields"
+      (search)="onFilterSearch($event)"
+      (clear)="onFilterClear()">
+    </app-global-filter>
+
+
+
   <!-- Table -->
-  <div class="bg-white rounded shadow overflow-hidden">
+  <div class="bg-white rounded shadow overflow-hidden mt-5">
 
     <table class="w-full text-left text-sm font-ibm">
 
@@ -46,7 +54,7 @@
           </td>
 
           <td class="px-4 py-3">
-            {{ vendor.city }}
+              {{ getCityName(vendor.city_id) }}
           </td>
 
           <td class="px-4 py-3">

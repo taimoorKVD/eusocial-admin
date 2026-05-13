@@ -27,10 +27,20 @@ export class TenantVendorService {
   // }
 
   getVendors(page: number = 1) {
-  return this.http.get<any>(
-    `${this.vendor}?page=${page}`
-  );
-}
+    return this.http.get<any>(
+      `${this.vendor}?page=${page}`
+    );
+  }
+
+  searchVendors(filters: any, limit: number = 15) {
+    const params = new URLSearchParams({
+      limit: limit.toString(),
+      ...filters
+    });
+    return this.http.get<any>(
+      `${this.vendor}/search?${params.toString()}`
+    );
+  }
 
   // GET SINGLE
   getVendorById(id: number) {

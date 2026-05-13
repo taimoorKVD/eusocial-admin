@@ -446,7 +446,25 @@ saveVendor() {
 
         this.onVendorChange();
       },
-      error: () => {
+      error: (err: any) => {
+
+        // backend message extract
+        const msg = err?.error?.message;
+
+        if (msg) {
+
+          // duplicate vendor case
+          if (msg.includes('already exists')) {
+            this.toastr.error('Vendor with this name already exists');
+            return;
+          }
+
+          // fallback backend message
+          this.toastr.error(msg);
+          return;
+        }
+
+        // fallback generic
         this.toastr.error('Failed to create vendor');
       }
     });
@@ -460,7 +478,12 @@ saveVendor() {
 
         this.loadVendors();
       },
-      error: () => {
+      error: (err: any) => {
+        const msg = err?.error?.message;
+        if (msg) {
+          this.toastr.error(msg);
+          return;
+        }
         this.toastr.error('Failed to update vendor');
       }
     });
