@@ -11,76 +11,102 @@ import { TenantSessionService } from '../../../../../services/tenant-session.ser
   styleUrl: './setup-vendors-listing.component.scss',
 })
 export class SetupVendorsListingComponent {
-vendors: any[] = [];
-slug = '';
-loading = false;
-page = 1;
-lastPage = 1;
-total = 0;
-
-constructor(private route: ActivatedRoute, private tenantSession: TenantSessionService,  private router: Router, private vendorService: TenantVendorService, private toastr: ToastrService ) {}
-
-ngOnInit() {
-  this.slug = this.route.snapshot.paramMap.get('slug') || '';
-  this.getVendors();
-}
-
-// getVendors() {
-//   this.vendorService.getVendors().subscribe((res: any) => {
-//     this.vendors = res.data || res;
-//   });
-// }
-
-getVendors(page: number = 1) {
-
-  this.loading = true;
-
-  this.vendorService.getVendors(page).subscribe({
-
-    next: (res: any) => {
-
-      this.vendors = res?.data || [];
-
-      this.total = Number(res?.count || 0);
-      this.page = Number(res?.page || 1);
-      this.lastPage = Number(res?.lastPage || 1);
-
-      this.loading = false;
+  vendors: any[] = [];
+  slug = '';
+  loading = false;
+  page = 1;
+  lastPage = 1;
+  total = 0;
+  filters: any = {};
+  filterFields = [
+    {
+      key: 'name',
+      label: 'Name',
+      type: 'text',
+      placeholder: 'Search by name...'
     },
-
-    error: (err) => {
-
-      console.error(err);
-
-      this.vendors = [];
-      this.loading = false;
+    {
+      key: 'email',
+      label: 'Email',
+      type: 'text',
+      placeholder: 'Search by email...'
+    },
+    {
+      key: 'phone',
+      label: 'Phone',
+      type: 'number',
+      placeholder: 'Search by phone...'
     }
-  });
-}
+  ];
 
-deleteVendor(id: number) {
+  constructor(private route: ActivatedRoute, private tenantSession: TenantSessionService,  private router: Router, private vendorService: TenantVendorService, private toastr: ToastrService ) {}
 
-  if (!confirm('Delete this vendor?')) return;
+  ngOnInit() {
+    this.slug = this.route.snapshot.paramMap.get('slug') || '';
+    this.getVendors();
+  }
 
-  this.vendorService.deleteVendor(id).subscribe({
-    next: () => {
-      this.toastr.success('Vendor deleted');
-      this.getVendors();
+
+  getVendors(page: number = 1) {
+
+    this.loading = true;
+    const activeFilters = Object.fromEntries(
+      Object.entries(this.filters).filter(([_, value]) => value)
+    );
+
+    const apiCall = Object.keys(activeFilters).length
+    ? this.vendorService.searchVendors(activeFilters, 15)
+    : this.vendorService.getVendors(page);
+
+
+    apiCall.subscribe({
+      next: (res: any) => {
+        this.vendors = res?.data || [];
+        this.total = Number(res?.count || 0);
+        this.page = Number(res?.page || 1);
+        this.lastPage = Number(res?.lastPage || 1);
+        this.loading = false;
+      },
+      error: (err: any) => {
+        this.vendors = [];
+        this.loading = false;
+      }
+    });
+  }
+
+  deleteVendor(id: number) {
+
+    if (!confirm('Delete this vendor?')) return;
+
+    this.vendorService.deleteVendor(id).subscribe({
+      next: () => {
+        this.toastr.success('Vendor deleted');
+        this.getVendors();
+      }
+    });
+  }
+
+  prevPage(): void {
+
+    if (this.page > 1) {
+      this.getVendors(this.page - 1);
     }
-  });
-}
-
-prevPage(): void {
-
-  if (this.page > 1) {
-    this.getVendors(this.page - 1);
   }
-}
 
-nextPage(): void {
+  nextPage(): void {
 
-  if (this.page < this.lastPage) {
-    this.getVendors(this.page + 1);
+    if (this.page < this.lastPage) {
+      this.getVendors(this.page + 1);
+    }
   }
-}
+
+  onFilterSearch(filters: any): void {
+    this.filters = filters;
+    this.getVendors(1);
+  }
+
+  onFilterClear(): void {
+    this.filters = {};
+    this.getVendors(1);
+  }
 }
