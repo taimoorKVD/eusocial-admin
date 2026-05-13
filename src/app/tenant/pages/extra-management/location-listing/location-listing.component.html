@@ -11,8 +11,14 @@
     </button>
   </div>
 
+  <app-global-filter
+    [fields]="filterFields"
+    (search)="onFilterSearch($event)"
+    (clear)="onFilterClear()">
+  </app-global-filter>
+
   <!-- TABLE -->
-  <div class="bg-white rounded shadow overflow-hidden">
+  <div class="bg-white rounded shadow overflow-hidden mt-5">
 
     <table class="w-full text-left text-sm font-ibm">
 
@@ -31,9 +37,9 @@
         <tr *ngFor="let loc of locations" class="border-b hover:bg-gray-50">
 
           <td class="px-4 py-3">{{ loc.name }}</td>
-          <td class="px-4 py-3">{{ getCountryName(loc.countryId) }}</td>
-          <td class="px-4 py-3">{{ getStateName(loc.stateId) }}</td>
-          <td class="px-4 py-3">{{ getCityName(loc.cityId) }}</td>
+          <td class="px-4 py-3">{{ getName(countries, loc.countryId) }}</td>
+          <td class="px-4 py-3">{{ getName(states, loc.stateId) }}</td>
+          <td class="px-4 py-3">{{ getName(cities, loc.cityId) }}</td>
           <td class="px-4 py-3">{{ loc.postalCode }}</td>
 
           <td class="px-4 py-3 text-right flex justify-end gap-2">
@@ -68,8 +74,14 @@
       </tbody>
 
     </table>
+
+    <!-- Empty State -->
+    <div *ngIf="!isLoading && locations.length === 0" class="text-center py-10">
+      <p class="text-gray-400 text-sm">No locations found</p>
+    </div>
+
     <!-- Pagination -->
-    <div class="flex justify-between items-center px-4 py-3 border-t border-gray-200 bg-white">
+    <div *ngIf="locations.length > 0" class="flex justify-between items-center px-4 py-3 border-t border-gray-200 bg-white">
 
       <span class="text-sm text-gray-500">
         Page {{ page }} of {{ lastPage }}
