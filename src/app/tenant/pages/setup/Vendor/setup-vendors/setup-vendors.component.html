@@ -1,3 +1,5 @@
+<app-eu-loader *ngIf="loading"></app-eu-loader>
+
 <div class="p-6 min-h-screen vendor">
   <div>
 
@@ -360,8 +362,11 @@
         Cancel
       </button>
 
-      <button (click)="saveVendor()" class="px-6 py-2 bg-blue-600 text-white text-sm disabled:opacity-40">
-        Save
+      <button (click)="saveVendor()" [disabled]="loading"
+        class="px-6 py-2 bg-blue-600 text-white text-sm disabled:opacity-40">
+
+        {{ loading ? 'Please Wait...' : 'Save' }}
+
       </button>
 
     </div>
