@@ -13,6 +13,8 @@ export class ForgotPassword {
   form: FormGroup;
   submitted = false;
   loading = false;
+  emailSent = false;
+  sentEmail = '';
 
   constructor(
     private fb: FormBuilder,
@@ -39,7 +41,27 @@ export class ForgotPassword {
 
     this.auth.forgotPassword(email).subscribe({
       next: (res: any) => {
+        this.emailSent = true;
+        this.sentEmail = email;
         this.toastr.success(res?.message || 'Reset link sent to your email');
+        this.loading = false;
+      },
+      error: (err) => {
+        this.toastr.error(this.extractErrorMessage(err));
+        this.loading = false;
+      },
+    });
+  }
+
+  resendEmail(): void {
+    if (!this.sentEmail) {
+      return;
+    }
+
+    this.loading = true;
+    this.auth.forgotPassword(this.sentEmail).subscribe({
+      next: (res: any) => {
+        this.toastr.success(res?.message || 'Reset link sent again');
         this.loading = false;
       },
       error: (err) => {
