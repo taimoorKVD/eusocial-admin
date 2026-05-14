@@ -23,6 +23,16 @@ getJobPositions(page: number = 1) {
   );
 }
 
+searchJobPositions(filters: any = {}, limit: number = 15) {
+  const params = new URLSearchParams({
+    limit: limit.toString(),
+    ...filters
+  });
+  return this.http.get<any>(
+    `${this.jobPosition}/search?${params.toString()}`
+  );
+}
+
 getJobPositionById(id: number) {
   return this.http.get(`${this.jobPosition}/${id}`);
 }
