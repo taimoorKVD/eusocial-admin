@@ -9,36 +9,66 @@ import { ToastrService } from 'ngx-toastr';
   standalone: false,
 
   templateUrl: './setup-job-position.component.html',
-  styleUrl: './setup-job-position.component.scss'
+  styleUrl: './setup-job-position.component.scss',
 })
 export class SetupJobPositionComponent {
-constructor(private tenantJobPosition: TenantJobPositionService, private router:Router, private route: ActivatedRoute, private tenantSession: TenantSessionService, private toastr: ToastrService,) {}
+  constructor(
+    private tenantJobPosition: TenantJobPositionService,
+    private router: Router,
+    private route: ActivatedRoute,
+    private tenantSession: TenantSessionService,
+    private toastr: ToastrService,
+  ) {}
   jobPositions: any[] = [];
   selectedJobId: number | null = null;
 
   jobTitle: string = '';
   selectedPermissions: number[] = [];
   permissionsTouched = false;
-
   isLoading = false;
-
-  // Temporary permissions list (replace with API later if needed)
-  allPermissions = [
-    { id: 1, name: 'create-user' },
-    { id: 2, name: 'view-job-position' },
-    { id: 3, name: 'delete-user' },
-    { id: 4, name: 'edit-job-position' },
-    { id: 5, name: 'edit-location' },
-  ]
+  allPermissions: any[] = [];
+  groupedPermissions: any = {};
 
   ngOnInit() {
     this.loadJobPositions();
+    this.loadPermissions();
     const id = this.route.snapshot.paramMap.get('id');
 
-  if (id) {
-    this.selectedJobId = +id;
-    this.onSelectJob(); // load data
+    if (id) {
+      this.selectedJobId = +id;
+      this.onSelectJob(); // load data
+    }
   }
+
+  loadPermissions() {
+    this.tenantJobPosition.getPermissions().subscribe({
+      next: (res: any) => {
+        this.allPermissions = res.data || [];
+
+        this.groupPermissions();
+      },
+      error: () => {
+        this.toastr.error('Failed to load permissions');
+      },
+    });
+  }
+
+  groupPermissions() {
+    this.groupedPermissions = {};
+
+    this.allPermissions.forEach((perm: any) => {
+      const parts = perm.name.split('-');
+
+      // create-user => user
+      // edit-vendor => vendor
+      const moduleName = parts.slice(1).join('-');
+
+      if (!this.groupedPermissions[moduleName]) {
+        this.groupedPermissions[moduleName] = [];
+      }
+
+      this.groupedPermissions[moduleName].push(perm);
+    });
   }
 
   // 🔹 Load all job positions
@@ -53,7 +83,7 @@ constructor(private tenantJobPosition: TenantJobPositionService, private router:
       error: () => {
         this.isLoading = false;
         alert('Failed to load job positions');
-      }
+      },
     });
   }
 
@@ -76,7 +106,7 @@ constructor(private tenantJobPosition: TenantJobPositionService, private router:
       error: () => {
         this.isLoading = false;
         alert('Failed to load job details');
-      }
+      },
     });
   }
 
@@ -89,18 +119,17 @@ constructor(private tenantJobPosition: TenantJobPositionService, private router:
         this.selectedPermissions.push(id);
       }
     } else {
-      this.selectedPermissions = this.selectedPermissions.filter(p => p !== id);
+      this.selectedPermissions = this.selectedPermissions.filter((p) => p !== id);
     }
   }
 
   redirectToListing() {
-  const slug = this.tenantSession.getSlug();
-  this.router.navigate(['/tenant', slug, 'job-position']);
-}
+    const slug = this.tenantSession.getSlug();
+    this.router.navigate(['/tenant', slug, 'job-position']);
+  }
 
   // 🔹 Save (Create / Update)
   saveJob() {
-
     if (!this.jobTitle.trim()) {
       this.toastr.error('Job title is required');
       return;
@@ -112,10 +141,10 @@ constructor(private tenantJobPosition: TenantJobPositionService, private router:
       return;
     }
 
-  const payload = {
-    name: this.jobTitle,
-    permissionIds: this.selectedPermissions
-  };
+    const payload = {
+      name: this.jobTitle,
+      permissionIds: this.selectedPermissions,
+    };
 
     this.isLoading = true;
 
@@ -132,9 +161,8 @@ constructor(private tenantJobPosition: TenantJobPositionService, private router:
           this.isLoading = false;
           this.toastr.error(err?.error?.message || 'Failed to update Job');
           // alert('Update failed');
-        }
+        },
       });
-
     } else {
       // CREATE
       this.tenantJobPosition.createJobPosition(payload).subscribe({
@@ -148,7 +176,7 @@ constructor(private tenantJobPosition: TenantJobPositionService, private router:
           this.isLoading = false;
           this.toastr.error(err?.error?.message || 'Failed to create Job');
           // alert('Creation failed');
-        }
+        },
       });
     }
   }
@@ -162,50 +190,23 @@ constructor(private tenantJobPosition: TenantJobPositionService, private router:
   }
 
   deleteJob() {
-  if (!this.selectedJobId) {
-    this.toastr.warning('Please select a job first');
-    return;
-  }
-
-  this.isLoading = true;
-
-  this.tenantJobPosition.deleteJobPosition(this.selectedJobId).subscribe({
-    next: () => {
-      this.isLoading = false;
-      this.toastr.success('Job Deleted Successfully');
-      this.redirectToListing();
-    },
-    error: (err) => {
-      this.isLoading = false;
-      this.toastr.error(err?.error?.message || 'Failed to Delete Job');
+    if (!this.selectedJobId) {
+      this.toastr.warning('Please select a job first');
+      return;
     }
-  });
+
+    this.isLoading = true;
+
+    this.tenantJobPosition.deleteJobPosition(this.selectedJobId).subscribe({
+      next: () => {
+        this.isLoading = false;
+        this.toastr.success('Job Deleted Successfully');
+        this.redirectToListing();
+      },
+      error: (err) => {
+        this.isLoading = false;
+        this.toastr.error(err?.error?.message || 'Failed to Delete Job');
+      },
+    });
   }
-
-  // 🔹 Delete (optional)
-  // deleteJob() {
-  //   if (!this.selectedJobId) {
-  //     alert('Select a job to delete');
-  //     return;
-  //   }
-
-  //   if (!confirm('Are you sure you want to delete this job?')) return;
-
-  //   this.isLoading = true;
-
-  //   this.tenantJobPosition.deleteJobPosition(this.selectedJobId).subscribe({
-  //     next: () => {
-  //       this.isLoading = false;
-  //       this.toastr.success('Job Deleted Successfully');
-  //       // alert('Deleted successfully');
-
-  //       this.redirectToListing(); // ✅ redirect instead
-  //     },
-  //     error: (err) => {
-  //       this.isLoading = false;
-  //       this.toastr.error(err?.error?.message || 'Failed to Delete Job');
-  //       // alert('Delete failed');
-  //     }
-  //   });
-  // }
 }

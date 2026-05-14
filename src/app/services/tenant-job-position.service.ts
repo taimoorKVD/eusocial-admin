@@ -6,46 +6,40 @@ import { environment } from '../../environments/environment';
   providedIn: 'root',
 })
 export class TenantJobPositionService {
-
   private jobPosition = `${environment.tenantApiUrl}/jobpositions`;
-
+  private permissions = `${environment.tenantApiUrl}/permissions`;
 
   constructor(private http: HttpClient) {}
 
+  getPermissions() {
+    return this.http.get<any>(this.permissions);
+  }
 
-//   getJobPositions() {
-//   return this.http.get(this.jobPosition);
-// }
+  getJobPositions(page: number = 1) {
+    return this.http.get(`${this.jobPosition}?page=${page}`);
+  }
 
-getJobPositions(page: number = 1) {
-  return this.http.get(
-    `${this.jobPosition}?page=${page}`
-  );
-}
+  searchJobPositions(filters: any = {}, limit: number = 15) {
+    const params = new URLSearchParams({
+      limit: limit.toString(),
+      ...filters,
+    });
+    return this.http.get<any>(`${this.jobPosition}/search?${params.toString()}`);
+  }
 
-searchJobPositions(filters: any = {}, limit: number = 15) {
-  const params = new URLSearchParams({
-    limit: limit.toString(),
-    ...filters
-  });
-  return this.http.get<any>(
-    `${this.jobPosition}/search?${params.toString()}`
-  );
-}
+  getJobPositionById(id: number) {
+    return this.http.get(`${this.jobPosition}/${id}`);
+  }
 
-getJobPositionById(id: number) {
-  return this.http.get(`${this.jobPosition}/${id}`);
-}
+  createJobPosition(data: any) {
+    return this.http.post(this.jobPosition, data);
+  }
 
-createJobPosition(data: any) {
-  return this.http.post(this.jobPosition, data);
-}
+  updateJobPosition(id: number, data: any) {
+    return this.http.put(`${this.jobPosition}/${id}`, data);
+  }
 
-updateJobPosition(id: number, data: any) {
-  return this.http.put(`${this.jobPosition}/${id}`, data);
-}
-
-deleteJobPosition(id: number) {
-  return this.http.delete(`${this.jobPosition}/${id}`);
-}
+  deleteJobPosition(id: number) {
+    return this.http.delete(`${this.jobPosition}/${id}`);
+  }
 }
