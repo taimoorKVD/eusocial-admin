@@ -16,6 +16,15 @@ export class SetupJobPositionListingComponent {
   page = 1;
   lastPage = 1;
   total = 0;
+  filters: any = {};
+  filterFields = [
+    {
+      key: 'name',
+      label: 'Name',
+      type: 'text',
+      placeholder: 'Search by name...'
+    }
+  ];
 
   constructor( private tenantJobPosition: TenantJobPositionService, private router: Router, private toastr: ToastrService, public session: TenantSessionService) {}
 
@@ -27,45 +36,67 @@ export class SetupJobPositionListingComponent {
   loadJobPositions(page: number = 1) {
 
     this.isLoading = true;
+     const activeFilters = Object.fromEntries(
+      Object.entries(this.filters).filter(([_, value]) => value)
+    );
 
-    this.tenantJobPosition.getJobPositions(page).subscribe({
+     const apiCall = Object.keys(activeFilters).length
+    ? this.tenantJobPosition.searchJobPositions(activeFilters, 15)
+    : this.tenantJobPosition.getJobPositions(page);
 
-      next: (res: any) => {
-
-        const rows = Array.isArray(res?.data)
-          ? res.data
-          : [];
-
-        this.jobPositions = [...rows].sort((a: any, b: any) => {
-
-          const aTime = a?.created_at
-            ? new Date(a.created_at).getTime()
-            : 0;
-
-          const bTime = b?.created_at
-            ? new Date(b.created_at).getTime()
-            : 0;
-
-          if (aTime && bTime && aTime !== bTime) {
-            return bTime - aTime;
-          }
-
-          return (b?.id || 0) - (a?.id || 0);
-        });
-
-        this.total = Number(res?.meta?.total || 0);
-        this.page = Number(res?.meta?.page || 1);
-        this.lastPage = Number(res?.meta?.lastPage || 1);
-
+    apiCall.subscribe({
+      next: (res) => {
+        this.jobPositions = res.data;
+        this.total = Number(res?.meta?.total) || 1;
+        this.page = Number(res?.meta?.page) || 1;
+        this.lastPage = Number(res?.meta?.lastPage) || 1;
         this.isLoading = false;
       },
-
       error: () => {
-
+        this.jobPositions = [];
+        this.total = 0;
         this.isLoading = false;
-        alert('Failed to load job positions');
-      }
+      },
     });
+
+    // this.tenantJobPosition.getJobPositions(page).subscribe({
+
+    //   next: (res: any) => {
+
+    //     const rows = Array.isArray(res?.data)
+    //       ? res.data
+    //       : [];
+
+    //     this.jobPositions = [...rows].sort((a: any, b: any) => {
+
+    //       const aTime = a?.created_at
+    //         ? new Date(a.created_at).getTime()
+    //         : 0;
+
+    //       const bTime = b?.created_at
+    //         ? new Date(b.created_at).getTime()
+    //         : 0;
+
+    //       if (aTime && bTime && aTime !== bTime) {
+    //         return bTime - aTime;
+    //       }
+
+    //       return (b?.id || 0) - (a?.id || 0);
+    //     });
+
+    //     this.total = Number(res?.meta?.total || 0);
+    //     this.page = Number(res?.meta?.page || 1);
+    //     this.lastPage = Number(res?.meta?.lastPage || 1);
+
+    //     this.isLoading = false;
+    //   },
+
+    //   error: () => {
+
+    //     this.isLoading = false;
+    //     alert('Failed to load job positions');
+    //   }
+    // });
   }
 
 
@@ -134,9 +165,20 @@ export class SetupJobPositionListingComponent {
 }
 
 nextPage(): void {
-
   if (this.page < this.lastPage) {
     this.loadJobPositions(this.page + 1);
   }
 }
+
+ onFilterSearch(filters: any): void {
+    this.filters = filters;
+    this.page = 1;
+    this.loadJobPositions(this.page);
+  }
+
+  onFilterClear(): void {
+    this.filters = {};
+    this.page = 1;
+    this.loadJobPositions(this.page);
+  }
 }

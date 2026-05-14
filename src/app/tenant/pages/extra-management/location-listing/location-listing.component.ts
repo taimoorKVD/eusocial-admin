@@ -18,125 +18,172 @@ export class LocationListingComponent {
   page = 1;
   lastPage = 1;
   total = 0;
+  filters: any = {};
+  filterFields = [
+    {
+      key: 'name',
+      label: 'Name',
+      type: 'text',
+      placeholder: 'Search by Role name...'
+    },
+    // {
+    //   key: 'country_id',
+    //   label: 'Country',
+    //   type: 'select',
+    //   options: [],
+    // },
+    // {
+    //   key: 'state_id',
+    //   label: 'State',
+    //   type: 'select',
+    //   options: [],
+    // },
+    // {
+    //   key: 'city_id',
+    //   label: 'City',
+    //   type: 'select',
+    //   options: [],
+    // },
+    {
+      key: 'postal_code',
+      label: 'Postal Code',
+      type: 'text',
+      placeholder: 'Search by Postal Code...',
+    },
+  ];
 
   constructor(
     private locationService: TenantLocationService,
     private router: Router,
-    public session: TenantSessionService
+    public session: TenantSessionService,
   ) {}
 
   ngOnInit(): void {
     this.getLocations();
-  this.loadCountries();
-  this.loadStates();
-  this.loadCities();
+    this.loadCountries();
+    this.loadStates();
+    this.loadCities();
   }
-
-  // getLocations() {
-  //   this.isLoading = true;
-
-  //   this.locationService.getLocations().subscribe({
-  //     next: (res) => {
-  //       this.locations = res.data || [];
-  //     },
-  //     complete: () => this.isLoading = false
-  //   });
-  // }
 
   getLocations(page: number = 1) {
-  this.isLoading = true;
+    this.isLoading = true;
+    const activeFilters = Object.fromEntries(
+      Object.entries(this.filters).filter(([_, value]) => value),
+    );
 
-  this.locationService.getLocations(page).subscribe({
-    next: (res) => {
+    const apiCall = Object.keys(activeFilters).length
+      ? this.locationService.searchLocations(activeFilters, 15)
+      : this.locationService.getLocations(page);
 
-      this.locations = res.data || [];
-
-      this.total = res.count || 0;   // if backend gives count
-      this.page = res.page || 1;
-      this.lastPage = res.lastPage || 1;
-
-      this.isLoading = false;
-    },
-
-    error: () => {
-      this.locations = [];
-      this.isLoading = false;
-    }
-  });
-}
-
-  goToCreate() {
-    // this.router.navigate(['/location/create']);
-     this.router.navigate([
-    '/tenant',
-    this.session.getSlug(),
-    'location',
-    'create'
-  ]);
+    apiCall.subscribe({
+      next: (res) => {
+        this.locations = res.data;
+        this.total = res.count || 0;
+        this.page = res.page || 1;
+        this.lastPage = res.lastPage || 1;
+        this.isLoading = false;
+      },
+      error: () => {
+        this.locations = [];
+        this.total = 0;
+        this.isLoading = false;
+      },
+    });
   }
 
-
+  goToCreate() {
+    this.router.navigate(['/tenant', this.session.getSlug(), 'location', 'create']);
+  }
 
   goToEdit(id: number) {
-    // this.router.navigate(['/location/edit', id]);
-     this.router.navigate([
-    '/tenant',
-    this.session.getSlug(),
-    'location',
-    'edit',
-    id
-  ]);
+    this.router.navigate(['/tenant', this.session.getSlug(), 'location', 'edit', id]);
   }
 
   deleteLocation(id: number) {
     if (!confirm('Delete this location?')) return;
-
     this.locationService.deleteLocation(id).subscribe(() => {
       this.getLocations();
     });
   }
 
   loadCountries() {
-  this.locationService.getCountries().subscribe(res => {
-    this.countries = res.data || res;
-  });
-}
-
-loadStates() {
-  this.locationService.getStates(0).subscribe(res => {
-    this.states = res.data || res;
-    // console.log('States:', this.states);
-// console.log('Looking for stateId:', 45);
-  });
-}
-
-loadCities() {
-  this.locationService.getCities(0).subscribe(res => {
-    this.cities = res.data || res;
-  });
-}
-
-  getCountryName(id: number): string {
-  return this.countries.find(c => c.id === id)?.name || '-';
-}
-
-getStateName(id: number): string {
-  return this.states.find(s => s.id === id)?.name || '-';
-}
-
-getCityName(id: number): string {
-  return this.cities.find(c => c.id === id)?.name || '-';
-}
-
-prevPage(): void {
-  if (this.page > 1) {
-    this.getLocations(this.page - 1);
+    this.loadFilterOptions(
+      'countries',
+      'country_id',
+      this.locationService.getCountries()
+    );
   }
-}
 
-nextPage(): void {
-  if (this.page < this.lastPage) {
-    this.getLocations(this.page + 1);
+  loadStates() {
+    this.loadFilterOptions(
+      'states',
+      'state_id',
+      this.locationService.getStates(0)
+    );
   }
-}
+
+  loadCities() {
+    this.loadFilterOptions(
+      'cities',
+      'city_id',
+      this.locationService.getCities(0)
+    );
+  }
+
+  private loadFilterOptions(
+    key: string,
+    filter_key: string,
+    apiCall: any
+  ) {
+    const field = this.filterFields.find(f => f.key === filter_key);
+
+    apiCall.subscribe({
+      next: (res: any) => {
+        const data = res.data || res;
+        this[key] = data
+
+        // console.log(field);
+        // if (field != undefined) {
+        //   console.log('Setting options for');
+        //   field.options = data.map((item: any) => ({
+        //     label: item.name,
+        //     value: item.id,
+        //   }));
+        // }
+      },
+      error: () => {
+        // if (field) {
+        //   field.options = [];
+        // }
+      }
+    });
+  }
+
+  getName(list: any[], id: number): string {
+    return list.find(item => item.id === id)?.name || '-';
+  }
+
+  prevPage(): void {
+    if (this.page > 1) {
+      this.getLocations(this.page - 1);
+    }
+  }
+
+  nextPage(): void {
+    if (this.page < this.lastPage) {
+      this.getLocations(this.page + 1);
+    }
+  }
+
+  onFilterSearch(filters: any): void {
+    this.filters = filters;
+    this.page = 1;
+    this.getLocations(this.page);
+  }
+
+  onFilterClear(): void {
+    this.filters = {};
+    this.page = 1;
+    this.getLocations(this.page);
+  }
 }

@@ -7,6 +7,8 @@ export interface GlobalFilterField {
   label: string;
   type?: string;
   placeholder?: string;
+  options?: { label: string; value: any }[];
+  loading?: boolean;
 }
 
 @Component({
@@ -51,6 +53,22 @@ export class GlobalFilterComponent {
 
   onSearch(): void {
     this.search.emit(this.filters);
+  }
+
+  getFieldOptions(field: GlobalFilterField): any[] {
+    return field.options ?? [];
+  }
+
+  getSelectedOptionLabel(field: GlobalFilterField): string {
+    const value = this.filters[field.key];
+    if (!value) {
+      return '';
+    }
+
+    const option = this.getFieldOptions(field).find(
+      opt => String(opt.value) === String(value)
+    );
+    return option?.label ?? '';
   }
 
   onClear(): void {
