@@ -3,6 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { TenantVendorService } from '../../../../../services/tenant-vendor.service';
 import { ToastrService } from 'ngx-toastr';
 import { TenantSessionService } from '../../../../../services/tenant-session.service';
+import { GlobalFilterField } from '../../../../../shared/global-filter/global-filter';
 
 @Component({
   selector: 'app-setup-vendors-listing',
@@ -18,7 +19,7 @@ export class SetupVendorsListingComponent {
   lastPage = 1;
   total = 0;
   filters: any = {};
-  filterFields = [
+  filterFields: GlobalFilterField[] = [
     {
       key: 'name',
       label: 'Name',
@@ -36,6 +37,13 @@ export class SetupVendorsListingComponent {
       label: 'Phone',
       type: 'number',
       placeholder: 'Search by phone...',
+    },
+    {
+      key: 'city_id',
+      label: 'City',
+      type: 'select',
+      options: [],
+      placeholder: 'Select city',
     },
   ];
   countries: any[] = [];
@@ -113,10 +121,46 @@ export class SetupVendorsListingComponent {
   }
 
   loadCities() {
-    this.vendorService.getCities(0).subscribe((res) => {
-      this.cities = res.data || res;
+    // this.vendorService.getCities(0).subscribe((res) => {
+    //   this.cities = res.data || res;
+    // });
+    this.loadFilterOptions(
+      'cities',
+      'city_id',
+      this.vendorService.getCities(0)
+    );
+  }
+
+   private loadFilterOptions(
+    key: string,
+    filter_key: string,
+    apiCall: any
+  ) {
+    const field = this.filterFields.find(f => f.key === filter_key);
+
+    if (field && field.type === 'select') {
+      field.loading = true;
+    }
+
+    apiCall.subscribe({
+      next: (res: any) => {
+        const data = res.data || res;
+        this[key] = data;
+
+        if (field && field.type === 'select') {
+          field.options = data;
+          field.loading = false;
+        }
+      },
+      error: () => {
+        if (field && field.type === 'select') {
+          field.loading = false;
+        }
+      }
     });
   }
+
+
 
   getCountryName(id: number): string {
     return this.countries.find((c) => c.id === id)?.name || '-';
