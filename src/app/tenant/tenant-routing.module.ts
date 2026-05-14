@@ -45,9 +45,9 @@ const routes: Routes = [
       { path: 'job-position/create', component: SetupJobPositionComponent },
       { path: 'job-position/edit/:id', component: SetupJobPositionComponent },
 
-      { path: 'vendor', component: SetupVendorsListingComponent },
-      { path: 'vendor/create', component: SetupVendorsComponent },
-      { path: 'vendor/edit/:id', component: SetupVendorsComponent },
+      { path: 'vendors', component: SetupVendorsListingComponent },
+      { path: 'vendors/create', component: SetupVendorsComponent },
+      { path: 'vendors/edit/:id', component: SetupVendorsComponent },
 
       { path: 'item', component: SetupItems },
       { path: 'reporting-group', component: SetupReportingGroup },
