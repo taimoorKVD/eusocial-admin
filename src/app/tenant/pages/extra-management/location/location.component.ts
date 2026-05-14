@@ -122,15 +122,14 @@ export class LocationComponent {
       this.locationForm.patchValue({
         name: data.name,
         address: data.address,
-        country_id: data.country_id,
-        state_id: data.state_id,
-        city_id: data.city_id,
+        country_id: data.countryId,
+        state_id: data.stateId,
+        city_id: data.cityId,
         postalCode: data.postalCode,
         latitude: data.latitude,
         longitude: data.longitude
       });
 
-      // Load dependent dropdowns
       this.loadStates(data.country_id);
       this.loadCities(data.state_id);
     });
@@ -138,7 +137,6 @@ export class LocationComponent {
 
 submit() {
 
-  // ✅ trigger validation UI
   if (this.locationForm.invalid) {
     this.locationForm.markAllAsTouched();
     return;
