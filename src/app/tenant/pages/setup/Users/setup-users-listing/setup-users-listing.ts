@@ -40,32 +40,63 @@ export class SetupUsersListing {
     this.slug = this.route.parent?.parent?.snapshot.paramMap.get('slug') || '';
   }
 
+  // allUsers(page: number = 1): void {
+  //   this.loading = true;
+
+  //   const activeFilters = Object.fromEntries(
+  //     Object.entries(this.filters).filter(([_, value]) => value)
+  //   );
+
+  //    const apiCall = Object.keys(activeFilters).length
+  //   ? this.userService.searchUsers(activeFilters, 15)
+  //   : this.userService.getUsers(page);
+
+  //   apiCall.subscribe({
+  //     next: (res) => {
+  //       this.users = res.data;
+  //       this.total = Number(res?.count || 0);
+  //       this.page = Number(res?.page || 1);
+  //       this.lastPage = Number(res?.lastPage || 1);
+  //       this.loading = false;
+  //     },
+  //     error: () => {
+  //       this.users = [];
+  //       this.total = 0;
+  //       this.loading = false;
+  //     },
+  //   });
+  // }
+
   allUsers(page: number = 1): void {
-    this.loading = true;
+  this.loading = true;
 
-    const activeFilters = Object.fromEntries(
-      Object.entries(this.filters).filter(([_, value]) => value)
-    );
+  const activeFilters = Object.fromEntries(
+    Object.entries(this.filters).filter(([_, value]) => value)
+  );
 
-     const apiCall = Object.keys(activeFilters).length
+  const apiCall = Object.keys(activeFilters).length
     ? this.userService.searchUsers(activeFilters, 15)
     : this.userService.getUsers(page);
 
-    apiCall.subscribe({
-      next: (res) => {
-        this.users = res.data;
-        this.total = Number(res?.count || 0);
-        this.page = Number(res?.page || 1);
-        this.lastPage = Number(res?.lastPage || 1);
-        this.loading = false;
-      },
-      error: () => {
-        this.users = [];
-        this.total = 0;
-        this.loading = false;
-      },
-    });
-  }
+  apiCall.subscribe({
+    next: (res) => {
+
+      this.users = res.data || [];
+
+      this.total = Number(res?.meta?.total || 0);
+      this.page = Number(res?.meta?.page || 1);
+      this.lastPage = Number(res?.meta?.lastPage || 1);
+
+      this.loading = false;
+    },
+
+    error: () => {
+      this.users = [];
+      this.total = 0;
+      this.loading = false;
+    },
+  });
+}
 
   deleteUser(id: number) {
     if (!confirm('Are you sure you want to delete this user?')) return;
