@@ -77,10 +77,10 @@ export class LocationListingComponent {
 
     apiCall.subscribe({
       next: (res) => {
-        this.locations = res.data;
-        this.total = res.count || 0;
-        this.page = res.page || 1;
-        this.lastPage = res.lastPage || 1;
+        this.locations = res.data || [];
+        this.total = Number(res?.meta?.total || 0);
+        this.page = Number(res?.meta?.page || 1);
+        this.lastPage = Number(res?.meta?.lastPage || 1);
         this.isLoading = false;
       },
       error: () => {

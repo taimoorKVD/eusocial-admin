@@ -101,27 +101,70 @@ export class SetupJobPositionListingComponent {
 
 
 
-  deleteJob(id: number) {
+//   deleteJob(id: number) {
+
+//   const confirmDelete = confirm('Are you sure you want to delete this job position?');
+
+//   if (!confirmDelete) return;
+
+//   this.isLoading = true;
+
+//   this.tenantJobPosition.deleteJobPosition(id).subscribe({
+//     next: () => {
+//       this.isLoading = false;
+
+//       // Remove from UI instantly (no reload needed)
+//       this.jobPositions = this.jobPositions.filter(job => job.id !== id);
+
+//       // alert('Deleted successfully');
+//       this.toastr.success('Job deleted successfully');
+//     },
+//     error: (err) => {
+//       this.isLoading = false;
+//       alert('Delete failed');
+//       this.toastr.error(err?.error?.message || 'Failed to delete Job');
+//     }
+//   });
+// }
+
+deleteJob(id: number) {
 
   const confirmDelete = confirm('Are you sure you want to delete this job position?');
-
   if (!confirmDelete) return;
 
   this.isLoading = true;
 
   this.tenantJobPosition.deleteJobPosition(id).subscribe({
     next: () => {
+
+      this.toastr.success('Job deleted successfully');
+
       this.isLoading = false;
 
-      // Remove from UI instantly (no reload needed)
       this.jobPositions = this.jobPositions.filter(job => job.id !== id);
 
-      // alert('Deleted successfully');
-      this.toastr.success('Job deleted successfully');
+      if (this.jobPositions.length === 0 && this.page > 1) {
+
+        this.tenantJobPosition.getJobPositions(this.page - 1)
+          .subscribe((res: any) => {
+            this.jobPositions = res?.data || [];
+            this.page = res?.meta?.page || 1;
+            this.lastPage = res?.meta?.lastPage || 1;
+          });
+
+      } else {
+
+        this.tenantJobPosition.getJobPositions(this.page)
+          .subscribe((res: any) => {
+            this.jobPositions = res?.data || [];
+          });
+
+      }
+
     },
+
     error: (err) => {
       this.isLoading = false;
-      alert('Delete failed');
       this.toastr.error(err?.error?.message || 'Failed to delete Job');
     }
   });
