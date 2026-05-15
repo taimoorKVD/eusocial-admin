@@ -189,4 +189,13 @@ export class SetupVendorsListingComponent {
     this.filters = {};
     this.getVendors(1);
   }
+
+  goToCreate() {
+    this.router.navigate([
+      '/tenant',
+      this.tenantSession.getSlug(),
+      'vendors',
+      'create'
+    ]);
+  }
 }

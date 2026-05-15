@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { TenantUserService } from '../../../../../services/tenant-user.service';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
+import { TenantSessionService } from '../../../../../services/tenant-session.service';
 
 @Component({
   selector: 'app-setup-users-listing',
@@ -33,11 +34,20 @@ export class SetupUsersListing {
     }
   ];
 
-  constructor(private userService: TenantUserService, private route:ActivatedRoute) {}
+  constructor(private userService: TenantUserService, public session: TenantSessionService, private route:ActivatedRoute, private router: Router) {}
 
   ngOnInit(): void {
     this.allUsers(this.page);
     this.slug = this.route.parent?.parent?.snapshot.paramMap.get('slug') || '';
+  }
+
+  goToCreate() {
+    this.router.navigate([
+      '/tenant',
+      this.session.getSlug(),
+      'users',
+      'create'
+    ]);
   }
 
   // allUsers(page: number = 1): void {

@@ -2,14 +2,12 @@
 
 <div class="p-4">
 
-  <!-- Header -->
-  <div class="flex justify-between items-center mb-5">
-    <h2 class="text-lg font-semibold text-[#161616]">Users</h2>
 
-    <button routerLink="create" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm">
-      + Create
-    </button>
-  </div>
+  <app-top-header
+    [title]="'Users'"
+    [buttonLabel]="' + Create User'"
+    (buttonClick)="goToCreate()">
+  </app-top-header>
 
   <!-- Filter -->
     <app-global-filter

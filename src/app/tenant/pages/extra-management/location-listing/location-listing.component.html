@@ -3,13 +3,11 @@
 <div class="p-6">
 
   <!-- HEADER -->
-  <div class="flex justify-between items-center mb-4">
-    <h2 class="text-[20px] font-semibold">Locations</h2>
-
-    <button (click)="goToCreate()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm">
-      + Create Location
-    </button>
-  </div>
+  <app-top-header
+    [title]="'Locations'"
+    [buttonLabel]="'+ Create Location'"
+    (buttonClick)="goToCreate()">
+  </app-top-header>
 
   <app-global-filter
     [fields]="filterFields"
