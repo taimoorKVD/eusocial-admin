@@ -1,4 +1,4 @@
- <app-eu-loader *ngIf="isLoading"></app-eu-loader>
+<app-eu-loader *ngIf="isLoading"></app-eu-loader>
 
 <div class="bg-gray-100 p-4 flex flex-col justify-between">
 
@@ -19,11 +19,8 @@
           Job Positions
         </label>
 
-        <select
-          [(ngModel)]="selectedJobId"
-          (change)="onSelectJob()"
-          class="w-full border-b border-gray-400 bg-transparent outline-none text-sm py-1 cursor-pointer"
-        >
+        <select [(ngModel)]="selectedJobId" (change)="onSelectJob()"
+          class="w-full border-b border-gray-400 bg-transparent outline-none text-sm py-1 cursor-pointer">
           <option [ngValue]="null" disabled>Choose an option</option>
 
           <option *ngFor="let job of jobPositions" [ngValue]="job.id">
@@ -36,10 +33,7 @@
 
       <!-- Reset Button -->
       <div class="text-right">
-        <button
-          (click)="resetForm()"
-          class="bg-orange-600 text-white px-4 py-2 text-sm"
-        >
+        <button (click)="resetForm()" class="bg-orange-600 text-white px-4 py-2 text-sm">
           Create New
         </button>
       </div>
@@ -49,65 +43,115 @@
     <!-- Input -->
     <div class="grid grid-cols-3 gap-x-12 gap-y-6">
       <div class="mb-6">
-        <input
-          type="text"
-          [(ngModel)]="jobTitle"
-          placeholder="Enter Job Title"
-          class="border border-blue-500 px-3 w-full placeholder-[#A8A8A8] text-[#161616] focus:outline-none py-3 text-[14px] bg-transparent"
-        />
+        <input type="text" [(ngModel)]="jobTitle" placeholder="Enter Job Title"
+          class="border border-blue-500 px-3 w-full placeholder-[#A8A8A8] text-[#161616] focus:outline-none py-3 text-[14px] bg-transparent" />
         <p class="text-xs text-gray-400 mt-1">Job Position Field</p>
       </div>
     </div>
 
     <!-- Permissions -->
-    <div>
-      <h3 class="text-sm text-gray-600 mb-3">Job Related Permissions</h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
 
-      <div class="space-y-2">
+      <!-- MODULE CARD -->
+      <div *ngFor="let group of groupedPermissions | keyvalue"
+        class="group bg-white border border-gray-200 rounded-3xl p-5 shadow-sm hover:shadow-xl hover:border-gray-300 transition-all duration-300">
 
-        <label *ngFor="let perm of allPermissions"
-          class="flex items-center gap-2 text-[#161616] text-[14px]">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-5">
 
-          <input
-            type="checkbox"
-            class="accent-black"
-            [checked]="selectedPermissions.includes(perm.id)"
-            (change)="onPermissionChange($event, perm.id)"
-          />
+          <div>
+            <h3 class="text-[17px] font-semibold text-[#111827] capitalize tracking-wide">
+              {{ ($any(group.key)).replace('-', ' ') }}
+            </h3>
 
-          {{ perm.name }}
-        </label>
+            <p class="text-[12px] text-gray-500 mt-1">
+              Manage module permissions
+            </p>
+          </div>
+
+          <!-- Badge -->
+          <!-- <div
+            class="min-w-[38px] h-[38px] px-3 rounded-full bg-black text-white flex items-center justify-center text-[12px] font-semibold shadow-md">
+
+            {{ $any(group.value).length }}
+
+          </div> -->
+
+        </div>
+
+        <!-- Permissions -->
+        <div class="flex flex-wrap gap-3">
+
+          <label *ngFor="let perm of $any(group.value)" class="relative">
+
+            <!-- Hidden Checkbox -->
+            <input type="checkbox" class="peer hidden" [checked]="selectedPermissions.includes(perm.id)"
+              (change)="onPermissionChange($event, perm.id)" />
+
+            <!-- Custom UI -->
+            <div class="flex items-center justify-center px-4 py-2.5 rounded-2xl border border-gray-200 bg-gray-50 text-gray-700 text-[13px] font-medium cursor-pointer transition-all duration-200
+
+          hover:border-black
+          hover:bg-black
+          hover:text-white
+
+          peer-checked:bg-black
+          peer-checked:text-white
+          peer-checked:border-black
+          peer-checked:shadow-lg">
+
+              {{ perm.name.split('-')[0] }}
+
+            </div>
+
+          </label>
+
+        </div>
 
       </div>
 
-      <p *ngIf="permissionsTouched && selectedPermissions.length === 0" class="text-red-500 text-sm mt-2">
-        Select at least one permission.
-      </p>
     </div>
+
+
+    <!-- Validation -->
+    <div *ngIf="permissionsTouched && selectedPermissions.length === 0"
+      class="mt-4 flex items-center gap-2 text-red-500 text-sm font-medium">
+
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M12 8v4m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z" />
+
+      </svg>
+
+      <span>
+        Please select at least one permission
+      </span>
+
+    </div>
+
+
+    <!-- Validation -->
+    <!-- <div *ngIf="permissionsTouched && selectedPermissions.length === 0" class="text-red-500 text-sm mt-2">
+
+      Please select at least one permission
+
+    </div> -->
 
   </div>
 
   <!-- Bottom Buttons -->
   <div class="flex justify-end gap-3 mt-10">
 
-    <button
-      (click)="deleteJob()"
-      class="border border-red-400 text-red-500 px-6 py-2 text-sm"
-    >
+    <button (click)="deleteJob()" class="border border-red-400 text-red-500 px-6 py-2 text-sm">
       Delete
     </button>
 
-    <button
-      (click)="resetForm()"
-      class="border border-blue-400 text-blue-500 px-6 py-2 text-sm"
-    >
+    <button (click)="resetForm()" class="border border-blue-400 text-blue-500 px-6 py-2 text-sm">
       Cancel
     </button>
 
-    <button
-      (click)="saveJob()"
-      class="bg-blue-600 text-white px-6 py-2 text-sm"
-    >
+    <button (click)="saveJob()" class="bg-blue-600 text-white px-6 py-2 text-sm">
       Save
     </button>
 

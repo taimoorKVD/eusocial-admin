@@ -108,13 +108,29 @@ export class SetupUsersListing {
   });
 }
 
-  deleteUser(id: number) {
-    if (!confirm('Are you sure you want to delete this user?')) return;
+  // deleteUser(id: number) {
+  //   if (!confirm('Are you sure you want to delete this user?')) return;
 
-    this.userService.deleteUser(id).subscribe(() => {
-      this.allUsers(this.page); // refresh list
-    });
-  }
+  //   this.userService.deleteUser(id).subscribe(() => {
+  //     this.allUsers(this.page); // refresh list
+  //   });
+  // }
+
+  deleteUser(id: number) {
+  if (!confirm('Are you sure you want to delete this user?')) return;
+
+  this.userService.deleteUser(id).subscribe(() => {
+
+    // agar current page par sirf 1 item tha
+    // aur wo delete ho gaya
+    if (this.users.length === 1 && this.page > 1) {
+      this.allUsers(this.page - 1);
+    } else {
+      this.allUsers(this.page);
+    }
+
+  });
+}
 
   prevPage(): void {
     if (this.page > 1) {
