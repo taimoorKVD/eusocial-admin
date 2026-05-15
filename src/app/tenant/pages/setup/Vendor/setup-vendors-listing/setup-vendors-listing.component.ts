@@ -65,15 +65,16 @@ export class SetupVendorsListingComponent {
     );
 
     const apiCall = Object.keys(activeFilters).length
-      ? this.vendorService.searchVendors(activeFilters, 15)
+      ? this.vendorService.searchVendors(activeFilters, 3)
       : this.vendorService.getVendors(page);
 
     apiCall.subscribe({
       next: (res: any) => {
         this.vendors = res?.data || [];
-        this.total = Number(res?.count || 0);
-        this.page = Number(res?.page || 1);
-        this.lastPage = Number(res?.lastPage || 1);
+
+        this.total = Number(res?.meta?.total || 0);
+        this.page = Number(res?.meta?.page || 1);
+        this.lastPage = Number(res?.meta?.lastPage || 1);
         this.loading = false;
       },
       error: (err: any) => {
@@ -83,16 +84,33 @@ export class SetupVendorsListingComponent {
     });
   }
 
-  deleteVendor(id: number) {
-    if (!confirm('Delete this vendor?')) return;
+  // deleteVendor(id: number) {
+  //   if (!confirm('Delete this vendor?')) return;
 
-    this.vendorService.deleteVendor(id).subscribe({
-      next: () => {
-        this.toastr.success('Vendor deleted');
-        this.getVendors();
-      },
-    });
-  }
+  //   this.vendorService.deleteVendor(id).subscribe({
+  //     next: () => {
+  //       this.toastr.success('Vendor deleted');
+  //       this.getVendors();
+  //     },
+  //   });
+  // }
+
+  deleteVendor(id: number) {
+  if (!confirm('Delete this vendor?')) return;
+
+  this.vendorService.deleteVendor(id).subscribe({
+    next: () => {
+      this.toastr.success('Vendor deleted');
+
+      // agar page empty hone wala ho
+      if (this.vendors.length === 1 && this.page > 1) {
+        this.getVendors(this.page - 1);
+      } else {
+        this.getVendors(this.page);
+      }
+    },
+  });
+}
 
   prevPage(): void {
     if (this.page > 1) {

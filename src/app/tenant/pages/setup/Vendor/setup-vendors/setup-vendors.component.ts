@@ -99,7 +99,7 @@ export class SetupVendorsComponent {
 
   loadCountries() {
     this.vendorService.getCountries().subscribe((res: any) => {
-      this.countries = res.data || res;
+      this.countries = res.data.sort((a: any, b: any) => a.name.localeCompare(b.name));
     });
   }
 
@@ -111,7 +111,7 @@ export class SetupVendorsComponent {
     }
 
     this.vendorService.getStates(countryId).subscribe((res: any) => {
-      this.states = res.data || res;
+      this.states = res.data.sort((a: any, b: any) => a.name.localeCompare(b.name));
     });
   }
 
@@ -122,7 +122,7 @@ export class SetupVendorsComponent {
     }
 
     this.vendorService.getCities(stateId).subscribe((res: any) => {
-      this.cities = res.data || res;
+      this.cities = res.data.sort((a: any, b: any) => a.name.localeCompare(b.name));
     });
   }
 
