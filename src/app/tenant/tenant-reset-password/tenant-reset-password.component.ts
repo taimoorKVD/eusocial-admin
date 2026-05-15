@@ -16,6 +16,9 @@ export class TenantResetPasswordComponent {
   loading = false;
   verifying = true;
   tokenValid = false;
+  resetSuccess = false;
+  showPassword = false;
+  showConfirmPassword = false;
 
   constructor(
     private fb: FormBuilder,
@@ -79,14 +82,62 @@ export class TenantResetPasswordComponent {
     this.tenantAuth.resetPassword(this.form.value).subscribe({
       next: (res: any) => {
         this.toastr.success(res?.message || 'Password reset successful');
+        this.resetSuccess = true;
         this.loading = false;
-        this.router.navigate(['/tenant/login']);
       },
       error: (err) => {
         this.toastr.error(this.extractErrorMessage(err));
         this.loading = false;
       },
     });
+  }
+
+  togglePassword(): void {
+    this.showPassword = !this.showPassword;
+  }
+
+  toggleConfirmPassword(): void {
+    this.showConfirmPassword = !this.showConfirmPassword;
+  }
+
+  get passwordStrengthScore(): number {
+    const value = this.form.get('password')?.value as string;
+    if (!value) {
+      return 0;
+    }
+
+    let score = 0;
+    if (value.length >= 8) {
+      score++;
+    }
+    if (/[A-Z]/.test(value)) {
+      score++;
+    }
+    if (/[0-9]/.test(value)) {
+      score++;
+    }
+    if (/[^A-Za-z0-9]/.test(value)) {
+      score++;
+    }
+    return score;
+  }
+
+  get passwordStrengthLabel(): string {
+    const score = this.passwordStrengthScore;
+    if (score >= 4) {
+      return 'Strong password';
+    }
+    if (score >= 2) {
+      return 'Medium password';
+    }
+    if (score >= 1) {
+      return 'Weak password';
+    }
+    return 'Use at least 8 characters';
+  }
+
+  goToLogin(): void {
+    this.router.navigate(['/tenant/login']);
   }
 
   private extractErrorMessage(err: any): string {

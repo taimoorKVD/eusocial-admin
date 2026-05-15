@@ -49,7 +49,7 @@ export class RoleService {
 
   /** ✅ Get all roles (no pagination) */
   getAllRoles(): Observable<Role[]> {
-    return this.http.get<RoleApiResponse>(this.baseUrl).pipe(map((res) => res.data)); // unwrap data
+    return this.http.get<RoleApiResponse>(`${this.baseUrl}?limit=0`).pipe(map((res) => res.data));
   }
 
   /** ✅ Get single role */
