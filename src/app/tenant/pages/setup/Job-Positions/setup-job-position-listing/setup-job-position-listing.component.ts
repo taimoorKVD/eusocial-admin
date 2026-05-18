@@ -171,13 +171,13 @@ deleteJob(id: number) {
 }
 
   goToCreate() {
-  this.router.navigate([
-    '/tenant',
-    this.session.getSlug(),
-    'job-position',
-    'create'
-  ]);
-}
+    this.router.navigate([
+      '/tenant',
+      this.session.getSlug(),
+      'job-position',
+      'create'
+    ]);
+  }
 
   // 🔹 Navigate to Edit
   goToEdit(id: number) {

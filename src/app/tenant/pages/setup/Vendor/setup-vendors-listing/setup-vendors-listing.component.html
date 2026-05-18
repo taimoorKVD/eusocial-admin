@@ -2,34 +2,21 @@
 
 <div class="p-6 font-ibm">
 
-  <!-- Header -->
-  <div class="flex justify-between items-center mb-5">
+  <app-top-header
+    [title]="'Vendors Listing'"
+    [buttonLabel]="' + Create Vendor'"
+    (buttonClick)="goToCreate()">
+  </app-top-header>
 
-    <h2 class="text-xl font-semibold text-gray-800">
-      Vendors Listing
-    </h2>
+  <app-global-filter
+    [fields]="filterFields"
+    (search)="onFilterSearch($event)"
+    (clear)="onFilterClear()">
+  </app-global-filter>
 
-    <!-- Create Button -->
-    <button routerLink="create" class="bg-blue-600 text-white px-4 py-2 text-sm rounded-md">
-      + Create Vendor
-    </button>
-
-  </div>
-
-   <app-global-filter
-      [fields]="filterFields"
-      (search)="onFilterSearch($event)"
-      (clear)="onFilterClear()">
-    </app-global-filter>
-
-
-
-  <!-- Table -->
   <div class="bg-white rounded shadow overflow-hidden mt-5">
-
     <table class="w-full text-left text-sm font-ibm">
 
-      <!-- THEAD -->
       <thead class="bg-gray-200 text-gray-700">
         <tr>
           <th class="px-4 py-3">#</th>
@@ -42,7 +29,6 @@
         </tr>
       </thead>
 
-      <!-- TBODY -->
       <tbody>
 
         <tr *ngFor="let vendor of vendors; let i = index" class="border-b hover:bg-gray-50">
@@ -119,7 +105,6 @@
 
       <div class="flex items-center gap-2">
 
-        <!-- Prev -->
         <button
           class="px-3 py-1.5 rounded-lg text-sm font-medium border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition disabled:opacity-40 disabled:cursor-not-allowed"
           [disabled]="page === 1" (click)="prevPage()">

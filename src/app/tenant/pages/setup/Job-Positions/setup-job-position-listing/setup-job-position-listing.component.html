@@ -7,20 +7,17 @@
 
    <app-eu-loader *ngIf="isLoading"></app-eu-loader>
 
-  <!-- Header -->
-  <div class="flex justify-between items-center mb-6">
-    <h2 class="text-xl font-semibold text-[#161616]">Job Positions</h2>
+    <app-top-header
+      [title]="'Job Positions'"
+      [buttonLabel]="' + Create Job Position'"
+      (buttonClick)="goToCreate()">
+    </app-top-header>
 
-    <button (click)="goToCreate()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm">
-      + Create
-    </button>
-  </div>
-
-  <app-global-filter
-    [fields]="filterFields"
-    (search)="onFilterSearch($event)"
-    (clear)="onFilterClear()">
-  </app-global-filter>
+    <app-global-filter
+      [fields]="filterFields"
+      (search)="onFilterSearch($event)"
+      (clear)="onFilterClear()">
+    </app-global-filter>
 
   <!-- Table -->
   <div class="bg-white rounded shadow overflow-hidden mt-5">
