@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { TenantLocationService } from '../../../../services/tenant-location.service';
 import { TenantSessionService } from '../../../../services/tenant-session.service';
+import { GlobalFilterField } from '../../../../shared/global-filter/global-filter';
 
 @Component({
   selector: 'app-location-listing',
@@ -19,31 +20,34 @@ export class LocationListingComponent {
   lastPage = 1;
   total = 0;
   filters: any = {};
-  filterFields = [
+  filterFields: GlobalFilterField[] = [
     {
       key: 'name',
       label: 'Name',
       type: 'text',
       placeholder: 'Search by Role name...'
     },
-    // {
-    //   key: 'country_id',
-    //   label: 'Country',
-    //   type: 'select',
-    //   options: [],
-    // },
-    // {
-    //   key: 'state_id',
-    //   label: 'State',
-    //   type: 'select',
-    //   options: [],
-    // },
-    // {
-    //   key: 'city_id',
-    //   label: 'City',
-    //   type: 'select',
-    //   options: [],
-    // },
+    {
+      key: 'country_id',
+      label: 'Country',
+      type: 'select',
+      options: [],
+      placeholder: 'Select country',
+    },
+    {
+      key: 'state_id',
+      label: 'State',
+      type: 'select',
+      options: [],
+      placeholder: 'Select state',
+    },
+    {
+      key: 'city_id',
+      label: 'City',
+      type: 'select',
+      options: [],
+      placeholder: 'Select city',
+    },
     {
       key: 'postal_code',
       label: 'Postal Code',
@@ -137,24 +141,24 @@ export class LocationListingComponent {
   ) {
     const field = this.filterFields.find(f => f.key === filter_key);
 
+    if (field && field.type === 'select') {
+      field.loading = true;
+    }
+
     apiCall.subscribe({
       next: (res: any) => {
         const data = res.data || res;
-        this[key] = data
+        this[key] = data;
 
-        // console.log(field);
-        // if (field != undefined) {
-        //   console.log('Setting options for');
-        //   field.options = data.map((item: any) => ({
-        //     label: item.name,
-        //     value: item.id,
-        //   }));
-        // }
+        if (field && field.type === 'select') {
+          field.options = data;
+          field.loading = false;
+        }
       },
       error: () => {
-        // if (field) {
-        //   field.options = [];
-        // }
+        if (field && field.type === 'select') {
+          field.loading = false;
+        }
       }
     });
   }
