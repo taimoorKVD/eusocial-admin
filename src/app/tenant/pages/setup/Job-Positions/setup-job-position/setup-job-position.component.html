@@ -11,12 +11,12 @@
   <div>
 
     <!-- Header -->
-    <div class="pt-[30px] grid grid-cols-3 gap-x-12 gap-y-6 mb-[60px] items-center">
+    <div class="grid grid-cols-3 gap-x-12 gap-y-6 mb-[60px] items-center">
 
       <!-- Dropdown -->
       <div>
-        <label class="text-[16px] font-medium text-[#0054AC] font-ibm mt-1 mb-4 block">
-          Job Positions
+        <label class="text-[16px] font-medium mb-6 font-ibm text-[#0054AC] block">
+          Create/View Job Positions
         </label>
 
         <select [(ngModel)]="selectedJobId" (change)="onSelectJob()"
@@ -54,12 +54,13 @@
 
       <!-- MODULE CARD -->
       <div *ngFor="let group of groupedPermissions | keyvalue"
-        class="group bg-white border border-gray-200 rounded-3xl p-5 shadow-sm hover:shadow-xl hover:border-gray-300 transition-all duration-300">
+        class="bg-white border border-gray-200 rounded-3xl p-5 shadow-sm hover:shadow-xl transition-all duration-300">
 
         <!-- Header -->
-        <div class="flex items-center justify-between mb-5">
+        <div class="flex items-start justify-between mb-6">
 
           <div>
+
             <h3 class="text-[17px] font-semibold text-[#111827] capitalize tracking-wide">
               {{ ($any(group.key)).replace('-', ' ') }}
             </h3>
@@ -68,48 +69,59 @@
               Manage module permissions
             </p>
           </div>
-
-          <!-- Badge -->
-          <!-- <div
-            class="min-w-[38px] h-[38px] px-3 rounded-full bg-black text-white flex items-center justify-center text-[12px] font-semibold shadow-md">
-
-            {{ $any(group.value).length }}
-
-          </div> -->
-
         </div>
 
-        <!-- Permissions -->
-        <div class="flex flex-wrap gap-3">
+        <!-- TOGGLES -->
+        <div class="space-y-4">
 
-          <label *ngFor="let perm of $any(group.value)" class="relative">
+          <div *ngFor="let perm of $any(group.value)"
+            class="flex items-center justify-between rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3 transition-all duration-200 hover:border-gray-300 hover:bg-white">
 
-            <!-- Hidden Checkbox -->
-            <input type="checkbox" class="peer hidden" [checked]="selectedPermissions.includes(perm.id)"
-              (change)="onPermissionChange($event, perm.id)" />
+            <!-- Permission Name -->
+            <div>
 
-            <!-- Custom UI -->
-            <div class="flex items-center justify-center px-4 py-2.5 rounded-2xl border border-gray-200 bg-gray-50 text-gray-700 text-[13px] font-medium cursor-pointer transition-all duration-200
+              <h4 class="text-[14px] font-semibold text-[#111827] capitalize">
+                {{ perm.name.split('-')[0] }}
+              </h4>
 
-          hover:border-black
-          hover:bg-black
-          hover:text-white
-
-          peer-checked:bg-black
-          peer-checked:text-white
-          peer-checked:border-black
-          peer-checked:shadow-lg">
-
-              {{ perm.name.split('-')[0] }}
+              <p class="text-[11px] text-gray-500 mt-0.5">
+                Allow user to {{ perm.name.split('-')[0] }}
+              </p>
 
             </div>
 
-          </label>
+            <!-- Toggle -->
+            <label class="relative inline-flex items-center cursor-pointer">
 
+              <input type="checkbox" class="sr-only peer" [checked]="selectedPermissions.includes(perm.id)"
+                (change)="onPermissionChange($event, perm.id)" />
+
+              <!-- Toggle Background -->
+              <div class="w-12 h-7 bg-gray-300 rounded-full peer transition-all duration-300
+
+                   peer-checked:bg-[#fe9015]
+
+                   after:content-['']
+                   after:absolute
+                   after:top-[2px]
+                   after:left-[2px]
+                   after:bg-white
+                   after:border
+                   after:border-gray-200
+                   after:rounded-full
+                   after:h-6
+                   after:w-6
+                   after:transition-all
+                   after:duration-300
+
+                   peer-checked:after:translate-x-5
+                   peer-checked:after:border-white
+                   shadow-sm">
+              </div>
+            </label>
+          </div>
         </div>
-
       </div>
-
     </div>
 
 
@@ -129,15 +141,6 @@
       </span>
 
     </div>
-
-
-    <!-- Validation -->
-    <!-- <div *ngIf="permissionsTouched && selectedPermissions.length === 0" class="text-red-500 text-sm mt-2">
-
-      Please select at least one permission
-
-    </div> -->
-
   </div>
 
   <!-- Bottom Buttons -->

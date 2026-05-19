@@ -18,6 +18,8 @@ import { tenantAuthGuard } from '../guards/tenant-auth-guard';
 import { SetupVendorsListingComponent } from './pages/setup/Vendor/setup-vendors-listing/setup-vendors-listing.component';
 import { TenantForgotPasswordComponent } from './tenant-forgot-password/tenant-forgot-password.component';
 import { TenantResetPasswordComponent } from './tenant-reset-password/tenant-reset-password.component';
+import { RoleComponent } from './pages/setup/Roles/role/role.component';
+import { RoleListingComponent } from './pages/setup/Roles/role-listing/role-listing.component';
 
 const routes: Routes = [
 
@@ -40,6 +42,10 @@ const routes: Routes = [
       { path: 'users', component: SetupUsersListing },
       { path: 'users/create', component: SetupUserComponent },
       { path: 'users/edit/:id', component: SetupUserComponent },
+
+      { path: 'roles', component: RoleListingComponent },
+      { path: 'roles/create', component: RoleComponent },
+      { path: 'roles/edit/:id', component: RoleComponent },
 
       { path: 'job-position', component: SetupJobPositionListingComponent },
       { path: 'job-position/create', component: SetupJobPositionComponent },
