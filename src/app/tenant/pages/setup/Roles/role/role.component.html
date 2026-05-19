@@ -1,0 +1,94 @@
+<div class="p-4">
+
+  <h2 class="text-[16px] font-medium mb-6 font-ibm text-[#0054AC]">
+    {{ roleId ? 'Edit Role' : 'Create Role' }}
+  </h2>
+
+  <div class="">
+
+    <div class="grid grid-cols-3">
+      <!-- Name -->
+      <div class="mb-4">
+        <!-- <label class="block text-sm mb-1">Role Name</label> -->
+        <input type="text" placeholder="Role Name" [(ngModel)]="role.name" name="name"
+          class="w-full border-b border-[#161616] placeholder-[#161616] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent" />
+      </div>
+    </div>
+
+    <!-- Permissions -->
+    <div class="mb-6">
+
+      <label class="block text-sm font-semibold text-gray-800 mb-4">
+        Permissions
+      </label>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+
+        <!-- MODULE CARD -->
+        <div *ngFor="let group of groupedPermissions | keyvalue"
+          class="bg-white border border-gray-200 rounded-3xl p-5 shadow-sm hover:shadow-xl transition-all duration-300">
+
+          <!-- Header -->
+          <div class="mb-5">
+
+            <h3 class="text-[17px] font-semibold text-[#111827] capitalize">
+              {{ ($any(group.key)).replace('-', ' ') }}
+            </h3>
+
+            <p class="text-[12px] text-gray-500 mt-1">
+              Manage module permissions
+            </p>
+
+          </div>
+
+          <!-- PERMISSIONS -->
+          <div class="space-y-4">
+
+            <div *ngFor="let perm of $any(group.value)"
+              class="flex items-center justify-between rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3 hover:border-gray-300 hover:bg-white transition-all duration-200">
+
+              <!-- Permission Text -->
+              <div>
+
+                <!-- create-user => create -->
+                <h4 class="text-[14px] font-semibold text-[#111827] capitalize">
+                  {{ perm.name.split('-')[0] }}
+                </h4>
+
+                <p class="text-[11px] text-gray-500 mt-0.5">
+                  Allow user to {{ perm.name.split('-')[0] }}
+                </p>
+
+              </div>
+
+              <!-- Toggle -->
+              <button type="button" (click)="togglePermission(perm.id)"
+                class="relative inline-flex h-6 w-11 items-center rounded-full transition duration-300" [ngClass]="role.permissions.includes(perm.id)
+              ? 'bg-[#fe9015]'
+              : 'bg-gray-300'">
+
+                <span class="inline-block h-4 w-4 transform rounded-full bg-white transition duration-300" [ngClass]="role.permissions.includes(perm.id)
+                ? 'translate-x-6'
+                : 'translate-x-1'">
+                </span>
+
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Submit -->
+    <div class="flex justify-end">
+      <button (click)="submit()" class="bg-blue-600 text-white px-4 py-2 rounded-lg">
+        {{ roleId ? 'Update' : 'Save' }}
+      </button>
+    </div>
+  </div>
+</div>

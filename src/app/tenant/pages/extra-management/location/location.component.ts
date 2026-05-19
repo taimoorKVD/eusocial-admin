@@ -159,9 +159,4 @@ export class LocationComponent {
       });
     }
   }
-
-  //   resetForm() {
-  //   this.locationForm.reset();
-  //   this.selectedId = null;
-  // }
 }

@@ -25,6 +25,8 @@ import { LocationListingComponent } from './pages/extra-management/location-list
 import { SetupVendorsListingComponent } from './pages/setup/Vendor/setup-vendors-listing/setup-vendors-listing.component';
 import { TenantForgotPasswordComponent } from './tenant-forgot-password/tenant-forgot-password.component';
 import { TenantResetPasswordComponent } from './tenant-reset-password/tenant-reset-password.component';
+import { RoleComponent } from './pages/setup/Roles/role/role.component';
+import { RoleListingComponent } from './pages/setup/Roles/role-listing/role-listing.component';
 
 
 
@@ -47,7 +49,10 @@ import { TenantResetPasswordComponent } from './tenant-reset-password/tenant-res
     SetupReportingGroup,
     EuLoaderComponent,
     LocationComponent,
-    LocationListingComponent
+    LocationListingComponent,
+    RoleComponent,
+    RoleListingComponent
+
   ],
   imports: [
     CommonModule,

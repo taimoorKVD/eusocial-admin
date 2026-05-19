@@ -75,6 +75,19 @@
           Users
         </a>
 
+        <a [routerLink]="['/tenant', session.getSlug(), 'roles']"
+          routerLinkActive="text-[#333333] border-l-4 border-blue-500 font-bold"
+          class="text-[#525252] font-ibm flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-sm">
+          <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+            xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M16 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M2.5 20a5.5 5.5 0 0 1 11 0" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 18.5a4.5 4.5 0 0 1 8 1.5" />
+          </svg>
+          Roles
+        </a>
+
         <a [routerLink]="['/tenant',  session.getSlug(), 'job-position']"
           routerLinkActive="text-[#333333] border-l-4 border-blue-500 font-bold"
           class="text-[#525252] font-ibm flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-sm">

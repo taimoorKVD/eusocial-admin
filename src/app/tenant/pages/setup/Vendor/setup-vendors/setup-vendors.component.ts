@@ -241,246 +241,6 @@ export class SetupVendorsComponent {
     this.router.navigate(['/tenant', slug, 'vendors']);
   }
 
-  // saveVendor() {
-
-  //   const payload = {
-  //     ...this.formData,
-  //     order_deadlines: this.formData.order_deadlines.map((d: string) => ({ day: d }))
-  //   };
-
-  //   if (this.mode === 'create') {
-
-  //     this.vendorService.createVendor(payload).subscribe({
-  //       next: (res: any) => {
-
-  //         this.toastr.success('Vendor Created');
-
-  //         this.loadVendors();
-
-  //         // auto select new vendor
-  //         this.chooseVendor = res.data.id;
-  //         this.onVendorChange();
-  //       }
-  //     });
-
-  //   } else {
-
-  //     this.vendorService.updateVendor(this.selectedVendorId!, payload).subscribe({
-  //       next: () => {
-  //         this.toastr.success('Vendor Updated');
-  //         this.loadVendors();
-  //       }
-  //     });
-
-  //   }
-  // }
-
-  // saveVendor() {
-
-  //   this.isSubmitted = true;
-
-  //   // ================= VALIDATION =================
-
-  //   if (
-  //     !this.formData.name ||
-  //     !this.formData.address ||
-  //     !this.formData.country_id ||
-  //     !this.formData.state_id ||
-  //     !this.formData.city_id ||
-  //     !this.formData.phone_number ||
-  //     !this.formData.email ||
-  //     !this.formData.min_order
-  //   ) {
-  //     this.toastr.error('Please fix validation errors');
-  //     return;
-  //   }
-
-  //   const phonePattern = /^[0-9]{10,15}$/;
-  //   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  //   const numberPattern = /^[0-9]+$/;
-
-  //   if (!phonePattern.test(this.formData.phone_number)) {
-  //     this.toastr.error('Invalid phone number');
-  //     return;
-  //   }
-
-  //   if (!emailPattern.test(this.formData.email)) {
-  //     this.toastr.error('Invalid email');
-  //     return;
-  //   }
-
-  //   if (!numberPattern.test(this.formData.min_order)) {
-  //     this.toastr.error('Min order must be numeric');
-  //     return;
-  //   }
-
-  //   // ================= PAYLOAD =================
-
-  //   const payload = {
-  //     ...this.formData,
-  //     order_deadlines: this.formData.order_deadlines.map((d: string) => ({ day: d }))
-  //   };
-
-  //   if (this.mode === 'create') {
-  //     this.vendorService.createVendor(payload).subscribe({
-  //       next: (res: any) => {
-  //         this.toastr.success('Vendor Created');
-  //         this.loadVendors();
-  //         this.chooseVendor = res.data.id;
-  //         this.onVendorChange();
-  //       }
-  //     });
-  //   } else {
-  //     this.vendorService.updateVendor(this.selectedVendorId!, payload).subscribe({
-  //       next: () => {
-  //         this.toastr.success('Vendor Updated');
-  //         this.loadVendors();
-  //       }
-  //     });
-  //   }
-  // }
-
-  // ================= SAVE =================
-
-  // saveVendor() {
-
-  //   this.isSubmitted = true;
-
-  //   // ================= PATTERNS =================
-  //   const phonePattern = /^[0-9]{10,15}$/;
-  //   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  //   const numberPattern = /^[0-9]+$/;
-
-  //   // ================= FIELD VALIDATION =================
-
-  //   // basic required check
-  //   if (
-  //     !this.formData.name ||
-  //     !this.formData.address ||
-  //     !this.formData.country_id ||
-  //     !this.formData.state_id ||
-  //     !this.formData.city_id ||
-  //     !this.formData.phone_number ||
-  //     !this.formData.email ||
-  //     !this.formData.min_order ||
-  //     !this.formData.website ||
-  //     !this.formData.username ||
-  //     !this.formData.contacts?.length
-  //   ) {
-  //     this.toastr.error('Please fix validation errors');
-  //     return;
-  //   }
-
-  //   // ================= PHONE =================
-  //   this.phonePatternValid = phonePattern.test(this.formData.phone_number);
-
-  //   if (!this.phonePatternValid) {
-  //     this.toastr.error('Invalid phone number');
-  //     return;
-  //   }
-
-  //   // ================= EMAIL =================
-  //   this.emailPatternValid = emailPattern.test(this.formData.email);
-
-  //   if (!this.emailPatternValid) {
-  //     this.toastr.error('Invalid email');
-  //     return;
-  //   }
-
-  //   // ================= MIN ORDER =================
-  //   this.minOrderPatternValid = numberPattern.test(this.formData.min_order);
-
-  //   if (!this.minOrderPatternValid) {
-  //     this.toastr.error('Min order must be numeric');
-  //     return;
-  //   }
-
-  //   // ================= CONTACT VALIDATION =================
-
-  //   const contact = this.formData.contacts[0];
-
-  //   this.contactPhonePatternValid = phonePattern.test(contact.phone_number);
-  //   this.contactEmailPatternValid = emailPattern.test(contact.email);
-
-  //   if (!this.contactPhonePatternValid) {
-  //     this.toastr.error('Invalid contact phone number');
-  //     return;
-  //   }
-
-  //   if (!this.contactEmailPatternValid) {
-  //     this.toastr.error('Invalid contact email');
-  //     return;
-  //   }
-
-  //   // ================= PAYLOAD =================
-
-  //   const payload = {
-  //     ...this.formData,
-  //     order_deadlines: this.formData.order_deadlines.map((d: string) => ({
-  //       day: d
-  //     }))
-  //   };
-
-  //   // ================= API CALL =================
-
-  //   if (this.mode === 'create') {
-
-  //     this.vendorService.createVendor(payload).subscribe({
-  //       next: (res: any) => {
-
-  //         this.toastr.success('Vendor Created');
-
-  //         this.loadVendors();
-
-  //         this.chooseVendor = res.data.id;
-
-  //         this.onVendorChange();
-  //       },
-  //       error: (err: any) => {
-
-  //         // backend message extract
-  //         const msg = err?.error?.message;
-
-  //         if (msg) {
-
-  //           // duplicate vendor case
-  //           if (msg.includes('already exists')) {
-  //             this.toastr.error('Vendor with this name already exists');
-  //             return;
-  //           }
-
-  //           // fallback backend message
-  //           this.toastr.error(msg);
-  //           return;
-  //         }
-
-  //         // fallback generic
-  //         this.toastr.error('Failed to create vendor');
-  //       }
-  //     });
-
-  //   } else {
-
-  //     this.vendorService.updateVendor(this.selectedVendorId!, payload).subscribe({
-  //       next: () => {
-
-  //         this.toastr.success('Vendor Updated');
-
-  //         this.loadVendors();
-  //       },
-  //       error: (err: any) => {
-  //         const msg = err?.error?.message;
-  //         if (msg) {
-  //           this.toastr.error(msg);
-  //           return;
-  //         }
-  //         this.toastr.error('Failed to update vendor');
-  //       }
-  //     });
-
-  //   }
-  // }
-
   saveVendor() {
     this.isSubmitted = true;
 
@@ -488,7 +248,7 @@ export class SetupVendorsComponent {
 
     const phonePattern = /^[0-9]{10,15}$/;
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const numberPattern = /^[0-9]+$/;
+    const numberPattern = /^[0-9]+(\.[0-9]{1,2})?$/;
 
     // ================= FIELD VALIDATION =================
 
@@ -503,7 +263,8 @@ export class SetupVendorsComponent {
       !this.formData.min_order ||
       !this.formData.website ||
       !this.formData.username ||
-      !this.formData.contacts?.length
+      !this.formData.contacts?.length ||
+      !this.formData.order_deadlines?.length
     ) {
       this.toastr.error('Please fix validation errors');
 
@@ -532,11 +293,12 @@ export class SetupVendorsComponent {
 
     // ================= MIN ORDER =================
 
+
+
     this.minOrderPatternValid = numberPattern.test(this.formData.min_order);
 
     if (!this.minOrderPatternValid) {
-      this.toastr.error('Min order must be numeric');
-
+      this.toastr.error('Min order must be a valid number (e.g. 12 or 12.00)');
       return;
     }
 

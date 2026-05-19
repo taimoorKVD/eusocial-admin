@@ -6,9 +6,7 @@
     <!-- Header -->
     <div class="grid grid-cols-3 mb-[60px]">
       <div>
-        <label class="text-[16px] font-medium text-[#0054AC] font-ibm mb-4 block">
-          Vendors <span class="text-red-500">*</span>
-        </label>
+        <h2 class="text-[16px] font-medium mb-6 font-ibm text-[#0054AC]">Create/View Vendors</h2>
 
         <ng-select [items]="vendors" bindLabel="label" bindValue="value" [(ngModel)]="chooseVendor"
           (change)="onVendorChange()" [clearable]="true" [searchable]="true"
@@ -304,10 +302,14 @@
           Min Order <span class="text-red-500">*</span>
         </label>
 
-        <input [(ngModel)]="formData.min_order" #minOrder="ngModel" name="minOrder" required pattern="^[0-9]+$"
-          type="text" placeholder="Enter Min Order" class="px-4 w-full border-b border-[#161616]
+        <!-- <input [(ngModel)]="formData.min_order" #minOrder="ngModel" name="minOrder" required pattern="^[0-9]+$"
+          type="number" placeholder="Enter Min Order" class="px-4 w-full border-b border-[#161616]
           placeholder-[#A8A8A8] text-[#161616]
-          focus:outline-none font-ibm py-3 text-[14px] bg-transparent">
+          focus:outline-none font-ibm py-3 text-[14px] bg-transparent"> -->
+        <input [(ngModel)]="formData.min_order" #minOrder="ngModel" name="minOrder" required
+          pattern="^[0-9]+(\.[0-9]{1,2})?$" type="text" placeholder="Enter Min Order" class="px-4 w-full border-b border-[#161616]
+  placeholder-[#A8A8A8] text-[#161616]
+  focus:outline-none font-ibm py-3 text-[14px] bg-transparent" />
 
         <div *ngIf="isSubmitted && !formData.min_order" class="text-red-500 text-[11px] mt-1">
           Min Order is required
@@ -316,9 +318,7 @@
         <div *ngIf="isSubmitted && formData.min_order && !minOrderPatternValid" class="text-red-500 text-[11px] mt-1">
           Only numbers are allowed
         </div>
-
       </div>
-
     </div>
 
     <!-- Order Deadline -->
@@ -331,6 +331,9 @@
           [ngClass]="formData.order_deadlines.includes(day) ? 'bg-white border-t-2 border-[#0069D7] text-[#161616] font-semibold font-ibm text-[11px]' : 'bg-gray-200 border-r border-[#8d8d8d] text-[#525252] text-[11px] font-regular border border-transparent'">
           {{ day }}
         </button>
+      </div>
+      <div *ngIf="isSubmitted && !formData.order_deadlines?.length" class="text-red-500 text-[11px] mt-1">
+        Please select at least one order deadline day
       </div>
     </div>
 
