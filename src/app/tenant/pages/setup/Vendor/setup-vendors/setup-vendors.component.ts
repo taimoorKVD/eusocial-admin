@@ -246,7 +246,9 @@ export class SetupVendorsComponent {
 
     // ================= PATTERNS =================
 
-    const phonePattern = /^[0-9]{10,15}$/;
+    // const phonePattern = /^[0-9]{10,15}$/;
+    const cleanedPhone = this.formData.phone_number.replace(/[\s\-\(\)]/g, '');
+    const phonePattern = /^\+?[0-9]{10,15}$/;
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const numberPattern = /^[0-9]+(\.[0-9]{1,2})?$/;
 
@@ -273,11 +275,10 @@ export class SetupVendorsComponent {
 
     // ================= PHONE =================
 
-    this.phonePatternValid = phonePattern.test(this.formData.phone_number);
+    this.phonePatternValid = phonePattern.test(cleanedPhone);
 
     if (!this.phonePatternValid) {
       this.toastr.error('Invalid phone number');
-
       return;
     }
 
@@ -293,8 +294,6 @@ export class SetupVendorsComponent {
 
     // ================= MIN ORDER =================
 
-
-
     this.minOrderPatternValid = numberPattern.test(this.formData.min_order);
 
     if (!this.minOrderPatternValid) {
@@ -306,16 +305,16 @@ export class SetupVendorsComponent {
 
     const contact = this.formData.contacts[0];
 
-    this.contactPhonePatternValid = phonePattern.test(contact.phone_number);
+    const contactCleanedPhone = this.formData.contacts[0].phone_number?.replace(/[\s\-\(\)]/g, '');
 
-    this.contactEmailPatternValid = emailPattern.test(contact.email);
+    this.contactPhonePatternValid = phonePattern.test(contactCleanedPhone);
 
     if (!this.contactPhonePatternValid) {
       this.toastr.error('Invalid contact phone number');
-
       return;
     }
 
+    this.contactEmailPatternValid = emailPattern.test(contact.email);
     if (!this.contactEmailPatternValid) {
       this.toastr.error('Invalid contact email');
 
