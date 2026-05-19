@@ -151,10 +151,10 @@
           Phone Number <span class="text-red-500">*</span>
         </label>
 
-        <input [(ngModel)]="formData.phone_number" #phone="ngModel" name="phone" required pattern="^[0-9]{10,15}$"
-          type="text" placeholder="Enter Phone Number" class="px-4 w-full border-b border-[#161616]
-          placeholder-[#A8A8A8] text-[#161616]
-          focus:outline-none font-ibm py-3 text-[14px] bg-transparent">
+        <input [(ngModel)]="formData.phone_number" #phone="ngModel" name="phone" required type="text"
+          placeholder="Enter Phone Number" class="px-4 w-full border-b border-[#161616]
+  placeholder-[#A8A8A8] text-[#161616]
+  focus:outline-none font-ibm py-3 text-[14px] bg-transparent" />
 
         <div *ngIf="isSubmitted && !formData.phone_number" class="text-red-500 text-[11px] mt-1">
           Phone Number is required
@@ -216,24 +216,25 @@
 
       <!-- CONTACT PHONE -->
       <div>
-
         <label class="text-[12px] text-[#6F6F6F] font-ibm mb-1 block">
           Phone Number <span class="text-red-500">*</span>
         </label>
 
-        <input [(ngModel)]="formData.contacts[0].phone_number" #contactPhone="ngModel" name="contactPhone" required
-          pattern="^[0-9]{10,15}$" placeholder="Phone Number" class="px-4 w-full border-b border-[#161616]
-          placeholder-[#A8A8A8] text-[#161616]
-          focus:outline-none font-ibm py-3 text-[14px] bg-transparent">
-        <div *ngIf="isSubmitted && !formData.contacts[0].phone_number" class="text-red-500 text-[11px] mt-1">
+        <input [(ngModel)]="formData.contacts[0].phone_number" name="contactPhone" required type="text"
+          placeholder="Phone Number" class="px-4 w-full border-b border-[#161616]
+    placeholder-[#A8A8A8] text-[#161616]
+    focus:outline-none font-ibm py-3 text-[14px] bg-transparent" />
+
+        <!-- REQUIRED -->
+        <div *ngIf="isSubmitted && !formData.contacts?.[0]?.phone_number" class="text-red-500 text-[11px] mt-1">
           Contact Phone is required
         </div>
 
-        <div *ngIf="isSubmitted && formData.contacts[0].phone_number && !contactPhonePatternValid"
+        <!-- PATTERN -->
+        <div *ngIf="isSubmitted && formData.contacts?.[0]?.phone_number && !contactPhonePatternValid"
           class="text-red-500 text-[11px] mt-1">
           Enter valid contact phone number
         </div>
-
       </div>
 
       <!-- CONTACT EMAIL -->
