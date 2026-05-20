@@ -399,13 +399,13 @@ export class SetupVendorsComponent {
   }
 
   deleteVendor() {
-    if (!this.selectedVendorId) return;
-
-    if (!confirm('Delete this vendor?')) return;
+    // if (!this.selectedVendorId) return;
+    // if (!confirm('Delete this vendor?')) return;
 
     this.vendorService.deleteVendor(this.selectedVendorId).subscribe({
       next: () => {
         this.toastr.success('Vendor Deleted');
+        this.router.navigate(['/tenant', this.tenantSession.getSlug(), 'vendors']);
 
         this.loadVendors();
 
@@ -417,10 +417,38 @@ export class SetupVendorsComponent {
   }
 
   cancelForm() {
-    this.chooseVendor = null;
-    this.selectedVendorId = null;
-    this.mode = 'create';
-    this.formData = this.getEmptyForm();
-    this.paymentType = 'COD';
+    // this.chooseVendor = null;
+    // this.selectedVendorId = null;
+    // this.mode = 'create';
+    // this.formData = this.getEmptyForm();
+    // this.paymentType = 'COD';
+    this.router.navigate(['/tenant', this.tenantSession.getSlug(), 'vendors']);
+  }
+
+  showConfirmModal = false;
+  modalTitle = '';
+  modalMessage = '';
+
+  confirmAction!: () => void;
+
+  openModal(title: string, message: string, action: () => void): void {
+    this.modalTitle = title;
+    this.modalMessage = message;
+    this.confirmAction = action;
+    this.showConfirmModal = true;
+  }
+
+  closeModal(): void {
+    this.showConfirmModal = false;
+  }
+
+  onConfirm(): void {
+    this.confirmAction();
+    // if ( this.modalTitle === 'Delete Vendor') {
+    //   this.deleteVendor();
+    // } else{
+    //   this.router.navigate(['/tenant', this.tenantSession.getSlug(), 'vendors']);
+    // }
+    this.closeModal();
   }
 }
