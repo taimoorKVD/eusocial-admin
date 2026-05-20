@@ -17,6 +17,8 @@ import { Products } from './products/products';
 import { ProductForm } from './products/product-form/product-form';
 import { Tenants } from './tenants/tenants';
 import { TenantForm } from './tenants/tenant-form/tenant-form';
+import { PermissionsComponent } from './permissions/permissions.component';
+import { PermissionsFormComponent } from './permissions/permissions-form/permissions-form.component';
 
 @NgModule({
   declarations: [
@@ -33,6 +35,9 @@ import { TenantForm } from './tenants/tenant-form/tenant-form';
     ProductForm,
     Tenants,
     TenantForm,
+    PermissionsComponent,
+    PermissionsFormComponent
+
   ],
   imports: [CommonModule, AdminRoutingModule, ReactiveFormsModule, FormsModule, SharedModule],
   exports: [Admin],

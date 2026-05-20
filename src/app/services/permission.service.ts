@@ -18,4 +18,24 @@ export class PermissionService {
       `${this.baseUrl}`
     );
   }
+
+  getPermissions() {
+    return this.http.get(`${this.baseUrl}`);
+  }
+
+  getPermissionById(id: number) {
+    return this.http.get(`${this.baseUrl}/${id}`);
+  }
+
+  createPermission(payload: any) {
+    return this.http.post(`${this.baseUrl}`, payload);
+  }
+
+  updatePermission(id: number, payload: any) {
+    return this.http.put(`${this.baseUrl}/${id}`, payload);
+  }
+
+  deletePermission(id: number) {
+    return this.http.delete(`${this.baseUrl}/${id}`);
+  }
 }

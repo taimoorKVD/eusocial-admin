@@ -1,0 +1,32 @@
+<div class="">
+
+  <h2 class="text-xl font-semibold mb-4">
+    {{ isEdit ? 'Edit Permission' : 'Create Permission' }}
+  </h2>
+
+  <div *ngIf="isLoading">Loading...</div>
+
+  <div class="bg-white rounded-xl shadow-sm p-4 border border-gray-100 space-y-4 ng-untouched ng-pristine ng-invalid"
+    *ngIf="!isLoading">
+
+    <label class="block mb-1 text-sm font-medium text-gray-700">Permission Name</label>
+
+    <input type="text" [(ngModel)]="formData.name" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+      placeholder="Enter permission name" />
+
+    <div class="mt-5 flex justify-end gap-3">
+
+      <button (click)="cancel()"
+        class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition duration-150">
+        Cancel
+      </button>
+
+      <button (click)="save()" [disabled]="isSubmitting"
+        class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition duration-150">
+        {{ isSubmitting ? 'Saving...' : 'Save' }}
+      </button>
+
+    </div>
+
+  </div>
+</div>

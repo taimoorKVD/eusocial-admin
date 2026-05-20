@@ -18,6 +18,8 @@ import { ProductForm } from './admin/products/product-form/product-form';
 import { Tenants } from './admin/tenants/tenants';
 // import { Tenants } from './admin/tenants/tenants';
 import { TenantForm } from './admin/tenants/tenant-form/tenant-form';
+import { PermissionsComponent } from './admin/permissions/permissions.component';
+import { PermissionsFormComponent } from './admin/permissions/permissions-form/permissions-form.component';
 
 const routes: Routes = [
   // ✅ Protected root (dashboard)
@@ -37,6 +39,10 @@ const routes: Routes = [
       { path: 'roles', component: Roles },
       { path: 'roles/create', component: RoleForm },
       { path: 'roles/:id/edit', component: RoleForm },
+
+      { path: 'permissions', component: PermissionsComponent },
+      { path: 'permissions/create', component: PermissionsFormComponent },
+      { path: 'permissions/:id/edit', component: PermissionsFormComponent },
 
       {
         path: 'products',
