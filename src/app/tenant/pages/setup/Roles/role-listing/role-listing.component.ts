@@ -3,6 +3,7 @@ import { RoleService } from '../../../../../services/role.service';
 import { Router } from '@angular/router';
 import { TenantRoleService } from '../../../../../services/tenant-role.service';
 import { TenantSessionService } from '../../../../../services/tenant-session.service';
+import { GlobalFilterField } from '../../../../../shared/global-filter/global-filter';
 
 @Component({
   selector: 'app-role-listing',
@@ -13,6 +14,16 @@ import { TenantSessionService } from '../../../../../services/tenant-session.ser
 export class RoleListingComponent {
   roles: any[] = [];
   isLoading = false;
+  filters: any = {};
+  filterFields: GlobalFilterField[] = [
+    {
+      key: 'role_id',
+      label: 'Role',
+      type: 'select',
+      options: [],
+      placeholder: 'Select role',
+    },
+  ];
 
   constructor(
     private rolesService: TenantRoleService,
@@ -26,10 +37,21 @@ export class RoleListingComponent {
 
   loadRoles() {
     this.isLoading = true;
+     const activeFilters = Object.fromEntries(
+      Object.entries(this.filters).filter(([_, value]) => value),
+    );
+    const field = this.filterFields.find(f => f.key === 'role_id');
 
-    this.rolesService.getRoles().subscribe({
+    const apiCall = Object.keys(activeFilters).length
+      ? this.rolesService.searchRoles(activeFilters)
+      : this.rolesService.getRoles();
+
+    apiCall.subscribe({
       next: (res: any) => {
         this.roles = res.data || [];
+        if (field && field.type === 'select' && Object.keys(activeFilters).length === 0) {
+          field.options = this.roles;
+        }
         this.isLoading = false;
       },
       error: () => {
@@ -57,5 +79,15 @@ export class RoleListingComponent {
     this.rolesService.deleteRole(id).subscribe(() => {
       this.loadRoles();
     });
+  }
+
+  onFilterSearch(filters: any): void {
+    this.filters = filters;
+    this.loadRoles();
+  }
+
+  onFilterClear(): void {
+    this.filters = {};
+    this.loadRoles();
   }
 }
