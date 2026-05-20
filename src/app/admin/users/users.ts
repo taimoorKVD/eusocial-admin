@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { User } from '../../interfaces/user';
 import { UserService } from '../../services/user.service';
 import { ToastrService } from 'ngx-toastr';
+import { RoleService } from '../../services/role.service';
 
 @Component({
   selector: 'app-users',
@@ -40,22 +41,38 @@ export class Users {
       placeholder: 'Search by email...'
     },
     {
-      key: 'role',
+      key: 'role_id',
       label: 'Role',
-      type: 'text',
-      placeholder: 'Search by role...'
-    }
+      type: 'select',
+      options: [],
+      placeholder: 'Select role',
+    },
   ];
 
   constructor(
     private http: HttpClient,
     private router: Router,
     private userService: UserService,
-    private toastr: ToastrService
+    private toastr: ToastrService,
+    private roleService: RoleService,
+
   ) { }
 
   ngOnInit(): void {
     this.allUsers(this.page);
+    this.getRoles();
+  }
+
+  getRoles(): void {
+    const field = this.filterFields.find(f => f.key === 'role_id');
+    this.roleService.getAllRoles().subscribe({
+      next: (roles) => {
+        if (field && field.type === 'select') {
+          field.options = roles;
+        }
+      },
+      error: () => console.error('Failed to load roles'),
+    });
   }
 
   allUsers(page: number = 1): void {

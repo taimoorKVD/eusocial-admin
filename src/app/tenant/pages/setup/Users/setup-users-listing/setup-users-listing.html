@@ -2,14 +2,12 @@
 
 <div class="p-4">
 
-
   <app-top-header
     [title]="'Users'"
     [buttonLabel]="' + Create User'"
     (buttonClick)="goToCreate()">
   </app-top-header>
 
-  <!-- Filter -->
     <app-global-filter
       [fields]="filterFields"
       (search)="onFilterSearch($event)"

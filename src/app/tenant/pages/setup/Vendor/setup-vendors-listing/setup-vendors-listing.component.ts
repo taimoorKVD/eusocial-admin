@@ -32,12 +32,12 @@ export class SetupVendorsListingComponent {
       type: 'text',
       placeholder: 'Search by email...',
     },
-    {
-      key: 'phone',
-      label: 'Phone',
-      type: 'number',
-      placeholder: 'Search by phone...',
-    },
+    // {
+    //   key: 'phone',
+    //   label: 'Phone',
+    //   type: 'number',
+    //   placeholder: 'Search by phone...',
+    // },
     {
       key: 'city_id',
       label: 'City',
