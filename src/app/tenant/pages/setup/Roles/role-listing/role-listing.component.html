@@ -4,15 +4,17 @@
     <h2 class="text-xl font-semibold">Roles</h2>
 
     <app-top-header
-    [buttonLabel]="' + Create Role'"
-    (buttonClick)="goToCreate()">
-  </app-top-header>
-    <!-- <button
-      (click)="createRole()"
-      class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm">
-      + Create Role
-    </button> -->
+      [buttonLabel]="' + Create Role'"
+      (buttonClick)="goToCreate()">
+    </app-top-header>
+
   </div>
+
+  <app-global-filter
+    [fields]="filterFields"
+    (search)="onFilterSearch($event)"
+    (clear)="onFilterClear()">
+  </app-global-filter>
 
   <div class="bg-white rounded shadow overflow-hidden mt-5">
 

@@ -14,6 +14,10 @@ export class TenantRoleService {
     return this.http.get(this.apiUrl);
   }
 
+  searchRoles(filters: any) {
+    return this.http.get(`${this.apiUrl}/search`, { params: filters });
+  }
+
   getRoleById(id: number) {
     return this.http.get(`${this.apiUrl}/${id}`);
   }

@@ -10,7 +10,7 @@
 
         <ng-select [items]="vendors" bindLabel="label" bindValue="value" [(ngModel)]="chooseVendor"
           (change)="onVendorChange()" [clearable]="true" [searchable]="true"
-          [placeholder]="!chooseVendor ? 'Choose Vendor' : ''" class="custom-ng-select">
+          [placeholder]="!chooseVendor ? 'Choose Vendor' : ''" class="custom-ng-select z-10">
         </ng-select>
       </div>
     </div>
@@ -153,8 +153,8 @@
 
         <input [(ngModel)]="formData.phone_number" #phone="ngModel" name="phone" required type="text"
           placeholder="Enter Phone Number" class="px-4 w-full border-b border-[#161616]
-  placeholder-[#A8A8A8] text-[#161616]
-  focus:outline-none font-ibm py-3 text-[14px] bg-transparent" />
+          placeholder-[#A8A8A8] text-[#161616]
+          focus:outline-none font-ibm py-3 text-[14px] bg-transparent" />
 
         <div *ngIf="isSubmitted && !formData.phone_number" class="text-red-500 text-[11px] mt-1">
           Phone Number is required
@@ -222,8 +222,8 @@
 
         <input [(ngModel)]="formData.contacts[0].phone_number" name="contactPhone" required type="text"
           placeholder="Phone Number" class="px-4 w-full border-b border-[#161616]
-    placeholder-[#A8A8A8] text-[#161616]
-    focus:outline-none font-ibm py-3 text-[14px] bg-transparent" />
+          placeholder-[#A8A8A8] text-[#161616]
+          focus:outline-none font-ibm py-3 text-[14px] bg-transparent" />
 
         <!-- REQUIRED -->
         <div *ngIf="isSubmitted && !formData.contacts?.[0]?.phone_number" class="text-red-500 text-[11px] mt-1">
@@ -324,7 +324,7 @@
 
     <!-- Order Deadline -->
     <div class="mt-8">
-      <label class="text-[16px] text-[#525252] font-ibm mt-1 block block mb-2">Order Deadline</label>
+      <label class="text-[16px] text-[#525252] font-ibm mt-1 block block mb-2">Order Deadline<span class="text-red-500">*</span></label>
 
       <div class="flex mt-3 flex-wrap">
         <button *ngFor="let day of ['monday','tuesday','wednesday','thursday','friday','saturday','sunday']"
@@ -358,13 +358,33 @@
     <!-- BUTTONS -->
     <div class="flex justify-end gap-3 mt-8">
 
-      <button (click)="deleteVendor()" class="px-6 py-2 border border-red-500 text-red-500 text-sm">
+      <button
+        (click)="openModal(
+          'Delete Vendor',
+          'Are you sure you want to delete this vendor?',
+          deleteVendor.bind(this)
+        )"
+        class="px-6 py-2 border border-red-500 text-red-500 text-sm">
+        Delete
+      </button>
+
+      <button
+        (click)="openModal(
+          'Cancel Form',
+          'Are you sure you want to cancel without saving?',
+          cancelForm.bind(this)
+        )"
+        class="px-6 py-2 border border-gray-400 text-gray-600 text-sm">
+        Cancel
+      </button>
+
+      <!-- <button (click)="deleteVendor()" class="px-6 py-2 border border-red-500 text-red-500 text-sm">
         Delete
       </button>
 
       <button (click)="cancelForm()" class="px-6 py-2 border border-gray-400 text-gray-600 text-sm">
         Cancel
-      </button>
+      </button> -->
 
       <button (click)="saveVendor()" [disabled]="loading"
         class="px-6 py-2 bg-blue-600 text-white text-sm disabled:opacity-40">
@@ -377,3 +397,12 @@
 
   </div>
 </div>
+<app-confirm-modal
+  [isOpen]="showConfirmModal"
+  [title]="modalTitle"
+  [message]="modalMessage"
+  confirmText="Yes"
+  cancelText="Close"
+  (confirmed)="onConfirm()"
+  (closed)="closeModal()">
+</app-confirm-modal>

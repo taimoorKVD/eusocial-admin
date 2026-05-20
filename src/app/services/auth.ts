@@ -51,10 +51,10 @@ export class Auth {
     localStorage.removeItem(this.tokenKey);
     this.currentUserSubject.next(null);
     const url = window.location.pathname;
-    if (!url.includes('tenant')) {
-      this.router.navigate(['/login']);
+    if (url === '/tenant' || url.startsWith('/tenant/')) {
+      this.router.navigate(['/tenant/login']);
     } else {
-      this.router.navigate(['tenant/login']);
+      this.router.navigate(['/login']);
     }
   }
 
@@ -62,10 +62,10 @@ export class Auth {
     localStorage.removeItem(this.userKey);
     this.currentUserSubject.next(null);
     const url = window.location.pathname;
-    if (!url.includes('tenant')) {
-      this.router.navigate(['/login']);
+    if (url === '/tenant' || url.startsWith('/tenant/')) {
+      this.router.navigate(['/tenant/login']);
     } else {
-      this.router.navigate(['tenant/login']);
+      this.router.navigate(['/login']);
     }
   }
 
