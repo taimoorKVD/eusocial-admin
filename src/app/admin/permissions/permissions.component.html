@@ -15,15 +15,16 @@
       <table class="min-w-full divide-y divide-gray-200" *ngIf="!isLoading">
         <thead class="bg-gray-50 text-gray-600 text-sm">
           <tr>
-            <th class="px-4 py-3 text-left w-12">ID</th>
+            <th class="px-4 py-3 text-left w-12">#</th>
             <th class="px-4 py-3 text-left">Name</th>
             <th class="px-4 py-3 text-right w-40">Actions</th>
           </tr>
         </thead>
 
         <tbody class="divide-y divide-gray-100 text-sm text-gray-700">
-          <tr class="hover:bg-gray-50 transition duration-150" *ngFor="let p of permissions">
-            <td class="px-4 py-3">{{ p.id }}</td>
+          <tr class="hover:bg-gray-50 transition duration-150" *ngFor="let p of permissions; let i = index">
+            <!-- <td class="px-4 py-3">{{ p.id }}</td> -->
+             <td class="px-4 py-3">{{ i + 1 }}</td>
             <td class="px-4 py-3">{{ p.name }}</td>
 
             <td class="px-4 py-3 text-right">
