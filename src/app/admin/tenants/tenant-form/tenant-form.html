@@ -1,27 +1,21 @@
-<!-- <app-eu-loader *ngIf="loading"></app-eu-loader> -->
-
 <div class="user-form p-4 md:px-6 md:py-4">
   <div class="flex justify-between items-center mb-4">
     <h3 class="text-xl font-semibold text-gray-800 m-0">
       {{ isEditMode ? 'Edit Tenant' : 'Create Tenant' }}
     </h3>
-    <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition duration-150"
-      (click)="backToList()">
+    <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition duration-150" (click)="backToList()">
       <i class="bi bi-arrow-left mr-2"></i> Back
     </button>
   </div>
 
-  <form [formGroup]="form" (ngSubmit)="saveTenant()"
-    class="carbon-form bg-white rounded-xl shadow-sm p-4 border border-gray-100 space-y-4">
+  <form [formGroup]="form" (ngSubmit)="saveTenant()" class="carbon-form bg-white rounded-xl shadow-sm p-4 border border-gray-100 space-y-4">
     <h6 class="section-title text-sm font-semibold text-gray-600 uppercase tracking-wide">Tenant Information</h6>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div>
         <div class="form-group">
           <label class="block mb-1 text-sm font-medium text-gray-700">Tenant Name</label>
-          <input
-            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-            type="text" formControlName="name" placeholder="Enter tenant name" />
+          <input class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none" type="text" formControlName="name" placeholder="Enter tenant name" />
           <small class="error text-red-600" *ngIf="f['name'].touched && f['name'].errors?.['required']">
             Tenant name is required.
           </small>
@@ -31,9 +25,7 @@
       <div>
         <div class="form-group">
           <label class="block mb-1 text-sm font-medium text-gray-700">Custom Domain (optional)</label>
-          <input
-            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-            type="text" formControlName="customDomain" placeholder="e.g. mycompany.com" />
+          <input class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none" type="text" formControlName="customDomain" placeholder="e.g. mycompany.com" />
           <small class="error text-red-600" *ngIf="f['customDomain'].touched && f['customDomain'].errors?.['pattern']">
             Enter a valid domain (e.g. mycompany.com).
           </small>
@@ -42,28 +34,14 @@
     </div>
 
     <div class="form-actions mt-5 flex justify-end gap-3">
-      <!-- <button *ngIf="isEditMode" type="button" class="text-red-600 hover:text-red-700" (click)="deleteTenant()">
+        <!-- <button *ngIf="isEditMode" type="button" class="text-red-600 hover:text-red-700" (click)="deleteTenant()">
                 Delete
             </button> -->
-      <button type="button"
-        class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition duration-150"
-        (click)="backToList()">Cancel</button>
-      <!-- <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition duration-150">{{ isEditMode ? 'Update' : 'Save' }}</button> -->
-      <button type="submit" [disabled]="loading"
-        class="bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg transition duration-150 flex items-center justify-center gap-2">
-
-        <app-eu-loader *ngIf="loading"></app-eu-loader>
-
-        <span>
-          {{ loading ? 'Saving...' : (isEditMode ? 'Update' : 'Save') }}
-        </span>
-
-      </button>
+      <button type="button" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition duration-150" (click)="backToList()">Cancel</button>
+      <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition duration-150">{{ isEditMode ? 'Update' : 'Save' }}</button>
     </div>
 
-    <div *ngIf="message"
-      class="text-center mt-4 text-sm text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg py-2 px-3">{{
-      message }}</div>
+    <div *ngIf="message" class="text-center mt-4 text-sm text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg py-2 px-3">{{ message }}</div>
   </form>
 </div>
 
@@ -76,10 +54,8 @@
     <div class="mb-3 space-y-1">
       <label class="block text-sm font-medium text-gray-700">Email</label>
       <div class="flex gap-2">
-        <input type="text" [value]="generatedEmail" readonly
-          class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-700" />
-        <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition duration-150"
-          (click)="copy(generatedEmail)">Copy</button>
+        <input type="text" [value]="generatedEmail" readonly class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-700" />
+        <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition duration-150" (click)="copy(generatedEmail)">Copy</button>
       </div>
     </div>
 
@@ -87,10 +63,8 @@
     <div class="mb-3 space-y-1">
       <label class="block text-sm font-medium text-gray-700">Password</label>
       <div class="flex gap-2">
-        <input type="text" [value]="generatedPassword" readonly
-          class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-700" />
-        <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition duration-150"
-          (click)="copy(generatedPassword)">Copy</button>
+        <input type="text" [value]="generatedPassword" readonly class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-700" />
+        <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition duration-150" (click)="copy(generatedPassword)">Copy</button>
       </div>
     </div>
 
@@ -100,19 +74,20 @@
 
     <!-- Send -->
     <div class="flex gap-2">
-      <input type="email" [(ngModel)]="sendToEmail" placeholder="Enter email"
-        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
-      <button
-        class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition duration-150 disabled:opacity-50"
-        (click)="sendCredentials()" [disabled]="sending">
+      <input
+        type="email"
+        [(ngModel)]="sendToEmail"
+        placeholder="Enter email"
+        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+      />
+      <button class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition duration-150 disabled:opacity-50" (click)="sendCredentials()" [disabled]="sending">
         {{ sending ? 'Sending...' : 'Send' }}
       </button>
     </div>
 
     <!-- Footer -->
     <div class="mt-4 text-right">
-      <button class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition duration-150"
-        (click)="closeModal()">Done</button>
+      <button class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition duration-150" (click)="closeModal()">Done</button>
     </div>
 
   </div>
