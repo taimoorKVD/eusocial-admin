@@ -227,49 +227,45 @@ export class SetupVendorsComponent {
   // }
 
   loadVendorData(id: number) {
+    this.loading = true;
 
-  this.loading = true;
+    this.vendorService.getVendorById(id).subscribe({
+      next: (res: any) => {
+        const data = res.data;
 
-  this.vendorService.getVendorById(id).subscribe({
-    next: (res: any) => {
+        this.formData = {
+          name: data.name,
+          address: data.address,
+          city_id: data.city_id,
+          country_id: data.country_id,
+          state_id: data.state_id,
+          phone_number: data.phone_number,
+          email: data.email,
+          website: data.website,
+          username: data.username,
+          instructions: data.instructions,
+          payment_methods: data.payment_methods || [],
+          min_order: data.min_order,
+          contacts: data.contacts?.length ? data.contacts : this.getEmptyForm().contacts,
+          order_deadlines: data.order_deadlines?.map((d: any) => d.day) || [],
+        };
 
-      const data = res.data;
+        // dependent dropdowns
+        this.loadStates(data.country_id);
 
-      this.formData = {
-        name: data.name,
-        address: data.address,
-        city_id: data.city_id,
-        country_id: data.country_id,
-        state_id: data.state_id,
-        phone_number: data.phone_number,
-        email: data.email,
-        website: data.website,
-        username: data.username,
-        instructions: data.instructions,
-        payment_methods: data.payment_methods || [],
-        min_order: data.min_order,
-        contacts: data.contacts?.length
-          ? data.contacts
-          : this.getEmptyForm().contacts,
-        order_deadlines: data.order_deadlines?.map((d: any) => d.day) || []
-      };
+        setTimeout(() => {
+          this.loadCities(data.state_id);
+        }, 300);
 
-      // dependent dropdowns
-      this.loadStates(data.country_id);
+        this.loading = false;
+      },
 
-      setTimeout(() => {
-        this.loadCities(data.state_id);
-      }, 300);
-
-      this.loading = false;
-    },
-
-    error: () => {
-      this.loading = false;
-      this.toastr.error('Failed to load vendor');
-    }
-  });
-}
+      error: () => {
+        this.loading = false;
+        this.toastr.error('Failed to load vendor');
+      },
+    });
+  }
 
   setPayment(type: 'COD' | 'EFT') {
     this.paymentType = type;
