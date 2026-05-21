@@ -1,4 +1,9 @@
 <div class="p-4">
+
+  <ng-container *ngIf="isLoading">
+    <app-eu-loader></app-eu-loader>
+  </ng-container>
+
   <app-top-header
     [title]="'Permissions'"
     [buttonLabel]="' + Create Permission'"

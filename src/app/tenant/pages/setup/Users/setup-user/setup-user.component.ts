@@ -294,16 +294,14 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
 
   openModal(type: 'delete' | 'exit' | 'save') {
 
-    // ✅ ONLY validate for SAVE
     if (type === 'save') {
       this.isSubmitted = true;
 
       if (!this.validateForm()) {
 
-        // 🔥 ADD TOASTER (instead of silent fail)
         this.toastr.error('Please fix validation errors');
 
-        return; // ❌ modal will NOT open
+        return;
       }
     }
 
