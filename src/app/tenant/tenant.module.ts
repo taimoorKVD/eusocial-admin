@@ -18,7 +18,6 @@ import { SetupItems } from './pages/setup/setup-items/setup-items';
 import { SetupReportingGroup } from './pages/setup/setup-reporting-group/setup-reporting-group';
 import { SetupUserComponent } from './pages/setup/Users/setup-user/setup-user.component';
 import { SetupUsersListing } from './pages/setup/Users/setup-users-listing/setup-users-listing';
-import { EuLoaderComponent } from './eu-loader/eu-loader.component';
 import { SetupJobPositionListingComponent } from './pages/setup/Job-Positions/setup-job-position-listing/setup-job-position-listing.component';
 import { LocationComponent } from './pages/extra-management/location/location.component';
 import { LocationListingComponent } from './pages/extra-management/location-listing/location-listing.component';
@@ -47,7 +46,6 @@ import { RoleListingComponent } from './pages/setup/Roles/role-listing/role-list
     SetupVendorsListingComponent,
     SetupItems,
     SetupReportingGroup,
-    EuLoaderComponent,
     LocationComponent,
     LocationListingComponent,
     RoleComponent,

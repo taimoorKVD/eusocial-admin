@@ -1,11 +1,8 @@
 <div class="min-h-screen bg-gray-100 p-4">
 
-  <!-- Loader -->
-  <!-- <div *ngIf="isLoading" class="fixed inset-0 bg-white/50 flex items-center justify-center z-50">
-    <div class="text-blue-600 text-lg">Loading...</div>
-  </div> -->
-
-   <app-eu-loader *ngIf="isLoading"></app-eu-loader>
+    <ng-container *ngIf="isLoading">
+      <app-eu-loader></app-eu-loader>
+    </ng-container>
 
     <app-top-header
       [title]="'Job Positions'"
@@ -19,7 +16,6 @@
       (clear)="onFilterClear()">
     </app-global-filter>
 
-  <!-- Table -->
   <div class="bg-white rounded shadow overflow-hidden mt-5">
 
     <table class="w-full text-left text-sm font-ibm">
