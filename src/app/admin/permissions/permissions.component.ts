@@ -12,6 +12,15 @@ import { Router } from '@angular/router';
 export class PermissionsComponent {
   permissions: any[] = [];
   isLoading = false;
+  filters: any = {};
+  filterFields = [
+    {
+      key: 'name',
+      label: 'Name',
+      type: 'text',
+      placeholder: 'Search by name...'
+    }
+  ];
     constructor(
     private permissionsService: PermissionService,
     private toastr: ToastrService,
@@ -24,8 +33,15 @@ export class PermissionsComponent {
 
   loadPermissions() {
     this.isLoading = true;
+      const activeFilters = Object.fromEntries(
+      Object.entries(this.filters).filter(([_, value]) => value),
+    );
 
-    this.permissionsService.getPermissions().subscribe({
+    const apiCall = Object.keys(activeFilters).length
+      ? this.permissionsService.searchPermissions(activeFilters)
+      : this.permissionsService.getPermissions();
+
+    apiCall.subscribe({
       next: (res: any) => {
         this.permissions = res.data;
         this.isLoading = false;
@@ -55,5 +71,15 @@ export class PermissionsComponent {
         this.toastr.error('Delete failed');
       },
     });
+  }
+  onFilterSearch(filters: any): void {
+    console.log('Search filters:', filters); // Debug log
+    this.filters = filters;
+    this.loadPermissions();
+  }
+
+  onFilterClear(): void {
+    this.filters = {};
+    this.loadPermissions();
   }
 }

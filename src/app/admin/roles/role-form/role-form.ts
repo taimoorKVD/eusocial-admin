@@ -5,6 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { PermissionService } from '../../../services/permission.service';
 import { Permission } from '../../../interfaces/permission';
 import { ToastrService } from 'ngx-toastr';
+import { AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
 
 @Component({
   selector: 'app-role-form',
@@ -28,13 +29,13 @@ export class RoleForm {
     private router: Router,
     private route: ActivatedRoute,
     private permissionService: PermissionService,
-    private toastr: ToastrService
+    private toastr: ToastrService,
   ) {}
 
   ngOnInit(): void {
     this.form = this.fb.group({
       name: ['', Validators.required],
-      permissions: [[]],
+      permissions: [[], this.minSelectedCheckboxes(1)],
     });
 
     const id = this.route.snapshot.paramMap.get('id');
@@ -45,6 +46,12 @@ export class RoleForm {
     } else {
       this.loadPermissions();
     }
+  }
+  minSelectedCheckboxes(min = 1): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      const value = control.value || [];
+      return value.length >= min ? null : { required: true };
+    };
   }
 
   get f() {
@@ -124,9 +131,31 @@ export class RoleForm {
     });
   }
 
+  scrollToFirstError(): void {
+    const controls = ['name', 'permissions'] as const;
+    const controlName = controls.find((name) => this.form.get(name)?.invalid);
+    if (!controlName) return;
+
+    const element =
+      controlName === 'permissions'
+        ? (document.querySelector('.permissions-section') as HTMLElement | null)
+        : (document.querySelector(`[formControlName="${controlName}"]`) as HTMLElement | null);
+
+    element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    if (
+      element instanceof HTMLInputElement ||
+      element instanceof HTMLTextAreaElement ||
+      element instanceof HTMLSelectElement
+    ) {
+      element.focus({ preventScroll: true });
+    }
+  }
+
   saveRole(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      this.scrollToFirstError();
       return;
     }
 
@@ -140,13 +169,22 @@ export class RoleForm {
     request.subscribe({
       next: () => {
         this.toastr.success(
-          this.isEditMode ? 'Role updated successfully' : 'Role created successfully'
+          this.isEditMode ? 'Role updated successfully' : 'Role created successfully',
         );
         this.saving = false;
         this.router.navigate(['/roles']);
       },
-      error: () => {
-        this.message = 'Role name is already Exist ❌';
+      error: (error) => {
+        const errors = error?.error?.message;
+        if (Array.isArray(errors)) {
+          errors.forEach((msg: string) => {
+            this.toastr.error(msg);
+          });
+        } else {
+          this.toastr.error(
+            errors || 'Something went wrong'
+          );
+        }
         this.saving = false;
       },
     });
