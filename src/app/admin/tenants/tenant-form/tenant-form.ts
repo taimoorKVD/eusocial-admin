@@ -90,6 +90,8 @@ sending = false;
       return;
     }
 
+    this.loading = true;
+
     const payload = this.form.value;
 
     const request$ = this.isEditMode
@@ -113,7 +115,11 @@ sending = false;
           setTimeout(() => this.router.navigate(['/tenants']), 800);
         }
       },
-      error: () => (this.message = 'Tenant name is already Exist ❌'),
+      error: () =>{
+        this.loading = false;
+        this.message = 'Tenant name is already Exist ❌';
+      }
+        //  (),
     });
   }
 
