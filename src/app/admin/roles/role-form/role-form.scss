@@ -160,3 +160,24 @@
     cursor: pointer;
   }
 }
+
+.error-focus {
+  animation: errorPulse 1s ease-in-out;
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.15);
+  border-radius: 8px;
+}
+
+@keyframes errorPulse {
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.01);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
