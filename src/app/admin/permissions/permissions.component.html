@@ -1,13 +1,16 @@
 <div class="p-4">
+  <app-top-header
+    [title]="'Permissions'"
+    [buttonLabel]="' + Create Permission'"
+    (buttonClick)="goToCreate()">
+  </app-top-header>
 
-  <div class="flex justify-between items-center mb-4">
-    <h2 class="text-xl font-semibold">Permissions</h2>
+  <app-global-filter
+    [fields]="filterFields"
+    (search)="onFilterSearch($event)"
+    (clear)="onFilterClear()">
+  </app-global-filter>
 
-    <button (click)="goToCreate()"
-      class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm transition duration-150">
-      + Create Permission
-    </button>
-  </div>
 
   <div *ngIf="isLoading">Loading...</div>
 
