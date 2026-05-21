@@ -1,8 +1,8 @@
- <app-eu-loader *ngIf="isLoading"></app-eu-loader>
-
 <div class="p-6">
+  <ng-container *ngIf="isLoading">
+    <app-eu-loader></app-eu-loader>
+  </ng-container>
 
-  <!-- HEADER -->
   <app-top-header
     [title]="'Locations'"
     [buttonLabel]="'+ Create Location'"
