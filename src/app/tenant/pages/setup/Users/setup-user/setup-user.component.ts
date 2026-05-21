@@ -534,7 +534,7 @@ confirmAction() {
 
           this.setCredentials({
             email: payload.email,
-            password: payload.password,
+            password: res.data.plainPassword,
              userId: newUser.id   // ✅ IMPORTANT
           });
 
@@ -592,7 +592,7 @@ confirmAction() {
           this.setCredentials({
             email: payload.email,
              userId: this.editingUserId,   // ✅ IMPORTANT
-            password: payload.password || null
+            password: res.data.plainPassword || null
           });
 
           // reset optional password fields
