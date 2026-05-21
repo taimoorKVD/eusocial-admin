@@ -23,6 +23,12 @@ export class PermissionService {
     return this.http.get(`${this.baseUrl}`);
   }
 
+  searchPermissions(filters: any) {
+    const queryParams = new URLSearchParams(filters).toString();
+    return this.http.get(`${this.baseUrl}/search?${queryParams}`);
+  }
+
+
   getPermissionById(id: number) {
     return this.http.get(`${this.baseUrl}/${id}`);
   }
