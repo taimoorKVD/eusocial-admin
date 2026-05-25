@@ -32,12 +32,6 @@ export class SetupVendorsListingComponent {
       type: 'text',
       placeholder: 'Search by email...',
     },
-    // {
-    //   key: 'phone',
-    //   label: 'Phone',
-    //   type: 'number',
-    //   placeholder: 'Search by phone...',
-    // },
     {
       key: 'city_id',
       label: 'City',
@@ -92,33 +86,21 @@ export class SetupVendorsListingComponent {
     });
   }
 
-  // deleteVendor(id: number) {
-  //   if (!confirm('Delete this vendor?')) return;
-
-  //   this.vendorService.deleteVendor(id).subscribe({
-  //     next: () => {
-  //       this.toastr.success('Vendor deleted');
-  //       this.getVendors();
-  //     },
-  //   });
-  // }
-
   deleteVendor(id: number) {
-  if (!confirm('Delete this vendor?')) return;
+    if (!confirm('Delete this vendor?')) return;
 
-  this.vendorService.deleteVendor(id).subscribe({
-    next: () => {
-      this.toastr.success('Vendor deleted');
+    this.vendorService.deleteVendor(id).subscribe({
+      next: () => {
+        this.toastr.success('Vendor deleted');
 
-      // agar page empty hone wala ho
-      if (this.vendors.length === 1 && this.page > 1) {
-        this.getVendors(this.page - 1);
-      } else {
-        this.getVendors(this.page);
-      }
-    },
-  });
-}
+        if (this.vendors.length === 1 && this.page > 1) {
+          this.getVendors(this.page - 1);
+        } else {
+          this.getVendors(this.page);
+        }
+      },
+    });
+  }
 
   prevPage(): void {
     if (this.page > 1) {
@@ -139,22 +121,11 @@ export class SetupVendorsListingComponent {
   }
 
   loadCities() {
-    // this.vendorService.getCities(0).subscribe((res) => {
-    //   this.cities = res.data || res;
-    // });
-    this.loadFilterOptions(
-      'cities',
-      'city_id',
-      this.vendorService.getCities(0)
-    );
+    this.loadFilterOptions('cities', 'city_id', this.vendorService.getCities(0));
   }
 
-   private loadFilterOptions(
-    key: string,
-    filter_key: string,
-    apiCall: any
-  ) {
-    const field = this.filterFields.find(f => f.key === filter_key);
+  private loadFilterOptions(key: string, filter_key: string, apiCall: any) {
+    const field = this.filterFields.find((f) => f.key === filter_key);
 
     if (field && field.type === 'select') {
       field.loading = true;
@@ -174,11 +145,9 @@ export class SetupVendorsListingComponent {
         if (field && field.type === 'select') {
           field.loading = false;
         }
-      }
+      },
     });
   }
-
-
 
   getCountryName(id: number): string {
     return this.countries.find((c) => c.id === id)?.name || '-';
@@ -209,11 +178,6 @@ export class SetupVendorsListingComponent {
   }
 
   goToCreate() {
-    this.router.navigate([
-      '/tenant',
-      this.tenantSession.getSlug(),
-      'vendors',
-      'create'
-    ]);
+    this.router.navigate(['/tenant', this.tenantSession.getSlug(), 'vendors', 'create']);
   }
 }

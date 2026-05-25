@@ -1,3 +1,20 @@
+<div
+  class="fixed md:static top-0 left-0 h-full w-64 bg-white shadow-lg md:shadow-none transform transition-transform duration-300 z-50"
+  [ngClass]="{
+    '-translate-x-full': !isOpen,
+    'translate-x-0': isOpen,
+    'md:translate-x-0': true
+  }">
+
+  <!-- Close button mobile -->
+  <div class="flex justify-end md:hidden absolute top-[30px] right-[10px]">
+    <button
+      class="text-2xl"
+      (click)="closeSidebar.emit()">
+      ✕
+    </button>
+  </div>
+
 <div class="w-64 h-screen bg-white flex flex-col" style="border-right: 1px solid #6c71727a;">
 
   <!-- Logo -->
@@ -182,4 +199,5 @@
       </div>
     </div>
   </div>
+</div>
 </div>
