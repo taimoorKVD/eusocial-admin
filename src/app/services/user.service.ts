@@ -14,7 +14,8 @@ export class UserService {
 
   /** Fetch paginated list of users with optional filters */
   getUsers(
-    page: number = 1
+    page: number = 1,
+    limit?: number
   ): Observable<{
     data: User[];
     meta: {
@@ -37,7 +38,7 @@ export class UserService {
         lastPage?: number;
       };
     }>(
-      `${this.baseUrl}?page=${page}&sort_by=created_at&sort_order=desc`
+      `${this.baseUrl}?page=${page}&limit=${limit}&sort_by=created_at&sort_order=desc`
     );
   }
 

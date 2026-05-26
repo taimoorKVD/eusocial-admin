@@ -3,6 +3,7 @@ import { Role } from '../../interfaces/role';
 import { RoleService } from '../../services/role.service';
 import { Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
+import { environment } from '../../../environments/environment.prod';
 
 @Component({
   selector: 'app-roles',
@@ -28,6 +29,7 @@ export class Roles {
       placeholder: 'Search by Role name...'
     }
   ];
+  private defaultLimit = environment.limit;
 
   constructor(private roleService: RoleService, private router: Router, private toastr: ToastrService) {}
 
@@ -45,8 +47,8 @@ export class Roles {
     );
 
      const apiCall = Object.keys(activeFilters).length
-    ? this.roleService.searchRoles(activeFilters, 15)
-    : this.roleService.getRoles(page);
+    ? this.roleService.searchRoles(activeFilters, this.defaultLimit)
+    : this.roleService.getRoles(page, this.defaultLimit);
 
     apiCall.subscribe({
       next: (res) => {
