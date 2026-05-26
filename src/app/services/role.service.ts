@@ -25,21 +25,17 @@ export class RoleService {
 
   constructor(private http: HttpClient) {}
 
-  /** ✅ Get paginated list of roles */
-  // getRoles(page: number = 1): Observable<Role[]> {
-  //   return this.http
-  //     .get<RoleApiResponse>(`${this.baseUrl}?page=${page}`)
-  //     .pipe(map((res) => res.data)); // unwrap data
-  // }
-  getRoles(page: number = 1): Observable<RoleApiResponse> {
-  return this.http.get<RoleApiResponse>(
-    `${this.baseUrl}?page=${page}`
-  );
-}
-
- searchRoles(filters: any = {}, limit: number = 15) {
+  getRoles(page: number = 1, limit?: number): Observable<RoleApiResponse> {
     const params = new URLSearchParams({
-      limit: limit.toString(),
+      page: page.toString(),
+      ...(limit ? { limit: limit.toString() } : {}),
+    });
+    return this.http.get<RoleApiResponse>(`${this.baseUrl}?${params.toString()}`);
+  }
+
+ searchRoles(filters: any = {}, limit ? : number) {
+    const params = new URLSearchParams({
+      ...(limit ? { limit: limit.toString() } : {}),
       ...filters
     });
     return this.http.get<any>(

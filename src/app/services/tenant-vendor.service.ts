@@ -7,12 +7,12 @@ import { Observable } from 'rxjs';
   providedIn: 'root',
 })
 export class TenantVendorService {
-    private vendor = `${environment.tenantApiUrl}/vendors`;
-    // private states = `${environment.tenantApiUrl}/states`;
-    // private countries = `${environment.tenantApiUrl}/countries`;
-    private statesUrl  = `${environment.tenantApiUrl}/states`;
-     private citiesUrl  = `${environment.tenantApiUrl}/cities`;
-     private countriesUrl  = `${environment.tenantApiUrl}/countries`;
+  private vendor = `${environment.tenantApiUrl}/vendors`;
+  // private states = `${environment.tenantApiUrl}/states`;
+  // private countries = `${environment.tenantApiUrl}/countries`;
+  private statesUrl  = `${environment.tenantApiUrl}/states`;
+  private citiesUrl  = `${environment.tenantApiUrl}/cities`;
+  private countriesUrl  = `${environment.tenantApiUrl}/countries`;
 
   constructor(private http: HttpClient) {}
 
@@ -26,15 +26,15 @@ export class TenantVendorService {
   //   return this.http.get<any>(this.vendor);
   // }
 
-  getVendors(page: number = 1) {
+  getVendors(page: number = 1, limit?: number) {
     return this.http.get<any>(
-      `${this.vendor}?page=${page}`
+      `${this.vendor}?page=${page}${limit ? `&limit=${limit}` : ''}`
     );
   }
 
-  searchVendors(filters: any, limit: number = 15) {
+  searchVendors(filters: any, limit?: number) {
     const params = new URLSearchParams({
-      limit: limit.toString(),
+      ...(limit ? { limit: limit.toString() } : {}),
       ...filters
     });
     return this.http.get<any>(

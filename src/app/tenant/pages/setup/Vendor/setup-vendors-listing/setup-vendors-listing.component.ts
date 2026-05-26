@@ -4,6 +4,7 @@ import { TenantVendorService } from '../../../../../services/tenant-vendor.servi
 import { ToastrService } from 'ngx-toastr';
 import { TenantSessionService } from '../../../../../services/tenant-session.service';
 import { GlobalFilterField } from '../../../../../shared/global-filter/global-filter';
+import { environment } from '../../../../../../environments/environment.prod';
 
 @Component({
   selector: 'app-setup-vendors-listing',
@@ -19,6 +20,7 @@ export class SetupVendorsListingComponent {
   lastPage = 1;
   total = 0;
   filters: any = {};
+  private defaultLimit = environment.limit;
   filterFields: GlobalFilterField[] = [
     {
       key: 'name',
@@ -73,8 +75,8 @@ export class SetupVendorsListingComponent {
     );
 
     const apiCall = Object.keys(activeFilters).length
-      ? this.vendorService.searchVendors(activeFilters, 3)
-      : this.vendorService.getVendors(page);
+      ? this.vendorService.searchVendors(activeFilters, this.defaultLimit)
+      : this.vendorService.getVendors(page, this.defaultLimit);
 
     apiCall.subscribe({
       next: (res: any) => {
