@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { TenantLocationService } from '../../../../services/tenant-location.service';
 import { TenantSessionService } from '../../../../services/tenant-session.service';
 import { GlobalFilterField } from '../../../../shared/global-filter/global-filter';
+import { environment } from '../../../../../environments/environment.prod';
 
 @Component({
   selector: 'app-location-listing',
@@ -55,6 +56,7 @@ export class LocationListingComponent {
       placeholder: 'Search by Postal Code...',
     },
   ];
+  private defaultLimit = environment.limit;
 
   constructor(
     private locationService: TenantLocationService,
@@ -76,8 +78,8 @@ export class LocationListingComponent {
     );
 
     const apiCall = Object.keys(activeFilters).length
-      ? this.locationService.searchLocations(activeFilters, 15)
-      : this.locationService.getLocations(page);
+      ? this.locationService.searchLocations(activeFilters, this.defaultLimit)
+      : this.locationService.getLocations(page, this.defaultLimit);
 
     apiCall.subscribe({
       next: (res) => {
