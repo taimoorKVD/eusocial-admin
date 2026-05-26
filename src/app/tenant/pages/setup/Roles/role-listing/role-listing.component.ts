@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { TenantRoleService } from '../../../../../services/tenant-role.service';
 import { TenantSessionService } from '../../../../../services/tenant-session.service';
 import { GlobalFilterField } from '../../../../../shared/global-filter/global-filter';
+import { environment } from '../../../../../../environments/environment.prod';
 
 @Component({
   selector: 'app-role-listing',
@@ -24,6 +25,7 @@ export class RoleListingComponent {
       placeholder: 'Select role',
     },
   ];
+  private defaultLimit = environment.limit;
 
   constructor(
     private rolesService: TenantRoleService,
@@ -43,8 +45,8 @@ export class RoleListingComponent {
     const field = this.filterFields.find(f => f.key === 'role_id');
 
     const apiCall = Object.keys(activeFilters).length
-      ? this.rolesService.searchRoles(activeFilters)
-      : this.rolesService.getRoles();
+      ? this.rolesService.searchRoles(activeFilters, this.defaultLimit)
+      : this.rolesService.getRoles(1, this.defaultLimit);
 
     apiCall.subscribe({
       next: (res: any) => {
