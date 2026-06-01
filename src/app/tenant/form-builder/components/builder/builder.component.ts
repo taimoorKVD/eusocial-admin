@@ -23,39 +23,16 @@ export class BuilderComponent {
   // =========================
   // DROP HANDLER (CDK)
   // =========================
-  drop(event: CdkDragDrop<any[]>) {
+drop(event: CdkDragDrop<any[]>) {
 
-    const prev = event.previousContainer.id;
-    const curr = event.container.id;
+  const field = event.item.data;
 
-    // CASE 1: SIDEBAR → CANVAS (CLONE ONLY)
-    if (prev === 'sidebarList' && curr === 'canvasList') {
+  this.formFields.push({
+    ...field,
+    id: Date.now() + Math.random()
+  });
 
-      const template = this.fieldTemplates[event.previousIndex];
-
-      const newField: FormField = {
-        ...template,
-        id: uuidv4(),
-
-        // ALWAYS ensure arrays exist (important for radio/select/checkbox)
-        options: template.options ? [...template.options] : []
-      };
-
-      this.formFields.splice(event.currentIndex, 0, newField);
-
-      return;
-    }
-
-    // CASE 2: CANVAS → CANVAS (REORDER ONLY)
-    if (prev === 'canvasList' && curr === 'canvasList') {
-
-      moveItemInArray(
-        this.formFields,
-        event.previousIndex,
-        event.currentIndex
-      );
-    }
-  }
+}
 
   // =========================
   // SELECT FIELD

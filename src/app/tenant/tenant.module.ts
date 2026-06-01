@@ -28,6 +28,8 @@ import { RoleComponent } from './pages/setup/Roles/role/role.component';
 import { RoleListingComponent } from './pages/setup/Roles/role-listing/role-listing.component';
 // import { FieldSettingsComponent } from './form-builder/field-settings/field-settings.component';
 import { RouterModule } from '@angular/router';
+import { FormsEditorComponent } from './forms/forms-editor/forms-editor.component';
+import { FormsListComponent } from './forms/forms-list/forms-list.component';
 
 
 
@@ -52,6 +54,8 @@ import { RouterModule } from '@angular/router';
     LocationListingComponent,
     RoleComponent,
     RoleListingComponent,
+    // FormsEditorComponent,
+
     // FieldSettingsComponent
 
   ],
@@ -63,6 +67,11 @@ import { RouterModule } from '@angular/router';
     ReactiveFormsModule,
     SharedModule,
     RouterModule
+  ],
+    exports: [   // 👈 ADD THIS BLOCK
+    SetupUserComponent,
+    SetupJobPositionComponent,
+    SetupVendorsComponent
   ]
 })
 export class TenantModule { }

@@ -1,0 +1,25 @@
+<div class="grid grid-cols-2 gap-4">
+
+  <!-- LEFT SIDE -->
+  <div>
+
+<ng-container *ngIf="moduleName === 'users'">
+  <app-setup-user></app-setup-user>
+</ng-container>
+
+<ng-container *ngIf="moduleName === 'vendors'">
+  <app-setup-vendors></app-setup-vendors>
+</ng-container>
+
+<ng-container *ngIf="moduleName === 'job-position'">
+  <app-setup-job-position></app-setup-job-position>
+</ng-container>
+
+  </div>
+
+  <!-- RIGHT SIDE -->
+  <div>
+    <app-builder></app-builder>
+  </div>
+
+</div>

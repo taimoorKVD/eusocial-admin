@@ -1,0 +1,44 @@
+<div class="bg-white rounded-lg shadow p-5">
+
+  <h2 class="text-xl font-bold mb-4">
+    Forms
+  </h2>
+
+  <table class="w-full">
+
+    <thead>
+      <tr class="border-b">
+        <th class="text-left py-3">Module</th>
+        <th class="text-right py-3">Action</th>
+      </tr>
+    </thead>
+
+    <tbody>
+
+      <tr
+        *ngFor="let module of modules"
+        class="border-b"
+      >
+
+        <td class="py-4">
+          {{ module.name }}
+        </td>
+
+        <td class="text-right">
+
+          <button
+            [routerLink]="[module.route]"
+            class="bg-blue-500 text-white px-4 py-2 rounded"
+          >
+            Edit
+          </button>
+
+        </td>
+
+      </tr>
+
+    </tbody>
+
+  </table>
+
+</div>
