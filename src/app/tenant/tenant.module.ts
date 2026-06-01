@@ -26,6 +26,8 @@ import { TenantForgotPasswordComponent } from './tenant-forgot-password/tenant-f
 import { TenantResetPasswordComponent } from './tenant-reset-password/tenant-reset-password.component';
 import { RoleComponent } from './pages/setup/Roles/role/role.component';
 import { RoleListingComponent } from './pages/setup/Roles/role-listing/role-listing.component';
+// import { FieldSettingsComponent } from './form-builder/field-settings/field-settings.component';
+import { RouterModule } from '@angular/router';
 
 
 
@@ -49,7 +51,8 @@ import { RoleListingComponent } from './pages/setup/Roles/role-listing/role-list
     LocationComponent,
     LocationListingComponent,
     RoleComponent,
-    RoleListingComponent
+    RoleListingComponent,
+    // FieldSettingsComponent
 
   ],
   imports: [
@@ -58,7 +61,8 @@ import { RoleListingComponent } from './pages/setup/Roles/role-listing/role-list
     FormsModule,
     NgSelectModule,
     ReactiveFormsModule,
-    SharedModule
+    SharedModule,
+    RouterModule
   ]
 })
 export class TenantModule { }

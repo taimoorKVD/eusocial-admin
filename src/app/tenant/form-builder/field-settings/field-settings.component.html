@@ -1,0 +1,86 @@
+<div class="space-y-4">
+
+  <h3 class="text-lg font-bold">
+    Field Settings
+  </h3>
+
+  <!-- LABEL -->
+  <div>
+    <label class="block mb-1 text-sm font-medium">
+      Label
+    </label>
+
+    <input
+      type="text"
+      [(ngModel)]="field.label"
+      (input)="onChange()"
+      class="w-full border rounded p-2"
+    />
+  </div>
+
+  <!-- PLACEHOLDER -->
+  <div>
+    <label class="block mb-1 text-sm font-medium">
+      Placeholder
+    </label>
+
+    <input
+      type="text"
+      [(ngModel)]="field.placeholder"
+      (input)="onChange()"
+      class="w-full border rounded p-2"
+    />
+  </div>
+
+  <!-- REQUIRED -->
+  <div class="flex items-center gap-2">
+
+    <input
+      type="checkbox"
+      [(ngModel)]="field.required"
+      (change)="onChange()"
+    />
+
+    <label class="text-sm">
+      Required Field
+    </label>
+
+  </div>
+
+<!-- OPTIONS EDITOR -->
+<div *ngIf="field.type === 'select' || field.type === 'radio' || field.type === 'checkbox'">
+
+  <label class="block text-sm font-medium">
+    Options (one per line)
+  </label>
+
+  <textarea
+    rows="5"
+    [value]="field.options.join('\n')"
+    (input)="updateOptions($event)"
+    class="w-full border p-2"
+  ></textarea>
+
+</div>
+
+<div class="mt-4 border-t pt-3">
+
+  <h4 class="font-bold text-sm mb-2">Conditional Logic</h4>
+
+  <label class="text-xs">Show this field when:</label>
+
+  <input
+    [(ngModel)]="field.condition!.fieldId"
+    placeholder="Field ID"
+    class="w-full border p-2 mt-1 text-sm"
+  />
+
+  <input
+    [(ngModel)]="field.condition!.value"
+    placeholder="Value"
+    class="w-full border p-2 mt-1 text-sm"
+  />
+
+</div>
+
+</div>

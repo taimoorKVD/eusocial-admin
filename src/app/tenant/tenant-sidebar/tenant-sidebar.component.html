@@ -159,7 +159,21 @@
       </div>
     </div>
 
-    <!-- SETUP MENU -->
+     <!-- FORMS -->
+    <a [routerLink]="['/tenant',  session.getSlug(), 'form-builder']"
+      routerLinkActive="text-[#333333] border-l-4 border-blue-500 font-bold"
+      class="text-[#525252] font-ibm flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100">
+      <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+        xmlns="http://www.w3.org/2000/svg">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 20h16" />
+        <path stroke-linecap="round" stroke-linejoin="round" d="M7 16V9" />
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 16V5" />
+        <path stroke-linecap="round" stroke-linejoin="round" d="M17 16v-3" />
+      </svg>
+      Forms
+    </a>
+
+    <!-- Extra Management -->
     <div>
 
       <button (click)="toggleExtraManagement()"
@@ -201,3 +215,32 @@
   </div>
 </div>
 </div>
+
+
+src/app/tenant
+/form-builder/
+├── components/
+│ └── builder/
+    ├── builder.component.ts
+    ├── builder.component.html
+    ├── builder.module.ts
+├── models/
+│ └── form-field.model.ts
+├── data/
+│ └── field-templates.ts
+├── field-settings/
+│ ├── field-settings.component.ts
+│ ├── field-settings.component.html
+│form-builder-module.ts
+
+src/app/tenant/pages/setup/
+├── job-position/
+│ ├── job-position.component.ts
+│ ├── job-position.component.html
+├── job-position.module.ts
+users/
+├── users.component.ts
+├── users.component.html
+Vendors/
+├── vendors.component.ts
+├── vendors.component.html

@@ -11,6 +11,7 @@ import { ErrorInterceptor } from './interceptors/error-interceptor';
 import { TenantAuthInterceptor } from './interceptors/tenant-auth.interceptor';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { ToastrModule } from 'ngx-toastr';
+import { FormBuilderModule } from './tenant/form-builder/form-builder-module';
 
 
 @NgModule({
@@ -19,6 +20,7 @@ import { ToastrModule } from 'ngx-toastr';
   ],
   imports: [
     BrowserModule,
+    FormBuilderModule,
     AppRoutingModule,
     AdminModule,
     HttpClientModule,
