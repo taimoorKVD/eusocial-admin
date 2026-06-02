@@ -16,6 +16,7 @@ export class FormsEditorComponent {
   builderFields: any[] = [];
   builderSchema: FormField[] = [];
   selectedFieldId: string | null = null;
+  activeTab: 'fields' | 'settings' = 'fields';
 
   constructor(
     private route: ActivatedRoute,
@@ -37,12 +38,16 @@ export class FormsEditorComponent {
       id: Date.now() + Math.random()
     };
 
-    // prevent duplicate if needed
     this.builderSchema = [...this.builderSchema, field];
   }
 
   onSelectField(field: any) {
     this.selectedFieldId = field.id;
+    this.activeTab = 'settings';
+  }
+
+  setActiveTab(tab: 'fields' | 'settings') {
+    this.activeTab = tab;
   }
 
   ngOnInit() {

@@ -6,10 +6,10 @@
     <h3 class="font-bold mb-3">Fields</h3>
 
     <div cdkDropList id="sidebarList" [cdkDropListData]="fieldTemplates" [cdkDropListConnectedTo]="['canvasList','userFormDropZone']"
-      class="space-y-2">
+      class="grid grid-cols-3 gap-2">
 
       <div *ngFor="let field of fieldTemplates; let i = index" cdkDrag [cdkDragData]="field"
-        class="p-2 bg-white shadow rounded cursor-move">
+        class="p-2 bg-white shadow rounded cursor-move flex items-center justify-center font-ibm text-center text-sm">
         {{ field.label }}
       </div>
 
