@@ -63,8 +63,7 @@
 
     <!-- Email -->
     <div class="relative">
-      <!-- <input type="email" [(ngModel)]="formData.email" (ngModelChange)="onFieldChange()" placeholder="*Placeholder text"
-        class=" w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent" /> -->
+
       <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">Email<span class="text-red-500 text-[12px]">*</span></label>
       <input type="text" [(ngModel)]="formData.email" (ngModelChange)="onFieldChange()"
         class=" w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent"
@@ -233,14 +232,6 @@
     <label class="text-sm text-gray-600">Availability<span class="text-red-500 text-[12px]">*</span></label>
 
     <div class="flex mt-3 flex-wrap">
-
-      <!-- <button *ngFor="let day of availabilityDays" (click)="selectDay(day)" class="px-3 py-2 transition" [ngClass]="
-        selectedDays.includes(day)
-          ? 'bg-white border-t-2 border-[#0069D7] text-[#161616] font-semibold font-ibm text-[11px]'
-          : 'bg-gray-200 border-r border-[#8d8d8d] text-[#525252] text-[11px] font-regular border border-transparent'
-      ">
-        {{ day }}
-      </button> -->
       <button *ngFor="let day of availabilityDays" (click)="selectDay(day)" class="px-3 py-2 transition" [ngClass]="
     formData.availability_days.includes(day)
       ? 'bg-white border-t-2 border-[#0069D7] text-[#161616] font-semibold font-ibm text-[11px]'
@@ -253,6 +244,96 @@
       Availability is required
     </p>
   </div>
+
+<!-- ========================= -->
+<!-- DYNAMIC SCHEMA RENDERING -->
+<!-- ========================= -->
+
+<div class="mt-10 border-t pt-6">
+
+  <h3 class="text-[14px] font-medium mb-4 text-[#0054AC]">
+    Dynamic Fields
+  </h3>
+
+  <div class="grid grid-cols-3 gap-10 mb-[30px]">
+
+    <ng-container *ngFor="let field of schema">
+
+      <!-- TEXT -->
+      <div *ngIf="field.type === 'text'">
+        <label class="text-[12px] text-[#6F6F6F]">
+          {{ field.label }}
+        </label>
+
+        <input
+          type="text"
+          [placeholder]="field.placeholder"
+          [(ngModel)]="field.value"
+          class="w-full border-b py-3 text-[14px] bg-transparent"
+        />
+      </div>
+
+      <!-- EMAIL -->
+      <div *ngIf="field.type === 'email'">
+        <label class="text-[12px] text-[#6F6F6F]">
+          {{ field.label }}
+        </label>
+
+        <input
+          type="email"
+          [placeholder]="field.placeholder"
+          [(ngModel)]="field.value"
+          class="w-full border-b py-3 text-[14px] bg-transparent"
+        />
+      </div>
+
+      <!-- NUMBER -->
+      <div *ngIf="field.type === 'number'">
+        <label class="text-[12px] text-[#6F6F6F]">
+          {{ field.label }}
+        </label>
+
+        <input
+          type="number"
+          [placeholder]="field.placeholder"
+          [(ngModel)]="field.value"
+          class="w-full border-b py-3 text-[14px] bg-transparent"
+        />
+      </div>
+
+      <!-- SELECT -->
+      <div *ngIf="field.type === 'select'">
+        <label class="text-[12px] text-[#6F6F6F]">
+          {{ field.label }}
+        </label>
+
+        <select
+          [(ngModel)]="field.value"
+          class="w-full border-b py-2 bg-transparent">
+
+          <option *ngFor="let opt of field.options" [value]="opt">
+            {{ opt }}
+          </option>
+
+        </select>
+      </div>
+
+      <!-- TEXTAREA -->
+      <div *ngIf="field.type === 'textarea'">
+        <label class="text-[12px] text-[#6F6F6F]">
+          {{ field.label }}
+        </label>
+
+        <textarea
+          [(ngModel)]="field.value"
+          class="w-full border-b py-2">
+        </textarea>
+      </div>
+
+    </ng-container>
+
+  </div>
+</div>
 
   <!-- Footer Buttons -->
   <div class="flex justify-end gap-3 mt-16">
@@ -290,6 +371,8 @@
     </div>
   </div>
 </div>
+
+
 
 <div *ngIf="isCredentialsModalOpen" class="fixed inset-0 z-50 flex items-center justify-center">
 

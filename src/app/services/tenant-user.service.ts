@@ -81,4 +81,11 @@ sendCredentials(userId: number, payload: any) {
     payload
   );
 }
+
+saveFormSchema(module: string, payload: any) {
+  return this.http.post(
+    `/api/forms/schema/${module}`,
+    payload
+  );
+}
 }

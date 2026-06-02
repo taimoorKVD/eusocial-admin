@@ -1,8 +1,11 @@
-import { Component, ElementRef, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, Output, ViewChild } from '@angular/core';
 import { ToastrService } from 'ngx-toastr';
 import { TenantUserService } from '../../../../../services/tenant-user.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TenantSessionService } from '../../../../../services/tenant-session.service';
+// import { FormField } from '../../form-builder/models/form-field.model';
+import { FormField } from '../../../../form-builder/models/form-field.model';
+
 
 @Component({
   selector: 'app-setup-user',
@@ -44,6 +47,9 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
   sendEmail: string = '';
   generatedPassword: string = '';
   phoneError: string = '';
+  // dynamicFields: any[] = [];
+ @Input() schema: FormField[] = [];
+ @Output() fieldSelected = new EventEmitter<any>();
 
 
   startLoading() {
@@ -210,9 +216,6 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
         : [],
       };
 
-      // ✅ ADD THIS LINE (important)
-      // this.selectedDays = [...(user.availabilityDays || [])];
-
     });
   }
 
@@ -262,21 +265,6 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
     });
   }
 
-  // selectDay(day: string) {
-
-  //   const index = this.selectedDays.indexOf(day);
-
-  //   if (index > -1) {
-  //     // remove (inactive)
-  //     this.selectedDays.splice(index, 1);
-  //   } else {
-  //     // add (active)
-  //     this.selectedDays.push(day);
-  //   }
-
-  //   // keep formData in sync
-  //   this.formData.availability_days = [...this.selectedDays];
-  // }
 
   selectDay(day: string) {
   const index = this.formData.availability_days.indexOf(day);
@@ -338,129 +326,6 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
   const slug = this.tenantSession.getSlug();
   this.router.navigate(['/tenant', slug, 'users']);
   }
-
-// confirmAction() {
-
-//   // ================= DELETE =================
-//   if (this.modalType === 'delete') {
-
-//     if (!this.selectedUser || this.selectedUser === 'create') return;
-
-//     this.startLoading();
-
-//     this.userService.deleteUser(this.selectedUser).subscribe({
-//       next: () => {
-//         this.closeModal();
-//         this.toastr.success('User deleted successfully');
-//         this.stopLoading();
-//         this.redirectToUserListing();
-//       },
-//       error: (err) => {
-//         console.error('Delete error:', err);
-//         this.toastr.error(err?.error?.message || 'Failed to delete user');
-//         this.stopLoading();
-//       }
-//     });
-
-//     return;
-//   }
-
-//   // ================= EXIT =================
-//   if (this.modalType === 'exit') {
-//     this.closeModal();
-//     this.redirectToUserListing();
-//     return;
-//   }
-
-//   // ================= SAVE =================
-//   if (this.modalType === 'save') {
-
-//     this.isSubmitted = true;
-
-//     if (!this.validateForm()) return;
-
-//     this.startLoading();
-
-//     const payload: any = {
-//       name: this.formData.name,
-//       username: this.formData.username,
-//       address: this.formData.address,
-//       email: this.getFullEmail(),
-//       role_id: 1,
-//       job_position_id: Number(this.formData.job_position_id),
-//       location_id: Number(this.formData.location_id),
-//     };
-
-//     // ✅ ONLY for CREATE
-//     if (this.mode === 'create') {
-//       payload.password = this.formData.password;
-//       payload.password_confirm = this.formData.password_confirm;
-//     }
-
-//     // ================= CREATE =================
-//     if (this.mode === 'create') {
-
-//       this.userService.createUser(payload).subscribe({
-//         next: (res: any) => {
-
-//           const newUser = res.data;
-
-//           this.setCredentials({
-//             email: payload.email,
-//             password: payload.password
-//           });
-
-//           this.closeModal();
-//           this.toastr.success('User created successfully');
-//           this.stopLoading();
-
-//           this.isCredentialsModalOpen = true;
-//         },
-//         error: (err) => {
-//           console.error('Create user error:', err);
-//           this.toastr.error(err?.error?.message || 'Failed to create user');
-//           this.stopLoading();
-//         }
-//       });
-//     }
-
-//     // ================= UPDATE =================
-//     else if (this.mode === 'edit' && this.editingUserId) {
-
-//       const payload = {
-//         name: this.formData.name,
-//         username: this.formData.username,
-//         address: this.formData.address,
-//         email: this.getFullEmail(),
-//         role_id: 1,
-//         job_position_id: Number(this.formData.job_position_id),
-//         location_id: Number(this.formData.location_id),
-//       };
-
-//       this.userService.updateUser(this.editingUserId, payload).subscribe({
-//         next: (res: any) => {
-
-//           this.setCredentials({
-//             email: payload.email,
-//             password: null
-//           });
-
-//           this.closeModal();
-//           this.toastr.success('User updated successfully');
-//           this.stopLoading();
-
-//           this.isCredentialsModalOpen = true;
-//         },
-
-//         error: (err) => {
-//           console.error('Update user error:', err);
-//           this.toastr.error(err?.error?.message || 'Failed to update user');
-//           this.stopLoading();
-//         }
-//       });
-//     }
-//   }
-// }
 
 confirmAction() {
 
@@ -692,19 +557,6 @@ validateForm(): boolean {
 
   return valid;
 }
-  // onFieldChange() {
-
-  //   // clear email format error when user types
-  //   if (this.formData.email) {
-  //     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  //     this.emailFormatError = emailRegex.test(this.formData.email) ? false : this.emailFormatError;
-  //   }
-
-  //   // password match live check
-  //   if (this.formData.password && this.formData.password_confirm) {
-  //     this.passwordMismatch = this.formData.password === this.formData.password_confirm ? false : true;
-  //   }
-  // }
 
   onFieldChange() {
 

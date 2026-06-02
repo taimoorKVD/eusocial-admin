@@ -3,23 +3,39 @@
   <!-- LEFT SIDE -->
   <div>
 
-<ng-container *ngIf="moduleName === 'users'">
-  <app-setup-user></app-setup-user>
-</ng-container>
+    <ng-container *ngIf="moduleName === 'users'">
 
-<ng-container *ngIf="moduleName === 'vendors'">
-  <app-setup-vendors></app-setup-vendors>
-</ng-container>
+      <div cdkDropList id="userFormDropZone" [cdkDropListData]="builderSchema"
+        (cdkDropListDropped)="onUserDrop($event)">
 
-<ng-container *ngIf="moduleName === 'job-position'">
-  <app-setup-job-position></app-setup-job-position>
-</ng-container>
+        <app-setup-user [schema]="builderSchema" (selectField)="onSelectField($event)">
+        </app-setup-user>
+
+      </div>
+
+    </ng-container>
+
+    <ng-container *ngIf="moduleName === 'vendors'">
+      <app-setup-vendors></app-setup-vendors>
+    </ng-container>
+
+    <ng-container *ngIf="moduleName === 'job-position'">
+      <app-setup-job-position></app-setup-job-position>
+    </ng-container>
 
   </div>
 
   <!-- RIGHT SIDE -->
   <div>
-    <app-builder></app-builder>
+    <app-builder (schemaChange)="builderFields = $event">
+    </app-builder>
+  </div>
+
+  <div>
+        <app-field-settings *ngIf="selectedField"
+    [field]="selectedField"
+    (update)="updateField($event)">
+    </app-field-settings>
   </div>
 
 </div>

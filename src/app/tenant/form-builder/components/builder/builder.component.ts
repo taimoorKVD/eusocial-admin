@@ -1,5 +1,5 @@
-import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
-import { Component } from '@angular/core';
+import { CdkDragDrop, moveItemInArray, transferArrayItem  } from '@angular/cdk/drag-drop';
+import { Component, EventEmitter, Output } from '@angular/core';
 import { FormField } from '../../models/form-field.model';
 import { FIELD_TEMPLATES } from '../../data/field-templates';
 import { v4 as uuidv4 } from 'uuid';
@@ -11,7 +11,7 @@ import { v4 as uuidv4 } from 'uuid';
   styleUrl: './builder.component.scss',
 })
 export class BuilderComponent {
-  // Sidebar templates (STATIC - NEVER MUTATE)
+  @Output() schemaChange = new EventEmitter<FormField[]>();
   fieldTemplates = FIELD_TEMPLATES;
 
   // Canvas schema (REAL FORM STRUCTURE)
@@ -25,13 +25,24 @@ export class BuilderComponent {
   // =========================
 drop(event: CdkDragDrop<any[]>) {
 
-  const field = event.item.data;
+  if (event.previousContainer !== event.container) {
 
-  this.formFields.push({
-    ...field,
-    id: Date.now() + Math.random()
-  });
+    transferArrayItem(
+      event.previousContainer.data,
+      event.container.data,
+      event.previousIndex,
+      event.currentIndex
+    );
 
+  } else {
+    moveItemInArray(
+      event.container.data,
+      event.previousIndex,
+      event.currentIndex
+    );
+  }
+
+  this.schemaChange.emit(this.formFields);
 }
 
   // =========================

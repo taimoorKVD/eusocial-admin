@@ -20,7 +20,8 @@ import { FormsModule } from '@angular/forms';
     FormsModule
   ],
     exports: [
-    BuilderComponent
+    BuilderComponent,
+    FieldSettingsComponent
   ]
 })
 export class FormBuilderModule { }

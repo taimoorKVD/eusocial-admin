@@ -5,7 +5,7 @@
 
     <h3 class="font-bold mb-3">Fields</h3>
 
-    <div cdkDropList id="sidebarList" [cdkDropListData]="fieldTemplates" [cdkDropListConnectedTo]="['canvasList']"
+    <div cdkDropList id="sidebarList" [cdkDropListData]="fieldTemplates" [cdkDropListConnectedTo]="['canvasList','userFormDropZone']"
       class="space-y-2">
 
       <div *ngFor="let field of fieldTemplates; let i = index" cdkDrag [cdkDragData]="field"
@@ -97,8 +97,10 @@
   <!-- SETTINGS PANEL -->
   <div class="w-1/4 bg-gray-50 p-3 border-l">
 
-    <app-field-settings *ngIf="selectedField" [field]="selectedField"
-      (update)="updateField($event)"></app-field-settings>
+    <!-- <app-field-settings *ngIf="selectedField"
+    [field]="selectedField"
+    (update)="updateField($event)">
+    </app-field-settings> -->
 
   </div>
 
