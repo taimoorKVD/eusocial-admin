@@ -260,7 +260,7 @@
     <ng-container *ngFor="let field of schema">
 
       <!-- TEXT -->
-      <div *ngIf="field.type === 'text'">
+      <div *ngIf="field.type === 'text'" (click)="onSelectField(field)" class="cursor-pointer p-3 border rounded hover:bg-gray-50 transition">
         <label class="text-[12px] text-[#6F6F6F]">
           {{ field.label }}
         </label>
@@ -274,7 +274,7 @@
       </div>
 
       <!-- EMAIL -->
-      <div *ngIf="field.type === 'email'">
+      <div *ngIf="field.type === 'email'" (click)="onSelectField(field)" class="cursor-pointer p-3 border rounded hover:bg-gray-50 transition">
         <label class="text-[12px] text-[#6F6F6F]">
           {{ field.label }}
         </label>
@@ -288,7 +288,7 @@
       </div>
 
       <!-- NUMBER -->
-      <div *ngIf="field.type === 'number'">
+      <div *ngIf="field.type === 'number'" (click)="onSelectField(field)" class="cursor-pointer p-3 border rounded hover:bg-gray-50 transition">
         <label class="text-[12px] text-[#6F6F6F]">
           {{ field.label }}
         </label>
@@ -302,7 +302,7 @@
       </div>
 
       <!-- SELECT -->
-      <div *ngIf="field.type === 'select'">
+      <div *ngIf="field.type === 'select'" (click)="onSelectField(field)" class="cursor-pointer p-3 border rounded hover:bg-gray-50 transition">
         <label class="text-[12px] text-[#6F6F6F]">
           {{ field.label }}
         </label>
@@ -319,7 +319,7 @@
       </div>
 
       <!-- TEXTAREA -->
-      <div *ngIf="field.type === 'textarea'">
+      <div *ngIf="field.type === 'textarea'" (click)="onSelectField(field)" class="cursor-pointer p-3 border rounded hover:bg-gray-50 transition">
         <label class="text-[12px] text-[#6F6F6F]">
           {{ field.label }}
         </label>

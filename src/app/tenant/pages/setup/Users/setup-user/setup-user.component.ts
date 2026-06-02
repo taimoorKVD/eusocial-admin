@@ -49,7 +49,7 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
   phoneError: string = '';
   // dynamicFields: any[] = [];
  @Input() schema: FormField[] = [];
- @Output() fieldSelected = new EventEmitter<any>();
+ @Output() selectField = new EventEmitter<FormField>();
 
 
   startLoading() {
@@ -684,5 +684,9 @@ setCredentials(data: any) {
 
   // optional
   this.sendEmail = data.email;
+}
+
+onSelectField(field: FormField) {
+  this.selectField.emit(field);
 }
 }

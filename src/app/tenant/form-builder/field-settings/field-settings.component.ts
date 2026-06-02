@@ -8,28 +8,47 @@ import { FormField } from '../models/form-field.model';
   styleUrl: './field-settings.component.scss',
 })
 export class FieldSettingsComponent {
-  @Input() field!: FormField;
+  @Input() set field(value: FormField | undefined) {
+    if (value) {
+      this._field = {
+        ...value,
+        condition: value.condition || { fieldId: '', value: '' },
+        options: value.options || []
+      };
+    }
+  }
+
+  get field(): FormField | undefined {
+    return this._field;
+  }
+
+  private _field: FormField | any;
+
   @Output() update = new EventEmitter<FormField>();
 
   onChange() {
-    this.update.emit({
-      ...this.field,
-      options: [...this.field.options]
-    });
+    if (this._field) {
+      this.update.emit({
+        ...this._field,
+        options: [...(this._field.options || [])]
+      });
+    }
   }
 
   updateOptions(event: Event) {
-  const value = (event.target as HTMLTextAreaElement).value;
+    if (!this._field) return;
 
-  this.field.options = value
-    .split('\n')
-    .map(v => v.trim())
-    .filter(v => v);
+    const value = (event.target as HTMLTextAreaElement).value;
 
-  this.onChange();
-}
+    this._field.options = value
+      .split('\n')
+      .map(v => v.trim())
+      .filter(v => v);
+
+    this.onChange();
+  }
 
   get optionsText(): string {
-    return this.field.options.join('\n');
+    return this._field?.options?.join('\n') || '';
   }
 }

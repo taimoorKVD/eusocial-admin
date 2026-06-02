@@ -15,73 +15,68 @@ export class FormsEditorComponent {
   moduleName = '';
   builderFields: any[] = [];
   builderSchema: FormField[] = [];
-  selectedField: any = null;
+  selectedFieldId: string | null = null;
 
   constructor(
     private route: ActivatedRoute,
     private userService: TenantUserService
   ) {}
 
+  get selectedField(): FormField | null {
+    if (!this.selectedFieldId) return null;
+    return this.builderSchema.find(f => f.id === this.selectedFieldId) || null;
+  }
+
   onSchemaChange(schema: FormField[]) {
-  this.builderSchema = schema;
-}
+    this.builderSchema = schema;
+  }
 
-onUserDrop(event: CdkDragDrop<any[]>) {
+  onUserDrop(event: CdkDragDrop<any[]>) {
+    const field = {
+      ...event.item.data,
+      id: Date.now() + Math.random()
+    };
 
-  const field = {
-    ...event.item.data,
-    id: Date.now() + Math.random()
-  };
+    // prevent duplicate if needed
+    this.builderSchema = [...this.builderSchema, field];
+  }
 
-  // prevent duplicate if needed
-  this.builderSchema = [...this.builderSchema, field];
-
-}
-
-onSelectField(field: any) {
-  this.selectedField = field;
-}
+  onSelectField(field: any) {
+    this.selectedFieldId = field.id;
+  }
 
   ngOnInit() {
-
     this.route.params.subscribe(params => {
       this.moduleName = params['module'];
     });
-
   }
 
   updateField(updated: any) {
+    const index = this.builderSchema.findIndex(
+      f => f.id === updated.id
+    );
 
-  const index = this.builderSchema.findIndex(
-    f => f.id === updated.id
-  );
+    if (index === -1) return;
 
-  if (index === -1) return;
+    this.builderSchema[index] = {
+      ...updated,
+      options: updated.options ? [...updated.options] : []
+    };
 
-  this.builderSchema[index] = {
-    ...updated,
-    options: updated.options ? [...updated.options] : []
-  };
+    this.builderSchema = [...this.builderSchema];
+  }
 
-  this.builderSchema = [...this.builderSchema];
+  saveUserSchema() {
+    const payload = {
+      module: this.moduleName,
+      fields: this.builderSchema
+    };
 
-  // keep selection synced
-  this.selectedField = this.builderSchema[index];
-}
+    console.log("🔥 FINAL PAYLOAD:", payload);
 
-saveUserSchema() {
-
-  const payload = {
-    module: this.moduleName,
-    fields: this.builderSchema
-  };
-
-  console.log("🔥 FINAL PAYLOAD:", payload);
-
-  this.userService.saveFormSchema(this.moduleName, payload)
-    .subscribe(res => {
-      console.log("✅ SAVED RESPONSE:", res);
-    });
-
-}
+    this.userService.saveFormSchema(this.moduleName, payload)
+      .subscribe(res => {
+        console.log("✅ SAVED RESPONSE:", res);
+      });
+  }
 }

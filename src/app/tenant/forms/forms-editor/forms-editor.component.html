@@ -1,6 +1,6 @@
-<div class="grid grid-cols-2 gap-4">
+<div class="grid grid-cols-3 gap-4">
 
-  <!-- LEFT SIDE -->
+  <!-- LEFT SIDE: FORM PREVIEW -->
   <div>
 
     <ng-container *ngIf="moduleName === 'users'">
@@ -25,16 +25,17 @@
 
   </div>
 
-  <!-- RIGHT SIDE -->
+  <!-- MIDDLE: FIELD BUILDER -->
   <div>
-    <app-builder (schemaChange)="builderFields = $event">
+    <app-builder (schemaChange)="onSchemaChange($event)">
     </app-builder>
   </div>
 
+  <!-- RIGHT SIDE: FIELD SETTINGS -->
   <div>
-        <app-field-settings *ngIf="selectedField"
-    [field]="selectedField"
-    (update)="updateField($event)">
+    <app-field-settings *ngIf="selectedField"
+      [field]="selectedField"
+      (update)="updateField($event)">
     </app-field-settings>
   </div>
 
