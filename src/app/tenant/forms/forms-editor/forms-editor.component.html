@@ -2,14 +2,39 @@
 
   <!-- MAIN CONTENT -->
   <div class="col-span-5 lg:col-span-3">
-    <ng-container *ngIf="moduleName === 'users'">
-      <div cdkDropList id="userFormDropZone" [cdkDropListData]="builderSchema"
-        (cdkDropListDropped)="onUserDrop($event)" class="min-h-[calc(100vh-3rem)]">
+    <div class="mb-4 flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
+      <input
+        type="text"
+        [(ngModel)]="formName"
+        placeholder="Form name"
+        class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-slate-400 focus:outline-none"
+      />
 
-        <app-setup-user [schema]="builderSchema" (selectField)="onSelectField($event)">
-        </app-setup-user>
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          class="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+          (click)="previewPayload()">
+          Preview Payload
+        </button>
 
+        <button
+          type="button"
+          class="rounded-md bg-[#0054AC] px-3 py-2 text-sm font-medium text-white hover:bg-[#00448c]"
+          (click)="saveForm()">
+          Save Form
+        </button>
       </div>
+    </div>
+
+    <ng-container *ngIf="moduleName === 'users'">
+      <app-setup-user
+        [schema]="builderSchema"
+        (selectField)="onSelectField($event)"
+        (canvasDrop)="onCanvasDrop($event)"
+        (duplicateField)="onDuplicateField($event)"
+        (deleteField)="onDeleteField($event)">
+      </app-setup-user>
     </ng-container>
 
     <ng-container *ngIf="moduleName === 'vendors'">

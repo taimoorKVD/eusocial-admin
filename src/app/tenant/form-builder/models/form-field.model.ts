@@ -12,14 +12,17 @@ export interface FormField {
   id: string;
   type: FieldType;
   label: string;
+  name?: string;
   placeholder: string;
   required: boolean;
   options: string[];
 
-  // ✅ ADD THIS
   value?: any;
+  defaultValue?: any;
+  validations?: Record<string, any>;
+  width?: number;
+  order?: number;
 
-  // conditional logic
   condition?: {
     fieldId: string;
     value: any;

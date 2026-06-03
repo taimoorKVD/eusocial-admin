@@ -2,7 +2,8 @@
     <app-eu-loader></app-eu-loader>
   </ng-container>
 
-<div class="p-6 min-h-screen">
+<div class="p-6 min-h-screen" cdkDropList id="userFormDropZone" [cdkDropListData]="schema"
+  [cdkDropListConnectedTo]="['sidebarList']" (cdkDropListDropped)="onCanvasDrop($event)">
 
   <!-- Header -->
   <h2 class="text-[16px] font-medium mb-6 font-ibm text-[#0054AC]">
@@ -245,95 +246,66 @@
     </p>
   </div>
 
-<!-- ========================= -->
-<!-- DYNAMIC SCHEMA RENDERING -->
-<!-- ========================= -->
+  <div class="grid grid-cols-3 gap-10 mb-[30px] mt-10">
 
-<div class="mt-10 border-t pt-6">
+    <div *ngFor="let field of schema" cdkDrag class="relative rounded border p-3 transition hover:bg-gray-50"
+      (click)="onSelectField(field)">
 
-  <h3 class="text-[14px] font-medium mb-4 text-[#0054AC]">
-    Dynamic Fields
-  </h3>
-
-  <div class="grid grid-cols-3 gap-10 mb-[30px]">
-
-    <ng-container *ngFor="let field of schema">
-
-      <!-- TEXT -->
-      <div *ngIf="field.type === 'text'" (click)="onSelectField(field)" class="cursor-pointer p-3 border rounded hover:bg-gray-50 transition">
-        <label class="text-[12px] text-[#6F6F6F]">
-          {{ field.label }}
-        </label>
-
-        <input
-          type="text"
-          [placeholder]="field.placeholder"
-          [(ngModel)]="field.value"
-          class="w-full border-b py-3 text-[14px] bg-transparent"
-        />
+      <div class="absolute right-2 top-2 flex items-center gap-1">
+        <button type="button" class="rounded border border-slate-200 bg-white px-2 py-1 text-[10px] text-slate-600"
+          (click)="onSelectField(field); $event.stopPropagation()">
+          Edit
+        </button>
+        <button type="button" class="rounded border border-slate-200 bg-white px-2 py-1 text-[10px] text-slate-600"
+          (click)="onDuplicateField(field, $event)">
+          Duplicate
+        </button>
+        <button type="button" class="rounded border border-red-200 bg-white px-2 py-1 text-[10px] text-red-600"
+          (click)="onDeleteField(field, $event)">
+          Delete
+        </button>
       </div>
 
-      <!-- EMAIL -->
-      <div *ngIf="field.type === 'email'" (click)="onSelectField(field)" class="cursor-pointer p-3 border rounded hover:bg-gray-50 transition">
-        <label class="text-[12px] text-[#6F6F6F]">
-          {{ field.label }}
-        </label>
+      <label class="text-[12px] text-[#6F6F6F]">
+        {{ field.label }}
+      </label>
 
-        <input
-          type="email"
-          [placeholder]="field.placeholder"
-          [(ngModel)]="field.value"
-          class="w-full border-b py-3 text-[14px] bg-transparent"
-        />
+      <input *ngIf="field.type === 'text'" type="text" [placeholder]="field.placeholder" [(ngModel)]="field.value"
+        class="w-full border-b py-3 pr-24 text-[14px] bg-transparent" />
+
+      <input *ngIf="field.type === 'email'" type="email" [placeholder]="field.placeholder" [(ngModel)]="field.value"
+        class="w-full border-b py-3 pr-24 text-[14px] bg-transparent" />
+
+      <input *ngIf="field.type === 'number'" type="number" [placeholder]="field.placeholder" [(ngModel)]="field.value"
+        class="w-full border-b py-3 pr-24 text-[14px] bg-transparent" />
+
+      <select *ngIf="field.type === 'select'" [(ngModel)]="field.value" class="w-full border-b py-2 pr-24 bg-transparent">
+        <option *ngFor="let opt of field.options" [value]="opt">
+          {{ opt }}
+        </option>
+      </select>
+
+      <div *ngIf="field.type === 'radio'" class="mt-2 space-y-1 pr-24">
+        <label *ngFor="let opt of field.options" class="flex items-center gap-2 text-[12px] text-[#525252]">
+          <input type="radio" [name]="field.id" [value]="opt" [(ngModel)]="field.value" />
+          {{ opt }}
+        </label>
       </div>
 
-      <!-- NUMBER -->
-      <div *ngIf="field.type === 'number'" (click)="onSelectField(field)" class="cursor-pointer p-3 border rounded hover:bg-gray-50 transition">
-        <label class="text-[12px] text-[#6F6F6F]">
-          {{ field.label }}
+      <div *ngIf="field.type === 'checkbox'" class="mt-2 space-y-1 pr-24">
+        <label *ngFor="let opt of field.options" class="flex items-center gap-2 text-[12px] text-[#525252]">
+          <input type="checkbox" [checked]="(field.value || []).includes(opt)" />
+          {{ opt }}
         </label>
-
-        <input
-          type="number"
-          [placeholder]="field.placeholder"
-          [(ngModel)]="field.value"
-          class="w-full border-b py-3 text-[14px] bg-transparent"
-        />
       </div>
 
-      <!-- SELECT -->
-      <div *ngIf="field.type === 'select'" (click)="onSelectField(field)" class="cursor-pointer p-3 border rounded hover:bg-gray-50 transition">
-        <label class="text-[12px] text-[#6F6F6F]">
-          {{ field.label }}
-        </label>
+      <textarea *ngIf="field.type === 'textarea'" [(ngModel)]="field.value" class="w-full border-b py-2 pr-24">
+      </textarea>
 
-        <select
-          [(ngModel)]="field.value"
-          class="w-full border-b py-2 bg-transparent">
-
-          <option *ngFor="let opt of field.options" [value]="opt">
-            {{ opt }}
-          </option>
-
-        </select>
-      </div>
-
-      <!-- TEXTAREA -->
-      <div *ngIf="field.type === 'textarea'" (click)="onSelectField(field)" class="cursor-pointer p-3 border rounded hover:bg-gray-50 transition">
-        <label class="text-[12px] text-[#6F6F6F]">
-          {{ field.label }}
-        </label>
-
-        <textarea
-          [(ngModel)]="field.value"
-          class="w-full border-b py-2">
-        </textarea>
-      </div>
-
-    </ng-container>
+      <input *ngIf="field.type === 'image'" type="file" accept="image/*" class="w-full border-b py-2 pr-24" />
+    </div>
 
   </div>
-</div>
 
   <!-- Footer Buttons -->
   <div class="flex justify-end gap-3 mt-16">

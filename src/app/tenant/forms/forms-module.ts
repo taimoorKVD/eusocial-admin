@@ -1,5 +1,6 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule as NgFormsModule } from '@angular/forms';
 
 import { FormsRoutingModule } from './forms-routing-module';
 import { FormsListComponent } from './forms-list/forms-list.component';
@@ -18,6 +19,7 @@ import { FieldSettingsComponent } from '../form-builder/field-settings/field-set
   ],
   imports: [
     CommonModule,
+    NgFormsModule,
     FormsRoutingModule,
     TenantModule,
     FormBuilderModule,

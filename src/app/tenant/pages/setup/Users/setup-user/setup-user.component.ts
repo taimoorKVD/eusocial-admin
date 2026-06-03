@@ -3,8 +3,8 @@ import { ToastrService } from 'ngx-toastr';
 import { TenantUserService } from '../../../../../services/tenant-user.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TenantSessionService } from '../../../../../services/tenant-session.service';
-// import { FormField } from '../../form-builder/models/form-field.model';
 import { FormField } from '../../../../form-builder/models/form-field.model';
+import { CdkDragDrop } from '@angular/cdk/drag-drop';
 
 
 @Component({
@@ -47,9 +47,11 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
   sendEmail: string = '';
   generatedPassword: string = '';
   phoneError: string = '';
-  // dynamicFields: any[] = [];
  @Input() schema: FormField[] = [];
  @Output() selectField = new EventEmitter<FormField>();
+ @Output() canvasDrop = new EventEmitter<CdkDragDrop<FormField[]>>();
+ @Output() duplicateField = new EventEmitter<FormField>();
+ @Output() deleteField = new EventEmitter<FormField>();
 
 
   startLoading() {
@@ -688,5 +690,19 @@ setCredentials(data: any) {
 
 onSelectField(field: FormField) {
   this.selectField.emit(field);
+}
+
+onCanvasDrop(event: CdkDragDrop<FormField[]>) {
+  this.canvasDrop.emit(event);
+}
+
+onDuplicateField(field: FormField, event: Event) {
+  event.stopPropagation();
+  this.duplicateField.emit(field);
+}
+
+onDeleteField(field: FormField, event: Event) {
+  event.stopPropagation();
+  this.deleteField.emit(field);
 }
 }

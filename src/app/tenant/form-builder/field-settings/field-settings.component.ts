@@ -12,9 +12,14 @@ export class FieldSettingsComponent {
     if (value) {
       this._field = {
         ...value,
+        name: value.name || this.toFieldName(value.label),
+        defaultValue: value.defaultValue ?? value.value ?? '',
+        width: value.width ?? 12,
+        validations: value.validations || {},
         condition: value.condition || { fieldId: '', value: '' },
         options: value.options || []
       };
+      this.validationsJson = JSON.stringify(this._field.validations, null, 2);
     }
   }
 
@@ -23,6 +28,7 @@ export class FieldSettingsComponent {
   }
 
   private _field: FormField | any;
+  validationsJson = '{}';
 
   @Output() update = new EventEmitter<FormField>();
 
@@ -50,5 +56,25 @@ export class FieldSettingsComponent {
 
   get optionsText(): string {
     return this._field?.options?.join('\n') || '';
+  }
+
+  updateValidations(event: Event) {
+    const value = (event.target as HTMLTextAreaElement).value;
+    this.validationsJson = value;
+
+    try {
+      this._field.validations = value ? JSON.parse(value) : {};
+      this.onChange();
+    } catch {
+      // ignore invalid json while typing
+    }
+  }
+
+  private toFieldName(label: string): string {
+    return label
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '');
   }
 }
