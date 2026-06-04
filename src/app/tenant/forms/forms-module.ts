@@ -9,6 +9,7 @@ import { TenantModule } from '../tenant.module';
 import { FormBuilderModule } from '../form-builder/form-builder-module';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { FieldSettingsComponent } from '../form-builder/field-settings/field-settings.component';
+import { SharedModule } from '../../shared/shared.module';
 
 
 @NgModule({
@@ -24,6 +25,7 @@ import { FieldSettingsComponent } from '../form-builder/field-settings/field-set
     TenantModule,
     FormBuilderModule,
     DragDropModule,
+    SharedModule,
 
   ]
 })
