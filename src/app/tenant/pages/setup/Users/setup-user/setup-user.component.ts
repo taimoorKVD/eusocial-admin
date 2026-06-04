@@ -4,7 +4,7 @@ import { TenantUserService } from '../../../../../services/tenant-user.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TenantSessionService } from '../../../../../services/tenant-session.service';
 import { FormField } from '../../../../form-builder/models/form-field.model';
-import { CdkDragDrop } from '@angular/cdk/drag-drop';
+import { CdkDragDrop, CdkDropList } from '@angular/cdk/drag-drop';
 
 
 @Component({
@@ -47,11 +47,14 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
   sendEmail: string = '';
   generatedPassword: string = '';
   phoneError: string = '';
+  isDraggingField = false;
  @Input() schema: FormField[] = [];
+     @Input() connectedDropLists: Array<CdkDropList<any> | string> = [];
  @Output() selectField = new EventEmitter<FormField>();
  @Output() canvasDrop = new EventEmitter<CdkDragDrop<FormField[]>>();
  @Output() duplicateField = new EventEmitter<FormField>();
  @Output() deleteField = new EventEmitter<FormField>();
+   @ViewChild('canvasList', { static: true }) canvasListRef!: CdkDropList;
 
 
   startLoading() {
@@ -692,6 +695,24 @@ onSelectField(field: FormField) {
   this.selectField.emit(field);
 }
 
+onFieldClick(field: FormField) {
+  if (this.isDraggingField) {
+    return;
+  }
+
+  this.onSelectField(field);
+}
+
+onFieldDragStarted() {
+  this.isDraggingField = true;
+}
+
+onFieldDragEnded() {
+  setTimeout(() => {
+    this.isDraggingField = false;
+  }, 0);
+}
+
 onCanvasDrop(event: CdkDragDrop<FormField[]>) {
   this.canvasDrop.emit(event);
 }
@@ -704,5 +725,9 @@ onDuplicateField(field: FormField, event: Event) {
 onDeleteField(field: FormField, event: Event) {
   event.stopPropagation();
   this.deleteField.emit(field);
+}
+
+trackByFieldId(index: number, field: FormField): string {
+  return field.id;
 }
 }

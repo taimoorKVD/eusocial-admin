@@ -70,11 +70,14 @@ export class FieldSettingsComponent {
     }
   }
 
-  private toFieldName(label: string): string {
-    return label
+  private toFieldName(label: string | null | undefined): string {
+    const normalizedLabel = String(label ?? 'field');
+    const fieldName = normalizedLabel
       .toLowerCase()
       .trim()
       .replace(/[^a-z0-9]+/g, '_')
       .replace(/^_+|_+$/g, '');
+
+    return fieldName || 'field';
   }
 }

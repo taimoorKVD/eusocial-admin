@@ -1,5 +1,6 @@
 import { CdkDragDrop, moveItemInArray, transferArrayItem  } from '@angular/cdk/drag-drop';
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, ViewChild } from '@angular/core';
+import { CdkDropList } from '@angular/cdk/drag-drop';
 import { FormField } from '../../models/form-field.model';
 import { FIELD_TEMPLATES } from '../../data/field-templates';
 import { v4 as uuidv4 } from 'uuid';
@@ -12,6 +13,8 @@ import { v4 as uuidv4 } from 'uuid';
 })
 export class BuilderComponent {
   @Output() schemaChange = new EventEmitter<FormField[]>();
+  @Input() connectedDropLists: Array<CdkDropList<any> | string> = [];
+  @ViewChild('sidebarList', { static: true }) sidebarListRef!: CdkDropList;
   fieldTemplates = FIELD_TEMPLATES;
 
   // Canvas schema (REAL FORM STRUCTURE)
@@ -23,25 +26,24 @@ export class BuilderComponent {
   // =========================
   // DROP HANDLER (CDK)
   // =========================
-drop(event: CdkDragDrop<any[]>) {
+drop(event: CdkDragDrop<FormField[]>) {
 
-  if (event.previousContainer !== event.container) {
-
-    transferArrayItem(
-      event.previousContainer.data,
-      event.container.data,
+  if (event.previousContainer === event.container) {
+    moveItemInArray(
+      this.formFields,
       event.previousIndex,
       event.currentIndex
     );
-
   } else {
-    moveItemInArray(
-      event.container.data,
+    transferArrayItem(
+      event.previousContainer.data,
+      this.formFields,
       event.previousIndex,
       event.currentIndex
     );
   }
 
+  this.formFields = [...this.formFields];
   this.schemaChange.emit(this.formFields);
 }
 
@@ -135,7 +137,11 @@ loadSchema() {
   // =========================
   // TRACK BY ID (PERFORMANCE)
   // =========================
-  trackById(index: number, item: FormField): string {
-    return item.id;
-  }
+trackById(index: number, item: FormField): string {
+  return item?.id ?? index.toString();
+}
+
+trackByTemplate(index: number, item: Omit<FormField, 'id'>): string {
+  return `${item.type}-${item.label}-${index}`;
+}
 }

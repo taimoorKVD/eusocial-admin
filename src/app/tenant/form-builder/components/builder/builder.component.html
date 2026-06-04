@@ -4,92 +4,13 @@
   <div class="bg-gray-100 p-3">
 
     <h3 class="font-bold mb-3">Fields</h3>
-
-    <div cdkDropList id="sidebarList" [cdkDropListData]="fieldTemplates" [cdkDropListConnectedTo]="['canvasList','userFormDropZone']"
+    <div cdkDropList id="sidebarList" #sidebarList="cdkDropList" [cdkDropListData]="fieldTemplates" [cdkDropListConnectedTo]="connectedDropLists"
       class="grid grid-cols-3 gap-2">
-
-      <div *ngFor="let field of fieldTemplates; let i = index" cdkDrag [cdkDragData]="field"
+      <div *ngFor="let field of fieldTemplates; trackBy: trackByTemplate" cdkDrag [cdkDragData]="field"
         class="p-2 bg-white shadow rounded cursor-move flex items-center justify-center font-ibm text-center text-sm">
         {{ field.label }}
       </div>
     </div>
   </div>
-
-  <!-- CANVAS -->
-  <!-- <div class="w-2/4 p-4 bg-white">
-
-    <h3 class="font-bold mb-3">Form Canvas</h3>
-
-    <div cdkDropList id="canvasList" [cdkDropListData]="formFields" [cdkDropListConnectedTo]="['sidebarList']"
-      (cdkDropListDropped)="drop($event)" class="min-h-[500px] border border-dashed p-3 space-y-2">
-
-      <div *ngFor="let field of formFields; trackBy: trackById" cdkDrag (click)="selectField(field)"
-        class="p-3 border rounded bg-gray-50 cursor-pointer" [class.border-blue-500]="selectedField?.id === field.id"
-        [hidden]="!isVisible(field)">
-
-        <label class="block text-sm font-medium">
-          {{ field.label }}
-          <span *ngIf="field.required">*</span>
-        </label>
-
-        <input *ngIf="field.type === 'text' || field.type === 'email' || field.type === 'number'" [type]="field.type"
-          [placeholder]="field.placeholder" class="w-full border p-2 mt-1" />
-
-        <textarea *ngIf="field.type === 'textarea'" [placeholder]="field.placeholder"
-          class="w-full border p-2 mt-1"></textarea>
-
-        <select *ngIf="field.type === 'select'" class="w-full border p-2 mt-1">
-          <option *ngFor="let opt of field.options">
-            {{ opt }}
-          </option>
-        </select>
-
-        <div *ngIf="field.type === 'radio'" class="mt-2 space-y-1">
-          <label *ngFor="let opt of field.options" class="flex items-center gap-2">
-            <input type="radio" [name]="field.id" />
-            {{ opt }}
-          </label>
-        </div>
-
-        <div *ngIf="field.type === 'checkbox'" class="mt-2 space-y-1">
-          <label *ngFor="let opt of field.options" class="flex items-center gap-2">
-            <input type="checkbox" />
-            {{ opt }}
-          </label>
-        </div>
-
-        <div *ngIf="field.type === 'image'" class="mt-2">
-          <input type="file" accept="image/*" class="w-full border p-2" />
-        </div>
-
-
-        <div class="flex gap-3 mt-3 text-xs">
-
-          <button type="button" (click)="duplicateField(field); $event.stopPropagation()"
-            class="text-blue-600 hover:underline">
-            Duplicate
-          </button>
-
-          <button type="button" (click)="deleteField(field.id); $event.stopPropagation()"
-            class="text-red-600 hover:underline">
-            Delete
-          </button>
-
-        </div>
-
-      </div>
-
-    </div>
-  </div> -->
-
-  <!-- SETTINGS PANEL -->
-  <!-- <div class="w-1/4 bg-gray-50 p-3 border-l">
-
-    <app-field-settings *ngIf="selectedField"
-    [field]="selectedField"
-    (update)="updateField($event)">
-    </app-field-settings>
-
-  </div> -->
 
 </div>

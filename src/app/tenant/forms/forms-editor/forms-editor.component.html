@@ -30,6 +30,7 @@
     <ng-container *ngIf="moduleName === 'users'">
       <app-setup-user
         [schema]="builderSchema"
+        [connectedDropLists]="canvasConnectedLists"
         (selectField)="onSelectField($event)"
         (canvasDrop)="onCanvasDrop($event)"
         (duplicateField)="onDuplicateField($event)"
@@ -66,11 +67,14 @@
     </div>
 
     <div class="p-4">
-      <div *ngIf="activeTab === 'fields'">
-        <app-builder (schemaChange)="onSchemaChange($event)"></app-builder>
+      <div [class.hidden]="activeTab !== 'fields'">
+        <app-builder
+          [connectedDropLists]="sidebarConnectedLists"
+          (schemaChange)="onSchemaChange($event)">
+        </app-builder>
       </div>
 
-      <div *ngIf="activeTab === 'settings'" class="space-y-4">
+      <div [class.hidden]="activeTab !== 'settings'" class="space-y-4">
         <ng-container *ngIf="selectedField; else noSelection">
           <app-field-settings [field]="selectedField" (update)="updateField($event)">
           </app-field-settings>

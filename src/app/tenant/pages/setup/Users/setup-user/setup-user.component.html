@@ -2,8 +2,7 @@
     <app-eu-loader></app-eu-loader>
   </ng-container>
 
-<div class="p-6 min-h-screen" cdkDropList id="userFormDropZone" [cdkDropListData]="schema"
-  [cdkDropListConnectedTo]="['sidebarList']" (cdkDropListDropped)="onCanvasDrop($event)">
+<div class="form-canvas p-6 min-h-screen">
 
   <!-- Header -->
   <h2 class="text-[16px] font-medium mb-6 font-ibm text-[#0054AC]">
@@ -246,63 +245,80 @@
     </p>
   </div>
 
-  <div class="grid grid-cols-3 gap-10 mb-[30px] mt-10">
+  <div cdkDropList id="canvasList" #canvasList="cdkDropList" [cdkDropListData]="schema"
+    [cdkDropListConnectedTo]="connectedDropLists" cdkDropListOrientation="vertical"
+    (cdkDropListDropped)="onCanvasDrop($event)"
+    class="mt-10 flex min-h-[240px] flex-col gap-6 rounded-2xl border border-dashed border-slate-300 bg-white/60 p-4">
 
-    <div *ngFor="let field of schema" cdkDrag class="relative rounded border p-3 transition hover:bg-gray-50"
-      (click)="onSelectField(field)">
+    <div *ngIf="schema.length === 0"
+      class="flex min-h-[160px] items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 text-sm text-slate-500">
+      Drop fields here to build the Users form.
+    </div>
 
-      <div class="absolute right-2 top-2 flex items-center gap-1">
-        <button type="button" class="rounded border border-slate-200 bg-white px-2 py-1 text-[10px] text-slate-600"
-          (click)="onSelectField(field); $event.stopPropagation()">
-          Edit
-        </button>
-        <button type="button" class="rounded border border-slate-200 bg-white px-2 py-1 text-[10px] text-slate-600"
-          (click)="onDuplicateField(field, $event)">
-          Duplicate
-        </button>
-        <button type="button" class="rounded border border-red-200 bg-white px-2 py-1 text-[10px] text-red-600"
-          (click)="onDeleteField(field, $event)">
-          Delete
-        </button>
+    <div *ngFor="let field of schema; trackBy: trackByFieldId" cdkDrag [cdkDragData]="field"
+      cdkDragLockAxis="y"
+      class="group relative rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:shadow-md"
+      (click)="onFieldClick(field)"
+      (cdkDragStarted)="onFieldDragStarted()"
+      (cdkDragEnded)="onFieldDragEnded()">
+
+      <div class="mb-3 flex items-center justify-between gap-3">
+        <div class="ml-auto flex items-center gap-1">
+          <button type="button" class="rounded border border-slate-200 bg-white px-2 py-1 text-[10px] text-slate-600"
+            (click)="onSelectField(field); $event.stopPropagation()">
+            Edit
+          </button>
+          <button type="button" class="rounded border border-slate-200 bg-white px-2 py-1 text-[10px] text-slate-600"
+            (click)="onDuplicateField(field, $event)">
+            Duplicate
+          </button>
+          <button type="button" class="rounded border border-red-200 bg-white px-2 py-1 text-[10px] text-red-600"
+            (click)="onDeleteField(field, $event)">
+            Delete
+          </button>
+        </div>
       </div>
 
-      <label class="text-[12px] text-[#6F6F6F]">
+      <label class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block">
         {{ field.label }}
       </label>
 
       <input *ngIf="field.type === 'text'" type="text" [placeholder]="field.placeholder" [(ngModel)]="field.value"
-        class="w-full border-b py-3 pr-24 text-[14px] bg-transparent" />
+        class="w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent" />
 
       <input *ngIf="field.type === 'email'" type="email" [placeholder]="field.placeholder" [(ngModel)]="field.value"
-        class="w-full border-b py-3 pr-24 text-[14px] bg-transparent" />
+        class="w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent" />
 
       <input *ngIf="field.type === 'number'" type="number" [placeholder]="field.placeholder" [(ngModel)]="field.value"
-        class="w-full border-b py-3 pr-24 text-[14px] bg-transparent" />
+        class="w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent" />
 
-      <select *ngIf="field.type === 'select'" [(ngModel)]="field.value" class="w-full border-b py-2 pr-24 bg-transparent">
+      <select *ngIf="field.type === 'select'" [(ngModel)]="field.value"
+        class="w-full border-b border-[#161616] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent">
         <option *ngFor="let opt of field.options" [value]="opt">
           {{ opt }}
         </option>
       </select>
 
       <div *ngIf="field.type === 'radio'" class="mt-2 space-y-1 pr-24">
-        <label *ngFor="let opt of field.options" class="flex items-center gap-2 text-[12px] text-[#525252]">
+        <label *ngFor="let opt of field.options" class="flex items-center gap-2 text-[12px] text-[#6F6F6F] font-ibm mt-1 block">
           <input type="radio" [name]="field.id" [value]="opt" [(ngModel)]="field.value" />
           {{ opt }}
         </label>
       </div>
 
       <div *ngIf="field.type === 'checkbox'" class="mt-2 space-y-1 pr-24">
-        <label *ngFor="let opt of field.options" class="flex items-center gap-2 text-[12px] text-[#525252]">
+        <label *ngFor="let opt of field.options" class="flex items-center gap-2 text-[12px] text-[#6F6F6F] font-ibm mt-1 block">
           <input type="checkbox" [checked]="(field.value || []).includes(opt)" />
           {{ opt }}
         </label>
       </div>
 
-      <textarea *ngIf="field.type === 'textarea'" [(ngModel)]="field.value" class="w-full border-b py-2 pr-24">
+      <textarea *ngIf="field.type === 'textarea'" [(ngModel)]="field.value"
+        class="w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent">
       </textarea>
 
-      <input *ngIf="field.type === 'image'" type="file" accept="image/*" class="w-full border-b py-2 pr-24" />
+      <input *ngIf="field.type === 'image'" type="file" accept="image/*"
+        class="w-full border-b border-[#161616] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent" />
     </div>
 
   </div>
