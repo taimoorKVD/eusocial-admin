@@ -1,18 +1,50 @@
-<div class="flex h-screen bg-gray-100">
+<!-- <div class="flex h-screen bg-gray-100"> -->
+
+  <!-- Sidebar -->
+  <!-- <app-tenant-sidebar
+    [isOpen]="sidebarOpen"
+    (closeSidebar)="sidebarOpen = false"
+  ></app-tenant-sidebar> -->
+
+  <!-- Main Area -->
+  <!-- <div class="flex flex-col flex-1"> -->
+
+    <!-- Topbar -->
+    <!-- <app-tenant-topbar
+      (toggleSidebar)="toggleSidebar()"
+    ></app-tenant-topbar> -->
+
+    <!-- Page Content -->
+    <!-- <main class="flex-1 overflow-y-auto bg-[#f5f5f5]">
+      <router-outlet></router-outlet>
+    </main> -->
+
+  <!-- </div> -->
+<!-- </div> -->
+
+<div class="flex h-screen bg-gray-100 overflow-hidden">
+
+  <!-- Mobile Overlay -->
+  <div
+    *ngIf="sidebarOpen"
+    class="fixed inset-0 bg-black/40 z-40 md:hidden"
+    (click)="sidebarOpen = false">
+  </div>
 
   <!-- Sidebar -->
   <app-tenant-sidebar
     [isOpen]="sidebarOpen"
     (closeSidebar)="sidebarOpen = false"
-  ></app-tenant-sidebar>
+    class="z-50">
+  </app-tenant-sidebar>
 
   <!-- Main Area -->
-  <div class="flex flex-col flex-1">
+  <div class="flex flex-col flex-1 min-w-0">
 
     <!-- Topbar -->
     <app-tenant-topbar
-      (toggleSidebar)="toggleSidebar()"
-    ></app-tenant-topbar>
+      (toggleSidebar)="toggleSidebar()">
+    </app-tenant-topbar>
 
     <!-- Page Content -->
     <main class="flex-1 overflow-y-auto bg-[#f5f5f5]">

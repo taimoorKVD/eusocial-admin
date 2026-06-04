@@ -122,3 +122,19 @@ body {
   transform: translateY(-2px);
   transition: all 0.2s ease;
 }
+
+
+
+.cdk-drag-preview {
+  position: fixed !important;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+.cdk-drag-placeholder {
+  opacity: 0.3;
+}
+
+.cdk-drag {
+  position: relative !important;
+}

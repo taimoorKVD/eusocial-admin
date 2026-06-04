@@ -1,0 +1,122 @@
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { FormField } from '../../form-builder/models/form-field.model';
+import { Observable, map } from 'rxjs';
+import { environment } from '../../../../environments/environment';
+
+export interface StoredFormSchema {
+  moduleName: string;
+  formName: string;
+  formId: string | number | null;
+  sections: any[];
+  fields: FormField[];
+  conditionalRules: any[];
+  markAsDraft?: boolean;
+  updatedAt: string;
+}
+
+interface SaveSchemaRequest {
+  schema: {
+    sections: any[];
+    fields: FormField[];
+    conditionalRules: any[];
+  };
+  markAsDraft: boolean;
+}
+
+@Injectable({
+  providedIn: 'root'
+})
+export class FormStorageService {
+  private saveSchemaUrl = `${environment.tenantApiUrl}/forms/1/schema`;
+
+  constructor(private http: HttpClient) {}
+
+  saveForm(
+    moduleName: string,
+    data: {
+      formName: string;
+      formId: string | number | null;
+      fields: FormField[];
+      sections?: any[];
+      conditionalRules?: any[];
+      markAsDraft?: boolean;
+    }
+  ): Observable<StoredFormSchema> {
+    const schema = {
+      sections: data.sections ?? [],
+      fields: data.fields ?? [],
+      conditionalRules: data.conditionalRules ?? []
+    };
+
+    const requestPayload: SaveSchemaRequest = {
+      schema,
+      markAsDraft: data.markAsDraft ?? true
+    };
+
+    const payload: StoredFormSchema = {
+      moduleName,
+      formName: data.formName,
+      formId: data.formId,
+      sections: schema.sections,
+      fields: schema.fields,
+      conditionalRules: schema.conditionalRules,
+      markAsDraft: requestPayload.markAsDraft,
+      updatedAt: new Date().toISOString()
+    };
+
+    return this.http.put<any>(this.saveSchemaUrl, requestPayload).pipe(
+      map(response => this.extractSchema(response, payload))
+    );
+  }
+
+  loadForm(moduleName: string): Observable<StoredFormSchema | null> {
+    const loadSchemaUrl = `${environment.tenantApiUrl}/forms/modules/${moduleName}`;
+
+    return this.http.get<any>(loadSchemaUrl).pipe(
+      map(response => this.extractSchema(response, null, moduleName))
+    );
+  }
+
+  deleteForm(moduleName: string): Observable<void> {
+    return this.http.delete<void>(this.saveSchemaUrl);
+  }
+
+  private extractSchema(
+    response: any,
+    fallback: StoredFormSchema | null,
+    moduleName = 'users'
+  ): StoredFormSchema | null {
+    if (!response && fallback) {
+      return fallback;
+    }
+
+    const source = response?.data ?? response;
+    if (!source) {
+      return fallback;
+    }
+
+    return {
+      moduleName: source.moduleName || moduleName,
+      formName: source.formName || fallback?.formName || 'Users Dynamic Form',
+      formId: source.formId ?? fallback?.formId ?? 1,
+      sections: Array.isArray(source.sections)
+        ? source.sections
+        : Array.isArray(source.schema?.sections)
+          ? source.schema.sections
+          : fallback?.sections || [],
+      fields: Array.isArray(source.fields)
+        ? source.fields
+        : Array.isArray(source.schema?.fields)
+          ? source.schema.fields
+          : fallback?.fields || [],
+      conditionalRules: Array.isArray(source.conditionalRules)
+        ? source.conditionalRules
+        : Array.isArray(source.schema?.conditionalRules)
+          ? source.schema.conditionalRules
+          : fallback?.conditionalRules || [],
+      markAsDraft: source.markAsDraft ?? fallback?.markAsDraft ?? true,
+      updatedAt: source.updatedAt || fallback?.updatedAt || new Date().toISOString()
+    };
+  }
+}

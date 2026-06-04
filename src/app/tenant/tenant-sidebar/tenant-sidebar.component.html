@@ -1,3 +1,20 @@
+<div
+  class="fixed md:static top-0 left-0 h-full w-64 bg-white shadow-lg md:shadow-none transform transition-transform duration-300 z-50"
+  [ngClass]="{
+    '-translate-x-full': !isOpen,
+    'translate-x-0': isOpen,
+    'md:translate-x-0': true
+  }">
+
+  <!-- Close button mobile -->
+  <div class="flex justify-end md:hidden absolute top-[30px] right-[10px]">
+    <button
+      class="text-2xl"
+      (click)="closeSidebar.emit()">
+      ✕
+    </button>
+  </div>
+
 <div class="w-64 h-screen bg-white flex flex-col" style="border-right: 1px solid #6c71727a;">
 
   <!-- Logo -->
@@ -142,7 +159,21 @@
       </div>
     </div>
 
-    <!-- SETUP MENU -->
+     <!-- FORMS -->
+    <a [routerLink]="['/tenant',  session.getSlug(), 'forms']"
+      routerLinkActive="text-[#333333] border-l-4 border-blue-500 font-bold"
+      class="text-[#525252] font-ibm flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100">
+      <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+        xmlns="http://www.w3.org/2000/svg">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 20h16" />
+        <path stroke-linecap="round" stroke-linejoin="round" d="M7 16V9" />
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 16V5" />
+        <path stroke-linecap="round" stroke-linejoin="round" d="M17 16v-3" />
+      </svg>
+      Forms
+    </a>
+
+    <!-- Extra Management -->
     <div>
 
       <button (click)="toggleExtraManagement()"
@@ -182,4 +213,5 @@
       </div>
     </div>
   </div>
+</div>
 </div>

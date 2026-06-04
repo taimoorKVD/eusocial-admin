@@ -1,0 +1,16 @@
+<div class="">
+
+  <!-- SIDEBAR -->
+  <div class="bg-gray-100 p-3">
+
+    <h3 class="font-bold mb-3">Fields</h3>
+    <div cdkDropList id="sidebarList" #sidebarList="cdkDropList" [cdkDropListData]="fieldTemplates" [cdkDropListConnectedTo]="connectedDropLists"
+      class="grid grid-cols-3 gap-2">
+      <div *ngFor="let field of fieldTemplates; trackBy: trackByTemplate" cdkDrag [cdkDragData]="field"
+        class="p-2 bg-white shadow rounded cursor-move flex items-center justify-center font-ibm text-center text-sm">
+        {{ field.label }}
+      </div>
+    </div>
+  </div>
+
+</div>

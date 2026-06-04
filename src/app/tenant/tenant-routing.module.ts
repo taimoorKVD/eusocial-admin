@@ -20,6 +20,9 @@ import { TenantForgotPasswordComponent } from './tenant-forgot-password/tenant-f
 import { TenantResetPasswordComponent } from './tenant-reset-password/tenant-reset-password.component';
 import { RoleComponent } from './pages/setup/Roles/role/role.component';
 import { RoleListingComponent } from './pages/setup/Roles/role-listing/role-listing.component';
+import { BuilderComponent } from './form-builder/components/builder/builder.component';
+import { FormsListComponent } from './forms/forms-list/forms-list.component';
+import { FormsEditorComponent } from './forms/forms-editor/forms-editor.component';
 
 const routes: Routes = [
 
@@ -61,6 +64,16 @@ const routes: Routes = [
       { path: 'location', component: LocationListingComponent },
       { path: 'location/create', component: LocationComponent },
       { path: 'location/edit/:id', component: LocationComponent },
+
+
+      // { path: 'form-builder', component: BuilderComponent },
+      // { path: 'forms', component: FormsListComponent },
+      // { path: 'forms/:module', component: FormsEditorComponent },
+      {
+  path: 'forms',
+  loadChildren: () =>
+    import('./forms/forms-module').then(m => m.FormsModule)
+},
 
     ]
   },
