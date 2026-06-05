@@ -4,7 +4,7 @@
 </label>
 
 <input
-  *ngIf="field.type === 'text'"
+  *ngIf="fieldType === 'text'"
   type="text"
   [placeholder]="field.placeholder"
   [(ngModel)]="field.value"
@@ -13,7 +13,7 @@
 />
 
 <input
-  *ngIf="field.type === 'email'"
+  *ngIf="fieldType === 'email'"
   type="email"
   [placeholder]="field.placeholder"
   [(ngModel)]="field.value"
@@ -22,7 +22,7 @@
 />
 
 <input
-  *ngIf="field.type === 'number'"
+  *ngIf="fieldType === 'number'"
   type="number"
   [placeholder]="field.placeholder"
   [(ngModel)]="field.value"
@@ -31,7 +31,7 @@
 />
 
 <textarea
-  *ngIf="field.type === 'textarea'"
+  *ngIf="fieldType === 'textarea'"
   [placeholder]="field.placeholder"
   [(ngModel)]="field.value"
   rows="3"
@@ -40,30 +40,66 @@
 ></textarea>
 
 <select
-  *ngIf="field.type === 'select'"
-  [(ngModel)]="field.value"
+  *ngIf="isSelectField"
+  [ngModel]="field.value"
+  (ngModelChange)="field.value = $event"
   tabindex="-1"
   class="w-full border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 focus:border-slate-500 focus:outline-none"
 >
-  <option *ngFor="let opt of field.options" [value]="opt">{{ opt }}</option>
+  <option *ngIf="loadingOptions" [ngValue]="null" disabled>Loading options...</option>
+  <option *ngIf="optionsError && !loadingOptions" [ngValue]="null" disabled>
+    Unable to load options
+  </option>
+  <option
+    *ngIf="!loadingOptions && !optionsError && field.placeholder"
+    [ngValue]="null"
+    disabled
+  >
+    {{ field.placeholder }}
+  </option>
+  <option
+    *ngFor="let opt of displayOptions; trackBy: trackByOptionValue"
+    [ngValue]="opt.value"
+  >
+    {{ opt.label }}
+  </option>
 </select>
 
-<div *ngIf="field.type === 'radio'" class="mt-1 space-y-2">
-  <label *ngFor="let opt of field.options" class="flex items-center gap-2 text-sm text-slate-600">
-    <input type="radio" [name]="field.id" [value]="opt" [(ngModel)]="field.value" tabindex="-1" />
-    {{ opt }}
+<div *ngIf="isRadioField" class="mt-1 space-y-2">
+  <p *ngIf="loadingOptions" class="text-xs text-slate-400">Loading options...</p>
+  <label
+    *ngFor="let opt of displayOptions; trackBy: trackByOptionValue"
+    class="flex items-center gap-2 text-sm text-slate-600"
+  >
+    <input
+      type="radio"
+      [name]="field.id"
+      [value]="opt.value"
+      [ngModel]="field.value"
+      (ngModelChange)="field.value = $event"
+      tabindex="-1"
+    />
+    {{ opt.label }}
   </label>
 </div>
 
-<div *ngIf="field.type === 'checkbox'" class="mt-1 space-y-2">
-  <label *ngFor="let opt of field.options" class="flex items-center gap-2 text-sm text-slate-600">
-    <input type="checkbox" [checked]="(field.value || []).includes(opt)" tabindex="-1" />
-    {{ opt }}
+<div *ngIf="isCheckboxField" class="mt-1 space-y-2">
+  <p *ngIf="loadingOptions" class="text-xs text-slate-400">Loading options...</p>
+  <label
+    *ngFor="let opt of displayOptions; trackBy: trackByOptionValue"
+    class="flex items-center gap-2 text-sm text-slate-600"
+  >
+    <input
+      type="checkbox"
+      [checked]="isCheckboxChecked(opt.value)"
+      tabindex="-1"
+    />
+    {{ opt.label }}
   </label>
 </div>
 
 <input
-  *ngIf="field.type === 'image'"
+  *ngIf="fieldType === 'image'"
   type="file"
   accept="image/*"
   tabindex="-1"

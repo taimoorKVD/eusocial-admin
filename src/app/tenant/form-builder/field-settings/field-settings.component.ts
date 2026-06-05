@@ -19,6 +19,7 @@ export class FieldSettingsComponent {
         validations: value.validations || {},
         condition: value.condition || { fieldId: '', value: '' },
         options: [...(value.options || [])],
+        optionSource: value.optionSource ? { ...value.optionSource } : undefined,
       };
     }
   }
@@ -41,6 +42,9 @@ export class FieldSettingsComponent {
     this.update.emit({
       ...this._field,
       options: [...(this._field.options || [])],
+      optionSource: this._field.optionSource
+        ? { ...this._field.optionSource }
+        : undefined,
       condition: this._field.condition
         ? { ...this._field.condition }
         : { fieldId: '', value: '' },

@@ -127,6 +127,9 @@ export class FormsEditorComponent {
     this.builderSchema[index] = sanitizeField({
       ...updated,
       options: [...(updated.options || [])],
+      optionSource: updated.optionSource
+        ? { ...updated.optionSource }
+        : undefined,
       condition: updated.condition
         ? { ...updated.condition }
         : { fieldId: '', value: '' },
@@ -144,12 +147,13 @@ export class FormsEditorComponent {
         fields: orderedFields.map((field, index) => ({
           ...field,
           id: field.id,
-          fieldTypeName: field.type,
+          fieldTypeName: field.fieldTypeName || field.type,
           fieldKey: 'name',
           label: field.label,
           name: field.name || field.label,
           placeholder: field.placeholder,
           isRequired: field.required,
+          optionSource: field.optionSource,
           isReadonly: false,
           isSystemField: true,
           isEditable: true,

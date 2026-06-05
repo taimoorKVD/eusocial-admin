@@ -1,4 +1,6 @@
 import { FormField } from '../models/form-field.model';
+import { normalizeFieldTypeName } from './field-type.utils';
+import { readOptionSourceFromField } from './option-source.utils';
 
 export function generateFieldId(): string {
   return `fld_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
@@ -15,45 +17,62 @@ export function toFieldName(label: string | null | undefined): string {
   return fieldName || 'field';
 }
 
-export function createFieldFromTemplate(template: Partial<FormField>): FormField {
-  const label =
-    typeof template.label === 'string' && template.label.trim()
-      ? template.label
-      : 'Untitled Field';
+function readRequired(field: Partial<FormField> & Record<string, unknown>): boolean {
+  if (typeof field.required === 'boolean') {
+    return field.required;
+  }
 
-  return {
-    id: generateFieldId(),
-    type: (template.type || 'text') as FormField['type'],
-    label,
-    name: template.name || toFieldName(label),
-    placeholder: template.placeholder || '',
-    required: template.required ?? false,
-    options: [...(template.options || [])],
-    value: template.value ?? null,
-    defaultValue: template.defaultValue ?? null,
-    validations: template.validations ? { ...template.validations } : {},
-    width: template.width ?? 12,
-    condition: template.condition
-      ? { ...template.condition }
-      : { fieldId: '', value: '' },
-  };
+  if (typeof field['isRequired'] === 'boolean') {
+    return field['isRequired'];
+  }
+
+  return false;
 }
 
-export function sanitizeField(field: Partial<FormField>, order?: number): FormField {
+function readFieldTypeName(field: Partial<FormField> & Record<string, unknown>): string {
+  const fieldType = field['fieldType'];
+
+  if (fieldType && typeof fieldType === 'object') {
+    const typeRecord = fieldType as Record<string, unknown>;
+    const nestedName = typeRecord['name'] ?? typeRecord['type'];
+
+    if (nestedName) {
+      return String(nestedName);
+    }
+  }
+
+  return String(
+    field.fieldTypeName ?? field['field_type_name'] ?? field.type ?? 'text'
+  );
+}
+
+export function createFieldFromTemplate(template: Partial<FormField>): FormField {
+  return sanitizeField(template);
+}
+
+export function sanitizeField(
+  field: Partial<FormField> & Record<string, unknown>,
+  order?: number
+): FormField {
   const label =
     typeof field.label === 'string' && field.label.trim()
       ? field.label
       : 'Untitled Field';
 
+  const fieldTypeName = readFieldTypeName(field);
+  const type = normalizeFieldTypeName(fieldTypeName, field.type);
+
   return {
-    id: field.id || generateFieldId(),
-    type: (field.type || 'text') as FormField['type'],
+    id: String(field.id || generateFieldId()),
+    type,
+    fieldTypeName,
     label,
     name: field.name || toFieldName(label),
     placeholder: field.placeholder || '',
-    required: field.required ?? false,
+    required: readRequired(field),
     options: [...(field.options || [])],
-    value: field.value ?? null,
+    optionSource: readOptionSourceFromField(field),
+    value: field.value ?? field.defaultValue ?? null,
     defaultValue: field.defaultValue ?? null,
     validations: field.validations ? { ...field.validations } : {},
     width: field.width ?? 12,
@@ -64,6 +83,6 @@ export function sanitizeField(field: Partial<FormField>, order?: number): FormFi
   };
 }
 
-export function normalizeFieldOrder(schema: FormField[]): FormField[] {
+export function normalizeFieldOrder(schema: Array<Partial<FormField>>): FormField[] {
   return schema.map((field, index) => sanitizeField(field, index + 1));
 }

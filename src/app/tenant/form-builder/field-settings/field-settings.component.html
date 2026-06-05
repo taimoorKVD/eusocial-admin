@@ -2,7 +2,7 @@
 
   <div class="border-b border-slate-100 pb-3">
     <h3 class="text-sm font-semibold text-slate-900">Field Settings</h3>
-    <p class="text-xs capitalize text-slate-500">{{ field.type }} field</p>
+    <p class="text-xs capitalize text-slate-500">{{ field.fieldTypeName || field.type }} field</p>
   </div>
 
   <div>
@@ -37,13 +37,19 @@
   </div>
 
   <div *ngIf="field.type === 'select' || field.type === 'radio' || field.type === 'checkbox'">
-    <label class="mb-1.5 block text-xs font-medium text-slate-600">Options (one per line)</label>
-    <textarea
-      rows="5"
-      [value]="optionsText"
-      (input)="updateOptions($event)"
-      class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC]"
-    ></textarea>
+    <p *ngIf="field.optionSource?.type === 'api'" class="rounded-md border border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-500">
+      Options loaded from {{ field.optionSource?.endpoint }}
+    </p>
+
+    <ng-container *ngIf="field.optionSource?.type !== 'api'">
+      <label class="mb-1.5 block text-xs font-medium text-slate-600">Options (one per line)</label>
+      <textarea
+        rows="5"
+        [value]="optionsText"
+        (input)="updateOptions($event)"
+        class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC]"
+      ></textarea>
+    </ng-container>
   </div>
 
   <div class="flex gap-2 border-t border-slate-100 pt-4">
