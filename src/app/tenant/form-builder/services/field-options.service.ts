@@ -4,6 +4,7 @@ import { Observable, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { environment } from '../../../../environments/environment';
 import { FieldOption, OptionSource } from '../models/form-field.model';
+import { normalizeFieldOptions } from '../utils/field-options.utils';
 import { normalizeEndpoint } from '../utils/option-source.utils';
 
 @Injectable({
@@ -170,18 +171,7 @@ export class FieldOptionsService {
   }
 
   private mapStaticOptions(optionSource: OptionSource): FieldOption[] {
-    const options = optionSource.options || [];
-
-    return options.map(option => {
-      if (typeof option === 'string') {
-        return { label: option, value: option };
-      }
-
-      return {
-        label: String(option.label),
-        value: option.value,
-      };
-    });
+    return normalizeFieldOptions(optionSource.options);
   }
 
   private buildCacheKey(optionSource: OptionSource): string {

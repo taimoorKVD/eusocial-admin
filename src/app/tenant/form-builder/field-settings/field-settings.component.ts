@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormField } from '../models/form-field.model';
 import { toFieldName } from '../utils/form-field.factory';
+import { normalizeFieldOption } from '../utils/field-options.utils';
 
 @Component({
   selector: 'app-field-settings',
@@ -84,7 +85,16 @@ export class FieldSettingsComponent {
   }
 
   get optionsText(): string {
-    return this._field?.options?.join('\n') || '';
+    return (this._field?.options || [])
+      .map(option => {
+        if (typeof option === 'string') {
+          return option;
+        }
+
+        return normalizeFieldOption(option)?.label ?? '';
+      })
+      .filter(Boolean)
+      .join('\n');
   }
 
   onDuplicateClick(): void {
