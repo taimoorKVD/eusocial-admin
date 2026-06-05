@@ -79,16 +79,29 @@ export function normalizeOptionSource(
       ? (responseRaw as Record<string, unknown>)
       : undefined;
 
+  const type = String(record['type'] ?? 'api').toLowerCase();
   const endpoint = String(
     record['endpoint'] ?? record['url'] ?? record['path'] ?? ''
   ).trim();
 
-  if (!endpoint) {
+  if (!endpoint && type !== 'static') {
     return undefined;
   }
 
+  const options = Array.isArray(record['options'])
+    ? (record['options'] as OptionSource['options'])
+    : undefined;
+
+  if (type === 'static') {
+    return {
+      type: 'static',
+      endpoint: endpoint ? normalizeEndpoint(endpoint) : undefined,
+      options,
+    };
+  }
+
   return {
-    type: String(record['type'] ?? 'api').toLowerCase(),
+    type,
     endpoint: normalizeEndpoint(endpoint),
     response: {
       labelKey: String(
@@ -102,9 +115,7 @@ export function normalizeOptionSource(
         (response?.['data_path'] as string | undefined) ??
         'data',
     },
-    options: Array.isArray(record['options'])
-      ? (record['options'] as OptionSource['options'])
-      : undefined,
+    options,
   };
 }
 

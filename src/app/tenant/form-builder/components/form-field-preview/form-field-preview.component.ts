@@ -19,6 +19,7 @@ import {
   isOptionFieldType,
   normalizeFieldTypeName,
 } from '../../utils/field-type.utils';
+import { normalizeFieldOptions } from '../../utils/field-options.utils';
 import { resolveFieldOptionSource } from '../../utils/option-source.utils';
 
 @Component({
@@ -110,9 +111,14 @@ export class FormFieldPreviewComponent implements OnChanges {
             return;
           }
 
-          this.displayOptions = options;
+          const resolved =
+            options.length > 0
+              ? options
+              : normalizeFieldOptions(this.field.options);
+
+          this.displayOptions = resolved;
           this.loadingOptions = false;
-          this.optionsError = options.length === 0;
+          this.optionsError = resolved.length === 0;
         },
         error: () => {
           if (requestId !== this.optionsRequestId) {
@@ -127,9 +133,6 @@ export class FormFieldPreviewComponent implements OnChanges {
   }
 
   private setDisplayOptionsFromStatic(): void {
-    this.displayOptions = (this.field.options || []).map(option => ({
-      label: option,
-      value: option,
-    }));
+    this.displayOptions = normalizeFieldOptions(this.field.options);
   }
 }
