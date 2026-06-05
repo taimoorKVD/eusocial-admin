@@ -1,0 +1,32 @@
+<div
+  cdkDropList
+  #canvasList="cdkDropList"
+  id="canvasList"
+  class="form-canvas-drop-list"
+  [cdkDropListData]="schema"
+  [cdkDropListConnectedTo]="connectedDropLists"
+  cdkDropListOrientation="vertical"
+  (cdkDropListDropped)="onDrop($event)"
+>
+  <div
+    *ngIf="schema.length === 0"
+    class="form-canvas-empty"
+  >
+    <p class="text-sm font-medium text-slate-600">Drag fields here to build your form</p>
+    <p class="mt-1 text-xs text-slate-400">Click a field to edit its settings</p>
+  </div>
+
+  <div
+    *ngFor="let field of schema; trackBy: trackByFieldId"
+    cdkDrag
+    cdkDragLockAxis="y"
+    [cdkDragData]="field"
+    class="form-canvas-field"
+    [class.form-canvas-field--selected]="field.id === selectedFieldId"
+    (click)="onFieldClick(field)"
+    (cdkDragStarted)="onFieldDragStarted()"
+    (cdkDragEnded)="onFieldDragEnded()"
+  >
+    <app-form-field-preview [field]="field"></app-form-field-preview>
+  </div>
+</div>

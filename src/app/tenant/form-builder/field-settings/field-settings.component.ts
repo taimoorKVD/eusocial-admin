@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormField } from '../models/form-field.model';
+import { toFieldName } from '../utils/form-field.factory';
 
 @Component({
   selector: 'app-field-settings',
@@ -12,14 +13,13 @@ export class FieldSettingsComponent {
     if (value) {
       this._field = {
         ...value,
-        name: value.name || this.toFieldName(value.label),
+        name: value.name || toFieldName(value.label),
         defaultValue: value.defaultValue ?? value.value ?? '',
         width: value.width ?? 12,
         validations: value.validations || {},
         condition: value.condition || { fieldId: '', value: '' },
-        options: value.options || []
+        options: [...(value.options || [])],
       };
-      this.validationsJson = JSON.stringify(this._field.validations, null, 2);
     }
   }
 
@@ -27,22 +27,30 @@ export class FieldSettingsComponent {
     return this._field;
   }
 
-  private _field: FormField | any;
-  validationsJson = '{}';
+  private _field!: FormField;
 
   @Output() update = new EventEmitter<FormField>();
+  @Output() duplicate = new EventEmitter<void>();
+  @Output() delete = new EventEmitter<void>();
 
-  onChange() {
-    if (this._field) {
-      this.update.emit({
-        ...this._field,
-        options: [...(this._field.options || [])]
-      });
+  onChange(): void {
+    if (!this._field) {
+      return;
     }
+
+    this.update.emit({
+      ...this._field,
+      options: [...(this._field.options || [])],
+      condition: this._field.condition
+        ? { ...this._field.condition }
+        : { fieldId: '', value: '' },
+    });
   }
 
-  updateOptions(event: Event) {
-    if (!this._field) return;
+  updateOptions(event: Event): void {
+    if (!this._field) {
+      return;
+    }
 
     const value = (event.target as HTMLTextAreaElement).value;
 
@@ -58,26 +66,15 @@ export class FieldSettingsComponent {
     return this._field?.options?.join('\n') || '';
   }
 
-  updateValidations(event: Event) {
-    const value = (event.target as HTMLTextAreaElement).value;
-    this.validationsJson = value;
-
-    try {
-      this._field.validations = value ? JSON.parse(value) : {};
-      this.onChange();
-    } catch {
-      // ignore invalid json while typing
-    }
+  onDuplicateClick(): void {
+    this.duplicate.emit();
   }
 
-  private toFieldName(label: string | null | undefined): string {
-    const normalizedLabel = String(label ?? 'field');
-    const fieldName = normalizedLabel
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9]+/g, '_')
-      .replace(/^_+|_+$/g, '');
+  onDeleteClick(): void {
+    if (!confirm('Remove this field from the form?')) {
+      return;
+    }
 
-    return fieldName || 'field';
+    this.delete.emit();
   }
 }

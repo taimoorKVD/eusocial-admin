@@ -1,0 +1,71 @@
+<label class="mb-1 block text-xs font-medium text-slate-500">
+  {{ field.label }}
+  <span *ngIf="field.required" class="text-red-500">*</span>
+</label>
+
+<input
+  *ngIf="field.type === 'text'"
+  type="text"
+  [placeholder]="field.placeholder"
+  [(ngModel)]="field.value"
+  tabindex="-1"
+  class="w-full border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none"
+/>
+
+<input
+  *ngIf="field.type === 'email'"
+  type="email"
+  [placeholder]="field.placeholder"
+  [(ngModel)]="field.value"
+  tabindex="-1"
+  class="w-full border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none"
+/>
+
+<input
+  *ngIf="field.type === 'number'"
+  type="number"
+  [placeholder]="field.placeholder"
+  [(ngModel)]="field.value"
+  tabindex="-1"
+  class="w-full border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none"
+/>
+
+<textarea
+  *ngIf="field.type === 'textarea'"
+  [placeholder]="field.placeholder"
+  [(ngModel)]="field.value"
+  rows="3"
+  tabindex="-1"
+  class="w-full resize-none border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none"
+></textarea>
+
+<select
+  *ngIf="field.type === 'select'"
+  [(ngModel)]="field.value"
+  tabindex="-1"
+  class="w-full border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 focus:border-slate-500 focus:outline-none"
+>
+  <option *ngFor="let opt of field.options" [value]="opt">{{ opt }}</option>
+</select>
+
+<div *ngIf="field.type === 'radio'" class="mt-1 space-y-2">
+  <label *ngFor="let opt of field.options" class="flex items-center gap-2 text-sm text-slate-600">
+    <input type="radio" [name]="field.id" [value]="opt" [(ngModel)]="field.value" tabindex="-1" />
+    {{ opt }}
+  </label>
+</div>
+
+<div *ngIf="field.type === 'checkbox'" class="mt-1 space-y-2">
+  <label *ngFor="let opt of field.options" class="flex items-center gap-2 text-sm text-slate-600">
+    <input type="checkbox" [checked]="(field.value || []).includes(opt)" tabindex="-1" />
+    {{ opt }}
+  </label>
+</div>
+
+<input
+  *ngIf="field.type === 'image'"
+  type="file"
+  accept="image/*"
+  tabindex="-1"
+  class="w-full border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 focus:border-slate-500 focus:outline-none"
+/>

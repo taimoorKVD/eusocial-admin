@@ -1,0 +1,62 @@
+.form-canvas-drop-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-height: 420px;
+  background: transparent;
+}
+
+.form-canvas-empty {
+  display: flex;
+  min-height: 320px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  border: 1px dashed #f1f5f9;
+  background: rgb(248 250 252 / 60%);
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.form-canvas-field {
+  cursor: pointer;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  transition:
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
+
+  &:hover {
+    background: rgb(248 250 252 / 70%);
+  }
+
+  &--selected {
+    background: #f8fafc;
+    box-shadow:
+      0 0 0 2px #0054ac,
+      0 0 0 4px #fff;
+  }
+}
+
+:host ::ng-deep {
+  .cdk-drag-preview {
+    box-sizing: border-box;
+    border-radius: 0.5rem;
+    background: #fff;
+    padding: 0.75rem;
+    box-shadow: 0 8px 24px rgb(15 23 42 / 12%);
+  }
+
+  .cdk-drag-placeholder {
+    opacity: 0;
+  }
+
+  .cdk-drag-animating {
+    transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
+  }
+
+  .form-canvas-drop-list.cdk-drop-list-dragging .form-canvas-field:not(.cdk-drag-placeholder) {
+    transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
+  }
+}

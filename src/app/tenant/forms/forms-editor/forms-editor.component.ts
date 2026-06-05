@@ -2,6 +2,11 @@ import { Component } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { FormField } from '../../form-builder/models/form-field.model';
+import {
+  createFieldFromTemplate,
+  normalizeFieldOrder,
+  sanitizeField,
+} from '../../form-builder/utils/form-field.factory';
 import { FormStorageService } from '../services/form-storage.service';
 
 @Component({
@@ -18,8 +23,9 @@ export class FormsEditorComponent {
   formName = 'Users Dynamic Form';
   formId: string | number | null = null;
 
-  sidebarConnectedLists: string[] = ['canvasList'];
-  canvasConnectedLists: string[] = ['sidebarList'];
+  /** Connected list IDs (palette ↔ canvas). */
+  readonly paletteListId = 'sidebarList';
+  readonly canvasListId = 'canvasList';
 
   constructor(
     private route: ActivatedRoute,
@@ -34,7 +40,7 @@ export class FormsEditorComponent {
     return this.builderSchema.find(field => field.id === this.selectedFieldId) || null;
   }
 
-  ngOnInit() {
+  ngOnInit(): void {
     this.route.params.subscribe(params => {
       this.moduleName = params['module'];
 
@@ -44,81 +50,93 @@ export class FormsEditorComponent {
     });
   }
 
-  onSchemaChange(schema: FormField[]) {
-    this.builderSchema = this.normalizeOrder(schema);
-  }
-
-  onCanvasDrop(event: CdkDragDrop<FormField[]>) {
+  /**
+   * CDK drop handler — official connected-list pattern:
+   * - same container: reorder with moveItemInArray
+   * - palette → canvas: clone template (never transferArrayItem)
+   */
+  onCanvasDrop(event: CdkDragDrop<FormField[]>): void {
     if (event.previousContainer === event.container) {
       const reordered = [...this.builderSchema];
       moveItemInArray(reordered, event.previousIndex, event.currentIndex);
-      this.builderSchema = this.normalizeOrder(reordered);
+      this.builderSchema = normalizeFieldOrder(reordered);
       return;
     }
 
     const template = event.item.data as Partial<FormField>;
-    const field = this.createField(template);
+    const field = createFieldFromTemplate(template);
     const updated = [...this.builderSchema];
-    const targetIndex = Math.min(Math.max(event.currentIndex, 0), updated.length);
+    const insertIndex = Math.min(
+      Math.max(event.currentIndex, 0),
+      updated.length
+    );
 
-    updated.splice(targetIndex, 0, field);
-    this.builderSchema = this.normalizeOrder(updated);
+    updated.splice(insertIndex, 0, field);
+    this.builderSchema = normalizeFieldOrder(updated);
+    this.onSelectField(field);
   }
 
-  onSelectField(field: FormField) {
+  onSelectField(field: FormField): void {
     this.selectedFieldId = field.id;
     this.activeTab = 'settings';
   }
 
-  onDuplicateField(field: FormField) {
+  onDuplicateField(field: FormField): void {
     const index = this.builderSchema.findIndex(item => item.id === field.id);
     if (index === -1) {
       return;
     }
 
-    const clone: FormField = this.sanitizeField({
+    const clone = createFieldFromTemplate({
       ...field,
-      id: this.generateFieldId(),
-      options: [...(field.options || [])],
-      condition: field.condition ? { ...field.condition } : { fieldId: '', value: '' }
+      label: `${field.label} Copy`,
     });
 
     const updated = [...this.builderSchema];
     updated.splice(index + 1, 0, clone);
-    this.builderSchema = this.normalizeOrder(updated);
+    this.builderSchema = normalizeFieldOrder(updated);
     this.onSelectField(clone);
   }
 
-  onDeleteField(field: FormField) {
-    this.builderSchema = this.normalizeOrder(this.builderSchema.filter(item => item.id !== field.id));
+  onDeleteField(field: FormField): void {
+    this.builderSchema = normalizeFieldOrder(
+      this.builderSchema.filter(item => item.id !== field.id)
+    );
 
     if (this.selectedFieldId === field.id) {
       this.selectedFieldId = null;
+      this.activeTab = 'fields';
     }
   }
 
-  setActiveTab(tab: 'fields' | 'settings') {
+  setActiveTab(tab: 'fields' | 'settings'): void {
+    if (tab === 'settings' && !this.selectedFieldId) {
+      return;
+    }
+
     this.activeTab = tab;
   }
 
-  updateField(updated: FormField) {
+  updateField(updated: FormField): void {
     const index = this.builderSchema.findIndex(field => field.id === updated.id);
 
     if (index === -1) {
       return;
     }
 
-    this.builderSchema[index] = this.sanitizeField({
+    this.builderSchema[index] = sanitizeField({
       ...updated,
-      options: updated.options ? [...updated.options] : [],
-      condition: updated.condition ? { ...updated.condition } : { fieldId: '', value: '' }
+      options: [...(updated.options || [])],
+      condition: updated.condition
+        ? { ...updated.condition }
+        : { fieldId: '', value: '' },
     });
 
-    this.builderSchema = this.normalizeOrder([...this.builderSchema]);
+    this.builderSchema = normalizeFieldOrder([...this.builderSchema]);
   }
 
   buildPayload() {
-    const orderedFields = this.normalizeOrder([...this.builderSchema]);
+    const orderedFields = normalizeFieldOrder([...this.builderSchema]);
 
     return {
       schema: {
@@ -129,7 +147,7 @@ export class FormsEditorComponent {
           fieldTypeName: field.type,
           fieldKey: 'name',
           label: field.label,
-          name: field.name || this.toFieldName(field.label),
+          name: field.name || field.label,
           placeholder: field.placeholder,
           isRequired: field.required,
           isReadonly: false,
@@ -137,79 +155,52 @@ export class FormsEditorComponent {
           isEditable: true,
           isDeletable: false,
           layoutConfig: {
-            "grid_width_mobile": 12,
-            "grid_width_desktop": 6
+            grid_width_mobile: 12,
+            grid_width_desktop: 6,
           },
           defaultValue: field.defaultValue ?? field.value ?? null,
           options: field.options || [],
           validations: field.validations || {},
           sortOrder: index + 1,
-          width: field.width ?? 12
-
-          // "fieldTypeId": 2,
-          // "helpText": null,
-          // "isUnique": false,
-          // "isSystemDefault": true,
-          // "isSystemField": true,
-          // "systemMappingKey": "name",
-          // "optionSource": null,
+          width: field.width ?? 12,
         })),
-        conditionalRules: []
+        conditionalRules: [],
       },
-      markAsDraft: true
+      markAsDraft: true,
     };
   }
 
-  saveForm() {
+  saveForm(): void {
     if (this.moduleName !== 'users') {
       return;
     }
 
-    this.builderSchema = this.normalizeOrder([...this.builderSchema]);
+    this.builderSchema = normalizeFieldOrder([...this.builderSchema]);
 
-    this.formStorageService.saveForm('users', {
-      formName: this.formName,
-      formId: this.formId,
-      fields: this.builderSchema,
-      markAsDraft: true
-    }).subscribe({
-      next: () => {
-        console.log('Saved form payload:', this.buildPayload());
-      },
-      error: (error) => {
-        console.error('Failed to save form schema:', error);
-      }
-    });
+    this.formStorageService
+      .saveForm('users', {
+        formName: this.formName,
+        formId: this.formId,
+        fields: this.builderSchema,
+        markAsDraft: true,
+      })
+      .subscribe({
+        next: () => {
+          console.log('Saved form payload:', this.buildPayload());
+        },
+        error: error => {
+          console.error('Failed to save form schema:', error);
+        },
+      });
   }
 
-  previewPayload() {
+  previewPayload(): void {
     console.log('Preview payload:', this.buildPayload());
   }
 
-  trackById(index: number, item: FormField): string | number {
-    return item?.id ?? index;
-  }
-
-  private createField(template: Partial<FormField>): FormField {
-    return this.sanitizeField({
-      id: this.generateFieldId(),
-      type: (template.type || 'text') as FormField['type'],
-      label: template.label || 'Untitled Field',
-      name: template.name || this.toFieldName(template.label || 'field'),
-      placeholder: template.placeholder || '',
-      required: template.required || false,
-      options: [...(template.options || [])],
-      value: template.value ?? null,
-      defaultValue: template.defaultValue ?? null,
-      validations: template.validations ? { ...template.validations } : {},
-      width: template.width ?? 12,
-      condition: template.condition ? { ...template.condition } : { fieldId: '', value: '' }
-    });
-  }
-
-  private loadSavedSchema() {
+  private loadSavedSchema(): void {
     this.formStorageService.loadForm('users').subscribe({
-      next: (saved) => {
+      next: saved => {
         if (!saved) {
           this.builderSchema = [];
           return;
@@ -217,53 +208,12 @@ export class FormsEditorComponent {
 
         this.formName = saved.formName || this.formName;
         this.formId = saved.formId ?? null;
-        this.builderSchema = this.normalizeOrder(saved.fields || []);
+        this.builderSchema = normalizeFieldOrder(saved.fields || []);
       },
-      error: (error) => {
+      error: error => {
         console.error('Failed to load form schema:', error);
         this.builderSchema = [];
-      }
+      },
     });
-  }
-
-  private normalizeOrder(schema: FormField[]): FormField[] {
-    return schema.map((field, index) => this.sanitizeField(field, index + 1));
-  }
-
-  private sanitizeField(field: Partial<FormField>, order?: number): FormField {
-    const label = typeof field.label === 'string' && field.label.trim()
-      ? field.label
-      : 'Untitled Field';
-
-    return {
-      id: field.id || this.generateFieldId(),
-      type: (field.type || 'text') as FormField['type'],
-      label,
-      name: field.name || this.toFieldName(label),
-      placeholder: field.placeholder || '',
-      required: field.required || false,
-      options: [...(field.options || [])],
-      value: field.value ?? null,
-      defaultValue: field.defaultValue ?? null,
-      validations: field.validations ? { ...field.validations } : {},
-      width: field.width ?? 12,
-      order: order ?? field.order,
-      condition: field.condition ? { ...field.condition } : { fieldId: '', value: '' }
-    };
-  }
-
-  private generateFieldId(): string {
-    return `fld_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
-  }
-
-  private toFieldName(label: string | null | undefined): string {
-    const normalizedLabel = String(label ?? 'field');
-    const fieldName = normalizedLabel
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9]+/g, '_')
-      .replace(/^_+|_+$/g, '');
-
-    return fieldName || 'field';
   }
 }
