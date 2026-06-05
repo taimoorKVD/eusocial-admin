@@ -1,8 +1,6 @@
 .form-canvas-drop-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
   min-height: 420px;
+  align-items: stretch;
   background: transparent;
 }
 
@@ -23,6 +21,8 @@
   cursor: pointer;
   border-radius: 0.5rem;
   padding: 0.75rem;
+  min-height: 4.5rem;
+  align-self: stretch;
   transition:
     background-color 0.15s ease,
     box-shadow 0.15s ease;
