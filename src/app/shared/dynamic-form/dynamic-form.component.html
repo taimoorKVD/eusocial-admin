@@ -1,0 +1,117 @@
+<form *ngIf="form" [formGroup]="form" class="dynamic-form" novalidate>
+  <div class="row g-3">
+    <div
+      *ngFor="let field of sortedFields; trackBy: trackByField"
+      [ngClass]="getColClass(field)"
+    >
+      <div class="form-group mb-3">
+        <label
+          *ngIf="field.type !== 'checkbox'"
+          class="form-label block mb-1 text-sm font-medium text-gray-700"
+          [attr.for]="field.id"
+        >
+          {{ field.label }}
+          <span *ngIf="field.required" class="text-red-600" aria-hidden="true">*</span>
+        </label>
+
+        <ng-container [ngSwitch]="field.type">
+          <input
+            *ngSwitchCase="'text'"
+            class="form-control w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            type="text"
+            [id]="field.id"
+            [formControlName]="field.name"
+            [placeholder]="field.placeholder ?? ''"
+          />
+
+          <input
+            *ngSwitchCase="'email'"
+            class="form-control w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            type="email"
+            [id]="field.id"
+            [formControlName]="field.name"
+            [placeholder]="field.placeholder ?? ''"
+          />
+
+          <input
+            *ngSwitchCase="'number'"
+            class="form-control w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            type="number"
+            [id]="field.id"
+            [formControlName]="field.name"
+            [placeholder]="field.placeholder ?? ''"
+          />
+
+          <input
+            *ngSwitchCase="'date'"
+            class="form-control w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            type="date"
+            [id]="field.id"
+            [formControlName]="field.name"
+          />
+
+          <textarea
+            *ngSwitchCase="'textarea'"
+            class="form-control w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            [id]="field.id"
+            [formControlName]="field.name"
+            [placeholder]="field.placeholder ?? ''"
+            rows="4"
+          ></textarea>
+
+          <select
+            *ngSwitchCase="'select'"
+            class="form-select w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            [id]="field.id"
+            [formControlName]="field.name"
+          >
+            <option value="" [disabled]="field.required">
+              {{ field.placeholder || 'Select ' + field.label }}
+            </option>
+            <option
+              *ngFor="let option of field.options; trackBy: trackByOption"
+              [ngValue]="getOptionValue(option)"
+            >
+              {{ getOptionLabel(option) }}
+            </option>
+          </select>
+
+          <div *ngSwitchCase="'checkbox'" class="form-check">
+            <input
+              class="form-check-input h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+              type="checkbox"
+              [id]="field.id"
+              [formControlName]="field.name"
+            />
+            <label class="form-check-label text-sm text-gray-700 ms-2" [attr.for]="field.id">
+              {{ field.label }}
+              <span *ngIf="field.required" class="text-red-600" aria-hidden="true">*</span>
+            </label>
+          </div>
+
+          <div *ngSwitchCase="'radio'" class="radio-group" role="radiogroup" [attr.aria-labelledby]="field.id + '-label'">
+            <div
+              *ngFor="let option of field.options; trackBy: trackByOption; let i = index"
+              class="form-check"
+            >
+              <input
+                class="form-check-input h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                type="radio"
+                [id]="field.id + '-' + i"
+                [formControlName]="field.name"
+                [value]="getOptionValue(option, i)"
+              />
+              <label class="form-check-label text-sm text-gray-700 ms-2" [attr.for]="field.id + '-' + i">
+                {{ getOptionLabel(option) }}
+              </label>
+            </div>
+          </div>
+        </ng-container>
+
+        <small *ngIf="getErrorMessage(field) as errorMessage" class="error text-red-600 d-block mt-1">
+          {{ errorMessage }}
+        </small>
+      </div>
+    </div>
+  </div>
+</form>
