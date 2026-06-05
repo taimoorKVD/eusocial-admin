@@ -1,10 +1,8 @@
-import { Component, ElementRef, EventEmitter, Input, Output, ViewChild } from '@angular/core';
+import { Component, ElementRef, ViewChild } from '@angular/core';
 import { ToastrService } from 'ngx-toastr';
 import { TenantUserService } from '../../../../../services/tenant-user.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TenantSessionService } from '../../../../../services/tenant-session.service';
-import { FormField } from '../../../../form-builder/models/form-field.model';
-import { CdkDragDrop, CdkDropList } from '@angular/cdk/drag-drop';
 
 
 @Component({
@@ -47,16 +45,6 @@ constructor(private userService: TenantUserService,  private toastr: ToastrServi
   sendEmail: string = '';
   generatedPassword: string = '';
   phoneError: string = '';
-  isDraggingField = false;
- @Input() schema: FormField[] = [];
-     @Input() connectedDropLists: Array<CdkDropList<any> | string> = [];
- @Output() selectField = new EventEmitter<FormField>();
- @Output() canvasDrop = new EventEmitter<CdkDragDrop<FormField[]>>();
- @Output() duplicateField = new EventEmitter<FormField>();
- @Output() deleteField = new EventEmitter<FormField>();
-   @ViewChild('canvasList', { static: true }) canvasListRef!: CdkDropList;
-
-
   startLoading() {
     this.loadingCount++;
     this.loading = true;
@@ -691,43 +679,4 @@ setCredentials(data: any) {
   this.sendEmail = data.email;
 }
 
-onSelectField(field: FormField) {
-  this.selectField.emit(field);
-}
-
-onFieldClick(field: FormField) {
-  if (this.isDraggingField) {
-    return;
-  }
-
-  this.onSelectField(field);
-}
-
-onFieldDragStarted() {
-  this.isDraggingField = true;
-}
-
-onFieldDragEnded() {
-  setTimeout(() => {
-    this.isDraggingField = false;
-  }, 0);
-}
-
-onCanvasDrop(event: CdkDragDrop<FormField[]>) {
-  this.canvasDrop.emit(event);
-}
-
-onDuplicateField(field: FormField, event: Event) {
-  event.stopPropagation();
-  this.duplicateField.emit(field);
-}
-
-onDeleteField(field: FormField, event: Event) {
-  event.stopPropagation();
-  this.deleteField.emit(field);
-}
-
-trackByFieldId(index: number, field: FormField): string {
-  return field.id;
-}
 }

@@ -1,16 +1,58 @@
-<div class="">
+<div class="font-ibm">
+  <p class="mb-3 text-xs text-slate-500">Drag a field onto the canvas to add it.</p>
 
-  <!-- SIDEBAR -->
-  <div class="bg-gray-100 p-3">
-
-    <h3 class="font-bold mb-3">Fields</h3>
-    <div cdkDropList id="sidebarList" #sidebarList="cdkDropList" [cdkDropListData]="fieldTemplates" [cdkDropListConnectedTo]="connectedDropLists"
-      class="grid grid-cols-3 gap-2">
-      <div *ngFor="let field of fieldTemplates; trackBy: trackByTemplate" cdkDrag [cdkDragData]="field"
-        class="p-2 bg-white shadow rounded cursor-move flex items-center justify-center font-ibm text-center text-sm">
-        {{ field.label }}
-      </div>
+  <div
+    cdkDropList
+    #paletteList="cdkDropList"
+    id="sidebarList"
+    class="palette-grid"
+    [cdkDropListData]="fieldTemplates"
+    [cdkDropListConnectedTo]="connectedDropLists"
+    cdkDropListSortingDisabled
+  >
+    <div
+      *ngFor="let field of fieldTemplates; trackBy: trackByTemplate"
+      cdkDrag
+      [cdkDragData]="field"
+      class="palette-item"
+    >
+      <span class="palette-item__icon" aria-hidden="true">
+        <ng-container [ngSwitch]="field.type">
+          <svg *ngSwitchCase="'text'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h10M4 18h7" />
+          </svg>
+          <svg *ngSwitchCase="'email'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15A2.25 2.25 0 0 1 2.25 17.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L2.82 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+          </svg>
+          <svg *ngSwitchCase="'number'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 6.75h15v10.5h-15V6.75Z" />
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M8.25 9.75h.008v.008H8.25V9.75Zm0 4.5h.008v.008H8.25v-.008Zm4.5-4.5h.008v.008h-.008V9.75Zm0 4.5h.008v.008h-.008v-.008Zm4.5-4.5h.008v.008H17.25V9.75Zm0 4.5h.008v.008H17.25v-.008Z" />
+          </svg>
+          <svg *ngSwitchCase="'textarea'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h10.5" />
+          </svg>
+          <svg *ngSwitchCase="'select'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M8.25 6.75h12M8.25 12h12M8.25 17.25h12M3.75 6.75h.007v.008H3.75V6.75Zm0 5.25h.007v.008H3.75v-.008Zm0 5.25h.007v.008H3.75v-.008Z" />
+          </svg>
+          <svg *ngSwitchCase="'radio'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M12 12a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5Z" />
+          </svg>
+          <svg *ngSwitchCase="'checkbox'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 6.75h13.5v10.5H5.25V6.75Z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75" />
+          </svg>
+          <svg *ngSwitchCase="'image'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0 0 22.5 18.75V5.25A2.25 2.25 0 0 0 20.25 3H3.75A2.25 2.25 0 0 0 1.5 5.25v13.5A2.25 2.25 0 0 0 3.75 21Z" />
+          </svg>
+        </ng-container>
+      </span>
+      <span class="palette-item__label">{{ field.label }}</span>
     </div>
   </div>
-
 </div>

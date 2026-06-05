@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { FormField } from '../../form-builder/models/form-field.model';
+import { normalizeFieldOrder } from '../../form-builder/utils/form-field.factory';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 
@@ -105,11 +106,13 @@ export class FormStorageService {
         : Array.isArray(source.schema?.sections)
           ? source.schema.sections
           : fallback?.sections || [],
-      fields: Array.isArray(source.fields)
-        ? source.fields
-        : Array.isArray(source.schema?.fields)
-          ? source.schema.fields
-          : fallback?.fields || [],
+      fields: normalizeFieldOrder(
+        Array.isArray(source.fields)
+          ? source.fields
+          : Array.isArray(source.schema?.fields)
+            ? source.schema.fields
+            : fallback?.fields || []
+      ),
       conditionalRules: Array.isArray(source.conditionalRules)
         ? source.conditionalRules
         : Array.isArray(source.schema?.conditionalRules)

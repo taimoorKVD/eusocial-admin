@@ -1,145 +1,99 @@
 <div class="space-y-4" *ngIf="field">
 
-  <h3 class="text-lg font-bold">
-    Field Settings
-  </h3>
+  <div class="border-b border-slate-100 pb-3">
+    <h3 class="text-sm font-semibold text-slate-900">Field Settings</h3>
+    <p class="text-xs capitalize text-slate-500">
+      {{ field.fieldTypeName || field.type }} field
+      <span *ngIf="isFieldHidden" class="font-normal text-amber-600">(hidden on canvas)</span>
+    </p>
+  </div>
 
-  <!-- LABEL -->
   <div>
-    <label class="block mb-1 text-sm font-medium">
-      Label
-    </label>
-
+    <label class="mb-1.5 block text-xs font-medium text-slate-600">Label</label>
     <input
       type="text"
       [(ngModel)]="field.label"
       (input)="onChange()"
-      class="w-full border rounded p-2"
+      class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC]"
     />
   </div>
 
-  <!-- PLACEHOLDER -->
   <div>
-    <label class="block mb-1 text-sm font-medium">
-      Placeholder
-    </label>
-
+    <label class="mb-1.5 block text-xs font-medium text-slate-600">Placeholder</label>
     <input
       type="text"
       [(ngModel)]="field.placeholder"
       (input)="onChange()"
-      class="w-full border rounded p-2"
+      class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC]"
     />
   </div>
 
-  <!-- NAME -->
-  <div>
-    <label class="block mb-1 text-sm font-medium">
-      Name
-    </label>
+  <div class="space-y-2 rounded-md border border-slate-100 bg-slate-50 px-3 py-2.5">
+    <div class="flex items-center gap-2">
+      <input
+        id="field-required"
+        type="checkbox"
+        [(ngModel)]="field.required"
+        (change)="onChange()"
+        class="h-4 w-4 rounded border-slate-300 text-[#0054AC] focus:ring-[#0054AC]"
+      />
+      <label for="field-required" class="text-sm text-slate-700">Required field</label>
+    </div>
 
-    <input
-      type="text"
-      [(ngModel)]="field.name"
-      (input)="onChange()"
-      class="w-full border rounded p-2"
-    />
+    <div class="flex items-center gap-2">
+      <input
+        id="field-is-show"
+        type="checkbox"
+        [ngModel]="field.isShow !== false"
+        (ngModelChange)="onShowChange($event)"
+        class="h-4 w-4 rounded border-slate-300 text-[#0054AC] focus:ring-[#0054AC]"
+      />
+      <label for="field-is-show" class="text-sm text-slate-700">Show field</label>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <input
+        id="field-is-readonly"
+        type="checkbox"
+        [(ngModel)]="field.isReadonly"
+        (change)="onChange()"
+        class="h-4 w-4 rounded border-slate-300 text-[#0054AC] focus:ring-[#0054AC]"
+      />
+      <label for="field-is-readonly" class="text-sm text-slate-700">Readonly field</label>
+    </div>
   </div>
 
-  <!-- DEFAULT VALUE -->
-  <div>
-    <label class="block mb-1 text-sm font-medium">
-      Default Value
-    </label>
+  <div *ngIf="field.type === 'select' || field.type === 'radio' || field.type === 'checkbox'">
+    <p *ngIf="field.optionSource?.type === 'api'" class="rounded-md border border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-500">
+      Options loaded from {{ field.optionSource?.endpoint }}
+    </p>
 
-    <input
-      type="text"
-      [(ngModel)]="field.defaultValue"
-      (input)="onChange()"
-      class="w-full border rounded p-2"
-    />
+    <ng-container *ngIf="field.optionSource?.type !== 'api'">
+      <label class="mb-1.5 block text-xs font-medium text-slate-600">Options (one per line)</label>
+      <textarea
+        rows="5"
+        [value]="optionsText"
+        (input)="updateOptions($event)"
+        class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC]"
+      ></textarea>
+    </ng-container>
   </div>
 
-  <!-- WIDTH -->
-  <div>
-    <label class="block mb-1 text-sm font-medium">
-      Width (1-12)
-    </label>
-
-    <input
-      type="number"
-      min="1"
-      max="12"
-      [(ngModel)]="field.width"
-      (input)="onChange()"
-      class="w-full border rounded p-2"
-    />
+  <div class="flex gap-2 border-t border-slate-100 pt-4">
+    <button
+      type="button"
+      class="flex-1 rounded-md border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+      (click)="onDuplicateClick()"
+    >
+      Duplicate
+    </button>
+    <button
+      type="button"
+      class="flex-1 rounded-md border border-red-200 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
+      (click)="onDeleteClick()"
+    >
+      Delete
+    </button>
   </div>
-
-  <!-- REQUIRED -->
-  <div class="flex items-center gap-2">
-
-    <input
-      type="checkbox"
-      [(ngModel)]="field.required"
-      (change)="onChange()"
-    />
-
-    <label class="text-sm">
-      Required Field
-    </label>
-
-  </div>
-
-<!-- OPTIONS EDITOR -->
-<div *ngIf="field.type === 'select' || field.type === 'radio' || field.type === 'checkbox'">
-
-  <label class="block text-sm font-medium">
-    Options (one per line)
-  </label>
-
-  <textarea
-    rows="5"
-    [value]="optionsText"
-    (input)="updateOptions($event)"
-    class="w-full border p-2"
-  ></textarea>
-
-</div>
-
-<div class="mt-4 border-t pt-3" *ngIf="field.condition">
-
-  <h4 class="font-bold text-sm mb-2">Conditional Logic</h4>
-
-  <label class="text-xs">Show this field when:</label>
-
-  <input
-    [(ngModel)]="field.condition.fieldId"
-    (input)="onChange()"
-    placeholder="Field ID"
-    class="w-full border p-2 mt-1 text-sm"
-  />
-
-  <input
-    [(ngModel)]="field.condition.value"
-    (input)="onChange()"
-    placeholder="Value"
-    class="w-full border p-2 mt-1 text-sm"
-  />
-
-</div>
-
-<div class="mt-4 border-t pt-3">
-
-  <h4 class="font-bold text-sm mb-2">Validations (JSON)</h4>
-
-  <textarea
-    rows="4"
-    [value]="validationsJson"
-    (input)="updateValidations($event)"
-    class="w-full border p-2 text-sm"
-  ></textarea>
-
-</div>
 
 </div>
