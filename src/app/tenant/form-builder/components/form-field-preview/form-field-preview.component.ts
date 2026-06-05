@@ -38,6 +38,7 @@ export class FormFieldPreviewComponent implements OnChanges {
   isSelectField = false;
   isRadioField = false;
   isCheckboxField = false;
+  isReadonly = false;
 
   private readonly destroyRef = inject(DestroyRef);
   private optionsRequestId = 0;
@@ -73,6 +74,7 @@ export class FormFieldPreviewComponent implements OnChanges {
     this.isSelectField = this.fieldType === 'select';
     this.isRadioField = this.fieldType === 'radio';
     this.isCheckboxField = this.fieldType === 'checkbox';
+    this.isReadonly = this.field.isReadonly === true;
   }
 
   private loadOptions(): void {

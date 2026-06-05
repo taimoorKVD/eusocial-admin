@@ -59,4 +59,9 @@ export class FormCanvasComponent {
   trackByFieldId(_index: number, field: FormField): string {
     return field.id;
   }
+
+  /** UI-only hide — field stays in schema, DOM, and CDK data. */
+  isFieldHidden(field: FormField): boolean {
+    return field.isShow === false;
+  }
 }

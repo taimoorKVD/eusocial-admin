@@ -2,7 +2,10 @@
 
   <div class="border-b border-slate-100 pb-3">
     <h3 class="text-sm font-semibold text-slate-900">Field Settings</h3>
-    <p class="text-xs capitalize text-slate-500">{{ field.fieldTypeName || field.type }} field</p>
+    <p class="text-xs capitalize text-slate-500">
+      {{ field.fieldTypeName || field.type }} field
+      <span *ngIf="isFieldHidden" class="font-normal text-amber-600">(hidden on canvas)</span>
+    </p>
   </div>
 
   <div>
@@ -25,15 +28,39 @@
     />
   </div>
 
-  <div class="flex items-center gap-2 rounded-md border border-slate-100 bg-slate-50 px-3 py-2.5">
-    <input
-      id="field-required"
-      type="checkbox"
-      [(ngModel)]="field.required"
-      (change)="onChange()"
-      class="h-4 w-4 rounded border-slate-300 text-[#0054AC] focus:ring-[#0054AC]"
-    />
-    <label for="field-required" class="text-sm text-slate-700">Required field</label>
+  <div class="space-y-2 rounded-md border border-slate-100 bg-slate-50 px-3 py-2.5">
+    <div class="flex items-center gap-2">
+      <input
+        id="field-required"
+        type="checkbox"
+        [(ngModel)]="field.required"
+        (change)="onChange()"
+        class="h-4 w-4 rounded border-slate-300 text-[#0054AC] focus:ring-[#0054AC]"
+      />
+      <label for="field-required" class="text-sm text-slate-700">Required field</label>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <input
+        id="field-is-show"
+        type="checkbox"
+        [ngModel]="field.isShow !== false"
+        (ngModelChange)="onShowChange($event)"
+        class="h-4 w-4 rounded border-slate-300 text-[#0054AC] focus:ring-[#0054AC]"
+      />
+      <label for="field-is-show" class="text-sm text-slate-700">Show field</label>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <input
+        id="field-is-readonly"
+        type="checkbox"
+        [(ngModel)]="field.isReadonly"
+        (change)="onChange()"
+        class="h-4 w-4 rounded border-slate-300 text-[#0054AC] focus:ring-[#0054AC]"
+      />
+      <label for="field-is-readonly" class="text-sm text-slate-700">Readonly field</label>
+    </div>
   </div>
 
   <div *ngIf="field.type === 'select' || field.type === 'radio' || field.type === 'checkbox'">

@@ -34,6 +34,8 @@ export interface FormField {
   name?: string;
   placeholder: string;
   required: boolean;
+  isShow?: boolean;
+  isReadonly?: boolean;
   options: string[];
   optionSource?: OptionSource;
 

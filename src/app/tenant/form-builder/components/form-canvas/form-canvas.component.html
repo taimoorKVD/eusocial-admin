@@ -20,7 +20,10 @@
     *ngFor="let field of schema; trackBy: trackByFieldId"
     cdkDrag
     [cdkDragData]="field"
+    [attr.data-field-id]="field.id"
+    [attr.aria-hidden]="isFieldHidden(field)"
     class="form-canvas-field h-full"
+    [class.form-canvas-field--hidden]="isFieldHidden(field)"
     [class.form-canvas-field--selected]="field.id === selectedFieldId"
     (click)="onFieldClick(field)"
     (cdkDragStarted)="onFieldDragStarted()"

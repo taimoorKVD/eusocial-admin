@@ -37,6 +37,12 @@
       0 0 0 2px #0054ac,
       0 0 0 4px #fff;
   }
+
+  // UI-only visibility — never remove from DOM/schema/CDK list
+  &--hidden {
+    display: none !important;
+    pointer-events: none;
+  }
 }
 
 :host ::ng-deep {

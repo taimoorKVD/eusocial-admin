@@ -63,6 +63,26 @@
       </div>
 
       <div [class.hidden]="activeTab !== 'settings'" class="space-y-4">
+        <div
+          *ngIf="hiddenFields.length"
+          class="rounded-md border border-amber-100 bg-amber-50 px-3 py-2.5"
+        >
+          <p class="text-xs font-medium text-amber-800">Hidden fields</p>
+          <p class="mt-0.5 text-[11px] text-amber-700">
+            These fields stay in the form schema but are hidden on the canvas.
+          </p>
+          <div class="mt-2 flex flex-wrap gap-2">
+            <button
+              *ngFor="let field of hiddenFields; trackBy: trackByFieldId"
+              type="button"
+              class="rounded-md border border-amber-200 bg-white px-2.5 py-1 text-xs font-medium text-amber-900 hover:bg-amber-100"
+              (click)="onSelectField(field)"
+            >
+              {{ field.label }}
+            </button>
+          </div>
+        </div>
+
         <ng-container *ngIf="selectedField; else noSelection">
           <app-field-settings [field]="selectedField" (update)="updateField($event)"
             (duplicate)="onDuplicateField(selectedField)" (delete)="onDeleteField(selectedField)"></app-field-settings>
@@ -70,6 +90,7 @@
         <ng-template #noSelection>
           <div class="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">
             Click a field on the canvas to edit its settings.
+            <span *ngIf="hiddenFields.length"> Or pick a hidden field above to re-enable it.</span>
           </div>
         </ng-template>
       </div>

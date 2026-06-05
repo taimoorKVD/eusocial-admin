@@ -20,6 +20,8 @@ export class FieldSettingsComponent {
         condition: value.condition || { fieldId: '', value: '' },
         options: [...(value.options || [])],
         optionSource: value.optionSource ? { ...value.optionSource } : undefined,
+        isShow: value.isShow !== false,
+        isReadonly: value.isReadonly === true,
       };
     }
   }
@@ -41,6 +43,8 @@ export class FieldSettingsComponent {
 
     this.update.emit({
       ...this._field,
+      isShow: this._field.isShow !== false,
+      isReadonly: this._field.isReadonly === true,
       options: [...(this._field.options || [])],
       optionSource: this._field.optionSource
         ? { ...this._field.optionSource }
@@ -49,6 +53,19 @@ export class FieldSettingsComponent {
         ? { ...this._field.condition }
         : { fieldId: '', value: '' },
     });
+  }
+
+  onShowChange(show: boolean): void {
+    if (!this._field) {
+      return;
+    }
+
+    this._field.isShow = show;
+    this.onChange();
+  }
+
+  get isFieldHidden(): boolean {
+    return this._field?.isShow === false;
   }
 
   updateOptions(event: Event): void {

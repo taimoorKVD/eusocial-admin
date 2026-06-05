@@ -1,6 +1,7 @@
 <label class="mb-1 block text-xs font-medium text-slate-500">
   {{ field.label }}
   <span *ngIf="field.required" class="text-red-500">*</span>
+  <span *ngIf="isReadonly" class="ml-1 text-[10px] font-normal text-slate-400">(readonly)</span>
 </label>
 
 <input
@@ -8,8 +9,10 @@
   type="text"
   [placeholder]="field.placeholder"
   [(ngModel)]="field.value"
+  [disabled]="isReadonly"
+  [readonly]="isReadonly"
   tabindex="-1"
-  class="w-full border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none"
+  class="w-full border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none disabled:cursor-not-allowed disabled:text-slate-500"
 />
 
 <input
@@ -17,8 +20,10 @@
   type="email"
   [placeholder]="field.placeholder"
   [(ngModel)]="field.value"
+  [disabled]="isReadonly"
+  [readonly]="isReadonly"
   tabindex="-1"
-  class="w-full border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none"
+  class="w-full border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none disabled:cursor-not-allowed disabled:text-slate-500"
 />
 
 <input
@@ -26,25 +31,30 @@
   type="number"
   [placeholder]="field.placeholder"
   [(ngModel)]="field.value"
+  [disabled]="isReadonly"
+  [readonly]="isReadonly"
   tabindex="-1"
-  class="w-full border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none"
+  class="w-full border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none disabled:cursor-not-allowed disabled:text-slate-500"
 />
 
 <textarea
   *ngIf="fieldType === 'textarea'"
   [placeholder]="field.placeholder"
   [(ngModel)]="field.value"
+  [disabled]="isReadonly"
+  [readonly]="isReadonly"
   rows="3"
   tabindex="-1"
-  class="w-full resize-none border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none"
+  class="w-full resize-none border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none disabled:cursor-not-allowed disabled:text-slate-500"
 ></textarea>
 
 <select
   *ngIf="isSelectField"
   [ngModel]="field.value"
   (ngModelChange)="field.value = $event"
+  [disabled]="isReadonly"
   tabindex="-1"
-  class="w-full border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 focus:border-slate-500 focus:outline-none"
+  class="w-full border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 focus:border-slate-500 focus:outline-none disabled:cursor-not-allowed disabled:text-slate-500"
 >
   <option *ngIf="loadingOptions" [ngValue]="null" disabled>Loading options...</option>
   <option *ngIf="optionsError && !loadingOptions" [ngValue]="null" disabled>
@@ -77,6 +87,7 @@
       [value]="opt.value"
       [ngModel]="field.value"
       (ngModelChange)="field.value = $event"
+      [disabled]="isReadonly"
       tabindex="-1"
     />
     {{ opt.label }}
@@ -92,6 +103,7 @@
     <input
       type="checkbox"
       [checked]="isCheckboxChecked(opt.value)"
+      [disabled]="isReadonly"
       tabindex="-1"
     />
     {{ opt.label }}
@@ -102,6 +114,7 @@
   *ngIf="fieldType === 'image'"
   type="file"
   accept="image/*"
+  [disabled]="isReadonly"
   tabindex="-1"
-  class="w-full border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 focus:border-slate-500 focus:outline-none"
+  class="w-full border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 focus:border-slate-500 focus:outline-none disabled:cursor-not-allowed disabled:text-slate-500"
 />

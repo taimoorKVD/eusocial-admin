@@ -17,16 +17,27 @@ export function toFieldName(label: string | null | undefined): string {
   return fieldName || 'field';
 }
 
+function readBooleanFlag(
+  field: Partial<FormField> & Record<string, unknown>,
+  camelKey: keyof FormField,
+  snakeKey: string,
+  defaultValue: boolean
+): boolean {
+  const camelValue = field[camelKey];
+
+  if (typeof camelValue === 'boolean') {
+    return camelValue;
+  }
+
+  if (typeof field[snakeKey] === 'boolean') {
+    return field[snakeKey];
+  }
+
+  return defaultValue;
+}
+
 function readRequired(field: Partial<FormField> & Record<string, unknown>): boolean {
-  if (typeof field.required === 'boolean') {
-    return field.required;
-  }
-
-  if (typeof field['isRequired'] === 'boolean') {
-    return field['isRequired'];
-  }
-
-  return false;
+  return readBooleanFlag(field, 'required', 'isRequired', false);
 }
 
 function readFieldTypeName(field: Partial<FormField> & Record<string, unknown>): string {
@@ -70,6 +81,8 @@ export function sanitizeField(
     name: field.name || toFieldName(label),
     placeholder: field.placeholder || '',
     required: readRequired(field),
+    isShow: readBooleanFlag(field, 'isShow', 'is_show', true),
+    isReadonly: readBooleanFlag(field, 'isReadonly', 'is_readonly', false),
     options: [...(field.options || [])],
     optionSource: readOptionSourceFromField(field),
     value: field.value ?? field.defaultValue ?? null,

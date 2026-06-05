@@ -40,6 +40,10 @@ export class FormsEditorComponent {
     return this.builderSchema.find(field => field.id === this.selectedFieldId) || null;
   }
 
+  get hiddenFields(): FormField[] {
+    return this.builderSchema.filter(field => field.isShow === false);
+  }
+
   ngOnInit(): void {
     this.route.params.subscribe(params => {
       this.moduleName = params['module'];
@@ -79,6 +83,10 @@ export class FormsEditorComponent {
   onSelectField(field: FormField): void {
     this.selectedFieldId = field.id;
     this.activeTab = 'settings';
+  }
+
+  trackByFieldId(_index: number, field: FormField): string {
+    return field.id;
   }
 
   onDuplicateField(field: FormField): void {
@@ -126,6 +134,8 @@ export class FormsEditorComponent {
 
     this.builderSchema[index] = sanitizeField({
       ...updated,
+      isShow: updated.isShow !== false,
+      isReadonly: updated.isReadonly === true,
       options: [...(updated.options || [])],
       optionSource: updated.optionSource
         ? { ...updated.optionSource }
@@ -136,6 +146,8 @@ export class FormsEditorComponent {
     });
 
     this.builderSchema = normalizeFieldOrder([...this.builderSchema]);
+    this.selectedFieldId = updated.id;
+    this.activeTab = 'settings';
   }
 
   buildPayload() {
@@ -153,8 +165,9 @@ export class FormsEditorComponent {
           name: field.name || field.label,
           placeholder: field.placeholder,
           isRequired: field.required,
+          isShow: field.isShow !== false,
           optionSource: field.optionSource,
-          isReadonly: false,
+          isReadonly: field.isReadonly === true,
           isSystemField: true,
           isEditable: true,
           isDeletable: false,
