@@ -27,6 +27,9 @@ import { resolveFieldOptionSource } from '../../utils/option-source.utils';
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './form-field-preview.component.html',
+  host: {
+    class: 'block pointer-events-none select-none',
+  },
 })
 export class FormFieldPreviewComponent implements OnChanges {
   @Input({ required: true }) field!: FormField;
@@ -40,6 +43,10 @@ export class FormFieldPreviewComponent implements OnChanges {
   isRadioField = false;
   isCheckboxField = false;
   isReadonly = false;
+
+  get previewValue(): unknown {
+    return this.field?.defaultValue ?? this.field?.value ?? '';
+  }
 
   private readonly destroyRef = inject(DestroyRef);
   private optionsRequestId = 0;

@@ -1,7 +1,12 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { ToastrService } from 'ngx-toastr';
 import { FormField } from '../models/form-field.model';
 import { toFieldName } from '../utils/form-field.factory';
 import { normalizeFieldOption } from '../utils/field-options.utils';
+import { DynamicModuleOptionsService } from '../services/dynamic-module-options.service';
+import { FormModuleListItem } from '../../forms/models/form-module.model';
+
+type SelectOptionsMode = 'static' | 'dynamic';
 
 @Component({
   selector: 'app-field-settings',
@@ -10,8 +15,13 @@ import { normalizeFieldOption } from '../utils/field-options.utils';
   styleUrl: './field-settings.component.scss',
 })
 export class FieldSettingsComponent {
+  @Input() activeModuleName = '';
+
   @Input() set field(value: FormField | undefined) {
     if (value) {
+      const isSameField = this._field?.id === value.id;
+      const preservedModuleSlug = isSameField ? this.selectedModuleSlug : '';
+
       this._field = {
         ...value,
         name: value.name || toFieldName(value.label),
@@ -24,6 +34,8 @@ export class FieldSettingsComponent {
         isShow: value.isShow !== false,
         isReadonly: value.isReadonly === true,
       };
+
+      this.initializeSelectOptionsState(this._field, preservedModuleSlug);
     }
   }
 
@@ -33,9 +45,23 @@ export class FieldSettingsComponent {
 
   private _field!: FormField;
 
+  optionsMode: SelectOptionsMode = 'static';
+  availableModules: FormModuleListItem[] = [];
+  selectedModuleSlug = '';
+  moduleRecords: Record<string, unknown>[] = [];
+
+  modulesLoading = false;
+  modulesError: string | null = null;
+  recordsLoading = false;
+
   @Output() update = new EventEmitter<FormField>();
   @Output() duplicate = new EventEmitter<void>();
   @Output() delete = new EventEmitter<void>();
+
+  constructor(
+    private dynamicModuleOptionsService: DynamicModuleOptionsService,
+    private toastr: ToastrService
+  ) {}
 
   onChange(): void {
     if (!this._field) {
@@ -47,9 +73,12 @@ export class FieldSettingsComponent {
       isShow: this._field.isShow !== false,
       isReadonly: this._field.isReadonly === true,
       options: [...(this._field.options || [])],
-      optionSource: this._field.optionSource
-        ? { ...this._field.optionSource }
-        : undefined,
+      optionSource:
+        this.optionsMode === 'dynamic'
+          ? undefined
+          : this._field.optionSource
+            ? { ...this._field.optionSource }
+            : undefined,
       condition: this._field.condition
         ? { ...this._field.condition }
         : { fieldId: '', value: '' },
@@ -69,6 +98,83 @@ export class FieldSettingsComponent {
     return this._field?.isShow === false;
   }
 
+  get isLegacyApiSelect(): boolean {
+    return (
+      this._field?.type === 'select' && this._field.optionSource?.type === 'api'
+    );
+  }
+
+  get isSelectField(): boolean {
+    return this._field?.type === 'select';
+  }
+
+  get dynamicOptionsCount(): number {
+    return this.optionsMode === 'dynamic' ? this._field?.options?.length ?? 0 : 0;
+  }
+
+  setOptionsMode(mode: SelectOptionsMode): void {
+    this.optionsMode = mode;
+
+    if (mode === 'dynamic') {
+      this._field.optionSource = undefined;
+      this.loadAvailableModules();
+      return;
+    }
+
+    this.onChange();
+  }
+
+  onModuleChange(moduleSlug: string): void {
+    if (!moduleSlug) {
+      this.selectedModuleSlug = '';
+      this.moduleRecords = [];
+      this._field.options = [];
+      this.onChange();
+      return;
+    }
+
+    const moduleName = this.getModuleLabelBySlug(moduleSlug);
+
+    this.recordsLoading = true;
+
+    this.dynamicModuleOptionsService.getModuleRecords(moduleSlug).subscribe({
+      next: records => {
+        this.recordsLoading = false;
+        const options =
+          this.dynamicModuleOptionsService.buildDefaultOptionsFromRecords(records);
+
+        if (!options.length) {
+          this.fallbackToStaticOptions(moduleName);
+          return;
+        }
+
+        this.selectedModuleSlug = moduleSlug;
+        this.moduleRecords = records;
+        this.applyDynamicOptions();
+      },
+      error: () => {
+        this.recordsLoading = false;
+        this.fallbackToStaticOptions(moduleName);
+      },
+    });
+  }
+
+  getModuleSlug(form: FormModuleListItem): string {
+    return this.dynamicModuleOptionsService.getModuleSlug(form);
+  }
+
+  getModuleLabel(form: FormModuleListItem): string {
+    return this.dynamicModuleOptionsService.getModuleLabel(form);
+  }
+
+  getModuleLabelBySlug(moduleSlug: string): string {
+    const module = this.availableModules.find(
+      item => this.getModuleSlug(item) === moduleSlug
+    );
+
+    return module ? this.getModuleLabel(module) : moduleSlug;
+  }
+
   updateOptions(event: Event): void {
     if (!this._field) {
       return;
@@ -81,6 +187,7 @@ export class FieldSettingsComponent {
       .map(v => v.trim())
       .filter(v => v);
 
+    this._field.optionSource = undefined;
     this.onChange();
   }
 
@@ -107,5 +214,74 @@ export class FieldSettingsComponent {
     }
 
     this.delete.emit();
+  }
+
+  private initializeSelectOptionsState(
+    field: FormField,
+    preservedModuleSlug = ''
+  ): void {
+    this.optionsMode = this.resolveOptionsMode(field);
+    this.selectedModuleSlug = preservedModuleSlug;
+    this.moduleRecords = [];
+
+    if (this.optionsMode === 'dynamic') {
+      this.loadAvailableModules();
+    }
+  }
+
+  private resolveOptionsMode(field: FormField): SelectOptionsMode {
+    if (field.optionSource?.type === 'api') {
+      return 'static';
+    }
+
+    const options = field.options || [];
+
+    if (
+      options.length > 0 &&
+      options.every(option => typeof option === 'object' && option !== null)
+    ) {
+      return 'dynamic';
+    }
+
+    return 'static';
+  }
+
+  private loadAvailableModules(): void {
+    this.modulesLoading = true;
+    this.modulesError = null;
+
+    this.dynamicModuleOptionsService
+      .getAvailableModules(this.activeModuleName)
+      .subscribe({
+        next: modules => {
+          this.availableModules = modules;
+          this.modulesLoading = false;
+        },
+        error: () => {
+          this.availableModules = [];
+          this.modulesLoading = false;
+          this.modulesError = 'Failed to load form modules.';
+        },
+      });
+  }
+
+  private applyDynamicOptions(): void {
+    if (!this._field) {
+      return;
+    }
+
+    this._field.options =
+      this.dynamicModuleOptionsService.buildDefaultOptionsFromRecords(
+        this.moduleRecords
+      );
+    this._field.optionSource = undefined;
+    this.onChange();
+  }
+
+  private fallbackToStaticOptions(moduleName: string): void {
+    this.toastr.warning(`${moduleName} has no records`);
+    this.selectedModuleSlug = '';
+    this.moduleRecords = [];
+    this.setOptionsMode('static');
   }
 }
