@@ -63,7 +63,92 @@
     </div>
   </div>
 
-  <div *ngIf="field.type === 'select' || field.type === 'radio' || field.type === 'checkbox'">
+  <div *ngIf="isSelectField" class="space-y-3">
+    <p *ngIf="isLegacyApiSelect" class="rounded-md border border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-500">
+      Options loaded from {{ field.optionSource?.endpoint }}
+    </p>
+
+    <ng-container *ngIf="!isLegacyApiSelect">
+      <div>
+        <label class="mb-1.5 block text-xs font-medium text-slate-600">Options source</label>
+        <div class="space-y-2 rounded-md border border-slate-100 bg-slate-50 px-3 py-2.5">
+          <label class="flex items-center gap-2 text-sm text-slate-700">
+            <input
+              type="radio"
+              name="select-options-mode"
+              [checked]="optionsMode === 'static'"
+              (change)="setOptionsMode('static')"
+              class="h-4 w-4 border-slate-300 text-[#0054AC] focus:ring-[#0054AC]"
+            />
+            Static Options
+          </label>
+
+          <label class="flex items-center gap-2 text-sm text-slate-700">
+            <input
+              type="radio"
+              name="select-options-mode"
+              [checked]="optionsMode === 'dynamic'"
+              (change)="setOptionsMode('dynamic')"
+              class="h-4 w-4 border-slate-300 text-[#0054AC] focus:ring-[#0054AC]"
+            />
+            Dynamic Options
+          </label>
+        </div>
+      </div>
+
+      <div *ngIf="optionsMode === 'static'">
+        <label class="mb-1.5 block text-xs font-medium text-slate-600">Options (one per line)</label>
+        <textarea
+          rows="5"
+          [value]="optionsText"
+          (input)="updateOptions($event)"
+          class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC]"
+        ></textarea>
+      </div>
+
+      <div *ngIf="optionsMode === 'dynamic'" class="space-y-3">
+        <div>
+          <label class="mb-1.5 block text-xs font-medium text-slate-600">Module</label>
+          <select
+            [ngModel]="selectedModuleSlug"
+            (ngModelChange)="onModuleChange($event)"
+            class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC]"
+          >
+            <option value="">Select a module</option>
+            <option *ngFor="let module of availableModules" [ngValue]="getModuleSlug(module)">
+              {{ getModuleLabel(module) }}
+            </option>
+          </select>
+          <p *ngIf="modulesLoading" class="mt-1 text-xs text-slate-400">Loading modules...</p>
+          <p *ngIf="modulesError" class="mt-1 text-xs text-red-500">{{ modulesError }}</p>
+        </div>
+
+        <div *ngIf="selectedModuleSlug">
+          <label class="mb-1.5 block text-xs font-medium text-slate-600">Display field</label>
+          <select
+            [ngModel]="selectedLabelField"
+            (ngModelChange)="onLabelFieldChange($event)"
+            [disabled]="recordsLoading || !recordFieldKeys.length"
+            class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100"
+          >
+            <option value="">Select a display field</option>
+            <option *ngFor="let key of recordFieldKeys" [ngValue]="key">{{ key }}</option>
+          </select>
+          <p *ngIf="recordsLoading" class="mt-1 text-xs text-slate-400">Loading records...</p>
+          <p *ngIf="recordsError" class="mt-1 text-xs text-red-500">{{ recordsError }}</p>
+        </div>
+
+        <p
+          *ngIf="dynamicOptionsCount > 0"
+          class="rounded-md border border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-600"
+        >
+          {{ dynamicOptionsCount }} options saved to this field.
+        </p>
+      </div>
+    </ng-container>
+  </div>
+
+  <div *ngIf="field.type === 'radio' || field.type === 'checkbox'">
     <p *ngIf="field.optionSource?.type === 'api'" class="rounded-md border border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-500">
       Options loaded from {{ field.optionSource?.endpoint }}
     </p>
