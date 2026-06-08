@@ -1,4 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { ToastrService } from 'ngx-toastr';
 import { FormField } from '../models/form-field.model';
 import { toFieldName } from '../utils/form-field.factory';
 import { normalizeFieldOption } from '../utils/field-options.utils';
@@ -52,13 +53,15 @@ export class FieldSettingsComponent {
   modulesLoading = false;
   modulesError: string | null = null;
   recordsLoading = false;
-  recordsError: string | null = null;
 
   @Output() update = new EventEmitter<FormField>();
   @Output() duplicate = new EventEmitter<void>();
   @Output() delete = new EventEmitter<void>();
 
-  constructor(private dynamicModuleOptionsService: DynamicModuleOptionsService) {}
+  constructor(
+    private dynamicModuleOptionsService: DynamicModuleOptionsService,
+    private toastr: ToastrService
+  ) {}
 
   onChange(): void {
     if (!this._field) {
@@ -122,39 +125,36 @@ export class FieldSettingsComponent {
   }
 
   onModuleChange(moduleSlug: string): void {
-    this.selectedModuleSlug = moduleSlug;
-    this.moduleRecords = [];
-    this.recordsError = null;
-
     if (!moduleSlug) {
+      this.selectedModuleSlug = '';
+      this.moduleRecords = [];
       this._field.options = [];
       this.onChange();
       return;
     }
 
+    const moduleName = this.getModuleLabelBySlug(moduleSlug);
+
     this.recordsLoading = true;
-    this.recordsError = null;
 
     this.dynamicModuleOptionsService.getModuleRecords(moduleSlug).subscribe({
       next: records => {
-        this.moduleRecords = records;
         this.recordsLoading = false;
+        const options =
+          this.dynamicModuleOptionsService.buildDefaultOptionsFromRecords(records);
 
-        if (!records.length) {
-          this.recordsError = 'No records found for this module.';
-          this._field.options = [];
-          this.onChange();
+        if (!options.length) {
+          this.fallbackToStaticOptions(moduleName);
           return;
         }
 
+        this.selectedModuleSlug = moduleSlug;
+        this.moduleRecords = records;
         this.applyDynamicOptions();
       },
       error: () => {
-        this.moduleRecords = [];
         this.recordsLoading = false;
-        this.recordsError = 'Failed to load module records.';
-        this._field.options = [];
-        this.onChange();
+        this.fallbackToStaticOptions(moduleName);
       },
     });
   }
@@ -165,6 +165,14 @@ export class FieldSettingsComponent {
 
   getModuleLabel(form: FormModuleListItem): string {
     return this.dynamicModuleOptionsService.getModuleLabel(form);
+  }
+
+  getModuleLabelBySlug(moduleSlug: string): string {
+    const module = this.availableModules.find(
+      item => this.getModuleSlug(item) === moduleSlug
+    );
+
+    return module ? this.getModuleLabel(module) : moduleSlug;
   }
 
   updateOptions(event: Event): void {
@@ -215,7 +223,6 @@ export class FieldSettingsComponent {
     this.optionsMode = this.resolveOptionsMode(field);
     this.selectedModuleSlug = preservedModuleSlug;
     this.moduleRecords = [];
-    this.recordsError = null;
 
     if (this.optionsMode === 'dynamic') {
       this.loadAvailableModules();
@@ -269,5 +276,12 @@ export class FieldSettingsComponent {
       );
     this._field.optionSource = undefined;
     this.onChange();
+  }
+
+  private fallbackToStaticOptions(moduleName: string): void {
+    this.toastr.warning(`${moduleName} has no records`);
+    this.selectedModuleSlug = '';
+    this.moduleRecords = [];
+    this.setOptionsMode('static');
   }
 }
