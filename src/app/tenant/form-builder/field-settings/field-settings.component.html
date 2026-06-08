@@ -108,14 +108,17 @@
 
       <div *ngIf="optionsMode === 'dynamic'" class="space-y-3">
         <div>
-          <label class="mb-1.5 block text-xs font-medium text-slate-600">Module</label>
+          <label class="mb-1.5 block text-xs font-medium text-slate-600">Select Module</label>
           <select
             [ngModel]="selectedModuleSlug"
             (ngModelChange)="onModuleChange($event)"
             class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC]"
           >
-            <option value="">Select a module</option>
-            <option *ngFor="let module of availableModules" [ngValue]="getModuleSlug(module)">
+            <option [ngValue]="''">Select a module</option>
+            <option
+              *ngFor="let module of availableModules"
+              [ngValue]="getModuleSlug(module)"
+            >
               {{ getModuleLabel(module) }}
             </option>
           </select>

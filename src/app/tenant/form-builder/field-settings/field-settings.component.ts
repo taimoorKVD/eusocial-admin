@@ -18,6 +18,9 @@ export class FieldSettingsComponent {
 
   @Input() set field(value: FormField | undefined) {
     if (value) {
+      const isSameField = this._field?.id === value.id;
+      const preservedModuleSlug = isSameField ? this.selectedModuleSlug : '';
+
       this._field = {
         ...value,
         name: value.name || toFieldName(value.label),
@@ -31,7 +34,7 @@ export class FieldSettingsComponent {
         isReadonly: value.isReadonly === true,
       };
 
-      this.initializeSelectOptionsState(this._field);
+      this.initializeSelectOptionsState(this._field, preservedModuleSlug);
     }
   }
 
@@ -205,9 +208,12 @@ export class FieldSettingsComponent {
     this.delete.emit();
   }
 
-  private initializeSelectOptionsState(field: FormField): void {
+  private initializeSelectOptionsState(
+    field: FormField,
+    preservedModuleSlug = ''
+  ): void {
     this.optionsMode = this.resolveOptionsMode(field);
-    this.selectedModuleSlug = '';
+    this.selectedModuleSlug = preservedModuleSlug;
     this.moduleRecords = [];
     this.recordsError = null;
 
