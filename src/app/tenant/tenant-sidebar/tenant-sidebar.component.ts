@@ -7,30 +7,39 @@ import { TenantSessionService } from '../../services/tenant-session.service';
   standalone: false,
 
   templateUrl: './tenant-sidebar.component.html',
-  styleUrl: './tenant-sidebar.component.scss'
+  styleUrl: './tenant-sidebar.component.scss',
 })
 export class TenantSidebarComponent {
   @Input() isOpen = false;
   @Output() closeSidebar = new EventEmitter<void>();
 
-  constructor(private route: ActivatedRoute, public session: TenantSessionService) {}
+  constructor(
+    private route: ActivatedRoute,
+    public session: TenantSessionService,
+  ) {}
 
-  openSetup = true;
-  openExtraManagement = true;
+  openSetup = false;
+  openExtraManagement = false;
+  openFormBuilder = false;
   openTraining = false;
   // slug: string = '';
 
   ngOnInit() {
-    this.openSetup = true;
-    this.openExtraManagement = true;
+    this.openSetup = false;
+    this.openExtraManagement = false;
+    this.openFormBuilder = false;
   }
 
   toggleSetup() {
     this.openSetup = !this.openSetup;
   }
 
-    toggleExtraManagement() {
+  toggleExtraManagement() {
     this.openExtraManagement = !this.openExtraManagement;
+  }
+
+  toggleOpenFormBuilder() {
+    this.openFormBuilder = !this.openFormBuilder;
   }
 
   toggleTraining() {

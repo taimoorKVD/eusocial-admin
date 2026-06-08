@@ -200,7 +200,7 @@
     </div>
 
     <!-- FORMS -->
-    <a [routerLink]="['/tenant',  session.getSlug(), 'forms']"
+    <!-- <a [routerLink]="['/tenant',  session.getSlug(), 'forms']"
       routerLinkActive="text-[#333333] border-l-4 border-blue-500 font-bold"
       class="text-[#525252] font-ibm flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100">
       <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
@@ -211,7 +211,85 @@
         <path stroke-linecap="round" stroke-linejoin="round" d="M17 16v-3" />
       </svg>
       Forms Module
-    </a>
+    </a> -->
+
+    <!-- Extra Management -->
+    <div>
+
+      <button (click)="toggleOpenFormBuilder()"
+        class="font-ibm w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-100">
+
+        <div class="flex items-center gap-3">
+          <span class="text-[#525252]">{{ openFormBuilder ? '▲' : '▼' }}</span>
+
+          <svg class="w-4 h-4 shrink-0 text-[#525252]" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="1.8" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 6h14" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h8" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10 18h4" />
+            <circle cx="7" cy="6" r="1" fill="currentColor" stroke="none" />
+            <circle cx="15" cy="12" r="1" fill="currentColor" stroke="none" />
+            <circle cx="13" cy="18" r="1" fill="currentColor" stroke="none" />
+          </svg>
+          Form Builder
+        </div>
+      </button>
+
+      <!-- SUB MENU -->
+      <div *ngIf="openFormBuilder" class="ml-8 mt-1 space-y-1">
+
+        <!-- <a [routerLink]="['/tenant', session.getSlug(), 'users']" -->
+        <a [routerLink]="['/tenant',  session.getSlug(), 'forms', 'users']"
+          routerLinkActive="text-[#333333] border-l-4 border-blue-500 font-bold"
+          class="text-[#525252] font-ibm flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-sm">
+          <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+            xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M12 21s7-6.5 7-11a7 7 0 1 0-14 0c0 4.5 7 11 7 11Z" />
+            <circle cx="12" cy="10" r="2.5" />
+          </svg>
+          Users
+        </a>
+
+        <a [routerLink]="['/tenant',  session.getSlug(), 'forms', 'vendors']"
+          routerLinkActive="text-[#333333] border-l-4 border-blue-500 font-bold"
+          class="text-[#525252] font-ibm flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-sm">
+          <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+            xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 8h12l3 4v6H3V8Z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 8V5h4v7" />
+            <circle cx="7" cy="18" r="1.5" />
+            <circle cx="15" cy="18" r="1.5" />
+          </svg>
+          Vendors
+        </a>
+
+        <a [routerLink]="['/tenant',  session.getSlug(), 'forms', 'job-positions']"
+          routerLinkActive="text-[#333333] border-l-4 border-blue-500 font-bold"
+          class="text-[#525252] font-ibm flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-sm">
+          <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+            xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M9 7.5V6A1.5 1.5 0 0 1 10.5 4.5h3A1.5 1.5 0 0 1 15 6v1.5" />
+            <rect x="3" y="7.5" width="18" height="12" rx="1.5" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 12h18" />
+          </svg>
+          Job-postions
+        </a>
+
+        <a [routerLink]="['/tenant',  session.getSlug(), 'forms', 'items']"
+          routerLinkActive="text-[#333333] border-l-4 border-blue-500 font-bold"
+          class="text-[#525252] font-ibm flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-sm">
+          <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+            xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3 20 7.5 12 12 4 7.5 12 3Z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 12.5 12 17l8-4.5" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 17 12 21l8-4" />
+          </svg>
+          Items
+        </a>
+      </div>
+    </div>
   </div>
 </div>
 </div>
