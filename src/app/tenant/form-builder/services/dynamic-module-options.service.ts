@@ -24,16 +24,6 @@ const MODULE_API_PATHS: Record<string, string> = {
   'reporting-groups': '/reporting-groups',
 };
 
-const PREFERRED_LABEL_KEYS = [
-  'name',
-  'title',
-  'label',
-  'fullName',
-  'full_name',
-  'email',
-  'description',
-];
-
 @Injectable({
   providedIn: 'root',
 })
@@ -65,52 +55,21 @@ export class DynamicModuleOptionsService {
     );
   }
 
-  extractDisplayFieldKeys(records: Record<string, unknown>[]): string[] {
-    const sample =
-      records.find(record => this.readRecordId(record) != null) ?? records[0];
-
-    if (!sample) {
-      return [];
-    }
-
-    const keys = Object.keys(sample).filter(key => {
-      const value = sample[key];
-      return (
-        key !== 'id' &&
-        (typeof value === 'string' ||
-          typeof value === 'number' ||
-          typeof value === 'boolean')
-      );
-    });
-
-    return keys.sort((a, b) => {
-      const aRank = PREFERRED_LABEL_KEYS.indexOf(a);
-      const bRank = PREFERRED_LABEL_KEYS.indexOf(b);
-
-      if (aRank !== -1 || bRank !== -1) {
-        return (aRank === -1 ? 999 : aRank) - (bRank === -1 ? 999 : bRank);
-      }
-
-      return a.localeCompare(b);
-    });
-  }
-
-  buildOptionsFromRecords(
-    records: Record<string, unknown>[],
-    labelField: string
+  buildDefaultOptionsFromRecords(
+    records: Record<string, unknown>[]
   ): FieldOption[] {
     return records
       .map(record => {
         const id = this.readRecordId(record);
-        const label = record[labelField];
+        const label = this.readRecordLabel(record);
 
-        if (id == null || label == null || label === '') {
+        if (id == null || label == null) {
           return null;
         }
 
         return {
-          label: String(label),
-          value: id as string | number,
+          label,
+          value: id,
         };
       })
       .filter((option): option is FieldOption => option !== null);
@@ -163,6 +122,37 @@ export class DynamicModuleOptionsService {
     }
 
     return null;
+  }
+
+  private readRecordLabel(record: Record<string, unknown>): string | null {
+    const name = this.readScalarValue(record, 'name');
+    if (name != null && name !== '') {
+      return String(name);
+    }
+
+    const title = this.readScalarValue(record, 'title');
+    if (title != null && title !== '') {
+      return String(title);
+    }
+
+    return null;
+  }
+
+  private readScalarValue(
+    record: Record<string, unknown>,
+    key: string
+  ): unknown {
+    if (key in record) {
+      return record[key];
+    }
+
+    const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+
+    if (snakeKey in record) {
+      return record[snakeKey];
+    }
+
+    return undefined;
   }
 
   private isRecord(value: unknown): value is Record<string, unknown> {

@@ -121,19 +121,6 @@
           </select>
           <p *ngIf="modulesLoading" class="mt-1 text-xs text-slate-400">Loading modules...</p>
           <p *ngIf="modulesError" class="mt-1 text-xs text-red-500">{{ modulesError }}</p>
-        </div>
-
-        <div *ngIf="selectedModuleSlug">
-          <label class="mb-1.5 block text-xs font-medium text-slate-600">Display field</label>
-          <select
-            [ngModel]="selectedLabelField"
-            (ngModelChange)="onLabelFieldChange($event)"
-            [disabled]="recordsLoading || !recordFieldKeys.length"
-            class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100"
-          >
-            <option value="">Select a display field</option>
-            <option *ngFor="let key of recordFieldKeys" [ngValue]="key">{{ key }}</option>
-          </select>
           <p *ngIf="recordsLoading" class="mt-1 text-xs text-slate-400">Loading records...</p>
           <p *ngIf="recordsError" class="mt-1 text-xs text-red-500">{{ recordsError }}</p>
         </div>

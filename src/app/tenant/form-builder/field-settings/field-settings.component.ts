@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { FormField, FieldOption } from '../models/form-field.model';
+import { FormField } from '../models/form-field.model';
 import { toFieldName } from '../utils/form-field.factory';
 import { normalizeFieldOption } from '../utils/field-options.utils';
 import { DynamicModuleOptionsService } from '../services/dynamic-module-options.service';
@@ -44,8 +44,6 @@ export class FieldSettingsComponent {
   optionsMode: SelectOptionsMode = 'static';
   availableModules: FormModuleListItem[] = [];
   selectedModuleSlug = '';
-  recordFieldKeys: string[] = [];
-  selectedLabelField = '';
   moduleRecords: Record<string, unknown>[] = [];
 
   modulesLoading = false;
@@ -122,11 +120,12 @@ export class FieldSettingsComponent {
 
   onModuleChange(moduleSlug: string): void {
     this.selectedModuleSlug = moduleSlug;
-    this.selectedLabelField = '';
-    this.recordFieldKeys = [];
     this.moduleRecords = [];
+    this.recordsError = null;
 
     if (!moduleSlug) {
+      this._field.options = [];
+      this.onChange();
       return;
     }
 
@@ -136,31 +135,25 @@ export class FieldSettingsComponent {
     this.dynamicModuleOptionsService.getModuleRecords(moduleSlug).subscribe({
       next: records => {
         this.moduleRecords = records;
-        this.recordFieldKeys =
-          this.dynamicModuleOptionsService.extractDisplayFieldKeys(records);
         this.recordsLoading = false;
 
         if (!records.length) {
           this.recordsError = 'No records found for this module.';
+          this._field.options = [];
+          this.onChange();
+          return;
         }
+
+        this.applyDynamicOptions();
       },
       error: () => {
         this.moduleRecords = [];
-        this.recordFieldKeys = [];
         this.recordsLoading = false;
         this.recordsError = 'Failed to load module records.';
+        this._field.options = [];
+        this.onChange();
       },
     });
-  }
-
-  onLabelFieldChange(labelField: string): void {
-    this.selectedLabelField = labelField;
-
-    if (!labelField) {
-      return;
-    }
-
-    this.applyDynamicOptions();
   }
 
   getModuleSlug(form: FormModuleListItem): string {
@@ -215,8 +208,6 @@ export class FieldSettingsComponent {
   private initializeSelectOptionsState(field: FormField): void {
     this.optionsMode = this.resolveOptionsMode(field);
     this.selectedModuleSlug = '';
-    this.selectedLabelField = '';
-    this.recordFieldKeys = [];
     this.moduleRecords = [];
     this.recordsError = null;
 
@@ -262,17 +253,14 @@ export class FieldSettingsComponent {
   }
 
   private applyDynamicOptions(): void {
-    if (!this._field || !this.selectedLabelField) {
+    if (!this._field) {
       return;
     }
 
-    const options: FieldOption[] =
-      this.dynamicModuleOptionsService.buildOptionsFromRecords(
-        this.moduleRecords,
-        this.selectedLabelField
+    this._field.options =
+      this.dynamicModuleOptionsService.buildDefaultOptionsFromRecords(
+        this.moduleRecords
       );
-
-    this._field.options = options;
     this._field.optionSource = undefined;
     this.onChange();
   }
