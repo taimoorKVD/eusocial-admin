@@ -22,6 +22,7 @@ export class FormsEditorComponent {
   activeTab: 'fields' | 'settings' = 'fields';
   formName = 'Users Dynamic Form';
   formId: string | number | null = null;
+  isLoading = false;
 
   /** Connected list IDs (palette ↔ canvas). */
   readonly paletteListId = 'sidebarList';
@@ -192,6 +193,7 @@ export class FormsEditorComponent {
       return;
     }
 
+    this.isLoading = true;
     this.builderSchema = normalizeFieldOrder([...this.builderSchema]);
 
     this.formStorageService
@@ -204,9 +206,11 @@ export class FormsEditorComponent {
       .subscribe({
         next: () => {
           console.log('Saved form payload:', this.buildPayload());
+          this.isLoading = false;
         },
         error: error => {
           console.error('Failed to save form schema:', error);
+          this.isLoading = false;
         },
       });
   }
