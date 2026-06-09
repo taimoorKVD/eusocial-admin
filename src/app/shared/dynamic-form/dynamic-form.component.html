@@ -1,13 +1,10 @@
-<form *ngIf="form" [formGroup]="form" class="dynamic-form" novalidate>
-  <div class="row g-3">
-    <div
-      *ngFor="let field of sortedFields; trackBy: trackByField"
-      [ngClass]="getColClass(field)"
+<form *ngIf="form" [formGroup]="form" class="max-w-[66%] dynamic-form ng-untouched ng-pristine ng-invalid" novalidate>
+  <div class="grid grid-cols-2 gap-2">
+    <div *ngFor="let field of sortedFields; trackBy: trackByField"
     >
       <div class="form-group mb-3">
         <label
-          *ngIf="field.type !== 'checkbox'"
-          class="form-label block mb-1 text-sm font-medium text-gray-700"
+          class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block"
           [attr.for]="field.id"
         >
           {{ field.label }}
@@ -17,7 +14,7 @@
         <ng-container [ngSwitch]="field.type">
           <input
             *ngSwitchCase="'text'"
-            class="form-control w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            class="w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent"
             type="text"
             [id]="field.id"
             [formControlName]="field.name"
@@ -26,7 +23,7 @@
 
           <input
             *ngSwitchCase="'email'"
-            class="form-control w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            class="w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent"
             type="email"
             [id]="field.id"
             [formControlName]="field.name"
@@ -35,7 +32,7 @@
 
           <input
             *ngSwitchCase="'number'"
-            class="form-control w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            class="w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent"
             type="number"
             [id]="field.id"
             [formControlName]="field.name"
@@ -44,15 +41,32 @@
 
           <input
             *ngSwitchCase="'date'"
-            class="form-control w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            class="w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent"
             type="date"
             [id]="field.id"
             [formControlName]="field.name"
           />
 
+          <input
+            *ngSwitchCase="'image'"
+            type="file"
+            accept="image/*"
+            class="w-full border-b border-[#161616] py-3 text-[14px] bg-transparent"
+            [id]="field.id"
+            (change)="onImageSelected($event, field.name)"
+          />
+
+          <div *ngIf="imagePreviews[field.name]" class="mt-2">
+            <img
+              [src]="imagePreviews[field.name]"
+              alt="Preview"
+              class="w-32 h-32 object-cover rounded border"
+            />
+          </div>
+
           <textarea
             *ngSwitchCase="'textarea'"
-            class="form-control w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            class="w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent"
             [id]="field.id"
             [formControlName]="field.name"
             [placeholder]="field.placeholder ?? ''"
@@ -61,7 +75,7 @@
 
           <select
             *ngSwitchCase="'select'"
-            class="form-select w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            class="w-full border-b border-[#161616] py-2 text-sm bg-transparent focus:outline-none"
             [id]="field.id"
             [formControlName]="field.name"
           >
@@ -69,7 +83,7 @@
               {{ field.placeholder || 'Select ' + field.label }}
             </option>
             <option
-              *ngFor="let option of field.options; trackBy: trackByOption"
+              *ngFor="let option of field.options; "
               [ngValue]="getOptionValue(option)"
             >
               {{ getOptionLabel(option) }}
@@ -77,21 +91,26 @@
           </select>
 
           <div *ngSwitchCase="'checkbox'" class="form-check">
-            <input
-              class="form-check-input h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-              type="checkbox"
-              [id]="field.id"
-              [formControlName]="field.name"
-            />
-            <label class="form-check-label text-sm text-gray-700 ms-2" [attr.for]="field.id">
-              {{ field.label }}
-              <span *ngIf="field.required" class="text-red-600" aria-hidden="true">*</span>
-            </label>
+            <div
+              *ngFor="let option of field.options; let i = index"
+              class="form-check"
+            >
+              <input
+                class="form-check-input h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                type="checkbox"
+                [id]="field.id + '-' + i"
+                [formControlName]="field.name"
+                [value]="getOptionValue(option, i)"
+              />
+              <label class="form-check-label text-sm text-gray-700 ms-2" [attr.for]="field.id + '-' + i">
+                {{ getOptionLabel(option) }}
+              </label>
+            </div>
           </div>
 
           <div *ngSwitchCase="'radio'" class="radio-group" role="radiogroup" [attr.aria-labelledby]="field.id + '-label'">
             <div
-              *ngFor="let option of field.options; trackBy: trackByOption; let i = index"
+              *ngFor="let option of field.options; let i = index"
               class="form-check"
             >
               <input
@@ -106,6 +125,7 @@
               </label>
             </div>
           </div>
+
         </ng-container>
 
         <small *ngIf="getErrorMessage(field) as errorMessage" class="error text-red-600 d-block mt-1">

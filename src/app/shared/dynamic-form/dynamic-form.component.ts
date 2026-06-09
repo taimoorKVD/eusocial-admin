@@ -9,7 +9,7 @@ import {
   Output,
   SimpleChanges,
 } from '@angular/core';
-import { AbstractControl, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { AbstractControl, FormArray, FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { Subscription, merge } from 'rxjs';
 import {
   DynamicField,
@@ -106,7 +106,12 @@ export class DynamicFormComponent implements OnChanges, OnDestroy {
   }
 
   getColClass(field: DynamicField): string {
-    const width = field.width ?? 12;
+    if(field.label === "Availability Days") {
+      return 'col-md-12';
+    }
+    // const width = field.width ?? 12;
+    const width = 6;
+    // return `grid grid-cols-3 gap-10 mb-[30px]`;
     return `col-md-${width}`;
   }
 
@@ -193,5 +198,26 @@ export class DynamicFormComponent implements OnChanges, OnDestroy {
         this.cdr.markForCheck();
       },
     );
+  }
+  imagePreviews: Record<string, string> = {};
+  onImageSelected(event: Event, fieldName: string): void {
+    const input = event.target as HTMLInputElement;
+
+    if (!input.files?.length) {
+      return;
+    }
+
+    const file = input.files[0];
+
+    this.form.get(fieldName)?.setValue(file);
+    this.form.get(fieldName)?.markAsDirty();
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      this.imagePreviews[fieldName] = reader.result as string;
+    };
+
+    reader.readAsDataURL(file);
   }
 }
