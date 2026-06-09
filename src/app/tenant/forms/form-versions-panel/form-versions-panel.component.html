@@ -44,8 +44,9 @@
         class="rounded-md border border-slate-100"
       >
         <!-- Version row header -->
-        <div class="flex items-center gap-2 px-3 py-2">
+        <div class="px-3 py-2">
 
+          <div>
           <!-- Expand toggle -->
           <button
             type="button"
@@ -64,7 +65,9 @@
               &mdash; {{ item.version.createdAt | date:'MMM d, y, h:mm a' }}
             </span>
           </button>
+          </div>
 
+          <div class="flex items-center gap-2 mt-2">
           <!-- Preview button -->
           <button
             type="button"
@@ -84,6 +87,7 @@
           >
             {{ item.restoring ? 'Restoring…' : 'Restore' }}
           </button>
+        </div>
         </div>
 
         <!-- Expanded detail — field list -->
