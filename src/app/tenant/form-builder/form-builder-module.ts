@@ -22,6 +22,7 @@ import { FormsModule } from '@angular/forms';
   exports: [
     BuilderComponent,
     FormCanvasComponent,
+    FormFieldPreviewComponent,
     FieldSettingsComponent,
     DragDropModule,
   ],
