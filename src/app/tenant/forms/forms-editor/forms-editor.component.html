@@ -88,8 +88,13 @@
         </div>
 
         <ng-container *ngIf="selectedField; else noSelection">
-          <app-field-settings [field]="selectedField" (update)="updateField($event)"
-            (duplicate)="onDuplicateField(selectedField)" (delete)="onDeleteField(selectedField)"></app-field-settings>
+          <app-field-settings
+            [field]="selectedField"
+            [activeModuleName]="moduleName"
+            (update)="updateField($event)"
+            (duplicate)="onDuplicateField(selectedField)"
+            (delete)="onDeleteField(selectedField)"
+          ></app-field-settings>
         </ng-container>
         <ng-template #noSelection>
           <div class="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">
