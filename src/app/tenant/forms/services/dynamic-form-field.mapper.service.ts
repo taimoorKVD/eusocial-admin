@@ -15,6 +15,7 @@ const SUPPORTED_TYPES = new Set<DynamicFieldType>([
   'checkbox',
   'radio',
   'date',
+  'image',
 ]);
 
 @Injectable({

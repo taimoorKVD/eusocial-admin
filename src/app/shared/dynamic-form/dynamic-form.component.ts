@@ -9,7 +9,7 @@ import {
   Output,
   SimpleChanges,
 } from '@angular/core';
-import { AbstractControl, FormArray, FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Subscription, merge } from 'rxjs';
 import {
   DynamicField,
@@ -34,6 +34,7 @@ export class DynamicFormComponent implements OnChanges, OnDestroy {
 
   form!: FormGroup;
   sortedFields: DynamicField[] = [];
+  imagePreviews: Record<string, string> = {};
 
   private formChangesSub?: Subscription;
 
@@ -52,6 +53,8 @@ export class DynamicFormComponent implements OnChanges, OnDestroy {
     this.formChangesSub?.unsubscribe();
   }
 
+  // ─── Public API for parent ───────────────────────────────────────────────────
+
   get value(): DynamicFormValue {
     return this.form?.getRawValue() ?? {};
   }
@@ -64,6 +67,7 @@ export class DynamicFormComponent implements OnChanges, OnDestroy {
     return this.form?.get(name) ?? null;
   }
 
+  /** Marks all controls touched and returns validity. Call before submit. */
   validate(): boolean {
     this.markAllAsTouched();
     return this.form?.valid ?? false;
@@ -75,53 +79,43 @@ export class DynamicFormComponent implements OnChanges, OnDestroy {
   }
 
   patchValue(values: DynamicFormValue): void {
-    if (!this.form || !values) {
-      return;
-    }
-
+    if (!this.form || !values) return;
     this.form.patchValue(values);
     this.valueChange.emit(this.form.getRawValue());
     this.cdr.markForCheck();
   }
 
   resetToDefaults(): void {
-    if (!this.form) {
-      return;
-    }
-
+    if (!this.form) return;
     for (const field of this.sortedFields) {
       this.form.get(field.name)?.setValue(this.getInitialValue(field));
     }
-
+    this.imagePreviews = {};
     this.valueChange.emit(this.form.getRawValue());
     this.cdr.markForCheck();
   }
+
+  // ─── Template helpers ─────────────────────────────────────────────────────────
 
   trackByField(_index: number, field: DynamicField): string {
     return field.id;
   }
 
   trackByOption(index: number, option: string | DynamicFieldOption): string | number {
+    console.log('Tracking option:', option);
+    console.log('Tracking option index:', index);
+
     return this.getOptionValue(option, index);
   }
 
   getColClass(field: DynamicField): string {
-    if(field.label === "Availability Days") {
-      return 'col-md-12';
-    }
-    // const width = field.width ?? 12;
-    const width = 6;
-    // return `grid grid-cols-3 gap-10 mb-[30px]`;
+    const width = field.width ?? 6;
     return `col-md-${width}`;
   }
 
   getErrorMessage(field: DynamicField): string | null {
     const control = this.getControl(field.name);
-    return getDynamicFieldErrorMessage(
-      field,
-      control,
-      shouldShowDynamicFieldError(control),
-    );
+    return getDynamicFieldErrorMessage(field, control, shouldShowDynamicFieldError(control));
   }
 
   getOptionLabel(option: string | DynamicFieldOption): string {
@@ -129,8 +123,45 @@ export class DynamicFormComponent implements OnChanges, OnDestroy {
   }
 
   getOptionValue(option: string | DynamicFieldOption, index = 0): string | number {
-    return typeof option === 'string' ? option : option.value ?? index;
+    return typeof option === 'string' ? option : (option.value ?? index);
   }
+
+  // ─── Image upload ─────────────────────────────────────────────────────────────
+
+  onImageSelected(event: Event, fieldName: string): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+
+    if (!file) return;
+
+    const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowed.includes(file.type)) {
+      return;
+    }
+
+    this.form.get(fieldName)?.setValue(file);
+    this.form.get(fieldName)?.markAsDirty();
+    this.form.get(fieldName)?.markAsTouched();
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.imagePreviews[fieldName] = reader.result as string;
+      this.valueChange.emit(this.form.getRawValue());
+      this.cdr.markForCheck();
+    };
+    reader.readAsDataURL(file);
+  }
+
+  removeImage(fieldName: string, input: HTMLInputElement): void {
+    delete this.imagePreviews[fieldName];
+    this.form.get(fieldName)?.setValue(null);
+    this.form.get(fieldName)?.markAsTouched();
+    input.value = '';
+    this.valueChange.emit(this.form.getRawValue());
+    this.cdr.markForCheck();
+  }
+
+  // ─── Private ─────────────────────────────────────────────────────────────────
 
   private buildForm(): void {
     this.formChangesSub?.unsubscribe();
@@ -138,25 +169,25 @@ export class DynamicFormComponent implements OnChanges, OnDestroy {
     if (!this.fields?.length) {
       this.form = this.fb.group({});
       this.sortedFields = [];
+      this.imagePreviews = {};
       this.cdr.markForCheck();
       return;
     }
 
     this.sortedFields = [...this.fields]
       .map((field, index) => ({ field, index }))
-      .sort(
-        (a, b) =>
-          (a.field.order ?? a.index) - (b.field.order ?? b.index) || a.index - b.index,
+      .sort((a, b) =>
+        (a.field.order ?? a.index) - (b.field.order ?? b.index) || a.index - b.index,
       )
       .map(({ field }) => field);
 
     const groupConfig: Record<string, unknown> = {};
-
     for (const field of this.sortedFields) {
       groupConfig[field.name] = [this.getInitialValue(field), this.getValidators(field)];
     }
 
     this.form = this.fb.group(groupConfig);
+    this.imagePreviews = {};
     this.subscribeToFormChanges();
     this.valueChange.emit(this.form.getRawValue());
     this.cdr.markForCheck();
@@ -166,58 +197,25 @@ export class DynamicFormComponent implements OnChanges, OnDestroy {
     if (field.value !== undefined && field.value !== null) {
       return field.value;
     }
-
     switch (field.type) {
-      case 'checkbox':
-        return false;
-      case 'number':
-        return null;
-      default:
-        return '';
+      case 'checkbox': return false;
+      case 'number':   return null;
+      case 'image':    return null;
+      default:         return '';
     }
   }
 
   private getValidators(field: DynamicField) {
     const validators = [];
-
-    if (field.required) {
-      validators.push(Validators.required);
-    }
-
-    if (field.type === 'email') {
-      validators.push(Validators.email);
-    }
-
+    if (field.required) validators.push(Validators.required);
+    if (field.type === 'email') validators.push(Validators.email);
     return validators;
   }
 
   private subscribeToFormChanges(): void {
-    this.formChangesSub = merge(this.form.valueChanges, this.form.statusChanges).subscribe(
-      () => {
-        this.valueChange.emit(this.form.getRawValue());
-        this.cdr.markForCheck();
-      },
-    );
-  }
-  imagePreviews: Record<string, string> = {};
-  onImageSelected(event: Event, fieldName: string): void {
-    const input = event.target as HTMLInputElement;
-
-    if (!input.files?.length) {
-      return;
-    }
-
-    const file = input.files[0];
-
-    this.form.get(fieldName)?.setValue(file);
-    this.form.get(fieldName)?.markAsDirty();
-
-    const reader = new FileReader();
-
-    reader.onload = () => {
-      this.imagePreviews[fieldName] = reader.result as string;
-    };
-
-    reader.readAsDataURL(file);
+    this.formChangesSub = merge(this.form.valueChanges, this.form.statusChanges).subscribe(() => {
+      this.valueChange.emit(this.form.getRawValue());
+      this.cdr.markForCheck();
+    });
   }
 }

@@ -6,7 +6,8 @@ export type DynamicFieldType =
   | 'select'
   | 'checkbox'
   | 'radio'
-  | 'date';
+  | 'date'
+  | 'image';
 
 export interface DynamicFieldOption {
   label: string;

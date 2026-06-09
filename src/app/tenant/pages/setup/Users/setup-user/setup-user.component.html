@@ -1,18 +1,38 @@
-<ng-container *ngIf="loading"><app-eu-loader></app-eu-loader></ng-container>
+<ng-container *ngIf="loading">
+  <app-eu-loader></app-eu-loader>
+</ng-container>
 
 <div class="p-6 min-h-screen">
 
+  <!-- Page header -->
   <h2 class="text-[16px] font-medium mb-6 font-ibm text-[#0054AC]">
-    Create/View Users
+    Create / View Users
   </h2>
 
+  <!-- Empty state -->
+  <p
+    *ngIf="!loading && !formFields.length"
+    class="text-[13px] text-[#A8A8A8] font-ibm"
+  >
+    No form fields configured for users. Please set up the form in the Forms Editor.
+  </p>
+
+  <!-- Dynamic form -->
   <app-dynamic-form
     *ngIf="formFields.length"
     [fields]="formFields"
-    (valueChange)="onDynamicFormChange($event)">
-  </app-dynamic-form>
+    (valueChange)="onDynamicFormChange($event)"
+  ></app-dynamic-form>
+
+  <!-- Submit button -->
+  <div *ngIf="formFields.length" class="flex justify-end mt-8">
+    <button
+      type="button"
+      (click)="onFormSubmit()"
+      class="px-6 py-2.5 bg-[#0054AC] hover:bg-[#0043A3] text-white text-[13px] font-ibm font-medium rounded-lg transition-colors duration-150 disabled:opacity-50"
+    >
+      Submit
+    </button>
+  </div>
 
 </div>
-
-
-
