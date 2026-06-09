@@ -184,7 +184,7 @@ export class FormsEditorComponent {
         })),
         conditionalRules: [],
       },
-      markAsDraft: true,
+      markAsDraft: false,
     };
   }
 
@@ -201,7 +201,7 @@ export class FormsEditorComponent {
         formName: this.formName,
         formId: this.formId,
         fields: this.builderSchema,
-        markAsDraft: true,
+        markAsDraft: false,
       })
       .subscribe({
         next: () => {
