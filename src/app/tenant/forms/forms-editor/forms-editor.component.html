@@ -58,12 +58,24 @@
           (click)="setActiveTab('settings')">
           Field Settings
         </button>
+        <button type="button" class="rounded-md px-3 py-2 text-sm font-medium transition focus:outline-none"
+          [ngClass]="activeTab === 'versions' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:bg-slate-100'"
+          (click)="setActiveTab('versions')">
+          Versions
+        </button>
       </nav>
     </div>
 
     <div class="p-4">
       <div [class.hidden]="activeTab !== 'fields'">
         <app-builder [connectedDropLists]="[canvasListId]"></app-builder>
+      </div>
+
+      <div *ngIf="activeTab === 'versions'">
+        <app-form-versions-panel
+          [moduleName]="moduleName"
+          (restore)="onRestoreVersion($event)"
+        ></app-form-versions-panel>
       </div>
 
       <div [class.hidden]="activeTab !== 'settings'" class="space-y-4">

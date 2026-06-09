@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
+import { ToastrService } from 'ngx-toastr';
 import { FormField } from '../../form-builder/models/form-field.model';
 import {
   createFieldFromTemplate,
@@ -19,7 +20,7 @@ export class FormsEditorComponent {
   moduleName = '';
   builderSchema: FormField[] = [];
   selectedFieldId: string | null = null;
-  activeTab: 'fields' | 'settings' = 'fields';
+  activeTab: 'fields' | 'settings' | 'versions' = 'fields';
   formName = 'Users Dynamic Form';
   formId: string | number | null = null;
   isLoading = false;
@@ -30,7 +31,8 @@ export class FormsEditorComponent {
 
   constructor(
     private route: ActivatedRoute,
-    private formStorageService: FormStorageService
+    private formStorageService: FormStorageService,
+    private toastr: ToastrService
   ) {}
 
   get selectedField(): FormField | null {
@@ -118,12 +120,19 @@ export class FormsEditorComponent {
     }
   }
 
-  setActiveTab(tab: 'fields' | 'settings'): void {
+  setActiveTab(tab: 'fields' | 'settings' | 'versions'): void {
     if (tab === 'settings' && !this.selectedFieldId) {
       return;
     }
 
     this.activeTab = tab;
+  }
+
+  onRestoreVersion(fields: FormField[]): void {
+    this.builderSchema = normalizeFieldOrder(fields);
+    this.selectedFieldId = null;
+    this.activeTab = 'fields';
+    this.toastr.success('Version restored — canvas updated');
   }
 
   updateField(updated: FormField): void {
@@ -184,7 +193,7 @@ export class FormsEditorComponent {
         })),
         conditionalRules: [],
       },
-      markAsDraft: true,
+      markAsDraft: false,
     };
   }
 
@@ -201,16 +210,17 @@ export class FormsEditorComponent {
         formName: this.formName,
         formId: this.formId,
         fields: this.builderSchema,
-        markAsDraft: true,
+        markAsDraft: false,
       })
       .subscribe({
         next: () => {
-          console.log('Saved form payload:', this.buildPayload());
           this.isLoading = false;
+          this.toastr.success('Form saved successfully');
         },
         error: error => {
           console.error('Failed to save form schema:', error);
           this.isLoading = false;
+          this.toastr.error('Failed to save form');
         },
       });
   }
