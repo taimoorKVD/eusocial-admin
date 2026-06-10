@@ -8,10 +8,11 @@ import { ConfirmModalComponent } from './confirm-modal/confirm-modal.component';
 import { EuLoaderComponent } from './eu-loader/eu-loader.component';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { DynamicFormComponent } from './dynamic-form/dynamic-form.component';
+import { DynamicListingComponent } from './dynamic-listing/dynamic-listing.component';
 
 @NgModule({
-  declarations: [GlobalFilterComponent, TopHeaderComponent, ConfirmModalComponent, EuLoaderComponent, DynamicFormComponent],
+  declarations: [GlobalFilterComponent, TopHeaderComponent, ConfirmModalComponent, EuLoaderComponent, DynamicFormComponent, DynamicListingComponent],
   imports: [CommonModule, FormsModule, DragDropModule, ReactiveFormsModule ],
-  exports: [GlobalFilterComponent, TopHeaderComponent, ConfirmModalComponent, EuLoaderComponent, DragDropModule, DynamicFormComponent],
+  exports: [GlobalFilterComponent, TopHeaderComponent, ConfirmModalComponent, EuLoaderComponent, DragDropModule, DynamicFormComponent, DynamicListingComponent],
 })
 export class SharedModule {}

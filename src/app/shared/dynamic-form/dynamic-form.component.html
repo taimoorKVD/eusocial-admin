@@ -73,7 +73,7 @@
             [id]="field.id"
             [formControlName]="field.name"
           >
-            <option value="">{{ field.placeholder || 'Select ' + field.label }}</option>
+            <option value="">{{  'Select ' + field.label }}</option>
             <option
               *ngFor="let option of field.options; "
               [ngValue]="getOptionValue(option)"
@@ -98,22 +98,13 @@
                 {{ getOptionLabel(option) }}
               </label>
             </div>
-            <!-- <input
-              class="h-4 w-4 border-gray-300 text-[#0054AC] focus:ring-[#0054AC] rounded"
-              type="checkbox"
-              [id]="field.id"
-              [formControlName]="field.name"
-            />
-            <label class="text-[13px] text-[#161616] font-ibm cursor-pointer" [attr.for]="field.id">
-              {{ field.label }}
-              <span *ngIf="field.required" class="text-red-500" aria-hidden="true">*</span>
-            </label> -->
+
           </div>
 
           <!-- ── radio ─────────────────────────────────────────────────────────── -->
           <div *ngSwitchCase="'radio'" class="flex flex-col gap-2 mt-1" role="radiogroup">
             <div
-              *ngFor="let option of field.options; trackBy: trackByOption; let i = index"
+              *ngFor="let option of field.options; let i = index"
               class="flex items-center gap-2"
             >
               <input

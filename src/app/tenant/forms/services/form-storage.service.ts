@@ -122,4 +122,13 @@ export class FormStorageService {
       updatedAt: source.updatedAt || fallback?.updatedAt || new Date().toISOString()
     };
   }
+
+  getEndpointApi<T>(
+    endpoint: string,
+    params?: Record<string, any>
+  ): Observable<T> {
+    const apiUrl = `${environment.tenantApiUrl}${endpoint}`;
+
+    return this.http.get<T>(apiUrl);
+  }
 }
