@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectorRef } from '@angular/core';
 import { TenantUserService } from '../../../../../services/tenant-user.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TenantSessionService } from '../../../../../services/tenant-session.service';
@@ -8,6 +8,7 @@ import { normalizeFieldOrder } from '../../../../form-builder/utils/form-field.f
 import { DynamicField } from '../../../../../interfaces/dynamic-field';
 import { GlobalFilterField } from '../../../../../shared/global-filter/global-filter';
 import {
+  getVisibleColumns,
   mapVisibleColumnsToFilterFields,
   pruneFiltersByAllowedKeys,
 } from '../../../../../shared/dynamic-listing/dynamic-listing.helpers';
@@ -35,6 +36,7 @@ export class SetupUsersListing {
   lastPage = 1;
   total = 0;
   readonly columnStorageKey = 'tenant-users-listing-columns';
+  readonly defaultVisibleCount = 4;
   readonly usersListingFilterOptions = {
     excludeTypes: USERS_LISTING_FILTER_EXCLUDE_TYPES,
     excludeNamePattern: /password/i,
@@ -49,6 +51,7 @@ export class SetupUsersListing {
     private route: ActivatedRoute,
     private router: Router,
     private formStorageService: FormStorageService,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit(): void {
@@ -68,14 +71,26 @@ export class SetupUsersListing {
         this.formFields = normalizeFieldOrder(
           (res.fields || []).filter((field) => field.label !== 'Role'),
         ) as DynamicField[];
+
+        this.syncFilterFieldsFromVisibleColumns(
+          getVisibleColumns(this.formFields, this.columnStorageKey, this.defaultVisibleCount),
+        );
+        this.cdr.markForCheck();
       },
       error: () => {
         this.formFields = [];
+        this.filterFields = [];
+        this.cdr.markForCheck();
       },
     });
   }
 
   onVisibleColumnsChange(columns: DynamicField[]): void {
+    this.syncFilterFieldsFromVisibleColumns(columns);
+    this.cdr.markForCheck();
+  }
+
+  private syncFilterFieldsFromVisibleColumns(columns: DynamicField[]): void {
     const nextFilterFields = mapVisibleColumnsToFilterFields(
       columns,
       this.usersListingFilterOptions,

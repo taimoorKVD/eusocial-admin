@@ -32,6 +32,30 @@ export function getDefaultVisibleFieldIds(fields: DynamicField[], count = 4): st
     .map((field) => field.id);
 }
 
+export function getVisibleColumns(
+  fields: DynamicField[],
+  storageKey: string,
+  defaultVisibleCount = 4,
+): DynamicField[] {
+  const sortedFields = sortListingFields(fields);
+
+  if (!sortedFields.length) {
+    return [];
+  }
+
+  const savedIds = loadVisibleColumnIds(storageKey);
+  const validSavedIds = savedIds?.filter((id) =>
+    sortedFields.some((field) => field.id === id),
+  );
+
+  const visibleIds = validSavedIds?.length
+    ? validSavedIds
+    : getDefaultVisibleFieldIds(sortedFields, defaultVisibleCount);
+
+  const visibleSet = new Set(visibleIds);
+  return sortedFields.filter((field) => visibleSet.has(field.id));
+}
+
 export function loadVisibleColumnIds(storageKey: string): string[] | null {
   if (!storageKey) {
     return null;
