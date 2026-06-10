@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ElementRef, EventEmitter, HostListener, Input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, EventEmitter, HostListener, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 
 export type GlobalFilterValue = Record<string, unknown>;
 
@@ -17,7 +17,7 @@ export interface GlobalFilterField {
   templateUrl: './global-filter.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class GlobalFilterComponent {
+export class GlobalFilterComponent implements OnChanges {
   @Input() fields: GlobalFilterField[] = [];
   @Output() search = new EventEmitter<GlobalFilterValue>();
   @Output() clear = new EventEmitter<void>();
@@ -26,7 +26,16 @@ export class GlobalFilterComponent {
   openDropdownKey: string | null = null;
   optionSearch: Record<string, string> = {};
 
-  constructor(private elementRef: ElementRef) {}
+  constructor(
+    private elementRef: ElementRef,
+    private cdr: ChangeDetectorRef,
+  ) {}
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['fields']) {
+      this.syncFiltersWithFields();
+    }
+  }
 
   get hasFilters(): boolean {
     return Object.values(this.filters).some(value => !!value);
@@ -125,5 +134,23 @@ export class GlobalFilterComponent {
     this.optionSearch = {};
     this.openDropdownKey = null;
     this.clear.emit();
+  }
+
+  private syncFiltersWithFields(): void {
+    const allowedKeys = new Set(this.fields.map((field) => field.key));
+
+    this.filters = Object.fromEntries(
+      Object.entries(this.filters).filter(([key]) => allowedKeys.has(key)),
+    );
+
+    this.optionSearch = Object.fromEntries(
+      Object.entries(this.optionSearch).filter(([key]) => allowedKeys.has(key)),
+    );
+
+    if (this.openDropdownKey && !allowedKeys.has(this.openDropdownKey)) {
+      this.openDropdownKey = null;
+    }
+
+    this.cdr.markForCheck();
   }
 }

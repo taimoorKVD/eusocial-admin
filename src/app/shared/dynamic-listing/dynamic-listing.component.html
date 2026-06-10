@@ -1,4 +1,4 @@
-<div class="dynamic-listing bg-white rounded shadow overflow-hidden">
+<div class="dynamic-listing bg-white rounded shadow">
 
   <!-- Toolbar -->
   <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
@@ -32,7 +32,7 @@
           <p class="text-xs text-gray-500 font-ibm mt-1 mb-0">Choose which fields appear in the table.</p>
         </div>
 
-        <div class="max-h-72 overflow-y-auto py-2">
+        <div class="max-h-[7rem] overflow-y-auto py-2">
           <label
             *ngFor="let field of sortedFields; trackBy: trackByFieldId"
             class="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 cursor-pointer"
