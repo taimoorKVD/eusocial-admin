@@ -100,6 +100,26 @@ export function normalizeOptionSource(
     };
   }
 
+  if (type === 'dynamic') {
+    return {
+      type: 'dynamic',
+      endpoint,
+      response: {
+        labelKey: String(
+          response?.['labelKey'] ?? response?.['label_key'] ?? 'name'
+        ),
+        valueKey: String(
+          response?.['valueKey'] ?? response?.['value_key'] ?? 'id'
+        ),
+        dataPath:
+          (response?.['dataPath'] as string | undefined) ??
+          (response?.['data_path'] as string | undefined) ??
+          'data',
+      },
+      options,
+    };
+  }
+
   return {
     type,
     endpoint: normalizeEndpoint(endpoint),
@@ -156,8 +176,23 @@ export function readOptionSourceFromField(
 }
 
 export function resolveFieldOptionSource(field: FormField): OptionSource | undefined {
-  return (
-    normalizeOptionSource(field.optionSource) ??
-    readOptionSourceFromField(field as FormField & Record<string, unknown>)
+  const direct = normalizeOptionSource(field.optionSource);
+
+  if (direct?.type === 'dynamic') {
+    return undefined;
+  }
+
+  if (direct) {
+    return direct;
+  }
+
+  const inferred = readOptionSourceFromField(
+    field as FormField & Record<string, unknown>
   );
+
+  if (inferred?.type === 'dynamic') {
+    return undefined;
+  }
+
+  return inferred;
 }

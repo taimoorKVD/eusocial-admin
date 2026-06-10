@@ -128,11 +128,25 @@ export class FormsEditorComponent {
     this.activeTab = tab;
   }
 
-  onRestoreVersion(fields: FormField[]): void {
-    this.builderSchema = normalizeFieldOrder(fields);
+  onRestoreVersion(_fields: FormField[]): void {
     this.selectedFieldId = null;
     this.activeTab = 'fields';
-    this.toastr.success('Version restored — canvas updated');
+    this.isLoading = true;
+
+    this.formStorageService.loadForm(this.moduleName).subscribe({
+      next: saved => {
+        this.isLoading = false;
+        if (saved) {
+          this.formName = saved.formName || this.formName;
+          this.formId = saved.formId ?? null;
+          this.builderSchema = normalizeFieldOrder(saved.fields || []);
+        }
+      },
+      error: () => {
+        this.isLoading = false;
+        this.toastr.error('Restore succeeded but failed to reload schema');
+      },
+    });
   }
 
   updateField(updated: FormField): void {

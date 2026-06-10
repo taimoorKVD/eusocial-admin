@@ -14,10 +14,8 @@ import {
   FormVersionService,
 } from '../services/form-version.service';
 
-interface VersionAccordionItem {
+interface VersionListItem {
   version: FormVersion;
-  expanded: boolean;
-  loading: boolean;
   detail: FormVersionDetail | null;
   restoring: boolean;
   previewing: boolean;
@@ -33,10 +31,9 @@ export class FormVersionsPanelComponent implements OnChanges {
   @Input() moduleName = '';
   @Output() restore = new EventEmitter<FormField[]>();
 
-  panelOpen = false;
   loading = false;
   error: string | null = null;
-  items: VersionAccordionItem[] = [];
+  items: VersionListItem[] = [];
 
   /** Preview modal state */
   previewModalOpen = false;
@@ -52,24 +49,11 @@ export class FormVersionsPanelComponent implements OnChanges {
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['moduleName'] && this.moduleName) {
       this.reset();
-    }
-  }
-
-  togglePanel(): void {
-    this.panelOpen = !this.panelOpen;
-    if (this.panelOpen && this.items.length === 0 && !this.loading) {
       this.loadVersions();
     }
   }
 
-  toggleItem(item: VersionAccordionItem): void {
-    item.expanded = !item.expanded;
-    if (item.expanded && !item.detail && !item.loading) {
-      this.loadDetail(item);
-    }
-  }
-
-  restoreVersion(item: VersionAccordionItem): void {
+  restoreVersion(item: VersionListItem): void {
     if (item.restoring) {
       return;
     }
@@ -89,7 +73,7 @@ export class FormVersionsPanelComponent implements OnChanges {
     });
   }
 
-  openPreview(item: VersionAccordionItem): void {
+  openPreview(item: VersionListItem): void {
     if (item.previewing) {
       return;
     }
@@ -135,7 +119,7 @@ export class FormVersionsPanelComponent implements OnChanges {
     return `Version ${num}`;
   }
 
-  trackById(_: number, item: VersionAccordionItem): number {
+  trackById(_: number, item: VersionListItem): number {
     return item.version.id;
   }
 
@@ -165,8 +149,6 @@ export class FormVersionsPanelComponent implements OnChanges {
         this.loading = false;
         this.items = versions.map(v => ({
           version: v,
-          expanded: false,
-          loading: false,
           detail: null,
           restoring: false,
           previewing: false,
@@ -175,22 +157,6 @@ export class FormVersionsPanelComponent implements OnChanges {
       error: () => {
         this.loading = false;
         this.error = 'Failed to load versions.';
-      },
-    });
-  }
-
-  private loadDetail(item: VersionAccordionItem): void {
-    item.loading = true;
-
-    this.versionService.getVersionDetail(this.moduleName, item.version.id).subscribe({
-      next: detail => {
-        item.loading = false;
-        item.detail = detail;
-      },
-      error: () => {
-        item.loading = false;
-        item.expanded = false;
-        this.toastr.error('Failed to load version details');
       },
     });
   }

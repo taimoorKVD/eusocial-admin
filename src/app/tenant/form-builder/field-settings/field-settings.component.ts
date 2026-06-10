@@ -1,12 +1,21 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { ToastrService } from 'ngx-toastr';
-import { FormField } from '../models/form-field.model';
+import { FormField, OptionSource } from '../models/form-field.model';
 import { toFieldName } from '../utils/form-field.factory';
 import { normalizeFieldOption } from '../utils/field-options.utils';
 import { DynamicModuleOptionsService } from '../services/dynamic-module-options.service';
 import { FormModuleListItem } from '../../forms/models/form-module.model';
 
 type SelectOptionsMode = 'static' | 'dynamic';
+
+interface ModuleDataCache {
+  records: Record<string, unknown>[];
+  columns: string[];
+}
+
+interface LoadModuleDataOptions {
+  preserveDisplayColumn?: boolean;
+  emitUpdate?: boolean;
+}
 
 @Component({
   selector: 'app-field-settings',
@@ -18,25 +27,27 @@ export class FieldSettingsComponent {
   @Input() activeModuleName = '';
 
   @Input() set field(value: FormField | undefined) {
-    if (value) {
-      const isSameField = this._field?.id === value.id;
-      const preservedModuleSlug = isSameField ? this.selectedModuleSlug : '';
-
-      this._field = {
-        ...value,
-        name: value.name || toFieldName(value.label),
-        defaultValue: value.defaultValue ?? value.value ?? '',
-        width: value.width ?? 12,
-        validations: value.validations || {},
-        condition: value.condition || { fieldId: '', value: '' },
-        options: [...(value.options || [])],
-        optionSource: value.optionSource ? { ...value.optionSource } : undefined,
-        isShow: value.isShow !== false,
-        isReadonly: value.isReadonly === true,
-      };
-
-      this.initializeSelectOptionsState(this._field, preservedModuleSlug);
+    if (!value) {
+      return;
     }
+
+    const isSameField = this._field?.id === value.id;
+
+    if (this.skipFieldReinitialize && isSameField) {
+      this.skipFieldReinitialize = false;
+      this.assignField(value);
+      return;
+    }
+
+    const preservedModuleSlug = isSameField ? this.selectedModuleSlug : '';
+    const preservedDisplayColumn = isSameField ? this.selectedDisplayColumn : '';
+
+    this.assignField(value);
+    this.initializeSelectOptionsState(
+      this._field,
+      preservedModuleSlug,
+      preservedDisplayColumn
+    );
   }
 
   get field(): FormField | undefined {
@@ -44,11 +55,19 @@ export class FieldSettingsComponent {
   }
 
   private _field!: FormField;
+  private skipFieldReinitialize = false;
+  private modulesLoaded = false;
+  private modulesLoadPending = false;
+  private modulesLoadCallbacks: Array<() => void> = [];
+  private loadingModuleSlug: string | null = null;
+  private readonly moduleDataBySlug = new Map<string, ModuleDataCache>();
 
   optionsMode: SelectOptionsMode = 'static';
   availableModules: FormModuleListItem[] = [];
   selectedModuleSlug = '';
+  selectedDisplayColumn = '';
   moduleRecords: Record<string, unknown>[] = [];
+  moduleColumns: string[] = [];
 
   modulesLoading = false;
   modulesError: string | null = null;
@@ -58,10 +77,7 @@ export class FieldSettingsComponent {
   @Output() duplicate = new EventEmitter<void>();
   @Output() delete = new EventEmitter<void>();
 
-  constructor(
-    private dynamicModuleOptionsService: DynamicModuleOptionsService,
-    private toastr: ToastrService
-  ) {}
+  constructor(private dynamicModuleOptionsService: DynamicModuleOptionsService) {}
 
   onChange(): void {
     if (!this._field) {
@@ -73,12 +89,7 @@ export class FieldSettingsComponent {
       isShow: this._field.isShow !== false,
       isReadonly: this._field.isReadonly === true,
       options: [...(this._field.options || [])],
-      optionSource:
-        this.optionsMode === 'dynamic'
-          ? undefined
-          : this._field.optionSource
-            ? { ...this._field.optionSource }
-            : undefined,
+      optionSource: this.resolveEmittedOptionSource(),
       condition: this._field.condition
         ? { ...this._field.condition }
         : { fieldId: '', value: '' },
@@ -116,8 +127,12 @@ export class FieldSettingsComponent {
     this.optionsMode = mode;
 
     if (mode === 'dynamic') {
+      this.selectedModuleSlug = '';
+      this.selectedDisplayColumn = '';
+      this.moduleRecords = [];
+      this.moduleColumns = [];
       this._field.optionSource = undefined;
-      this.loadAvailableModules();
+      this.ensureModulesLoaded();
       return;
     }
 
@@ -127,36 +142,37 @@ export class FieldSettingsComponent {
   onModuleChange(moduleSlug: string): void {
     if (!moduleSlug) {
       this.selectedModuleSlug = '';
+      this.selectedDisplayColumn = '';
       this.moduleRecords = [];
+      this.moduleColumns = [];
       this._field.options = [];
+      this._field.optionSource = undefined;
       this.onChange();
       return;
     }
 
-    const moduleName = this.getModuleLabelBySlug(moduleSlug);
+    this.selectedModuleSlug = moduleSlug;
+    this.selectedDisplayColumn = '';
+    this.moduleRecords = [];
+    this.moduleColumns = [];
 
-    this.recordsLoading = true;
-
-    this.dynamicModuleOptionsService.getModuleRecords(moduleSlug).subscribe({
-      next: records => {
-        this.recordsLoading = false;
-        const options =
-          this.dynamicModuleOptionsService.buildDefaultOptionsFromRecords(records);
-
-        if (!options.length) {
-          this.fallbackToStaticOptions(moduleName);
-          return;
-        }
-
-        this.selectedModuleSlug = moduleSlug;
-        this.moduleRecords = records;
-        this.applyDynamicOptions();
-      },
-      error: () => {
-        this.recordsLoading = false;
-        this.fallbackToStaticOptions(moduleName);
-      },
+    this.loadModuleData(moduleSlug, {
+      preserveDisplayColumn: false,
+      emitUpdate: true,
     });
+  }
+
+  onDisplayColumnChange(column: string): void {
+    this.selectedDisplayColumn = column;
+
+    if (!column) {
+      this._field.options = [];
+      this._field.optionSource = undefined;
+      this.onChange();
+      return;
+    }
+
+    this.commitDynamicOptions();
   }
 
   getModuleSlug(form: FormModuleListItem): string {
@@ -216,22 +232,82 @@ export class FieldSettingsComponent {
     this.delete.emit();
   }
 
+  private assignField(value: FormField): void {
+    this._field = {
+      ...value,
+      name: value.name || toFieldName(value.label),
+      defaultValue: value.defaultValue ?? value.value ?? '',
+      width: value.width ?? 12,
+      validations: value.validations || {},
+      condition: value.condition || { fieldId: '', value: '' },
+      options: [...(value.options || [])],
+      optionSource: value.optionSource ? { ...value.optionSource } : undefined,
+      isShow: value.isShow !== false,
+      isReadonly: value.isReadonly === true,
+    };
+  }
+
   private initializeSelectOptionsState(
     field: FormField,
-    preservedModuleSlug = ''
+    preservedModuleSlug = '',
+    preservedDisplayColumn = ''
   ): void {
+    const dynamicConfig = this.readDynamicConfig(field);
+
     this.optionsMode = this.resolveOptionsMode(field);
-    this.selectedModuleSlug = preservedModuleSlug;
-    this.moduleRecords = [];
+
+    if (preservedModuleSlug) {
+      this.selectedModuleSlug = preservedModuleSlug;
+      this.selectedDisplayColumn =
+        preservedDisplayColumn || dynamicConfig?.displayColumn || '';
+    } else if (dynamicConfig) {
+      this.selectedModuleSlug = dynamicConfig.moduleSlug;
+      this.selectedDisplayColumn = dynamicConfig.displayColumn;
+    } else {
+      this.selectedModuleSlug = '';
+      this.selectedDisplayColumn = '';
+    }
+
+    this.restoreModuleDataFromCache();
 
     if (this.optionsMode === 'dynamic') {
-      this.loadAvailableModules();
+      this.ensureModulesLoaded(() => {
+        if (this.selectedModuleSlug) {
+          this.loadModuleData(this.selectedModuleSlug, {
+            preserveDisplayColumn: true,
+            emitUpdate: false,
+          });
+        }
+      });
     }
+  }
+
+  private restoreModuleDataFromCache(): void {
+    if (!this.selectedModuleSlug) {
+      this.moduleRecords = [];
+      this.moduleColumns = [];
+      return;
+    }
+
+    const cached = this.moduleDataBySlug.get(this.selectedModuleSlug);
+
+    if (cached) {
+      this.moduleRecords = cached.records;
+      this.moduleColumns = cached.columns;
+      return;
+    }
+
+    this.moduleRecords = [];
+    this.moduleColumns = [];
   }
 
   private resolveOptionsMode(field: FormField): SelectOptionsMode {
     if (field.optionSource?.type === 'api') {
       return 'static';
+    }
+
+    if (field.optionSource?.type === 'dynamic') {
+      return 'dynamic';
     }
 
     const options = field.options || [];
@@ -246,7 +322,21 @@ export class FieldSettingsComponent {
     return 'static';
   }
 
-  private loadAvailableModules(): void {
+  private ensureModulesLoaded(onLoaded?: () => void): void {
+    if (this.modulesLoaded) {
+      onLoaded?.();
+      return;
+    }
+
+    if (onLoaded) {
+      this.modulesLoadCallbacks.push(onLoaded);
+    }
+
+    if (this.modulesLoadPending) {
+      return;
+    }
+
+    this.modulesLoadPending = true;
     this.modulesLoading = true;
     this.modulesError = null;
 
@@ -255,33 +345,142 @@ export class FieldSettingsComponent {
       .subscribe({
         next: modules => {
           this.availableModules = modules;
+          this.modulesLoaded = true;
           this.modulesLoading = false;
+          this.modulesLoadPending = false;
+          this.flushModulesLoadCallbacks();
         },
         error: () => {
           this.availableModules = [];
+          this.modulesLoaded = false;
           this.modulesLoading = false;
+          this.modulesLoadPending = false;
           this.modulesError = 'Failed to load form modules.';
+          this.flushModulesLoadCallbacks();
         },
       });
   }
 
-  private applyDynamicOptions(): void {
-    if (!this._field) {
+  private flushModulesLoadCallbacks(): void {
+    const callbacks = [...this.modulesLoadCallbacks];
+    this.modulesLoadCallbacks = [];
+    callbacks.forEach(callback => callback());
+  }
+
+  private loadModuleData(
+    moduleSlug: string,
+    options: LoadModuleDataOptions = {}
+  ): void {
+    const { preserveDisplayColumn = false, emitUpdate = true } = options;
+
+    const cached = this.moduleDataBySlug.get(moduleSlug);
+
+    if (cached) {
+      this.recordsLoading = false;
+      this.applyLoadedModuleData(cached, preserveDisplayColumn, emitUpdate);
       return;
     }
 
-    this._field.options =
-      this.dynamicModuleOptionsService.buildDefaultOptionsFromRecords(
-        this.moduleRecords
-      );
-    this._field.optionSource = undefined;
+    if (this.loadingModuleSlug === moduleSlug) {
+      return;
+    }
+
+    this.loadingModuleSlug = moduleSlug;
+    this.recordsLoading = true;
+
+    this.dynamicModuleOptionsService.getModuleData(moduleSlug).subscribe({
+      next: moduleData => {
+        this.recordsLoading = false;
+        this.loadingModuleSlug = null;
+        this.moduleDataBySlug.set(moduleSlug, moduleData);
+        this.applyLoadedModuleData(moduleData, preserveDisplayColumn, emitUpdate);
+      },
+      error: () => {
+        this.recordsLoading = false;
+        this.loadingModuleSlug = null;
+      },
+    });
+  }
+
+  private applyLoadedModuleData(
+    data: ModuleDataCache,
+    preserveDisplayColumn: boolean,
+    emitUpdate: boolean
+  ): void {
+    this.moduleRecords = data.records;
+    this.moduleColumns = data.columns;
+
+    if (
+      !preserveDisplayColumn ||
+      !this.selectedDisplayColumn ||
+      !this.moduleColumns.includes(this.selectedDisplayColumn)
+    ) {
+      this.selectedDisplayColumn =
+        this.dynamicModuleOptionsService.getDefaultDisplayColumn(
+          this.moduleColumns
+        );
+    }
+
+    if (emitUpdate && this.selectedDisplayColumn) {
+      this.commitDynamicOptions();
+    }
+  }
+
+  private commitDynamicOptions(): void {
+    if (!this._field || !this.selectedModuleSlug || !this.selectedDisplayColumn) {
+      return;
+    }
+
+    this._field.options = this.moduleRecords.length
+      ? this.dynamicModuleOptionsService.buildOptionsFromRecords(
+          this.moduleRecords,
+          this.selectedDisplayColumn
+        )
+      : [];
+    this._field.optionSource = this.buildDynamicOptionSource();
+    this.skipFieldReinitialize = true;
     this.onChange();
   }
 
-  private fallbackToStaticOptions(moduleName: string): void {
-    this.toastr.warning(`${moduleName} has no records`);
-    this.selectedModuleSlug = '';
-    this.moduleRecords = [];
-    this.setOptionsMode('static');
+  private resolveEmittedOptionSource(): OptionSource | undefined {
+    if (this.optionsMode === 'dynamic') {
+      return this.buildDynamicOptionSource();
+    }
+
+    if (this._field.optionSource?.type === 'api') {
+      return { ...this._field.optionSource };
+    }
+
+    return undefined;
   }
+
+  private buildDynamicOptionSource(): OptionSource | undefined {
+    if (!this.selectedModuleSlug || !this.selectedDisplayColumn) {
+      return undefined;
+    }
+
+    return {
+      type: 'dynamic',
+      endpoint: this.selectedModuleSlug,
+      response: {
+        labelKey: this.selectedDisplayColumn,
+        valueKey: 'id',
+        dataPath: 'data',
+      },
+    };
+  }
+
+  private readDynamicConfig(
+    field: FormField
+  ): { moduleSlug: string; displayColumn: string } | null {
+    if (field.optionSource?.type !== 'dynamic' || !field.optionSource.endpoint) {
+      return null;
+    }
+
+    return {
+      moduleSlug: field.optionSource.endpoint,
+      displayColumn: field.optionSource.response?.labelKey ?? 'name',
+    };
+  }
+
 }

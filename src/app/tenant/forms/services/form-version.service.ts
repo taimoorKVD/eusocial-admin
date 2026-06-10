@@ -70,15 +70,36 @@ export class FormVersionService {
 
   private extractDetail(res: any): FormVersionDetail {
     const source = res?.data ?? res ?? {};
-    const rawFields: any[] = Array.isArray(source.fields)
-      ? source.fields
-      : Array.isArray(source.schema?.fields)
-        ? source.schema.fields
-        : [];
+    const rawFields = this.extractFieldsFromSource(source);
 
     return {
       ...this.extractItem(source),
       fields: normalizeFieldOrder(rawFields),
     };
+  }
+
+  private extractFieldsFromSource(source: Record<string, unknown>): unknown[] {
+    const schemaSnapshot = source['schemaSnapshot'] ?? source['schema_snapshot'];
+
+    if (schemaSnapshot && typeof schemaSnapshot === 'object') {
+      const snapshot = schemaSnapshot as Record<string, unknown>;
+      if (Array.isArray(snapshot['fields'])) {
+        return snapshot['fields'];
+      }
+      if (Array.isArray(snapshot['schema']?.['fields'])) {
+        return (snapshot['schema'] as Record<string, unknown>)['fields'] as unknown[];
+      }
+    }
+
+    if (Array.isArray(source['fields'])) {
+      return source['fields'];
+    }
+
+    const schema = source['schema'];
+    if (schema && typeof schema === 'object' && Array.isArray((schema as Record<string, unknown>)['fields'])) {
+      return (schema as Record<string, unknown>)['fields'] as unknown[];
+    }
+
+    return [];
   }
 }
