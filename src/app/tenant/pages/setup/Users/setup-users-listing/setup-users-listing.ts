@@ -11,6 +11,13 @@ import {
   mapVisibleColumnsToFilterFields,
   pruneFiltersByAllowedKeys,
 } from '../../../../../shared/dynamic-listing/dynamic-listing.helpers';
+import { DynamicFieldType } from '../../../../../interfaces/dynamic-field';
+
+const USERS_LISTING_FILTER_EXCLUDE_TYPES: DynamicFieldType[] = [
+  'image',
+  'checkbox',
+  'radio',
+];
 
 @Component({
   selector: 'app-setup-users-listing',
@@ -28,6 +35,11 @@ export class SetupUsersListing {
   lastPage = 1;
   total = 0;
   readonly columnStorageKey = 'tenant-users-listing-columns';
+  readonly usersListingFilterOptions = {
+    excludeTypes: USERS_LISTING_FILTER_EXCLUDE_TYPES,
+    excludeNamePattern: /password/i,
+    excludeLabelPattern: /password/i,
+  };
   private defaultLimit = environment.limit;
   private filters: Record<string, unknown> = {};
 
@@ -64,7 +76,10 @@ export class SetupUsersListing {
   }
 
   onVisibleColumnsChange(columns: DynamicField[]): void {
-    const nextFilterFields = mapVisibleColumnsToFilterFields(columns);
+    const nextFilterFields = mapVisibleColumnsToFilterFields(
+      columns,
+      this.usersListingFilterOptions,
+    );
     const allowedKeys = new Set(nextFilterFields.map((field) => field.key));
     const previousFilterKeys = Object.keys(this.filters);
     const prunedFilters = pruneFiltersByAllowedKeys(this.filters, allowedKeys);

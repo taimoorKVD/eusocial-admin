@@ -140,5 +140,5 @@ export class SetupUserComponent {
           this.toastr.error(err?.error?.message || 'Failed to create user');
         }
       });
-    }
   }
+}
