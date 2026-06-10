@@ -19,17 +19,17 @@ export class TenantUserService {
   //   return this.http.get<any[]>(this.baseUrl);
   // }
 
-  getUsers(page: number = 1) {
+  getUsers(page: number = 1, limit?: number) {
     return this.http.get<any>(
-      `${this.baseUrl}?page=${page}`
+      `${this.baseUrl}?page=${page}${limit ? `&limit=${limit}` : ''}`
     );
   }
 
   searchUsers(
-   filters: any = {}, limit: number = 15
+   filters: any = {}, limit?: number
   ) {
     const params = new URLSearchParams({
-      limit: limit.toString(),
+      ...(limit ? { limit: limit.toString() } : {}),
       ...filters
     });
     return this.http.get<any>(

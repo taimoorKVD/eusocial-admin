@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { TenantUserService } from '../../../../../services/tenant-user.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TenantSessionService } from '../../../../../services/tenant-session.service';
+import { environment } from '../../../../../../environments/environment.prod';
 
 @Component({
   selector: 'app-setup-users-listing',
@@ -17,6 +18,7 @@ export class SetupUsersListing {
   page = 1;
   lastPage = 1;
   total = 0;
+  private defaultLimit = environment.limit;
 
   filters: any = {};
   filterFields = [
@@ -85,8 +87,8 @@ export class SetupUsersListing {
   );
 
   const apiCall = Object.keys(activeFilters).length
-    ? this.userService.searchUsers(activeFilters, 15)
-    : this.userService.getUsers(page);
+    ? this.userService.searchUsers(activeFilters, this.defaultLimit)
+    : this.userService.getUsers(page, this.defaultLimit);
 
   apiCall.subscribe({
     next: (res) => {

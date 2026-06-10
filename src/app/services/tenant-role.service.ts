@@ -10,12 +10,12 @@ export class TenantRoleService {
 
   constructor(private http: HttpClient) {}
 
-  getRoles() {
-    return this.http.get(this.apiUrl);
+  getRoles(page: number = 1, limit?: number) {
+    return this.http.get(`${this.apiUrl}?page=${page}${limit ? `&limit=${limit}` : ''}`);
   }
 
-  searchRoles(filters: any) {
-    return this.http.get(`${this.apiUrl}/search`, { params: filters });
+  searchRoles(filters: any, limit?: number) {
+    return this.http.get(`${this.apiUrl}/search`, { params: { ...filters, ...(limit ? { limit } : {}) } });
   }
 
   getRoleById(id: number) {

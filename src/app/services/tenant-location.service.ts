@@ -25,8 +25,8 @@ export class TenantLocationService {
   //   return this.http.get(this.apiUrl);
   // }
 
-  getLocations(page: number = 1): Observable<any> {
-    return this.http.get(`${this.apiUrl}?page=${page}`);
+  getLocations(page: number = 1, limit?: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}?page=${page}${limit ? `&limit=${limit}` : ''}`);
   }
 
   searchLocations(filters: any, limit: number = 15): Observable<any> {

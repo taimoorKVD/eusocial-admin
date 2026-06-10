@@ -26,13 +26,17 @@ export class TenantService {
 
   constructor(private http: HttpClient) {}
 
-  getTenants(page: number = 1): Observable<TenantResponse> {
-    return this.http.get<TenantResponse>(`${this.baseUrl}?page=${page}&sort_by=created_at&sort_order=desc`);
+  getTenants(page: number = 1, limit?: number): Observable<TenantResponse> {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      ...(limit ? { limit: limit.toString() } : {}),
+    });
+    return this.http.get<TenantResponse>(`${this.baseUrl}?${params.toString()}&sort_by=created_at&sort_order=desc`);
   }
 
-  searchTenants(filters: any = {}, limit: number = 15) {
+  searchTenants(filters: any = {}, limit?: number) {
     const params = new URLSearchParams({
-      limit: limit.toString(),
+      ...(limit ? { limit: limit.toString() } : {}),
       ...filters
     });
     return this.http.get<any>(

@@ -48,6 +48,8 @@ export class Users {
       placeholder: 'Select role',
     },
   ];
+  private defaultLimit = environment.limit;
+
 
   constructor(
     private http: HttpClient,
@@ -83,8 +85,8 @@ export class Users {
     );
 
      const apiCall = Object.keys(activeFilters).length
-    ? this.userService.searchUsers(activeFilters, 15)
-    : this.userService.getUsers(page);
+    ? this.userService.searchUsers(activeFilters, this.defaultLimit)
+    : this.userService.getUsers(page, this.defaultLimit);
 
     apiCall.subscribe({
       next: (res) => {

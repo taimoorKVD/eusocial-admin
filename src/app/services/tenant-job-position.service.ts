@@ -15,8 +15,8 @@ export class TenantJobPositionService {
     return this.http.get<any>(this.permissions);
   }
 
-  getJobPositions(page: number = 1) {
-    return this.http.get(`${this.jobPosition}?page=${page}`);
+  getJobPositions(page: number = 1, limit?: number) {
+    return this.http.get(`${this.jobPosition}?page=${page}${limit ? `&limit=${limit}` : ''}`);
   }
 
   searchJobPositions(filters: any = {}, limit: number = 15) {

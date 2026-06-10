@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { TenantJobPositionService } from '../../../../../services/tenant-job-position.service';
 import { ToastrService } from 'ngx-toastr';
 import { TenantSessionService } from '../../../../../services/tenant-session.service';
+import { environment } from '../../../../../../environments/environment.prod';
 
 @Component({
   selector: 'app-setup-job-position-listing',
@@ -25,6 +26,7 @@ export class SetupJobPositionListingComponent {
       placeholder: 'Search by name...'
     }
   ];
+  private defaultLimit = environment.limit;
 
   constructor( private tenantJobPosition: TenantJobPositionService, private router: Router, private toastr: ToastrService, public session: TenantSessionService) {}
 
@@ -41,8 +43,8 @@ export class SetupJobPositionListingComponent {
     );
 
      const apiCall = Object.keys(activeFilters).length
-    ? this.tenantJobPosition.searchJobPositions(activeFilters, 15)
-    : this.tenantJobPosition.getJobPositions(page);
+    ? this.tenantJobPosition.searchJobPositions(activeFilters, this.defaultLimit)
+    : this.tenantJobPosition.getJobPositions(page, this.defaultLimit);
 
     apiCall.subscribe({
       next: (res) => {
