@@ -104,7 +104,7 @@
           <!-- ── radio ─────────────────────────────────────────────────────────── -->
           <div *ngSwitchCase="'radio'" class="flex flex-col gap-2 mt-1" role="radiogroup">
             <div
-              *ngFor="let option of field.options; trackBy: trackByOption; let i = index"
+              *ngFor="let option of field.options; let i = index"
               class="flex items-center gap-2"
             >
               <input

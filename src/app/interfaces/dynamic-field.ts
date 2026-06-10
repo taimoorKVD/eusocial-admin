@@ -24,6 +24,7 @@ export interface DynamicField {
   placeholder?: string;
   width?: number;
   order?: number;
+  isShow?: boolean;
   options?: (string | DynamicFieldOption)[];
 }
 

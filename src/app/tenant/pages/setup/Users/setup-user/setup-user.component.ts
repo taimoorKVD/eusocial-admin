@@ -35,6 +35,7 @@ export class SetupUserComponent {
 
   ngOnInit(): void {
     this.getFormFields();
+
   }
 
   getFormFields(): void {
@@ -122,21 +123,16 @@ export class SetupUserComponent {
     if (!this.dynamicForm) {
       return;
     }
-
     const isValid = this.dynamicForm.validate();
-
     if (!isValid) {
       this.toastr.error('Please fill in all required fields.');
       return;
     }
-
     const formValues = this.dynamicForm.value;
-    const slug = this.route.snapshot.paramMap.get('slug');
-
       this.userService.createUser(formValues).subscribe({
         next: (res: any) => {
           this.toastr.success('User created successfully');
-          this.router.navigate(['/', slug, 'users']);
+            this.router.navigate(['/tenant', this.tenantSession.getSlug(), 'users']);
         },
 
         error: (err) => {
