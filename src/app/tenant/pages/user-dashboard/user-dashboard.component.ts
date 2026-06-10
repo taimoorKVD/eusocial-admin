@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { TenantUserService } from '../../../services/tenant-user.service';
 
 
 @Component({
@@ -9,5 +10,11 @@ import { Component } from '@angular/core';
   styleUrl: './user-dashboard.component.scss'
 })
 export class UserDashboardComponent {
+constructor(private tenantUserService: TenantUserService) {}
 
+ngOnInit(): void {
+  this.tenantUserService.getUsers().subscribe((users) => {
+    console.log(users);
+  });
+}
 }
