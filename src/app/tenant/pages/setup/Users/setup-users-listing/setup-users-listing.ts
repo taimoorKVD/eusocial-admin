@@ -6,6 +6,11 @@ import { environment } from '../../../../../../environments/environment.prod';
 import { FormStorageService } from '../../../../forms/services/form-storage.service';
 import { normalizeFieldOrder } from '../../../../form-builder/utils/form-field.factory';
 import { DynamicField } from '../../../../../interfaces/dynamic-field';
+import { GlobalFilterField } from '../../../../../shared/global-filter/global-filter';
+import {
+  mapVisibleColumnsToFilterFields,
+  pruneFiltersByAllowedKeys,
+} from '../../../../../shared/dynamic-listing/dynamic-listing.helpers';
 
 @Component({
   selector: 'app-setup-users-listing',
@@ -16,6 +21,7 @@ import { DynamicField } from '../../../../../interfaces/dynamic-field';
 export class SetupUsersListing {
   users: Record<string, unknown>[] = [];
   formFields: DynamicField[] = [];
+  filterFields: GlobalFilterField[] = [];
   loading = false;
   slug: string = '';
   page = 1;
@@ -23,22 +29,7 @@ export class SetupUsersListing {
   total = 0;
   readonly columnStorageKey = 'tenant-users-listing-columns';
   private defaultLimit = environment.limit;
-
-  filters: any = {};
-  filterFields = [
-    {
-      key: 'name',
-      label: 'Name',
-      type: 'text',
-      placeholder: 'Search by name...',
-    },
-    {
-      key: 'email',
-      label: 'Email',
-      type: 'email',
-      placeholder: 'Search by email...',
-    },
-  ];
+  private filters: Record<string, unknown> = {};
 
   constructor(
     private userService: TenantUserService,
@@ -72,6 +63,22 @@ export class SetupUsersListing {
     });
   }
 
+  onVisibleColumnsChange(columns: DynamicField[]): void {
+    const nextFilterFields = mapVisibleColumnsToFilterFields(columns);
+    const allowedKeys = new Set(nextFilterFields.map((field) => field.key));
+    const previousFilterKeys = Object.keys(this.filters);
+    const prunedFilters = pruneFiltersByAllowedKeys(this.filters, allowedKeys);
+    const filtersChanged = previousFilterKeys.length !== Object.keys(prunedFilters).length;
+
+    this.filterFields = nextFilterFields;
+    this.filters = prunedFilters;
+
+    if (filtersChanged) {
+      this.page = 1;
+      this.allUsers(this.page);
+    }
+  }
+
   goToCreate(): void {
     this.router.navigate(['/tenant', this.session.getSlug(), 'users', 'create']);
   }
@@ -88,9 +95,8 @@ export class SetupUsersListing {
   allUsers(page: number = 1): void {
     this.loading = true;
 
-    const activeFilters = Object.fromEntries(
-      Object.entries(this.filters).filter(([_, value]) => value),
-    );
+    const allowedKeys = new Set(this.filterFields.map((field) => field.key));
+    const activeFilters = pruneFiltersByAllowedKeys(this.filters, allowedKeys);
 
     const apiCall = Object.keys(activeFilters).length
       ? this.userService.searchUsers(activeFilters, this.defaultLimit)
@@ -139,8 +145,9 @@ export class SetupUsersListing {
     }
   }
 
-  onFilterSearch(filters: any): void {
-    this.filters = filters;
+  onFilterSearch(filters: Record<string, unknown>): void {
+    const allowedKeys = new Set(this.filterFields.map((field) => field.key));
+    this.filters = pruneFiltersByAllowedKeys(filters, allowedKeys);
     this.page = 1;
     this.allUsers(this.page);
   }

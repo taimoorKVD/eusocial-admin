@@ -11,6 +11,7 @@
   </app-top-header>
 
   <app-global-filter
+    *ngIf="filterFields.length"
     [fields]="filterFields"
     (search)="onFilterSearch($event)"
     (clear)="onFilterClear()">
@@ -24,6 +25,7 @@
       [defaultVisibleCount]="4"
       [showActions]="true"
       emptyMessage="No users found"
+      (visibleColumnsChange)="onVisibleColumnsChange($event)"
       (editRecord)="goToEdit($event)"
       (deleteRecord)="deleteUser($event)"
     ></app-dynamic-listing>

@@ -1,4 +1,7 @@
-import { DynamicField, DynamicFieldOption } from '../../interfaces/dynamic-field';
+import { DynamicField, DynamicFieldOption, DynamicFieldType } from '../../interfaces/dynamic-field';
+import { GlobalFilterField } from '../global-filter/global-filter';
+
+const NON_FILTERABLE_TYPES = new Set<DynamicFieldType>(['image']);
 
 const NESTED_FIELD_MAP: Record<string, string> = {
   job_position_id: 'jobPosition',
@@ -144,4 +147,68 @@ export function getListingImageSrc(record: Record<string, unknown>, field: Dynam
   }
 
   return null;
+}
+
+export function mapVisibleColumnsToFilterFields(columns: DynamicField[]): GlobalFilterField[] {
+  return columns
+    .filter((field) => !NON_FILTERABLE_TYPES.has(field.type))
+    .map((field) => ({
+      key: field.name,
+      label: field.label,
+      type: mapDynamicFieldToFilterType(field),
+      placeholder: field.placeholder || `Search by ${field.label.toLowerCase()}...`,
+      options: mapDynamicFieldToFilterOptions(field),
+    }));
+}
+
+export function pruneFiltersByAllowedKeys(
+  filters: Record<string, unknown>,
+  allowedKeys: Set<string>,
+): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(filters).filter(
+      ([key, value]) => allowedKeys.has(key) && value !== undefined && value !== null && value !== '',
+    ),
+  );
+}
+
+function mapDynamicFieldToFilterType(field: DynamicField): string {
+  switch (field.type) {
+    case 'select':
+    case 'radio':
+    case 'checkbox':
+      return 'select';
+    case 'number':
+      return 'number';
+    case 'email':
+      return 'email';
+    case 'date':
+      return 'date';
+    default:
+      return 'text';
+  }
+}
+
+function mapDynamicFieldToFilterOptions(
+  field: DynamicField,
+): GlobalFilterField['options'] | undefined {
+  if (field.type === 'checkbox') {
+    return [
+      { id: 1, name: 'Yes' },
+      { id: 0, name: 'No' },
+    ];
+  }
+
+  if (field.type !== 'select' && field.type !== 'radio') {
+    return undefined;
+  }
+
+  if (!field.options?.length) {
+    return undefined;
+  }
+
+  return field.options.map((option, index) => ({
+    id: getOptionValue(option, index),
+    name: getOptionLabel(option),
+  }));
 }

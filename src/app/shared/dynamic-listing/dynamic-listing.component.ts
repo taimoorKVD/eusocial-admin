@@ -37,6 +37,7 @@ export class DynamicListingComponent implements OnChanges {
 
   @Output() editRecord = new EventEmitter<Record<string, unknown>>();
   @Output() deleteRecord = new EventEmitter<Record<string, unknown>>();
+  @Output() visibleColumnsChange = new EventEmitter<DynamicField[]>();
 
   sortedFields: DynamicField[] = [];
   visibleFieldIds = new Set<string>();
@@ -91,6 +92,7 @@ export class DynamicListingComponent implements OnChanges {
     }
 
     this.persistColumnPreferences();
+    this.emitVisibleColumnsChange();
     this.cdr.markForCheck();
   }
 
@@ -136,7 +138,12 @@ export class DynamicListingComponent implements OnChanges {
       this.persistColumnPreferences();
     }
 
+    this.emitVisibleColumnsChange();
     this.cdr.markForCheck();
+  }
+
+  private emitVisibleColumnsChange(): void {
+    this.visibleColumnsChange.emit(this.visibleColumns);
   }
 
   private persistColumnPreferences(): void {
