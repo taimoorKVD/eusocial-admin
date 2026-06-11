@@ -64,91 +64,85 @@
   </div>
 
   <div *ngIf="isSelectField" class="space-y-3">
-    <p *ngIf="isLegacyApiSelect" class="rounded-md border border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-500">
-      Options loaded from {{ field.optionSource?.endpoint }}
-    </p>
+    <div>
+      <label class="mb-1.5 block text-xs font-medium text-slate-600">Options source</label>
+      <div class="space-y-2 rounded-md border border-slate-100 bg-slate-50 px-3 py-2.5">
+        <label class="flex items-center gap-2 text-sm text-slate-700">
+          <input
+            type="radio"
+            name="select-options-mode"
+            [checked]="optionsMode === 'static'"
+            (change)="setOptionsMode('static')"
+            class="h-4 w-4 border-slate-300 text-[#0054AC] focus:ring-[#0054AC]"
+          />
+          Static Options
+        </label>
 
-    <ng-container *ngIf="!isLegacyApiSelect">
+        <label class="flex items-center gap-2 text-sm text-slate-700">
+          <input
+            type="radio"
+            name="select-options-mode"
+            [checked]="optionsMode === 'dynamic'"
+            (change)="setOptionsMode('dynamic')"
+            class="h-4 w-4 border-slate-300 text-[#0054AC] focus:ring-[#0054AC]"
+          />
+          Dynamic Options
+        </label>
+      </div>
+    </div>
+
+    <div *ngIf="optionsMode === 'static'">
+      <label class="mb-1.5 block text-xs font-medium text-slate-600">Options (one per line)</label>
+      <textarea
+        rows="5"
+        [value]="optionsText"
+        (input)="updateOptions($event)"
+        class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC]"
+      ></textarea>
+    </div>
+
+    <div *ngIf="optionsMode === 'dynamic'" class="space-y-3">
       <div>
-        <label class="mb-1.5 block text-xs font-medium text-slate-600">Options source</label>
-        <div class="space-y-2 rounded-md border border-slate-100 bg-slate-50 px-3 py-2.5">
-          <label class="flex items-center gap-2 text-sm text-slate-700">
-            <input
-              type="radio"
-              name="select-options-mode"
-              [checked]="optionsMode === 'static'"
-              (change)="setOptionsMode('static')"
-              class="h-4 w-4 border-slate-300 text-[#0054AC] focus:ring-[#0054AC]"
-            />
-            Static Options
-          </label>
-
-          <label class="flex items-center gap-2 text-sm text-slate-700">
-            <input
-              type="radio"
-              name="select-options-mode"
-              [checked]="optionsMode === 'dynamic'"
-              (change)="setOptionsMode('dynamic')"
-              class="h-4 w-4 border-slate-300 text-[#0054AC] focus:ring-[#0054AC]"
-            />
-            Dynamic Options
-          </label>
-        </div>
-      </div>
-
-      <div *ngIf="optionsMode === 'static'">
-        <label class="mb-1.5 block text-xs font-medium text-slate-600">Options (one per line)</label>
-        <textarea
-          rows="5"
-          [value]="optionsText"
-          (input)="updateOptions($event)"
+        <label class="mb-1.5 block text-xs font-medium text-slate-600">Select Module</label>
+        <select
+          [ngModel]="selectedModuleSlug"
+          (ngModelChange)="onModuleChange($event)"
           class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC]"
-        ></textarea>
-      </div>
-
-      <div *ngIf="optionsMode === 'dynamic'" class="space-y-3">
-        <div>
-          <label class="mb-1.5 block text-xs font-medium text-slate-600">Select Module</label>
-          <select
-            [ngModel]="selectedModuleSlug"
-            (ngModelChange)="onModuleChange($event)"
-            class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC]"
-          >
-            <option [ngValue]="''">Select a module</option>
-            <option
-              *ngFor="let module of availableModules"
-              [ngValue]="getModuleSlug(module)"
-            >
-              {{ getModuleLabel(module) }}
-            </option>
-          </select>
-          <p *ngIf="modulesLoading" class="mt-1 text-xs text-slate-400">Loading modules...</p>
-          <p *ngIf="modulesError" class="mt-1 text-xs text-red-500">{{ modulesError }}</p>
-          <p *ngIf="recordsLoading" class="mt-1 text-xs text-slate-400">Loading records...</p>
-        </div>
-
-        <div *ngIf="selectedModuleSlug && moduleColumns.length">
-          <label class="mb-1.5 block text-xs font-medium text-slate-600">Select Display Column</label>
-          <select
-            [ngModel]="selectedDisplayColumn"
-            (ngModelChange)="onDisplayColumnChange($event)"
-            class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC]"
-          >
-            <option [ngValue]="''">Select a column</option>
-            <option *ngFor="let column of moduleColumns" [ngValue]="column">
-              {{ column }}
-            </option>
-          </select>
-        </div>
-
-        <p
-          *ngIf="dynamicOptionsCount > 0"
-          class="rounded-md border border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-600"
         >
-          {{ dynamicOptionsCount }} options saved to this field.
-        </p>
+          <option [ngValue]="''">Select a module</option>
+          <option
+            *ngFor="let module of availableModules"
+            [ngValue]="getModuleSlug(module)"
+          >
+            {{ getModuleLabel(module) }}
+          </option>
+        </select>
+        <p *ngIf="modulesLoading" class="mt-1 text-xs text-slate-400">Loading modules...</p>
+        <p *ngIf="modulesError" class="mt-1 text-xs text-red-500">{{ modulesError }}</p>
+        <p *ngIf="recordsLoading" class="mt-1 text-xs text-slate-400">Loading records...</p>
       </div>
-    </ng-container>
+
+      <div *ngIf="selectedModuleSlug && moduleColumns.length">
+        <label class="mb-1.5 block text-xs font-medium text-slate-600">Select Display Column</label>
+        <select
+          [ngModel]="selectedDisplayColumn"
+          (ngModelChange)="onDisplayColumnChange($event)"
+          class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC]"
+        >
+          <option [ngValue]="''">Select a column</option>
+          <option *ngFor="let column of moduleColumns" [ngValue]="column">
+            {{ column }}
+          </option>
+        </select>
+      </div>
+
+      <p
+        *ngIf="dynamicOptionsCount > 0"
+        class="rounded-md border border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-600"
+      >
+        {{ dynamicOptionsCount }} options saved to this field.
+      </p>
+    </div>
   </div>
 
   <div *ngIf="field.type === 'radio' || field.type === 'checkbox'">
