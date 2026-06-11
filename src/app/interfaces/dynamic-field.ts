@@ -14,6 +14,16 @@ export interface DynamicFieldOption {
   value: string | number;
 }
 
+export interface DynamicFieldOptionSource {
+  type: 'api' | 'static';
+  endpoint?: string;
+  response?: {
+    labelKey: string;
+    valueKey: string;
+    dataPath: string;
+  };
+}
+
 export interface DynamicField {
   id: string;
   name: string;
@@ -24,8 +34,10 @@ export interface DynamicField {
   placeholder?: string;
   width?: number;
   order?: number;
+  radio?: any;
   isShow?: boolean;
   options?: (string | DynamicFieldOption)[];
+  optionSource?: DynamicFieldOptionSource;
 }
 
 export type DynamicFormValue = Record<string, unknown>;
