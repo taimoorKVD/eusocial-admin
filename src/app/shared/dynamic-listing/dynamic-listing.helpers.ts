@@ -1,7 +1,13 @@
 import { DynamicField, DynamicFieldOption, DynamicFieldType } from '../../interfaces/dynamic-field';
 import { GlobalFilterField } from '../global-filter/global-filter';
 
-const NON_FILTERABLE_TYPES = new Set<DynamicFieldType>(['image']);
+const DEFAULT_NON_FILTERABLE_TYPES = new Set<DynamicFieldType>(['image']);
+
+export interface FilterFieldMappingOptions {
+  excludeTypes?: DynamicFieldType[];
+  excludeNamePattern?: RegExp;
+  excludeLabelPattern?: RegExp;
+}
 
 const NESTED_FIELD_MAP: Record<string, string> = {
   job_position_id: 'jobPosition',
@@ -24,6 +30,30 @@ export function getDefaultVisibleFieldIds(fields: DynamicField[], count = 4): st
   return sortListingFields(fields)
     .slice(0, count)
     .map((field) => field.id);
+}
+
+export function getVisibleColumns(
+  fields: DynamicField[],
+  storageKey: string,
+  defaultVisibleCount = 4,
+): DynamicField[] {
+  const sortedFields = sortListingFields(fields);
+
+  if (!sortedFields.length) {
+    return [];
+  }
+
+  const savedIds = loadVisibleColumnIds(storageKey);
+  const validSavedIds = savedIds?.filter((id) =>
+    sortedFields.some((field) => field.id === id),
+  );
+
+  const visibleIds = validSavedIds?.length
+    ? validSavedIds
+    : getDefaultVisibleFieldIds(sortedFields, defaultVisibleCount);
+
+  const visibleSet = new Set(visibleIds);
+  return sortedFields.filter((field) => visibleSet.has(field.id));
 }
 
 export function loadVisibleColumnIds(storageKey: string): string[] | null {
@@ -149,9 +179,12 @@ export function getListingImageSrc(record: Record<string, unknown>, field: Dynam
   return null;
 }
 
-export function mapVisibleColumnsToFilterFields(columns: DynamicField[]): GlobalFilterField[] {
+export function mapVisibleColumnsToFilterFields(
+  columns: DynamicField[],
+  options?: FilterFieldMappingOptions,
+): GlobalFilterField[] {
   return columns
-    .filter((field) => !NON_FILTERABLE_TYPES.has(field.type))
+    .filter((field) => !shouldExcludeFromFilter(field, options))
     .map((field) => ({
       key: field.name,
       label: field.label,
@@ -159,6 +192,27 @@ export function mapVisibleColumnsToFilterFields(columns: DynamicField[]): Global
       placeholder: field.placeholder || `Search by ${field.label.toLowerCase()}...`,
       options: mapDynamicFieldToFilterOptions(field),
     }));
+}
+
+export function shouldExcludeFromFilter(
+  field: DynamicField,
+  options?: FilterFieldMappingOptions,
+): boolean {
+  const excludedTypes = new Set(options?.excludeTypes ?? [...DEFAULT_NON_FILTERABLE_TYPES]);
+
+  if (excludedTypes.has(field.type)) {
+    return true;
+  }
+
+  if (options?.excludeNamePattern?.test(field.name)) {
+    return true;
+  }
+
+  if (options?.excludeLabelPattern?.test(field.label)) {
+    return true;
+  }
+
+  return false;
 }
 
 export function pruneFiltersByAllowedKeys(
@@ -176,6 +230,7 @@ function mapDynamicFieldToFilterType(field: DynamicField): string {
   switch (field.type) {
     case 'select':
     case 'radio':
+      return 'select';
     case 'checkbox':
       return 'select';
     case 'number':
