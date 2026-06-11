@@ -84,45 +84,31 @@
           </select>
 
           <!-- ── checkbox ──────────────────────────────────────────────────────── -->
-          <div *ngSwitchCase="'checkbox'" class="option-group option-group--checkbox"
-           [ngClass]="{ 'option-group--inline': field.label !== 'Availability Days' }">
-            <!-- <div
-              *ngFor="let option of field.options; let i = index"
-              class="option-item"
-              [ngClass]="{ 'option-item--inline': field.label !== 'Availability Days' }">
-              <input
-                class="option-input"
-                type="checkbox"
-                [id]="field.id + '-' + i"
-                [formControlName]="field.name"
-                [value]="getOptionValue(option, i)"/>
-              <label class="option-label" [attr.for]="field.id + '-' + i">
-                {{ getOptionLabel(option) }}
-              </label>
-            </div> -->
+          <div *ngSwitchCase="'checkbox'" class="option-group option-group--checkbox">
             <ng-container *ngIf="field.options?.length === 1; else multiCheckbox">
               <input
                 type="checkbox"
                 class="option-input"
+                [id]="field.name + '0'"
                 [formControlName]="field.name"
               />
-              <label class="option-label">
+              <label class="option-label" [for]="field.name + '0'">
                 {{ field.label }}
               </label>
             </ng-container>
 
             <ng-template #multiCheckbox>
-              <div formArrayName="{{ field.name }}">
+              <div formArrayName="{{ field.name }}" class="checkbox-wrapper">
                 <div
                   *ngFor="let option of field.options; let i = index"
                   class="option-item"
                 >
                   <input
                     type="checkbox"
-                    class="option-input"
+                    class="option-input" [id]="field.name + '_' + i"
                     [formControlName]="i"
                   />
-                  <label class="option-label">
+                  <label class="option-label" [for]="field.name + '_' + i">
                     {{ getOptionLabel(option) }}
                   </label>
                 </div>
