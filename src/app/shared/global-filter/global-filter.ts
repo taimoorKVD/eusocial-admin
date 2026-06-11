@@ -15,6 +15,7 @@ export interface GlobalFilterField {
   selector: 'app-global-filter',
   standalone: false,
   templateUrl: './global-filter.html',
+  styleUrl: './global-filter.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class GlobalFilterComponent implements OnChanges {
@@ -87,6 +88,7 @@ export class GlobalFilterComponent implements OnChanges {
 
   toggleDropdown(field: GlobalFilterField): void {
     this.openDropdownKey = this.openDropdownKey === field.key ? null : field.key;
+    this.cdr.markForCheck();
   }
 
   isDropdownOpen(field: GlobalFilterField): boolean {
@@ -96,6 +98,7 @@ export class GlobalFilterComponent implements OnChanges {
   onOptionSearch(field: GlobalFilterField, event: Event): void {
     const input = event.target as HTMLInputElement;
     this.optionSearch[field.key] = input.value;
+    this.cdr.markForCheck();
   }
 
   getFilteredOptions(field: GlobalFilterField): Array<{ id: number | string; name: string }> {
@@ -117,6 +120,7 @@ export class GlobalFilterComponent implements OnChanges {
     }
 
     this.openDropdownKey = null;
+    this.cdr.markForCheck();
   }
 
   @HostListener('document:click', ['$event'])
@@ -124,7 +128,10 @@ export class GlobalFilterComponent implements OnChanges {
     const target = event.target as Node;
 
     if (!this.elementRef.nativeElement.contains(target)) {
-      this.openDropdownKey = null;
+      if (this.openDropdownKey) {
+        this.openDropdownKey = null;
+        this.cdr.markForCheck();
+      }
     }
   }
 
@@ -134,6 +141,7 @@ export class GlobalFilterComponent implements OnChanges {
     this.optionSearch = {};
     this.openDropdownKey = null;
     this.clear.emit();
+    this.cdr.markForCheck();
   }
 
   private syncFiltersWithFields(): void {

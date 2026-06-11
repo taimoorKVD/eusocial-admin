@@ -143,7 +143,9 @@ export class DynamicListingComponent implements OnChanges {
   }
 
   private emitVisibleColumnsChange(): void {
-    this.visibleColumnsChange.emit(this.visibleColumns);
+    queueMicrotask(() => {
+      this.visibleColumnsChange.emit(this.visibleColumns);
+    });
   }
 
   private persistColumnPreferences(): void {
