@@ -30,6 +30,7 @@ export interface DynamicField {
   type: DynamicFieldType;
   label: string;
   value?: unknown;
+  defaultValue?: unknown;
   required?: boolean;
   placeholder?: string;
   width?: number;
