@@ -2,6 +2,16 @@
   <app-eu-loader></app-eu-loader>
 </ng-container>
 
+<app-confirm-modal
+  [isOpen]="showExitConfirmModal"
+  title="Are you sure you want to exit?"
+  message=""
+  confirmText="Confirm"
+  cancelText="Cancel"
+  (confirmed)="onConfirmExit()"
+  (closed)="onCancelExit()"
+></app-confirm-modal>
+
 <div class="grid grid-cols-5 gap-4 p-6 font-ibm">
 
   <!-- CANVAS -->
