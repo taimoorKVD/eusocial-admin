@@ -2,11 +2,17 @@ import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { ToastrService } from 'ngx-toastr';
-import { FormField } from '../../form-builder/models/form-field.model';
+import {
+  FieldOption,
+  FormField,
+  OptionSource,
+} from '../../form-builder/models/form-field.model';
 import {
   createFieldFromTemplate,
+  generateFieldId,
   normalizeFieldOrder,
   sanitizeField,
+  toFieldName,
 } from '../../form-builder/utils/form-field.factory';
 import { FormStorageService } from '../services/form-storage.service';
 import { FormsEditorCanDeactivate } from '../guards/forms-editor-can-deactivate.interface';
@@ -150,29 +156,82 @@ export class FormsEditorComponent
     return field.id;
   }
 
+  private cloneOptionSourceOptions(
+    options?: string[] | FieldOption[]
+  ): string[] | FieldOption[] | undefined {
+    if (!options) {
+      return undefined;
+    }
+
+    if (options.every(option => typeof option === 'string')) {
+      return [...options] as string[];
+    }
+
+    return (options as FieldOption[]).map(option => ({ ...option }));
+  }
+
+  private cloneOptionSource(optionSource?: OptionSource): OptionSource | undefined {
+    if (!optionSource) {
+      return undefined;
+    }
+
+    return {
+      ...optionSource,
+      response: optionSource.response ? { ...optionSource.response } : undefined,
+      options: this.cloneOptionSourceOptions(optionSource.options),
+    };
+  }
+
   onDuplicateField(field: FormField): void {
     const index = this.builderSchema.findIndex(item => item.id === field.id);
     if (index === -1) {
       return;
     }
 
+    const duplicateLabel = `${field.label} Copy`;
+    const duplicateName = this.buildUniqueFieldName(toFieldName(duplicateLabel));
+
     const clone = createFieldFromTemplate({
       ...field,
-      label: `${field.label} Copy`,
+      id: generateFieldId(),
+      label: duplicateLabel,
+      name: duplicateName,
+      options: (field.options || []).map(option =>
+        typeof option === 'string' ? option : { ...option }
+      ),
+      optionSource: this.cloneOptionSource(field.optionSource),
+      condition: field.condition
+        ? { ...field.condition }
+        : { fieldId: '', value: '' },
+      validations: field.validations ? { ...field.validations } : {},
     });
 
-    const updated = [...this.builderSchema];
-    updated.splice(index + 1, 0, clone);
-    this.builderSchema = normalizeFieldOrder(updated);
+    this.builderSchema = normalizeFieldOrder([
+      ...this.builderSchema.slice(0, index + 1),
+      clone,
+      ...this.builderSchema.slice(index + 1),
+    ]);
     this.onSelectField(clone);
   }
 
   onDeleteField(field: FormField): void {
-    this.builderSchema = normalizeFieldOrder(
-      this.builderSchema.filter(item => item.id !== field.id)
-    );
+    const deleteIndex = this.builderSchema.findIndex(item => item === field);
+    const fallbackIndex = this.builderSchema.findIndex(item => item.id === field.id);
+    const targetIndex = deleteIndex >= 0 ? deleteIndex : fallbackIndex;
 
-    if (this.selectedFieldId === field.id) {
+    if (targetIndex === -1) {
+      return;
+    }
+
+    this.builderSchema = normalizeFieldOrder([
+      ...this.builderSchema.slice(0, targetIndex),
+      ...this.builderSchema.slice(targetIndex + 1),
+    ]);
+
+    if (
+      this.selectedFieldId &&
+      !this.builderSchema.some(item => item.id === this.selectedFieldId)
+    ) {
       this.selectedFieldId = null;
       this.activeTab = 'fields';
     }
@@ -225,7 +284,7 @@ export class FormsEditorComponent
       return;
     }
 
-    this.builderSchema[index] = sanitizeField({
+    const normalizedField = sanitizeField({
       ...updated,
       isShow: updated.isShow !== false,
       isReadonly: updated.isReadonly === true,
@@ -238,9 +297,36 @@ export class FormsEditorComponent
         : { fieldId: '', value: '' },
     });
 
-    this.builderSchema = normalizeFieldOrder([...this.builderSchema]);
-    this.selectedFieldId = updated.id;
+    this.builderSchema = normalizeFieldOrder(
+      this.builderSchema.map((field, fieldIndex) =>
+        fieldIndex === index ? normalizedField : field
+      )
+    );
+    this.selectedFieldId = normalizedField.id;
     this.activeTab = 'settings';
+  }
+
+  private buildUniqueFieldName(baseName: string): string {
+    const normalizedBase = baseName.trim() || 'field';
+    const existingNames = new Set(
+      this.builderSchema
+        .map(field => String(field.name || '').trim().toLowerCase())
+        .filter(Boolean)
+    );
+
+    if (!existingNames.has(normalizedBase.toLowerCase())) {
+      return normalizedBase;
+    }
+
+    let suffix = 2;
+    let candidate = `${normalizedBase}_${suffix}`;
+
+    while (existingNames.has(candidate.toLowerCase())) {
+      suffix += 1;
+      candidate = `${normalizedBase}_${suffix}`;
+    }
+
+    return candidate;
   }
 
   buildPayload() {

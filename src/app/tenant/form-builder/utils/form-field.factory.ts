@@ -1,4 +1,4 @@
-import { FormField } from '../models/form-field.model';
+import { FieldOption, FormField, OptionSource } from '../models/form-field.model';
 import { normalizeFieldTypeName } from './field-type.utils';
 import { readOptionSourceFromField } from './option-source.utils';
 
@@ -15,6 +15,48 @@ export function toFieldName(label: string | null | undefined): string {
     .replace(/^_+|_+$/g, '');
 
   return fieldName || 'field';
+}
+
+function cloneOptions(
+  options: Array<string | { label: string; value: string | number }> = []
+): Array<string | { label: string; value: string | number }> {
+  return options.map(option =>
+    typeof option === 'string' ? option : { ...option }
+  );
+}
+
+function cloneOptionSourceOptions(
+  options?: string[] | FieldOption[]
+): string[] | FieldOption[] | undefined {
+  if (!options) {
+    return undefined;
+  }
+
+  if (options.every(option => typeof option === 'string')) {
+    return [...options] as string[];
+  }
+
+  return (options as FieldOption[]).map(option => ({ ...option }));
+}
+
+function cloneOptionSource(optionSource?: OptionSource): OptionSource | undefined {
+  if (!optionSource) {
+    return undefined;
+  }
+
+  return {
+    ...optionSource,
+    response: optionSource.response ? { ...optionSource.response } : undefined,
+    options: cloneOptionSourceOptions(optionSource.options),
+  };
+}
+
+function readFieldIdentifier(
+  field: Partial<FormField> & Record<string, unknown>
+): string {
+  return String(
+    field.id ?? field['fieldId'] ?? field['field_id'] ?? field['key'] ?? generateFieldId()
+  );
 }
 
 function readBooleanFlag(
@@ -72,9 +114,10 @@ export function sanitizeField(
 
   const fieldTypeName = readFieldTypeName(field);
   const type = normalizeFieldTypeName(fieldTypeName, field.type);
+  const optionSource = readOptionSourceFromField(field);
 
   return {
-    id: String(field.id || generateFieldId()),
+    id: readFieldIdentifier(field),
     type,
     fieldTypeName,
     label,
@@ -83,8 +126,8 @@ export function sanitizeField(
     required: readRequired(field),
     isShow: readBooleanFlag(field, 'isShow', 'is_show', true),
     isReadonly: readBooleanFlag(field, 'isReadonly', 'is_readonly', false),
-    options: [...(field.options || [])],
-    optionSource: readOptionSourceFromField(field),
+    options: cloneOptions(field.options),
+    optionSource: cloneOptionSource(optionSource),
     value: field.value ?? field.defaultValue ?? null,
     defaultValue: field.defaultValue ?? null,
     validations: field.validations ? { ...field.validations } : {},
