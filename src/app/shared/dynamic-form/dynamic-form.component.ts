@@ -102,10 +102,11 @@ export class DynamicFormComponent implements OnChanges, OnDestroy {
   }
 
   trackByOption(index: number, option: string | DynamicFieldOption): string | number {
-    console.log('Tracking option:', option);
-    console.log('Tracking option index:', index);
-
-    return this.getOptionValue(option, index);
+    return typeof option === 'string'
+        ? option
+        : (option.value ?? index);
+    // console.log(this.getOptionValue(option, index));
+    // return this.getOptionValue(option, index);
   }
 
   getColClass(field: DynamicField): string {
@@ -194,14 +195,27 @@ export class DynamicFormComponent implements OnChanges, OnDestroy {
   }
 
   private getInitialValue(field: DynamicField): unknown {
-    if (field.value !== undefined && field.value !== null) {
-      return field.value;
-    }
     switch (field.type) {
-      case 'checkbox': return false;
-      case 'number':   return null;
-      case 'image':    return null;
-      default:         return '';
+      case 'radio': {
+        if (field.defaultValue !== undefined && field.defaultValue !== null && field.defaultValue !== '') {
+          return field.defaultValue;
+        }
+
+        if (field.value !== undefined && field.value !== null && field.value !== '') {
+          return field.value;
+        }
+
+        const firstOption = field.options?.[0];
+        return firstOption !== undefined ? this.getOptionValue(firstOption, 0) : '';
+      }
+      case 'checkbox':
+        return false;
+      case 'number':
+        return field.defaultValue ?? field.value ?? null;
+      case 'image':
+        return field.defaultValue ?? field.value ?? null;
+      default:
+        return field.defaultValue ?? field.value ?? '';
     }
   }
 

@@ -1,4 +1,14 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, EventEmitter, HostListener, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+  EventEmitter,
+  Input,
+  OnChanges,
+  Output,
+  SimpleChanges,
+} from '@angular/core';
+import { DropdownOverlayService } from '../directives/dropdown-panel/dropdown-overlay.service';
 
 export type GlobalFilterValue = Record<string, unknown>;
 
@@ -19,16 +29,17 @@ export interface GlobalFilterField {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class GlobalFilterComponent implements OnChanges {
+  readonly filterDropdownGroup = 'global-filter';
+
   @Input() fields: GlobalFilterField[] = [];
   @Output() search = new EventEmitter<GlobalFilterValue>();
   @Output() clear = new EventEmitter<void>();
 
   filters: GlobalFilterValue = {};
-  openDropdownKey: string | null = null;
   optionSearch: Record<string, string> = {};
 
   constructor(
-    private elementRef: ElementRef,
+    private overlayService: DropdownOverlayService,
     private cdr: ChangeDetectorRef,
   ) {}
 
@@ -39,11 +50,11 @@ export class GlobalFilterComponent implements OnChanges {
   }
 
   get hasFilters(): boolean {
-    return Object.values(this.filters).some(value => !!value);
+    return Object.values(this.filters).some((value) => !!value);
   }
 
   get activeFields(): GlobalFilterField[] {
-    return this.fields.filter(field => !!this.filters[field.key]);
+    return this.fields.filter((field) => !!this.filters[field.key]);
   }
 
   trackByFieldKey(_: number, field: GlobalFilterField): string {
@@ -71,7 +82,7 @@ export class GlobalFilterComponent implements OnChanges {
 
   getSelectedOptionLabel(field: GlobalFilterField): string {
     const selectedValue = this.filters[field.key];
-    const option = field.options?.find(item => String(item.id) === String(selectedValue));
+    const option = field.options?.find((item) => String(item.id) === String(selectedValue));
 
     return option?.name || '-';
   }
@@ -84,15 +95,6 @@ export class GlobalFilterComponent implements OnChanges {
     }
 
     return field.placeholder || `Select ${field.label}`;
-  }
-
-  toggleDropdown(field: GlobalFilterField): void {
-    this.openDropdownKey = this.openDropdownKey === field.key ? null : field.key;
-    this.cdr.markForCheck();
-  }
-
-  isDropdownOpen(field: GlobalFilterField): boolean {
-    return this.openDropdownKey === field.key;
   }
 
   onOptionSearch(field: GlobalFilterField, event: Event): void {
@@ -109,7 +111,7 @@ export class GlobalFilterComponent implements OnChanges {
       return options;
     }
 
-    return options.filter(option => option.name.toLowerCase().includes(query));
+    return options.filter((option) => option.name.toLowerCase().includes(query));
   }
 
   selectOption(field: GlobalFilterField, option?: { id: number | string; name: string }): void {
@@ -119,27 +121,14 @@ export class GlobalFilterComponent implements OnChanges {
       delete this.filters[field.key];
     }
 
-    this.openDropdownKey = null;
+    this.overlayService.close();
     this.cdr.markForCheck();
   }
-
-  @HostListener('document:click', ['$event'])
-  onDocumentClick(event: Event): void {
-    const target = event.target as Node;
-
-    if (!this.elementRef.nativeElement.contains(target)) {
-      if (this.openDropdownKey) {
-        this.openDropdownKey = null;
-        this.cdr.markForCheck();
-      }
-    }
-  }
-
 
   onClear(): void {
     this.filters = {};
     this.optionSearch = {};
-    this.openDropdownKey = null;
+    this.overlayService.close();
     this.clear.emit();
     this.cdr.markForCheck();
   }
@@ -155,10 +144,7 @@ export class GlobalFilterComponent implements OnChanges {
       Object.entries(this.optionSearch).filter(([key]) => allowedKeys.has(key)),
     );
 
-    if (this.openDropdownKey && !allowedKeys.has(this.openDropdownKey)) {
-      this.openDropdownKey = null;
-    }
-
+    this.overlayService.close();
     this.cdr.markForCheck();
   }
 }

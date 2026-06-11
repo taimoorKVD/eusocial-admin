@@ -1,18 +1,19 @@
-<form *ngIf="form" [formGroup]="form" class="max-w-[66%] dynamic-form" novalidate>
-  <div class="grid grid-cols-2 gap-x-8 gap-y-2">
+<form *ngIf="form" [formGroup]="form" class="dynamic-form" novalidate>
+  <div class="grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-6">
     <div
       *ngFor="let field of sortedFields; trackBy: trackByField"
       [ngClass]="{ 'col-span-2': field.type === 'image' || field.type === 'textarea' || field.label === 'Availability Days' }"
+      class="field-shell"
     >
-      <div class="form-group mb-5">
+      <div class="form-group">
         <!-- Label (hidden for image — label is baked into the upload zone) -->
         <label
           *ngIf="field.type !== 'image'"
-          class="text-[12px] text-[#6F6F6F] font-ibm mt-1 block"
+          class="field-label"
           [attr.for]="field.id"
         >
           {{ field.label }}
-          <span *ngIf="field.required" class="text-red-500" aria-hidden="true">*</span>
+          <span *ngIf="field.required" class="field-required" aria-hidden="true">*</span>
         </label>
 
         <ng-container [ngSwitch]="field.type">
@@ -20,7 +21,7 @@
           <!-- ── text ─────────────────────────────────────────────────────────── -->
           <input
             *ngSwitchCase="'text'"
-            class="w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent"
+            class="dynamic-control"
             type="text"
             [id]="field.id"
             [formControlName]="field.name"
@@ -30,7 +31,7 @@
           <!-- ── email ─────────────────────────────────────────────────────────── -->
           <input
             *ngSwitchCase="'email'"
-            class="w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent"
+            class="dynamic-control"
             type="email"
             [id]="field.id"
             [formControlName]="field.name"
@@ -40,7 +41,7 @@
           <!-- ── number ────────────────────────────────────────────────────────── -->
           <input
             *ngSwitchCase="'number'"
-            class="w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent"
+            class="dynamic-control"
             type="number"
             [id]="field.id"
             [formControlName]="field.name"
@@ -50,7 +51,7 @@
           <!-- ── date ──────────────────────────────────────────────────────────── -->
           <input
             *ngSwitchCase="'date'"
-            class="w-full border-b border-[#161616] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent"
+            class="dynamic-control"
             type="date"
             [id]="field.id"
             [formControlName]="field.name"
@@ -59,7 +60,7 @@
           <!-- ── textarea ──────────────────────────────────────────────────────── -->
           <textarea
             *ngSwitchCase="'textarea'"
-            class="w-full border-b border-[#161616] placeholder-[#A8A8A8] text-[#161616] focus:outline-none font-ibm py-3 text-[14px] bg-transparent resize-none"
+            class="dynamic-control min-h-[120px] resize-none"
             [id]="field.id"
             [formControlName]="field.name"
             [placeholder]="field.placeholder ?? ''"
@@ -69,13 +70,13 @@
           <!-- ── select ────────────────────────────────────────────────────────── -->
           <select
             *ngSwitchCase="'select'"
-            class="w-full border-b border-[#161616] py-3 text-[14px] bg-transparent focus:outline-none font-ibm text-[#161616]"
+            class="dynamic-control"
             [id]="field.id"
             [formControlName]="field.name"
           >
             <option value="">{{  'Select ' + field.label }}</option>
             <option
-              *ngFor="let option of field.options; "
+              *ngFor="let option of field.options; trackBy: trackByOption;"
               [ngValue]="getOptionValue(option)"
             >
               {{ getOptionLabel(option) }}
@@ -83,18 +84,19 @@
           </select>
 
           <!-- ── checkbox ──────────────────────────────────────────────────────── -->
-          <div *ngSwitchCase="'checkbox'"
-           [ngClass]="{ 'flex items-center gap-2 mt-2': field.label !== 'Availability Days' }">
+          <div *ngSwitchCase="'checkbox'" class="option-group option-group--checkbox"
+           [ngClass]="{ 'option-group--inline': field.label !== 'Availability Days' }">
             <div
               *ngFor="let option of field.options; let i = index"
-              [ngClass]="{ 'flex items-center gap-2': field.label !== 'Availability Days' }">
+              class="option-item"
+              [ngClass]="{ 'option-item--inline': field.label !== 'Availability Days' }">
               <input
-                class="h-4 w-4 border-gray-300 text-[#0054AC] focus:ring-[#0054AC]"
+                class="option-input"
                 type="checkbox"
                 [id]="field.id + '-' + i"
                 [formControlName]="field.name"
                 [value]="getOptionValue(option, i)"/>
-              <label class="text-[13px] text-[#161616] font-ibm cursor-pointer" [attr.for]="field.id + '-' + i">
+              <label class="option-label" [attr.for]="field.id + '-' + i">
                 {{ getOptionLabel(option) }}
               </label>
             </div>
@@ -102,19 +104,19 @@
           </div>
 
           <!-- ── radio ─────────────────────────────────────────────────────────── -->
-          <div *ngSwitchCase="'radio'" class="flex flex-col gap-2 mt-1" role="radiogroup">
+          <div *ngSwitchCase="'radio'" class="option-group option-group--radio" role="radiogroup">
             <div
-              *ngFor="let option of field.options; let i = index"
-              class="flex items-center gap-2"
+              *ngFor="let option of field.options; trackBy: trackByOption; let i = index"
+              class="option-item option-item--radio"
             >
               <input
-                class="h-4 w-4 border-gray-300 text-[#0054AC] focus:ring-[#0054AC]"
+                class="option-input"
                 type="radio"
                 [id]="field.id + '-' + i"
                 [formControlName]="field.name"
                 [value]="getOptionValue(option, i)"
               />
-              <label class="text-[13px] text-[#161616] font-ibm cursor-pointer" [attr.for]="field.id + '-' + i">
+              <label class="option-label" [attr.for]="field.id + '-' + i">
                 {{ getOptionLabel(option) }}
               </label>
             </div>
@@ -141,41 +143,41 @@
               (keydown.space)="$event.preventDefault(); imgInput.click()"
               role="button"
               tabindex="0"
-              class="upload-zone relative flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer bg-gray-50 hover:border-[#0054AC] hover:bg-blue-50 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0054AC]"
+              class="upload-zone"
               [class.border-red-400]="getErrorMessage(field)"
               [class.bg-red-50]="getErrorMessage(field)"
             >
               <!-- Upload cloud icon -->
-              <svg class="w-9 h-9 text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <svg class="upload-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                 <path stroke-linecap="round" stroke-linejoin="round"
                   d="M12 16.5v-9m0 0-3 3m3-3 3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.338-1.382A4.501 4.501 0 0 1 17.25 19.5H6.75Z" />
               </svg>
-              <p class="text-[13px] text-[#525252] font-ibm font-medium">
+              <p class="upload-title">
                 {{ field.label }}
-                <span *ngIf="field.required" class="text-red-500">*</span>
+                <span *ngIf="field.required" class="field-required">*</span>
               </p>
-              <p class="text-[11px] text-[#A8A8A8] font-ibm mt-0.5">Click to upload &mdash; JPG, JPEG, PNG, WEBP</p>
+              <p class="upload-hint">Click to upload &mdash; JPG, JPEG, PNG, WEBP</p>
             </div>
 
             <!-- Preview card — shown when an image is selected -->
-            <div *ngIf="imagePreviews[field.name]" class="flex items-start gap-4 mt-1">
+            <div *ngIf="imagePreviews[field.name]" class="image-preview-card">
 
               <!-- Thumbnail with overlay actions -->
-              <div class="relative group w-32 h-32 shrink-0">
+              <div class="image-preview-thumb group">
                 <img
                   [src]="imagePreviews[field.name]"
                   [alt]="field.label + ' preview'"
-                  class="w-full h-full object-cover rounded-xl border border-gray-200 shadow-sm"
+                  class="image-preview-img"
                 />
 
                 <!-- Dark overlay on hover -->
-                <div class="absolute inset-0 rounded-xl bg-black/0 group-hover:bg-black/30 transition-all duration-200"></div>
+                <div class="image-preview-overlay"></div>
 
                 <!-- Remove button -->
                 <button
                   type="button"
                   (click)="removeImage(field.name, imgInput)"
-                  class="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-md transition-colors z-10"
+                  class="image-remove-button"
                   aria-label="Remove image"
                 >
                   <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
@@ -185,13 +187,13 @@
               </div>
 
               <!-- File info + change button -->
-              <div class="flex flex-col gap-2 pt-1">
-                <p class="text-[12px] text-[#525252] font-ibm font-medium">Image selected</p>
-                <p class="text-[11px] text-[#A8A8A8] font-ibm">JPG · JPEG · PNG · WEBP</p>
+              <div class="image-preview-meta">
+                <p class="image-preview-title">Image selected</p>
+                <p class="image-preview-subtitle">JPG · JPEG · PNG · WEBP</p>
                 <button
                   type="button"
                   (click)="imgInput.click()"
-                  class="mt-1 inline-flex items-center gap-1 px-3 py-1.5 text-[11px] font-ibm text-[#0054AC] border border-[#0054AC] rounded-lg hover:bg-blue-50 transition-colors w-fit"
+                  class="image-preview-action"
                 >
                   <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125" />
@@ -208,7 +210,7 @@
         <!-- Validation error -->
         <small
           *ngIf="getErrorMessage(field) as msg"
-          class="block mt-1 text-[11px] text-red-500 font-ibm"
+          class="field-error"
         >
           {{ msg }}
         </small>

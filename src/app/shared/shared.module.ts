@@ -9,9 +9,18 @@ import { EuLoaderComponent } from './eu-loader/eu-loader.component';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { DynamicFormComponent } from './dynamic-form/dynamic-form.component';
 import { DynamicListingComponent } from './dynamic-listing/dynamic-listing.component';
+import { DropdownPanelDirective } from './directives/dropdown-panel/dropdown-panel.directive';
 
 @NgModule({
-  declarations: [GlobalFilterComponent, TopHeaderComponent, ConfirmModalComponent, EuLoaderComponent, DynamicFormComponent, DynamicListingComponent],
+  declarations: [
+    GlobalFilterComponent,
+    TopHeaderComponent,
+    ConfirmModalComponent,
+    EuLoaderComponent,
+    DynamicFormComponent,
+    DynamicListingComponent,
+    DropdownPanelDirective,
+  ],
   imports: [CommonModule, FormsModule, DragDropModule, ReactiveFormsModule ],
   exports: [GlobalFilterComponent, TopHeaderComponent, ConfirmModalComponent, EuLoaderComponent, DragDropModule, DynamicFormComponent, DynamicListingComponent],
 })
