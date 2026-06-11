@@ -30,6 +30,7 @@ interface VersionListItem {
 export class FormVersionsPanelComponent implements OnChanges {
   @Input() moduleName = '';
   @Output() restore = new EventEmitter<FormField[]>();
+  @Output() loadingChange = new EventEmitter<boolean>();
 
   loading = false;
   error: string | null = null;
@@ -58,6 +59,7 @@ export class FormVersionsPanelComponent implements OnChanges {
       return;
     }
     item.restoring = true;
+    this.loadingChange.emit(true);
 
     this.versionService.restoreVersion(this.moduleName, item.version.id).subscribe({
       next: detail => {
@@ -68,6 +70,7 @@ export class FormVersionsPanelComponent implements OnChanges {
       },
       error: () => {
         item.restoring = false;
+        this.loadingChange.emit(false);
         this.toastr.error('Failed to restore version');
       },
     });

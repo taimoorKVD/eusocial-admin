@@ -60,6 +60,7 @@ export class FieldSettingsComponent {
   private modulesLoadPending = false;
   private modulesLoadCallbacks: Array<() => void> = [];
   private loadingModuleSlug: string | null = null;
+  private apiLoadingCount = 0;
   private readonly moduleDataBySlug = new Map<string, ModuleDataCache>();
 
   optionsMode: SelectOptionsMode = 'static';
@@ -76,6 +77,7 @@ export class FieldSettingsComponent {
   @Output() update = new EventEmitter<FormField>();
   @Output() duplicate = new EventEmitter<void>();
   @Output() delete = new EventEmitter<void>();
+  @Output() loadingChange = new EventEmitter<boolean>();
 
   constructor(private dynamicModuleOptionsService: DynamicModuleOptionsService) {}
 
@@ -339,6 +341,7 @@ export class FieldSettingsComponent {
     this.modulesLoadPending = true;
     this.modulesLoading = true;
     this.modulesError = null;
+    this.beginApiLoading();
 
     this.dynamicModuleOptionsService
       .getAvailableModules(this.activeModuleName)
@@ -348,6 +351,7 @@ export class FieldSettingsComponent {
           this.modulesLoaded = true;
           this.modulesLoading = false;
           this.modulesLoadPending = false;
+          this.endApiLoading();
           this.flushModulesLoadCallbacks();
         },
         error: () => {
@@ -356,6 +360,7 @@ export class FieldSettingsComponent {
           this.modulesLoading = false;
           this.modulesLoadPending = false;
           this.modulesError = 'Failed to load form modules.';
+          this.endApiLoading();
           this.flushModulesLoadCallbacks();
         },
       });
@@ -387,19 +392,38 @@ export class FieldSettingsComponent {
 
     this.loadingModuleSlug = moduleSlug;
     this.recordsLoading = true;
+    this.beginApiLoading();
 
     this.dynamicModuleOptionsService.getModuleData(moduleSlug).subscribe({
       next: moduleData => {
         this.recordsLoading = false;
         this.loadingModuleSlug = null;
+        this.endApiLoading();
         this.moduleDataBySlug.set(moduleSlug, moduleData);
         this.applyLoadedModuleData(moduleData, preserveDisplayColumn, emitUpdate);
       },
       error: () => {
         this.recordsLoading = false;
         this.loadingModuleSlug = null;
+        this.endApiLoading();
       },
     });
+  }
+
+  private beginApiLoading(): void {
+    this.apiLoadingCount += 1;
+
+    if (this.apiLoadingCount === 1) {
+      this.loadingChange.emit(true);
+    }
+  }
+
+  private endApiLoading(): void {
+    this.apiLoadingCount = Math.max(0, this.apiLoadingCount - 1);
+
+    if (this.apiLoadingCount === 0) {
+      this.loadingChange.emit(false);
+    }
   }
 
   private applyLoadedModuleData(

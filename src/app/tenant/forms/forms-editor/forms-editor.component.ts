@@ -23,7 +23,11 @@ export class FormsEditorComponent {
   activeTab: 'fields' | 'settings' | 'versions' = 'fields';
   formName = 'Users Dynamic Form';
   formId: string | number | null = null;
-  isLoading = false;
+  private readonly loadingStates = new Set<string>();
+
+  get isLoading(): boolean {
+    return this.loadingStates.size > 0;
+  }
 
   /** Connected list IDs (palette ↔ canvas). */
   readonly paletteListId = 'sidebarList';
@@ -131,11 +135,12 @@ export class FormsEditorComponent {
   onRestoreVersion(_fields: FormField[]): void {
     this.selectedFieldId = null;
     this.activeTab = 'fields';
-    this.isLoading = true;
+    this.setLoadingState('restore-reload', true);
 
     this.formStorageService.loadForm(this.moduleName).subscribe({
       next: saved => {
-        this.isLoading = false;
+        this.setLoadingState('restore-reload', false);
+        this.setLoadingState('restore-api', false);
         if (saved) {
           this.formName = saved.formName || this.formName;
           this.formId = saved.formId ?? null;
@@ -143,10 +148,19 @@ export class FormsEditorComponent {
         }
       },
       error: () => {
-        this.isLoading = false;
+        this.setLoadingState('restore-reload', false);
+        this.setLoadingState('restore-api', false);
         this.toastr.error('Restore succeeded but failed to reload schema');
       },
     });
+  }
+
+  onDynamicOptionsLoading(loading: boolean): void {
+    this.setLoadingState('dynamic-options', loading);
+  }
+
+  onVersionsLoadingChange(loading: boolean): void {
+    this.setLoadingState('restore-api', loading);
   }
 
   updateField(updated: FormField): void {
@@ -216,7 +230,7 @@ export class FormsEditorComponent {
       return;
     }
 
-    this.isLoading = true;
+    this.setLoadingState('save', true);
     this.builderSchema = normalizeFieldOrder([...this.builderSchema]);
 
     this.formStorageService
@@ -228,12 +242,12 @@ export class FormsEditorComponent {
       })
       .subscribe({
         next: () => {
-          this.isLoading = false;
+          this.setLoadingState('save', false);
           this.toastr.success('Form saved successfully');
         },
         error: error => {
           console.error('Failed to save form schema:', error);
-          this.isLoading = false;
+          this.setLoadingState('save', false);
           this.toastr.error('Failed to save form');
         },
       });
@@ -244,8 +258,12 @@ export class FormsEditorComponent {
   }
 
   private loadSavedSchema(): void {
+    this.setLoadingState('schema', true);
+
     this.formStorageService.loadForm('users').subscribe({
       next: saved => {
+        this.setLoadingState('schema', false);
+
         if (!saved) {
           this.builderSchema = [];
           return;
@@ -256,9 +274,18 @@ export class FormsEditorComponent {
         this.builderSchema = normalizeFieldOrder(saved.fields || []);
       },
       error: error => {
+        this.setLoadingState('schema', false);
         console.error('Failed to load form schema:', error);
         this.builderSchema = [];
       },
     });
+  }
+
+  private setLoadingState(key: string, active: boolean): void {
+    if (active) {
+      this.loadingStates.add(key);
+    } else {
+      this.loadingStates.delete(key);
+    }
   }
 }
