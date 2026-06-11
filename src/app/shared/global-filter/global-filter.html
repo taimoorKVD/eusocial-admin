@@ -29,19 +29,27 @@
         <ng-container [ngSwitch]="field.type">
 
           <!-- Select dropdown -->
-          <div *ngSwitchCase="'select'" class="relative">
+          <div
+            *ngSwitchCase="'select'"
+            class="relative"
+            appDropdownPanel
+            #filterDropdown="dropdownPanel"
+            [dropdownId]="field.key"
+            [dropdownGroup]="filterDropdownGroup"
+          >
             <button
               type="button"
-              (click)="toggleDropdown(field)"
+              (click)="filterDropdown.toggle($event)"
               class="global-filter__control w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-sm text-gray-700 font-ibm focus:outline-none focus:ring-2 focus:ring-[#0054AC]/30 focus:border-[#0054AC] focus:bg-white transition-all duration-150 text-left flex items-center justify-between gap-2"
-              [class.border-[#0054AC]]="isDropdownOpen(field)"
+              [class.border-[#0054AC]]="filterDropdown.isOpen"
+              [attr.aria-expanded]="filterDropdown.isOpen"
             >
               <span class="truncate" [class.text-gray-400]="!filters[field.key]">
                 {{ getSelectDisplayLabel(field) }}
               </span>
               <svg
                 class="w-4 h-4 text-gray-400 shrink-0 transition-transform duration-150"
-                [class.rotate-180]="isDropdownOpen(field)"
+                [class.rotate-180]="filterDropdown.isOpen"
                 fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"
               >
                 <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
@@ -49,7 +57,7 @@
             </button>
 
             <div
-              *ngIf="isDropdownOpen(field)"
+              *ngIf="filterDropdown.isOpen"
               class="absolute z-30 mt-1.5 w-full rounded-lg border border-gray-200 bg-white shadow-lg overflow-hidden"
             >
               <div class="p-2 border-b border-gray-100">
