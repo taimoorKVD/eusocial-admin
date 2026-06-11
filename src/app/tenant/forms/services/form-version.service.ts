@@ -37,14 +37,14 @@ export class FormVersionService {
     );
   }
 
-  getVersionDetail(moduleName: string, versionId: number): Observable<FormVersionDetail> {
-    return this.http.get<any>(`${this.base(moduleName)}/${versionId}`).pipe(
+  getVersionDetail(moduleName: string, versionNumber: number): Observable<FormVersionDetail> {
+    return this.http.get<any>(`${this.base(moduleName)}/${versionNumber}`).pipe(
       map(res => this.extractDetail(res))
     );
   }
 
-  restoreVersion(moduleName: string, versionId: number): Observable<FormVersionDetail> {
-    return this.http.post<any>(`${this.base(moduleName)}/restore/${versionId}`, {}).pipe(
+  restoreVersion(moduleName: string, versionNumber: number): Observable<FormVersionDetail> {
+    return this.http.post<any>(`${this.base(moduleName)}/restore/${versionNumber}`, {}).pipe(
       map(res => this.extractDetail(res))
     );
   }
