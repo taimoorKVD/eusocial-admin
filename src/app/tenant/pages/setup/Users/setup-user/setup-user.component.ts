@@ -129,6 +129,23 @@ export class SetupUserComponent {
       return;
     }
     const formValues = this.dynamicForm.value;
+    console.log('Form submitted with values:', formValues);
+    //  const formData = new FormData();
+    //   Object.keys(formValues).forEach((key) => {
+    //     const value = formValues[key];
+
+    //     if (value === null || value === undefined) return;
+
+    //     if (value instanceof File) {
+    //       formData.append(key, value);
+    //     }
+    //     else if (typeof value === 'object') {
+    //       formData.append(key, JSON.stringify(value));
+    //     }
+    //     else {
+    //       formData.append(key, String(value));
+    //     }
+    //   });
       this.userService.createUser(formValues).subscribe({
         next: (res: any) => {
           this.toastr.success('User created successfully');

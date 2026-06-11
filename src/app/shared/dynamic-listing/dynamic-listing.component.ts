@@ -2,9 +2,7 @@ import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
-  ElementRef,
   EventEmitter,
-  HostListener,
   Input,
   OnChanges,
   Output,
@@ -28,6 +26,9 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DynamicListingComponent implements OnChanges {
+  readonly columnDropdownGroup = 'dynamic-listing';
+  readonly columnDropdownId = 'column-selector';
+
   @Input({ required: true }) fields: DynamicField[] = [];
   @Input({ required: true }) records: Record<string, unknown>[] = [];
   @Input() storageKey = '';
@@ -41,12 +42,8 @@ export class DynamicListingComponent implements OnChanges {
 
   sortedFields: DynamicField[] = [];
   visibleFieldIds = new Set<string>();
-  isColumnSelectorOpen = false;
 
-  constructor(
-    private cdr: ChangeDetectorRef,
-    private elementRef: ElementRef<HTMLElement>,
-  ) {}
+  constructor(private cdr: ChangeDetectorRef) {}
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['fields']) {
@@ -60,24 +57,6 @@ export class DynamicListingComponent implements OnChanges {
 
   get hasRecords(): boolean {
     return this.records.length > 0;
-  }
-
-  @HostListener('document:click', ['$event'])
-  onDocumentClick(event: MouseEvent): void {
-    if (!this.isColumnSelectorOpen) {
-      return;
-    }
-
-    if (!this.elementRef.nativeElement.contains(event.target as Node)) {
-      this.isColumnSelectorOpen = false;
-      this.cdr.markForCheck();
-    }
-  }
-
-  toggleColumnSelector(event: MouseEvent): void {
-    event.stopPropagation();
-    this.isColumnSelectorOpen = !this.isColumnSelectorOpen;
-    this.cdr.markForCheck();
   }
 
   isColumnVisible(fieldId: string): boolean {
