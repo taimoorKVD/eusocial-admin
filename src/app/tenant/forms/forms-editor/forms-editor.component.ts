@@ -1,5 +1,5 @@
-import { Component } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { ToastrService } from 'ngx-toastr';
 import { FormField } from '../../form-builder/models/form-field.model';
@@ -9,6 +9,7 @@ import {
   sanitizeField,
 } from '../../form-builder/utils/form-field.factory';
 import { FormStorageService } from '../services/form-storage.service';
+import { FormsEditorCanDeactivate } from '../guards/forms-editor-can-deactivate.interface';
 
 @Component({
   selector: 'app-forms-editor',
@@ -16,14 +17,23 @@ import { FormStorageService } from '../services/form-storage.service';
   templateUrl: './forms-editor.component.html',
   styleUrl: './forms-editor.component.scss',
 })
-export class FormsEditorComponent {
+export class FormsEditorComponent
+  implements OnInit, OnDestroy, FormsEditorCanDeactivate
+{
   moduleName = '';
   builderSchema: FormField[] = [];
   selectedFieldId: string | null = null;
   activeTab: 'fields' | 'settings' | 'versions' = 'fields';
   formName = 'Users Dynamic Form';
   formId: string | number | null = null;
+  showExitConfirmModal = false;
+
   private readonly loadingStates = new Set<string>();
+  private savedSnapshot = '';
+  private schemaReady = false;
+  private allowModuleNavigation = false;
+  private pendingModule: string | null = null;
+  private navigationResolver: ((allowed: boolean) => void) | null = null;
 
   get isLoading(): boolean {
     return this.loadingStates.size > 0;
@@ -35,6 +45,7 @@ export class FormsEditorComponent {
 
   constructor(
     private route: ActivatedRoute,
+    private router: Router,
     private formStorageService: FormStorageService,
     private toastr: ToastrService
   ) {}
@@ -52,20 +63,63 @@ export class FormsEditorComponent {
   }
 
   ngOnInit(): void {
-    this.route.params.subscribe(params => {
-      this.moduleName = params['module'];
-
-      if (this.moduleName === 'users') {
-        this.loadSavedSchema();
-      }
+    this.route.paramMap.subscribe(params => {
+      const nextModule = params.get('module') ?? '';
+      this.handleModuleNavigation(nextModule);
     });
   }
 
-  /**
-   * CDK drop handler — official connected-list pattern:
-   * - same container: reorder with moveItemInArray
-   * - palette → canvas: clone template (never transferArrayItem)
-   */
+  ngOnDestroy(): void {
+    this.navigationResolver = null;
+  }
+
+  @HostListener('window:beforeunload', ['$event'])
+  onBeforeUnload(event: BeforeUnloadEvent): void {
+    if (this.hasUnsavedChanges()) {
+      event.preventDefault();
+      event.returnValue = '';
+    }
+  }
+
+  canDeactivate(): boolean | Promise<boolean> {
+    if (!this.hasUnsavedChanges()) {
+      return true;
+    }
+
+    this.showExitConfirmModal = true;
+    return new Promise<boolean>(resolve => {
+      this.navigationResolver = resolve;
+    });
+  }
+
+  onConfirmExit(): void {
+    this.showExitConfirmModal = false;
+
+    if (this.navigationResolver) {
+      this.navigationResolver(true);
+      this.navigationResolver = null;
+      return;
+    }
+
+    if (this.pendingModule) {
+      const slug = this.getTenantSlug();
+      const nextModule = this.pendingModule;
+      this.pendingModule = null;
+      this.allowModuleNavigation = true;
+      this.router.navigate(['/tenant', slug, 'forms', nextModule]);
+    }
+  }
+
+  onCancelExit(): void {
+    this.showExitConfirmModal = false;
+    this.pendingModule = null;
+
+    if (this.navigationResolver) {
+      this.navigationResolver(false);
+      this.navigationResolver = null;
+    }
+  }
+
   onCanvasDrop(event: CdkDragDrop<FormField[]>): void {
     if (event.previousContainer === event.container) {
       const reordered = [...this.builderSchema];
@@ -145,6 +199,7 @@ export class FormsEditorComponent {
           this.formName = saved.formName || this.formName;
           this.formId = saved.formId ?? null;
           this.builderSchema = normalizeFieldOrder(saved.fields || []);
+          this.updateSavedSnapshot();
         }
       },
       error: () => {
@@ -243,6 +298,7 @@ export class FormsEditorComponent {
       .subscribe({
         next: () => {
           this.setLoadingState('save', false);
+          this.updateSavedSnapshot();
           this.toastr.success('Form saved successfully');
         },
         error: error => {
@@ -257,7 +313,39 @@ export class FormsEditorComponent {
     console.log('Preview payload:', this.buildPayload());
   }
 
+  private handleModuleNavigation(nextModule: string): void {
+    if (!nextModule) {
+      return;
+    }
+
+    if (
+      this.schemaReady &&
+      this.moduleName === 'users' &&
+      nextModule !== this.moduleName &&
+      this.hasUnsavedChanges() &&
+      !this.allowModuleNavigation
+    ) {
+      this.pendingModule = nextModule;
+      this.showExitConfirmModal = true;
+      this.revertModuleRoute();
+      return;
+    }
+
+    this.allowModuleNavigation = false;
+    const previousModule = this.moduleName;
+    this.moduleName = nextModule;
+
+    if (nextModule === 'users' && previousModule !== nextModule) {
+      this.loadSavedSchema();
+    } else if (nextModule !== 'users') {
+      this.schemaReady = false;
+      this.savedSnapshot = '';
+      this.builderSchema = [];
+    }
+  }
+
   private loadSavedSchema(): void {
+    this.schemaReady = false;
     this.setLoadingState('schema', true);
 
     this.formStorageService.loadForm('users').subscribe({
@@ -266,19 +354,67 @@ export class FormsEditorComponent {
 
         if (!saved) {
           this.builderSchema = [];
+          this.schemaReady = true;
+          this.updateSavedSnapshot();
           return;
         }
 
         this.formName = saved.formName || this.formName;
         this.formId = saved.formId ?? null;
         this.builderSchema = normalizeFieldOrder(saved.fields || []);
+        this.schemaReady = true;
+        this.updateSavedSnapshot();
       },
       error: error => {
         this.setLoadingState('schema', false);
+        this.schemaReady = true;
+        this.updateSavedSnapshot();
         console.error('Failed to load form schema:', error);
         this.builderSchema = [];
       },
     });
+  }
+
+  private hasUnsavedChanges(): boolean {
+    if (!this.schemaReady || this.moduleName !== 'users') {
+      return false;
+    }
+
+    return this.serializeSchema(this.builderSchema) !== this.savedSnapshot;
+  }
+
+  private updateSavedSnapshot(): void {
+    this.savedSnapshot = this.serializeSchema(this.builderSchema);
+  }
+
+  private serializeSchema(fields: FormField[]): string {
+    return JSON.stringify(this.buildPayload().schema.fields);
+  }
+
+  private revertModuleRoute(): void {
+    const slug = this.getTenantSlug();
+
+    if (!slug || !this.moduleName) {
+      return;
+    }
+
+    this.router.navigate(['/tenant', slug, 'forms', this.moduleName], {
+      replaceUrl: true,
+    });
+  }
+
+  private getTenantSlug(): string {
+    let route: ActivatedRoute | null = this.route;
+
+    while (route) {
+      const slug = route.snapshot.paramMap.get('slug');
+      if (slug) {
+        return slug;
+      }
+      route = route.parent;
+    }
+
+    return '';
   }
 
   private setLoadingState(key: string, active: boolean): void {

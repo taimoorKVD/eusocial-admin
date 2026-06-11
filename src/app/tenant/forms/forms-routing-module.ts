@@ -2,6 +2,7 @@ import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { FormsListComponent } from './forms-list/forms-list.component';
 import { FormsEditorComponent } from './forms-editor/forms-editor.component';
+import { formsEditorCanDeactivateGuard } from './guards/forms-editor-can-deactivate.guard';
 
 // const routes: Routes = [
 //   {
@@ -21,7 +22,8 @@ const routes: Routes = [
   },
   {
     path: ':module',
-    component: FormsEditorComponent
+    component: FormsEditorComponent,
+    canDeactivate: [formsEditorCanDeactivateGuard],
   }
 ];
 
