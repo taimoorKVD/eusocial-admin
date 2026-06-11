@@ -13,6 +13,7 @@ import {
   pruneFiltersByAllowedKeys,
 } from '../../../../../shared/dynamic-listing/dynamic-listing.helpers';
 import { DynamicFieldType } from '../../../../../interfaces/dynamic-field';
+import { catchError, forkJoin, map, of } from 'rxjs';
 
 const USERS_LISTING_FILTER_EXCLUDE_TYPES: DynamicFieldType[] = [
   'image',
@@ -44,6 +45,7 @@ export class SetupUsersListing {
   };
   private defaultLimit = environment.limit;
   private filters: Record<string, unknown> = {};
+  private lastVisibleColumnIds: string[] = [];
 
   constructor(
     private userService: TenantUserService,
@@ -72,10 +74,12 @@ export class SetupUsersListing {
           (res.fields || []).filter((field) => field.label !== 'Role'),
         ) as DynamicField[];
 
-        this.syncFilterFieldsFromVisibleColumns(
-          getVisibleColumns(this.formFields, this.columnStorageKey, this.defaultVisibleCount),
+        const visibleColumns = getVisibleColumns(
+          this.formFields,
+          this.columnStorageKey,
+          this.defaultVisibleCount,
         );
-        this.cdr.markForCheck();
+        this.applyVisibleColumns(visibleColumns);
       },
       error: () => {
         this.formFields = [];
@@ -86,8 +90,71 @@ export class SetupUsersListing {
   }
 
   onVisibleColumnsChange(columns: DynamicField[]): void {
+    this.applyVisibleColumns(columns);
+  }
+
+  private applyVisibleColumns(columns: DynamicField[]): void {
+    const columnIds = columns.map((column) => column.id);
+    const columnsChanged =
+      columnIds.length !== this.lastVisibleColumnIds.length ||
+      columnIds.some((id, index) => id !== this.lastVisibleColumnIds[index]);
+
+    this.lastVisibleColumnIds = columnIds;
     this.syncFilterFieldsFromVisibleColumns(columns);
-    this.cdr.markForCheck();
+
+    if (!columnsChanged) {
+      this.cdr.markForCheck();
+      return;
+    }
+
+    this.loadDynamicDropdownOptions(columns, () => {
+      this.syncFilterFieldsFromVisibleColumns(columns);
+      this.cdr.markForCheck();
+    });
+  }
+
+  private loadDynamicDropdownOptions(
+    fields: DynamicField[],
+    onComplete?: () => void,
+  ): void {
+    const dropdownRequests = fields
+      .filter(
+        (field) =>
+          field.type === 'select' &&
+          field.optionSource?.type === 'api' &&
+          field.optionSource?.endpoint,
+      )
+      .map((field) =>
+        this.formStorageService.getEndpointApi<any>(field.optionSource!.endpoint!).pipe(
+          map((response) => ({ field, response })),
+          catchError(() => of({ field, response: null })),
+        ),
+      );
+
+    if (!dropdownRequests.length) {
+      onComplete?.();
+      return;
+    }
+
+    forkJoin(dropdownRequests).subscribe((results) => {
+      results.forEach(({ field, response }) => {
+        if (!response) {
+          return;
+        }
+
+        const dataPath = field.optionSource?.response?.dataPath ?? 'data';
+        const labelKey = field.optionSource?.response?.labelKey ?? 'label';
+        const valueKey = field.optionSource?.response?.valueKey ?? 'value';
+        const data = response?.[dataPath] || [];
+
+        field.options = data.map((item: Record<string, unknown>) => ({
+          label: item[labelKey],
+          value: item[valueKey],
+        }));
+      });
+
+      onComplete?.();
+    });
   }
 
   private syncFilterFieldsFromVisibleColumns(columns: DynamicField[]): void {
@@ -107,6 +174,8 @@ export class SetupUsersListing {
       this.page = 1;
       this.allUsers(this.page);
     }
+
+    this.cdr.markForCheck();
   }
 
   goToCreate(): void {
