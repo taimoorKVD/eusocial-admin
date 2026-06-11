@@ -1,49 +1,7 @@
 import { FormField, OptionSource } from '../models/form-field.model';
 
-const ENDPOINT_ALIASES: Record<string, string> = {
-  '/api/job-positions': '/jobpositions',
-  '/api/job-position': '/jobpositions',
-  '/job-positions': '/jobpositions',
-  '/job-position': '/jobpositions',
-  'job-positions': '/jobpositions',
-  'job-position': '/jobpositions',
-  '/api/jobpositions': '/jobpositions',
-  jobpositions: '/jobpositions',
-  '/api/locations': '/locations',
-  locations: '/locations',
-};
-
-const KNOWN_FIELD_OPTION_SOURCES: Record<string, OptionSource> = {
-  job_position_id: {
-    type: 'api',
-    endpoint: '/jobpositions',
-    response: { labelKey: 'name', valueKey: 'id', dataPath: 'data' },
-  },
-  jobposition_id: {
-    type: 'api',
-    endpoint: '/jobpositions',
-    response: { labelKey: 'name', valueKey: 'id', dataPath: 'data' },
-  },
-  location_id: {
-    type: 'api',
-    endpoint: '/locations',
-    response: { labelKey: 'name', valueKey: 'id', dataPath: 'data' },
-  },
-};
-
 export function normalizeEndpoint(endpoint: string): string {
-  const trimmed = endpoint.trim();
-  const lower = trimmed.toLowerCase();
-
-  if (ENDPOINT_ALIASES[lower]) {
-    return ENDPOINT_ALIASES[lower];
-  }
-
-  if (ENDPOINT_ALIASES[trimmed]) {
-    return ENDPOINT_ALIASES[trimmed];
-  }
-
-  return trimmed;
+  return endpoint.trim();
 }
 
 export function normalizeOptionSource(
@@ -142,37 +100,9 @@ export function normalizeOptionSource(
 export function readOptionSourceFromField(
   field: Partial<FormField> & Record<string, unknown>
 ): OptionSource | undefined {
-  const direct = normalizeOptionSource(
+  return normalizeOptionSource(
     field.optionSource ?? field['option_source']
   );
-
-  if (direct) {
-    return direct;
-  }
-
-  const fieldName = String(
-    field.name ??
-      field['fieldKey'] ??
-      field['systemMappingKey'] ??
-      field['system_mapping_key'] ??
-      ''
-  )
-    .trim()
-    .toLowerCase();
-
-  if (fieldName && KNOWN_FIELD_OPTION_SOURCES[fieldName]) {
-    return { ...KNOWN_FIELD_OPTION_SOURCES[fieldName] };
-  }
-
-  if (fieldName.includes('job_position') || fieldName.includes('jobposition')) {
-    return { ...KNOWN_FIELD_OPTION_SOURCES['job_position_id'] };
-  }
-
-  if (fieldName.includes('location')) {
-    return { ...KNOWN_FIELD_OPTION_SOURCES['location_id'] };
-  }
-
-  return undefined;
 }
 
 export function resolveFieldOptionSource(field: FormField): OptionSource | undefined {

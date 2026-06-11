@@ -111,12 +111,6 @@ export class FieldSettingsComponent {
     return this._field?.isShow === false;
   }
 
-  get isLegacyApiSelect(): boolean {
-    return (
-      this._field?.type === 'select' && this._field.optionSource?.type === 'api'
-    );
-  }
-
   get isSelectField(): boolean {
     return this._field?.type === 'select';
   }
@@ -304,10 +298,6 @@ export class FieldSettingsComponent {
   }
 
   private resolveOptionsMode(field: FormField): SelectOptionsMode {
-    if (field.optionSource?.type === 'api') {
-      return 'static';
-    }
-
     if (field.optionSource?.type === 'dynamic') {
       return 'dynamic';
     }
@@ -469,10 +459,6 @@ export class FieldSettingsComponent {
   private resolveEmittedOptionSource(): OptionSource | undefined {
     if (this.optionsMode === 'dynamic') {
       return this.buildDynamicOptionSource();
-    }
-
-    if (this._field.optionSource?.type === 'api') {
-      return { ...this._field.optionSource };
     }
 
     return undefined;
