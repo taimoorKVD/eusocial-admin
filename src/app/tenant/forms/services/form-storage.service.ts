@@ -29,7 +29,7 @@ interface SaveSchemaRequest {
   providedIn: 'root'
 })
 export class FormStorageService {
-  private saveSchemaUrl = `${environment.tenantApiUrl}/forms/1/schema`;
+  private saveSchemaUrl = `${environment.tenantApiUrl}/forms/1/autosave`;
 
   constructor(private http: HttpClient) {}
 

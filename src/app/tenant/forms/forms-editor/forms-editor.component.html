@@ -75,6 +75,7 @@
         <app-form-versions-panel
           [moduleName]="moduleName"
           (restore)="onRestoreVersion($event)"
+          (loadingChange)="onVersionsLoadingChange($event)"
         ></app-form-versions-panel>
       </div>
 
@@ -106,6 +107,7 @@
             (update)="updateField($event)"
             (duplicate)="onDuplicateField(selectedField)"
             (delete)="onDeleteField(selectedField)"
+            (loadingChange)="onDynamicOptionsLoading($event)"
           ></app-field-settings>
         </ng-container>
         <ng-template #noSelection>
