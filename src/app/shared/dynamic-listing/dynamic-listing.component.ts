@@ -46,9 +46,7 @@ export class DynamicListingComponent implements OnChanges {
   constructor(private cdr: ChangeDetectorRef) {}
 
   ngOnChanges(changes: SimpleChanges): void {
-    console.log('records', this.records);
     if (changes['fields']) {
-      console.log('Fields', this.fields);
       this.initializeColumns();
     }
   }
@@ -138,15 +136,18 @@ export class DynamicListingComponent implements OnChanges {
   }
 
   getFieldClass(field: any): string {
-    switch (field.type) {
-      case 'checkbox':
-        return 'bg-green-100 text-green-700 text-xs font-medium rounded-full';
-      case 'radio':
-        return 'bg-blue-100 text-blue-700 text-xs font-medium rounded-full';
-      default:
-        return '';
-    }
+     switch (field.type) {
+    case 'checkbox':
+      return 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100';
+
+    case 'radio':
+      return 'bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100';
+
+    default:
+      return 'bg-gray-50 text-gray-700 border border-gray-200';
   }
+  }
+
   splitValue(value: any): string[] {
     if (!value) return [];
 

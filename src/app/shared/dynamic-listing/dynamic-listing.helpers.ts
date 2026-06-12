@@ -216,7 +216,17 @@ export function mapVisibleColumnsToFilterFields(
       label: field.label,
       type: mapDynamicFieldToFilterType(field),
       placeholder: field.placeholder || `Search by ${field.label.toLowerCase()}...`,
-      options: mapDynamicFieldToFilterOptions(field),
+       options:
+        field.type === 'radio'
+          ? [
+              { value: '', name: 'All' },
+              ...(field.options || []).map((opt: any) => ({
+                value: getOptionValue(opt),
+                name: getOptionLabel(opt),
+              })),
+            ]
+          : field.options,
+      // options: mapDynamicFieldToFilterOptions(field),
     }));
 }
 
@@ -255,10 +265,11 @@ export function pruneFiltersByAllowedKeys(
 function mapDynamicFieldToFilterType(field: DynamicField): string {
   switch (field.type) {
     case 'select':
+       return 'select';
     case 'radio':
-      return 'select';
+      return 'radio';
     case 'checkbox':
-      return 'select';
+      return 'checkbox';
     case 'number':
       return 'number';
     case 'email':

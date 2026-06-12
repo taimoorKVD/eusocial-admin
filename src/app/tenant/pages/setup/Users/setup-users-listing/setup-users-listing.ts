@@ -17,8 +17,8 @@ import { catchError, forkJoin, map, of } from 'rxjs';
 
 const USERS_LISTING_FILTER_EXCLUDE_TYPES: DynamicFieldType[] = [
   'image',
-  'checkbox',
-  'radio',
+  // 'checkbox',
+  // 'radio',
 ];
 
 @Component({
@@ -121,7 +121,7 @@ export class SetupUsersListing {
       .filter(
         (field) =>
           field.type === 'select' &&
-          field.optionSource?.type === 'api' &&
+          field.optionSource?.type === 'dynamic' &&
           field.optionSource?.endpoint,
       )
       .map((field) =>

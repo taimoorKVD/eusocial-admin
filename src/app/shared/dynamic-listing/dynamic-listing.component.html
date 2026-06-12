@@ -91,16 +91,15 @@
                   <span class="text-gray-400">—</span>
                 </ng-template>
               </ng-container>
-              <ng-container *ngIf="field.type === 'checkbox' || field.type === 'radio'; else normalCell">
-                  <span
-                    *ngFor="let item of splitValue(getCellValue(record, field))"
-                    [ngClass]="getFieldClass(field)"
-                    class="mr-1 mb-1 inline-block"
-                  >
-                    {{ item }}
-                  </span>
-
-                </ng-container>
+              <ng-container *ngIf="field.type === 'checkbox'; else normalCell">
+                <span *ngFor="let item of splitValue(getCellValue(record, field))"
+                  class="inline-flex items-center gap-1 mr-1 mb-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all duration-150 hover:scale-[1.03]"
+                  [ngClass]="getFieldClass(field)"
+                >
+                  <!-- <span class="w-1.5 h-1.5 rounded-full bg-current opacity-70"></span> -->
+                  {{ item }}
+                </span>
+              </ng-container>
 
                 <ng-template #normalCell>
                   <span>
