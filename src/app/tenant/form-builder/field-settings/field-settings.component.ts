@@ -1,6 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormField, OptionSource } from '../models/form-field.model';
-import { toFieldName } from '../utils/form-field.factory';
 import { normalizeFieldOption } from '../utils/field-options.utils';
 import { DynamicModuleOptionsService } from '../services/dynamic-module-options.service';
 import { FormModuleListItem } from '../../forms/models/form-module.model';
@@ -231,7 +230,6 @@ export class FieldSettingsComponent {
   private assignField(value: FormField): void {
     this._field = {
       ...value,
-      name: value.name || toFieldName(value.label),
       defaultValue: value.defaultValue ?? value.value ?? '',
       width: value.width ?? 12,
       validations: value.validations || {},
