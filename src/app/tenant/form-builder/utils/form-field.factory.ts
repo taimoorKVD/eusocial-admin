@@ -121,7 +121,7 @@ export function sanitizeField(
     type,
     fieldTypeName,
     label,
-    name: field.name || toFieldName(label),
+    name: toFieldName(label),
     placeholder: field.placeholder || '',
     required: readRequired(field),
     isShow: readBooleanFlag(field, 'isShow', 'is_show', true),

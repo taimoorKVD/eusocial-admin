@@ -341,7 +341,7 @@ export class FormsEditorComponent
           fieldTypeName: field.fieldTypeName || field.type,
           fieldKey: 'name',
           label: field.label,
-          name: field.name || field.label,
+          name: toFieldName(field.label),
           placeholder: field.placeholder,
           isRequired: field.required,
           isShow: field.isShow !== false,
