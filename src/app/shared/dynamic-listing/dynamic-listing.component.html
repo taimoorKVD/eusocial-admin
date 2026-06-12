@@ -91,8 +91,22 @@
                   <span class="text-gray-400">—</span>
                 </ng-template>
               </ng-container>
+              <ng-container *ngIf="field.type === 'checkbox' || field.type === 'radio'; else normalCell">
+                  <span
+                    *ngFor="let item of splitValue(getCellValue(record, field))"
+                    [ngClass]="getFieldClass(field)"
+                    class="mr-1 mb-1 inline-block"
+                  >
+                    {{ item }}
+                  </span>
 
-              <span *ngSwitchDefault>{{ getCellValue(record, field) }}</span>
+                </ng-container>
+
+                <ng-template #normalCell>
+                  <span>
+                    {{ getCellValue(record, field) }}
+                  </span>
+                </ng-template>
             </ng-container>
           </td>
 
