@@ -141,8 +141,10 @@ export function formatListingCellValue(record: Record<string, unknown>, field: D
   }
 
   switch (field.type) {
-    case 'checkbox':
-      return rawValue ? 'Yes' : 'No';
+    case 'checkbox':{
+      const values = getCheckboxValues(record, field);
+      return values.length ? values.join(', ') : '—';
+    }
 
     case 'select':
     case 'radio': {
@@ -169,6 +171,30 @@ export function formatListingCellValue(record: Record<string, unknown>, field: D
   }
 }
 
+  export function getCheckboxValues(record: Record<string, unknown>,field: DynamicField): string[] {
+    const value = record[field.name] ?? record[snakeToCamel(field.name)];
+
+    if (!Array.isArray(value) || !field.options?.length) {
+      return [];
+    }
+
+    return value
+      .map((item, index) => {
+        const isChecked = item === true || item === 'true';
+
+        if (!isChecked) {
+          return null;
+        }
+
+        const option = field.options?.[index];
+
+        return typeof option === 'string'
+          ? option
+          : option?.label;
+      })
+      .filter(Boolean) as string[];
+  }
+
 export function getListingImageSrc(record: Record<string, unknown>, field: DynamicField): string | null {
   const rawValue = getRecordFieldValue(record, field);
 
@@ -190,7 +216,17 @@ export function mapVisibleColumnsToFilterFields(
       label: field.label,
       type: mapDynamicFieldToFilterType(field),
       placeholder: field.placeholder || `Search by ${field.label.toLowerCase()}...`,
-      options: mapDynamicFieldToFilterOptions(field),
+       options:
+        field.type === 'radio'
+          ? [
+              { value: '', name: 'All' },
+              ...(field.options || []).map((opt: any) => ({
+                value: getOptionValue(opt),
+                name: getOptionLabel(opt),
+              })),
+            ]
+          : field.options,
+      // options: mapDynamicFieldToFilterOptions(field),
     }));
 }
 
@@ -229,10 +265,11 @@ export function pruneFiltersByAllowedKeys(
 function mapDynamicFieldToFilterType(field: DynamicField): string {
   switch (field.type) {
     case 'select':
+       return 'select';
     case 'radio':
-      return 'select';
+      return 'radio';
     case 'checkbox':
-      return 'select';
+      return 'checkbox';
     case 'number':
       return 'number';
     case 'email':

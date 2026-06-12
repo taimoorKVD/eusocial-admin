@@ -20,7 +20,7 @@ import {
   getDynamicFieldErrorMessage,
   shouldShowDynamicFieldError,
 } from './dynamic-form.validation';
-
+import { FormArray, FormControl } from '@angular/forms';
 @Component({
   selector: 'app-dynamic-form',
   standalone: false,
@@ -45,6 +45,7 @@ export class DynamicFormComponent implements OnChanges, OnDestroy {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['fields']) {
+      console.log('Fields changed:', this.fields);
       this.buildForm();
     }
   }
@@ -67,7 +68,6 @@ export class DynamicFormComponent implements OnChanges, OnDestroy {
     return this.form?.get(name) ?? null;
   }
 
-  /** Marks all controls touched and returns validity. Call before submit. */
   validate(): boolean {
     this.markAllAsTouched();
     return this.form?.valid ?? false;
@@ -81,7 +81,9 @@ export class DynamicFormComponent implements OnChanges, OnDestroy {
   patchValue(values: DynamicFormValue): void {
     if (!this.form || !values) return;
     this.form.patchValue(values);
-    this.valueChange.emit(this.form.getRawValue());
+    this.valueChange.emit(
+  this.normalizeCheckboxValues(this.form.getRawValue())
+);
     this.cdr.markForCheck();
   }
 
@@ -91,7 +93,9 @@ export class DynamicFormComponent implements OnChanges, OnDestroy {
       this.form.get(field.name)?.setValue(this.getInitialValue(field));
     }
     this.imagePreviews = {};
-    this.valueChange.emit(this.form.getRawValue());
+    this.valueChange.emit(
+  this.normalizeCheckboxValues(this.form.getRawValue())
+);
     this.cdr.markForCheck();
   }
 
@@ -103,10 +107,8 @@ export class DynamicFormComponent implements OnChanges, OnDestroy {
 
   trackByOption(index: number, option: string | DynamicFieldOption): string | number {
     return typeof option === 'string'
-        ? option
-        : (option.value ?? index);
-    // console.log(this.getOptionValue(option, index));
-    // return this.getOptionValue(option, index);
+      ? option
+      : (option.value ?? index);
   }
 
   getColClass(field: DynamicField): string {
@@ -127,8 +129,6 @@ export class DynamicFormComponent implements OnChanges, OnDestroy {
     return typeof option === 'string' ? option : (option.value ?? index);
   }
 
-  // ─── Image upload ─────────────────────────────────────────────────────────────
-
   onImageSelected(event: Event, fieldName: string): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
@@ -147,7 +147,9 @@ export class DynamicFormComponent implements OnChanges, OnDestroy {
     const reader = new FileReader();
     reader.onload = () => {
       this.imagePreviews[fieldName] = reader.result as string;
-      this.valueChange.emit(this.form.getRawValue());
+      this.valueChange.emit(
+  this.normalizeCheckboxValues(this.form.getRawValue())
+);
       this.cdr.markForCheck();
     };
     reader.readAsDataURL(file);
@@ -158,11 +160,11 @@ export class DynamicFormComponent implements OnChanges, OnDestroy {
     this.form.get(fieldName)?.setValue(null);
     this.form.get(fieldName)?.markAsTouched();
     input.value = '';
-    this.valueChange.emit(this.form.getRawValue());
+    this.valueChange.emit(
+  this.normalizeCheckboxValues(this.form.getRawValue())
+);
     this.cdr.markForCheck();
   }
-
-  // ─── Private ─────────────────────────────────────────────────────────────────
 
   private buildForm(): void {
     this.formChangesSub?.unsubscribe();
@@ -183,14 +185,45 @@ export class DynamicFormComponent implements OnChanges, OnDestroy {
       .map(({ field }) => field);
 
     const groupConfig: Record<string, unknown> = {};
+    // for (const field of this.sortedFields) {
+    //   groupConfig[field.name] = [this.getInitialValue(field), this.getValidators(field)];
+    // }
     for (const field of this.sortedFields) {
-      groupConfig[field.name] = [this.getInitialValue(field), this.getValidators(field)];
-    }
+      if (field.type === 'checkbox') {
+        const isSingle = (field.options?.length ?? 0) <= 1;
 
+        if (isSingle) {
+          groupConfig[field.name] = [
+            !!field.defaultValue || !!field.value,
+            this.getValidators(field),
+          ];
+        } else {
+          const selectedValues = Array.isArray(field.value) ? field.value : [];
+
+          const formArray = this.fb.array(
+            field.options.map(opt => {
+              const value = this.getOptionValue(opt);
+              return new FormControl(selectedValues.includes(value));
+            })
+          );
+
+          groupConfig[field.name] = formArray;
+        }
+
+        continue;
+      }
+
+      groupConfig[field.name] = [
+        this.getInitialValue(field),
+        this.getValidators(field),
+      ];
+    }
     this.form = this.fb.group(groupConfig);
     this.imagePreviews = {};
     this.subscribeToFormChanges();
-    this.valueChange.emit(this.form.getRawValue());
+    this.valueChange.emit(
+  this.normalizeCheckboxValues(this.form.getRawValue())
+);
     this.cdr.markForCheck();
   }
 
@@ -228,8 +261,41 @@ export class DynamicFormComponent implements OnChanges, OnDestroy {
 
   private subscribeToFormChanges(): void {
     this.formChangesSub = merge(this.form.valueChanges, this.form.statusChanges).subscribe(() => {
-      this.valueChange.emit(this.form.getRawValue());
+      this.valueChange.emit(
+  this.normalizeCheckboxValues(this.form.getRawValue())
+);
       this.cdr.markForCheck();
     });
+  }
+
+  private normalizeCheckboxValues(raw: any): any {
+    const result = { ...raw };
+
+    for (const field of this.sortedFields) {
+      if (field.type !== 'checkbox') continue;
+
+      const value = raw[field.name];
+
+      // single checkbox already boolean
+      if ((field.options?.length ?? 0) <= 1) {
+        result[field.name] = !!value;
+        continue;
+      }
+
+      // multi checkbox → convert boolean array → selected values
+      const selected: string[] = [];
+
+      if (Array.isArray(value)) {
+        value.forEach((checked: boolean, i: number) => {
+          if (checked) {
+            selected.push(this.getOptionValue(field.options[i]).toString());
+          }
+        });
+      }
+
+      result[field.name] = selected;
+    }
+
+    return result;
   }
 }

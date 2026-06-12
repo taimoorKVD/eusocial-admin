@@ -127,7 +127,7 @@ export class FormStorageService {
     endpoint: string,
     params?: Record<string, any>
   ): Observable<T> {
-    const apiUrl = `${environment.tenantApiUrl}${endpoint}`;
+    const apiUrl = `${environment.tenantApiUrl}/${endpoint}`;
 
     return this.http.get<T>(apiUrl);
   }

@@ -15,7 +15,7 @@ export interface DynamicFieldOption {
 }
 
 export interface DynamicFieldOptionSource {
-  type: 'api' | 'static';
+  type: 'api' | 'static' | 'dynamic';
   endpoint?: string;
   response?: {
     labelKey: string;
