@@ -4,6 +4,7 @@ import { map } from 'rxjs/operators';
 import { DynamicField, DynamicFieldType } from '../../../interfaces/dynamic-field';
 import { FieldOption, FieldType, FormField } from '../../form-builder/models/form-field.model';
 import { FieldOptionsService } from '../../form-builder/services/field-options.service';
+import { normalizeCheckboxFieldOptions } from '../../form-builder/utils/field-options.utils';
 import { toFieldName } from '../../form-builder/utils/form-field.factory';
 
 const SUPPORTED_TYPES = new Set<DynamicFieldType>([
@@ -56,6 +57,11 @@ export class DynamicFormFieldMapperService {
           ? field.options
           : [];
 
+    const normalizedOptions =
+      field.type === 'checkbox'
+        ? normalizeCheckboxFieldOptions(options)
+        : options;
+
     return {
       id: field.id,
       name: field.name || toFieldName(field.label),
@@ -66,7 +72,7 @@ export class DynamicFormFieldMapperService {
       placeholder: field.placeholder,
       width: field.width ?? 12,
       order: field.order,
-      options,
+      options: normalizedOptions,
     };
   }
 

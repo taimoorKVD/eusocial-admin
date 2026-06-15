@@ -19,7 +19,10 @@ import {
   isOptionFieldType,
   normalizeFieldTypeName,
 } from '../../utils/field-type.utils';
-import { normalizeFieldOptions } from '../../utils/field-options.utils';
+import {
+  normalizeFieldOptions,
+  normalizeCheckboxFieldOptions,
+} from '../../utils/field-options.utils';
 import { resolveFieldOptionSource } from '../../utils/option-source.utils';
 
 @Component({
@@ -120,8 +123,8 @@ export class FormFieldPreviewComponent implements OnChanges {
 
           const resolved =
             options.length > 0
-              ? options
-              : normalizeFieldOptions(this.field.options);
+              ? this.normalizeStaticOptions(options)
+              : this.normalizeStaticOptions(this.field.options);
 
           this.displayOptions = resolved;
           this.loadingOptions = false;
@@ -140,6 +143,12 @@ export class FormFieldPreviewComponent implements OnChanges {
   }
 
   private setDisplayOptionsFromStatic(): void {
-    this.displayOptions = normalizeFieldOptions(this.field.options);
+    this.displayOptions = this.normalizeStaticOptions(this.field.options);
+  }
+
+  private normalizeStaticOptions(options: Array<string | FieldOption> | undefined): FieldOption[] {
+    return this.isCheckboxField
+      ? normalizeCheckboxFieldOptions(options)
+      : normalizeFieldOptions(options);
   }
 }
