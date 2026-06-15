@@ -1,4 +1,5 @@
 import { FieldOption, FormField, OptionSource } from '../models/form-field.model';
+import { normalizeCheckboxFieldOptions } from './field-options.utils';
 import { normalizeFieldTypeName } from './field-type.utils';
 import { readOptionSourceFromField } from './option-source.utils';
 
@@ -126,7 +127,10 @@ export function sanitizeField(
     required: readRequired(field),
     isShow: readBooleanFlag(field, 'isShow', 'is_show', true),
     isReadonly: readBooleanFlag(field, 'isReadonly', 'is_readonly', false),
-    options: cloneOptions(field.options),
+    options:
+      type === 'checkbox'
+        ? normalizeCheckboxFieldOptions(field.options)
+        : cloneOptions(field.options),
     optionSource: cloneOptionSource(optionSource),
     value: field.value ?? field.defaultValue ?? null,
     defaultValue: field.defaultValue ?? null,
