@@ -9,8 +9,11 @@ export type FieldType =
   | 'image';
 
 export interface FieldOption {
+  id?: number;
   label: string;
   value: string | number;
+  isDefault?: boolean;
+  sortOrder?: number;
 }
 
 export interface OptionSourceResponse {

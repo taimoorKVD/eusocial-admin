@@ -1,5 +1,14 @@
 import { FieldOption } from '../models/form-field.model';
 
+function slugifyOptionValue(value: string | number): string {
+  return String(value)
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
+
 export function normalizeFieldOption(option: unknown): FieldOption | null {
   if (typeof option === 'string' || typeof option === 'number') {
     const text = String(option);
@@ -11,14 +20,28 @@ export function normalizeFieldOption(option: unknown): FieldOption | null {
   }
 
   const record = option as Record<string, unknown>;
-  const label = record['label'];
-  const value = record['value'];
+  const label = record['label'] ?? record['name'] ?? record['title'];
+  const value = record['value'] ?? record['key'] ?? record['id'];
 
   if (label != null && value != null) {
-    return {
+    const normalized: FieldOption = {
       label: String(label),
       value: value as string | number,
     };
+
+    if (typeof record['id'] === 'number') {
+      normalized.id = record['id'] as number;
+    }
+
+    if (typeof record['sortOrder'] === 'number') {
+      normalized.sortOrder = record['sortOrder'] as number;
+    }
+
+    if (typeof record['isDefault'] === 'boolean') {
+      normalized.isDefault = record['isDefault'] as boolean;
+    }
+
+    return normalized;
   }
 
   if (label != null) {
@@ -43,4 +66,30 @@ export function normalizeFieldOptions(
   return options
     .map(option => normalizeFieldOption(option))
     .filter((option): option is FieldOption => option !== null);
+}
+
+export function normalizeCheckboxFieldOptions(
+  options: unknown[] | undefined | null
+): FieldOption[] {
+  if (!Array.isArray(options)) {
+    return [];
+  }
+
+  return options
+    .map(option => normalizeFieldOption(option))
+    .filter((option): option is FieldOption => option !== null)
+    .map((normalized, index) => {
+      const value =
+        typeof normalized.value === 'string'
+          ? slugifyOptionValue(normalized.value) || String(index + 1)
+          : normalized.value;
+
+      return {
+        ...normalized,
+        value,
+        id: index + 1,
+        sortOrder: index + 1,
+        isDefault: normalized.isDefault ?? false,
+      };
+    });
 }
