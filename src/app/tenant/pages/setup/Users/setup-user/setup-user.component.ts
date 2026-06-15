@@ -32,10 +32,12 @@ export class SetupUserComponent {
   loading = false;
   formFields: any[] = [];
   latestFormValue: DynamicFormValue = {};
+  userId!: string;
+
 
   ngOnInit(): void {
+    this.userId = this.route.snapshot.paramMap.get('id') || '';
     this.getFormFields();
-
   }
 
   getFormFields(): void {
@@ -56,7 +58,7 @@ export class SetupUserComponent {
           .filter(
             field =>
               field.type === 'select' &&
-              field.optionSource?.type === 'api' &&
+              field.optionSource?.type === 'api' || field.optionSource?.type === 'dynamic'  &&
               field.optionSource?.endpoint
           )
           .map(field =>
@@ -79,6 +81,9 @@ export class SetupUserComponent {
         if (!dropdownRequests.length) {
           this.formFields = fields;
           this.loading = false;
+          if (this.userId) {
+            this.loadUser();
+          }
           return;
         }
 
@@ -107,10 +112,42 @@ export class SetupUserComponent {
 
           this.formFields = fields;
           this.loading = false;
+          if (this.userId) {
+            this.loadUser();
+          }
         });
       },
       error: () => {
         this.loading = false;
+      }
+    });
+  }
+
+  loadUser(): void {
+    this.userService.getUserById(Number(this.userId)).subscribe({
+      next: (res: any) => {
+        const user = res.data;
+        user.location = '';
+        const patchData: any = {};
+        this.formFields.forEach(field => {
+          if (field.type === 'checkbox') {
+            if ((field.options?.length ?? 0) > 1) {
+              console.log(patchData[field.name] )
+              patchData[field.name] =
+                Array.isArray(user[field.name])
+                  ? user[field.name]
+                  : [];
+            } else {
+              patchData[field.name] = !!user[field.name];
+            }
+          } else {
+            patchData[field.name] = user[field.name];
+          }
+        });
+
+        setTimeout(() => {
+          this.dynamicForm?.patchValue(patchData);
+        });
       }
     });
   }
@@ -128,24 +165,24 @@ export class SetupUserComponent {
       this.toastr.error('Please fill in all required fields.');
       return;
     }
-    const formValues = this.dynamicForm.value;
-    console.log('Form submitted with values:', formValues);
-    //  const formData = new FormData();
-    //   Object.keys(formValues).forEach((key) => {
-    //     const value = formValues[key];
-
-    //     if (value === null || value === undefined) return;
-
-    //     if (value instanceof File) {
-    //       formData.append(key, value);
-    //     }
-    //     else if (typeof value === 'object') {
-    //       formData.append(key, JSON.stringify(value));
-    //     }
-    //     else {
-    //       formData.append(key, String(value));
-    //     }
-    //   });
+      const formValues = this.dynamicForm.value;
+       if (this.userId) {
+        this.userService.updateUser(Number(this.userId), formValues).subscribe({
+          next: () => {
+            this.toastr.success('User updated successfully');
+            this.router.navigate([
+              '/tenant',
+              this.tenantSession.getSlug(),
+              'users'
+            ]);
+          },
+          error: (err) => {
+            this.toastr.error(
+              err?.error?.message || 'Failed to update user'
+            );
+          }
+        });
+      } else {
       this.userService.createUser(formValues).subscribe({
         next: (res: any) => {
           this.toastr.success('User created successfully');
@@ -157,5 +194,6 @@ export class SetupUserComponent {
           this.toastr.error(err?.error?.message || 'Failed to create user');
         }
       });
+    }
   }
 }
