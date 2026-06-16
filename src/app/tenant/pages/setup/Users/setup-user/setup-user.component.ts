@@ -127,12 +127,13 @@ export class SetupUserComponent {
     this.userService.getUserById(Number(this.userId)).subscribe({
       next: (res: any) => {
         const user = res.data;
-        user.location = '';
+        if(res.data.availabilityDays){
+          user.availability_days = res.data.availabilityDays.map(v => v === 'true');
+        }
         const patchData: any = {};
         this.formFields.forEach(field => {
           if (field.type === 'checkbox') {
             if ((field.options?.length ?? 0) > 1) {
-              console.log(patchData[field.name] )
               patchData[field.name] =
                 Array.isArray(user[field.name])
                   ? user[field.name]
@@ -140,7 +141,9 @@ export class SetupUserComponent {
             } else {
               patchData[field.name] = !!user[field.name];
             }
-          } else {
+          } else if(field.type === 'select') {
+             patchData[field.name] = user[field.name] == null ? '' : user[field.name];
+           } else {
             patchData[field.name] = user[field.name];
           }
         });
@@ -157,6 +160,7 @@ export class SetupUserComponent {
   }
 
   onFormSubmit(): void {
+     console.log('Submitting form with values:', this.dynamicForm.value);
     if (!this.dynamicForm) {
       return;
     }

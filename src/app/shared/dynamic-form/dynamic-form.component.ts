@@ -287,6 +287,7 @@ export class DynamicFormComponent implements OnChanges, OnDestroy {
     });
   }
 
+
   private normalizeCheckboxValues(raw: any): any {
     const result = { ...raw };
 
