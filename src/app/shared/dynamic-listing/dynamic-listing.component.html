@@ -15,7 +15,7 @@
     >
       <button
         type="button"
-        class="inline-flex items-center gap-2 px-3 py-2 text-sm font-ibm text-[#0054AC] border border-[#0054AC]/30 rounded-lg hover:bg-blue-50 transition-colors"
+        class="inline-flex items-center gap-2 px-3 py-2 text-sm font-ibm text-[#ea580c] border border-[#ea580c]/30 rounded-lg hover:bg-blue-50 transition-colors"
         (click)="columnMenu.toggle($event)"
         aria-label="Select columns"
         [attr.aria-expanded]="columnMenu.isOpen"
@@ -44,7 +44,7 @@
           >
             <input
               type="checkbox"
-              class="h-4 w-4 rounded border-gray-300 text-[#0054AC] focus:ring-[#0054AC]"
+              class="h-4 w-4 rounded border-gray-300 text-[#ea580c] focus:ring-[#ea580c]"
               [checked]="isColumnVisible(field.id)"
               (change)="onColumnToggle(field, $any($event.target).checked)"
             />
@@ -96,16 +96,15 @@
                   class="inline-flex items-center gap-1 mr-1 mb-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all duration-150 hover:scale-[1.03]"
                   [ngClass]="getFieldClass(field)"
                 >
-                  <!-- <span class="w-1.5 h-1.5 rounded-full bg-current opacity-70"></span> -->
                   {{ item }}
                 </span>
               </ng-container>
 
-                <ng-template #normalCell>
-                  <span>
-                    {{ getCellValue(record, field) }}
-                  </span>
-                </ng-template>
+              <ng-template #normalCell>
+                <span>
+                  {{ getCellValue(record, field) }}
+                </span>
+              </ng-template>
             </ng-container>
           </td>
 
@@ -113,7 +112,7 @@
             <div class="flex justify-end gap-2">
               <button
                 type="button"
-                class="text-blue-600 hover:text-blue-900"
+                class="text-[#ea580c] hover:text-red-900"
                 (click)="onEdit(record)"
                 aria-label="Edit record"
               >
