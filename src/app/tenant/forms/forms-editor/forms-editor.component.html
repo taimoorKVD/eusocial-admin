@@ -2,34 +2,27 @@
   <app-eu-loader></app-eu-loader>
 </ng-container>
 
-<app-confirm-modal
-  [isOpen]="showExitConfirmModal"
-  title="Are you sure you want to exit?"
-  message=""
-  confirmText="Confirm"
-  cancelText="Cancel"
-  (confirmed)="onConfirmExit()"
-  (closed)="onCancelExit()"
-></app-confirm-modal>
+<app-confirm-modal [isOpen]="showExitConfirmModal" title="Are you sure you want to exit?" message=""
+  confirmText="Confirm" cancelText="Cancel" (confirmed)="onConfirmExit()" (closed)="onCancelExit()"></app-confirm-modal>
 
-<div class="grid grid-cols-5 gap-4 p-6 font-ibm">
+<div class="grid grid-cols-5 gap-4 font-ibm">
 
   <!-- CANVAS -->
-  <div class="col-span-5 lg:col-span-3">
-    <div class="mb-4 grid grid-cols-2 gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
+  <div class="col-span-5 lg:col-span-3 py-6 pr-4 pl-6">
+    <!-- <div class="mb-4 grid grid-cols-2 gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
       <div>
-        <input type="text" [(ngModel)]="formName" disabled  placeholder="Form name"
+        <input type="text" [(ngModel)]="formName" disabled placeholder="Form name"
           class="font-ibm px-3 py-2 text-[16px] font-medium focus:outline-none" />
       </div>
 
       <div class="flex justify-end">
-        <!-- <button
+        <button
           type="button"
           class="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
           (click)="previewPayload()"
         >
           Preview Payload
-        </button> -->
+        </button>
 
         <button type="button"
           class="rounded-md bg-[#0054AC] px-3 py-2 text-sm font-medium text-white hover:bg-[#00448c]"
@@ -37,7 +30,7 @@
           Save Form
         </button>
       </div>
-    </div>
+    </div> -->
 
     <ng-container *ngIf="moduleName === 'users'">
       <app-form-canvas [schema]="builderSchema" [selectedFieldId]="selectedFieldId"
@@ -55,21 +48,51 @@
   </div>
 
   <!-- PALETTE + SETTINGS -->
-  <div class="col-span-5 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm lg:col-span-2">
-    <div class="border-b border-gray-200 bg-gray-50 px-4 py-3">
-      <nav class="flex items-center gap-2">
-        <button type="button" class="rounded-md px-3 py-2 text-sm font-medium transition focus:outline-none"
-          [ngClass]="activeTab === 'fields' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:bg-slate-100'"
+  <div class="col-span-5 overflow-hidden bg-white shadow-sm lg:col-span-2">
+
+    <div class="flex items-center gap-2 p-6 justify-between">
+      <div class="flex items-center">
+        <button class="text-[#83affd] text-[12px] font-ibm font-medium">
+          Add
+        </button>
+        <span class="mx-3 w-[1px] h-[14px] bg-[#83affd]"></span>
+
+        <button class="text-[#83affd] text-[12px] font-ibm font-medium">
+          Edit
+        </button>
+        <span class="mx-3 w-[1px] h-[14px] bg-[#83affd]"></span>
+
+        <button class="text-[#83affd] text-[12px] font-ibm font-medium">
+          Copy
+        </button>
+        <span class="mx-3 w-[1px] h-[14px] bg-[#83affd]"></span>
+
+        <button class="text-[#83affd] text-[12px] font-ibm font-medium">
+          Delete
+        </button>
+      </div>
+      <div>
+        <button type="button" class="bg-[#ea580c] px-[25px] py-2 text-sm font-medium text-white hover:bg-[#fe9015]"
+          (click)="saveForm()">
+          Save Form
+        </button>
+      </div>
+    </div>
+
+    <div class="bg-[#f4f4f4]">
+      <nav class="flex items-center justify-between gap-2 border-[#b2b2b2] border-b">
+        <button type="button" class="px-3 py-4 text-sm font-medium transition focus:outline-none"
+          [ngClass]="activeTab === 'fields' ? 'border-[#83affd] border-b text-slate-900' : 'text-slate-500 hover:bg-slate-100'"
           (click)="setActiveTab('fields')">
-          Fields
+          Input Fields
         </button>
-        <button type="button" class="rounded-md px-3 py-2 text-sm font-medium transition focus:outline-none"
-          [ngClass]="activeTab === 'settings' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:bg-slate-100'"
+        <button type="button" class="px-3 py-4 text-sm font-medium transition focus:outline-none"
+          [ngClass]="activeTab === 'settings' ? 'border-[#83affd] border-b text-slate-900' : 'text-slate-500 hover:bg-slate-100'"
           (click)="setActiveTab('settings')">
-          Field Settings
+          Input Customization
         </button>
-        <button type="button" class="rounded-md px-3 py-2 text-sm font-medium transition focus:outline-none"
-          [ngClass]="activeTab === 'versions' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:bg-slate-100'"
+        <button type="button" class="px-3 py-4 text-sm font-medium transition focus:outline-none"
+          [ngClass]="activeTab === 'versions' ? 'border-[#83affd] border-b text-slate-900' : 'text-slate-500 hover:bg-slate-100'"
           (click)="setActiveTab('versions')">
           Versions
         </button>
@@ -82,43 +105,29 @@
       </div>
 
       <div *ngIf="activeTab === 'versions'">
-        <app-form-versions-panel
-          [moduleName]="moduleName"
-          (restore)="onRestoreVersion($event)"
-          (loadingChange)="onVersionsLoadingChange($event)"
-        ></app-form-versions-panel>
+        <app-form-versions-panel [moduleName]="moduleName" (restore)="onRestoreVersion($event)"
+          (loadingChange)="onVersionsLoadingChange($event)"></app-form-versions-panel>
       </div>
 
       <div [class.hidden]="activeTab !== 'settings'" class="space-y-4">
-        <div
-          *ngIf="hiddenFields.length"
-          class="rounded-md border border-amber-100 bg-amber-50 px-3 py-2.5"
-        >
+        <div *ngIf="hiddenFields.length" class="rounded-md border border-amber-100 bg-amber-50 px-3 py-2.5">
           <p class="text-xs font-medium text-amber-800">Hidden fields</p>
           <p class="mt-0.5 text-[11px] text-amber-700">
             These fields stay in the form schema but are hidden on the canvas.
           </p>
           <div class="mt-2 flex flex-wrap gap-2">
-            <button
-              *ngFor="let field of hiddenFields; trackBy: trackByFieldId"
-              type="button"
+            <button *ngFor="let field of hiddenFields; trackBy: trackByFieldId" type="button"
               class="rounded-md border border-amber-200 bg-white px-2.5 py-1 text-xs font-medium text-amber-900 hover:bg-amber-100"
-              (click)="onSelectField(field)"
-            >
+              (click)="onSelectField(field)">
               {{ field.label }}
             </button>
           </div>
         </div>
 
         <ng-container *ngIf="selectedField; else noSelection">
-          <app-field-settings
-            [field]="selectedField"
-            [activeModuleName]="moduleName"
-            (update)="updateField($event)"
-            (duplicate)="onDuplicateField(selectedField)"
-            (delete)="onDeleteField(selectedField)"
-            (loadingChange)="onDynamicOptionsLoading($event)"
-          ></app-field-settings>
+          <app-field-settings [field]="selectedField" [activeModuleName]="moduleName" (update)="updateField($event)"
+            (duplicate)="onDuplicateField(selectedField)" (delete)="onDeleteField(selectedField)"
+            (loadingChange)="onDynamicOptionsLoading($event)"></app-field-settings>
         </ng-container>
         <ng-template #noSelection>
           <div class="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">
