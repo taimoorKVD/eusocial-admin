@@ -134,4 +134,27 @@ export class DynamicListingComponent implements OnChanges {
 
     saveVisibleColumnIds(this.storageKey, orderedVisibleIds);
   }
+
+  getFieldClass(field: any): string {
+     switch (field.type) {
+    case 'checkbox':
+      return 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100';
+
+    case 'radio':
+      return 'bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100';
+
+    default:
+      return 'bg-gray-50 text-gray-700 border border-gray-200';
+  }
+  }
+
+  splitValue(value: any): string[] {
+    if (!value) return [];
+
+    return value
+      .toString()
+      .split(',')
+      .map((item: string) => item.trim())
+      .filter((item: string) => item.length);
+  }
 }

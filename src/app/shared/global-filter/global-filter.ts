@@ -17,7 +17,8 @@ export interface GlobalFilterField {
   label: string;
   type?: string;
   placeholder?: string;
-  options?: Array<{ id: number | string; name: string }>;
+  options?: any[];
+  // options?: Array<{ id: number | string; name: string }>;
   loading?: boolean;
 }
 
@@ -44,17 +45,36 @@ export class GlobalFilterComponent implements OnChanges {
   ) {}
 
   ngOnChanges(changes: SimpleChanges): void {
+    console.log('GlobalFilterComponent changes:', changes);
     if (changes['fields']) {
       this.syncFiltersWithFields();
     }
   }
 
   get hasFilters(): boolean {
-    return Object.values(this.filters).some((value) => !!value);
+    // return Object.values(this.filters).some((value) => !!value);
+     return this.fields.some((field) => {
+    const value = this.filters[field.key];
+
+    if (Array.isArray(value)) {
+      return value.length > 0;
+    }
+
+    return !!value;
+  });
   }
 
   get activeFields(): GlobalFilterField[] {
-    return this.fields.filter((field) => !!this.filters[field.key]);
+    // return this.fields.filter((field) => !!this.filters[field.key]);
+     return this.fields.filter((field) => {
+        const value = this.filters[field.key];
+
+        if (Array.isArray(value)) {
+          return value.length > 0;
+        }
+
+        return !!value;
+      });
   }
 
   trackByFieldKey(_: number, field: GlobalFilterField): string {
@@ -114,7 +134,9 @@ export class GlobalFilterComponent implements OnChanges {
     return options.filter((option) => option.name.toLowerCase().includes(query));
   }
 
-  selectOption(field: GlobalFilterField, option?: { id: number | string; name: string }): void {
+  selectOption(field: GlobalFilterField, option?: { id: number | string; name: string; value: any }): void {
+    console.log('Selected option:', option);
+    console.log('Selected option:', field);
     if (option) {
       this.filters[field.key] = option.id;
     } else {
@@ -127,6 +149,17 @@ export class GlobalFilterComponent implements OnChanges {
 
   onClear(): void {
     this.filters = {};
+     this.fields.forEach((field) => {
+    if (field.type === 'radio') {
+      const allOption = field.options?.find(
+        (opt) => this.getOptionValue(opt) === ''
+      );
+
+      this.filters[field.key] = allOption
+        ? ''
+        : undefined;
+    }
+  });
     this.optionSearch = {};
     this.overlayService.close();
     this.clear.emit();
@@ -144,7 +177,47 @@ export class GlobalFilterComponent implements OnChanges {
       Object.entries(this.optionSearch).filter(([key]) => allowedKeys.has(key)),
     );
 
+    this.fields.forEach((field) => {
+    if (
+      field.type === 'radio' &&
+      this.filters[field.key] === undefined &&
+      field.options?.some((option) => this.getOptionValue(option) === '')
+    ) {
+      this.filters[field.key] = '';
+    }
+  });
+
     this.overlayService.close();
     this.cdr.markForCheck();
+  }
+
+  getOptionLabel(option: any): string {
+    return typeof option === 'object' ? option.label ?? option.name ?? option : option;
+  }
+
+  getOptionValue(option: any): any {
+    return typeof option === 'object' ? option.value ?? option.id ?? option : option;
+  }
+
+  onCheckboxChange(fieldKey: string, option: any, event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const value = this.getOptionValue(option);
+    const existing = (this.filters[fieldKey] as any[]) || [];
+    if (input.checked) {
+      this.filters[fieldKey] = [...existing, value];
+    } else {
+      this.filters[fieldKey] = existing.filter((x) => x !== value);
+    }
+  }
+
+  isChecked(fieldKey: string, option: any): boolean {
+    const value = this.getOptionValue(option);
+    console.log(value)
+    const selected = Array.isArray(this.filters[fieldKey])
+    ? (this.filters[fieldKey] as any[])
+    : [];
+
+    return selected.includes(value);
+
   }
 }
