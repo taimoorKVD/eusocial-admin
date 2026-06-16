@@ -81,6 +81,13 @@
             >
               {{ getOptionLabel(option) }}
             </option>
+              <option
+              *ngIf="!field.options?.length"
+              disabled
+              value=""
+            >
+              No records found
+            </option>
           </select>
 
           <!-- ── checkbox ──────────────────────────────────────────────────────── -->

@@ -127,8 +127,14 @@ export class SetupUserComponent {
     this.userService.getUserById(Number(this.userId)).subscribe({
       next: (res: any) => {
         const user = res.data;
-        if(res.data.availabilityDays){
+        if(user.availabilityDays){
           user.availability_days = res.data.availabilityDays.map(v => v === 'true');
+        }
+        if(user.plainPassword){
+          user.password = user.plainPassword;
+        }
+        if(user.jobPosition){
+          user.job_position = user.jobPosition;
         }
         const patchData: any = {};
         this.formFields.forEach(field => {
@@ -142,7 +148,7 @@ export class SetupUserComponent {
               patchData[field.name] = !!user[field.name];
             }
           } else if(field.type === 'select') {
-             patchData[field.name] = user[field.name] == null ? '' : user[field.name];
+             patchData[field.name] = user[field.name] == null ? '' : user[field.name].id;
            } else {
             patchData[field.name] = user[field.name];
           }
