@@ -121,7 +121,7 @@ export class SetupUsersListing {
       .filter(
         (field) =>
           field.type === 'select' &&
-          field.optionSource?.type === 'dynamic' &&
+          (field.optionSource?.type === 'api' ||  field.optionSource?.type === 'dynamic') &&
           field.optionSource?.endpoint,
       )
       .map((field) =>
@@ -148,8 +148,10 @@ export class SetupUsersListing {
         const data = response?.[dataPath] || [];
 
         field.options = data.map((item: Record<string, unknown>) => ({
+          name: item[labelKey] as string,
           label: item[labelKey],
           value: item[valueKey],
+          id: item[valueKey],
         }));
       });
 

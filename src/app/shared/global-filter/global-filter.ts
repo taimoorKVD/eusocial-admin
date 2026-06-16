@@ -134,7 +134,9 @@ export class GlobalFilterComponent implements OnChanges {
     return options.filter((option) => option.name.toLowerCase().includes(query));
   }
 
-  selectOption(field: GlobalFilterField, option?: { id: number | string; name: string }): void {
+  selectOption(field: GlobalFilterField, option?: { id: number | string; name: string; value: any }): void {
+    console.log('Selected option:', option);
+    console.log('Selected option:', field);
     if (option) {
       this.filters[field.key] = option.id;
     } else {
