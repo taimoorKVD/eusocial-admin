@@ -138,10 +138,10 @@ export class DynamicListingComponent implements OnChanges {
   getFieldClass(field: any): string {
      switch (field.type) {
     case 'checkbox':
-      return 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100';
+      return 'border border-[#ea580c] hover:bg-orange-100';
 
     case 'radio':
-      return 'bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100';
+      return 'border border-[#ea580c] hover:bg-orange-100';
 
     default:
       return 'bg-gray-50 text-gray-700 border border-gray-200';
