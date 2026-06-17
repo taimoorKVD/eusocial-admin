@@ -133,9 +133,6 @@ export class SetupUserComponent {
         if(user.plainPassword){
           user.password = user.plainPassword;
         }
-        if(user.jobPosition){
-          user.job_position = user.jobPosition;
-        }
         const patchData: any = {};
         this.formFields.forEach(field => {
           if (field.type === 'checkbox') {
@@ -147,9 +144,13 @@ export class SetupUserComponent {
             } else {
               patchData[field.name] = !!user[field.name];
             }
-          } else if(field.type === 'select') {
-             patchData[field.name] = user[field.name] == null ? '' : user[field.name].id;
-           } else {
+          }
+           else if(field.type === 'select') {
+             patchData[field.name] = user[field.name] == null ? '' : typeof user[field.name] === 'object'
+            ? user[field.name].id
+            : user[field.name];
+           }
+           else {
             patchData[field.name] = user[field.name];
           }
         });

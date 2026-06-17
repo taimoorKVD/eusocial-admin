@@ -147,6 +147,19 @@ export function formatListingCellValue(record: Record<string, unknown>, field: D
     }
 
     case 'select':
+    {
+      if (typeof rawValue === 'object' && rawValue !== null) {
+        const obj = rawValue as Record<string, unknown>;
+        return String(obj['name'] ?? obj['label'] ?? obj['id'] ?? '—');
+      }
+
+      const match = field.options?.find(
+        option => String(getOptionValue(option)) === String(rawValue)
+      );
+
+      return match ? getOptionLabel(match) : String(rawValue);
+    }
+
     case 'radio': {
       const match = field.options?.find(
         (option) => String(getOptionValue(option)) === String(rawValue),

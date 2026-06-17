@@ -135,8 +135,6 @@ export class GlobalFilterComponent implements OnChanges {
   }
 
   selectOption(field: GlobalFilterField, option?: { id: number | string; name: string; value?: any }): void {
-    console.log('Selected option:', option);
-    console.log('Selected option:', field);
     if (option) {
       this.filters[field.key] = option.id;
     } else {
@@ -212,7 +210,6 @@ export class GlobalFilterComponent implements OnChanges {
 
   isChecked(fieldKey: string, option: any): boolean {
     const value = this.getOptionValue(option);
-    console.log(value)
     const selected = Array.isArray(this.filters[fieldKey])
     ? (this.filters[fieldKey] as any[])
     : [];

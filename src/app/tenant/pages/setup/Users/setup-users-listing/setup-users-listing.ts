@@ -117,6 +117,25 @@ export class SetupUsersListing {
     fields: DynamicField[],
     onComplete?: () => void,
   ): void {
+    console.log('Loading dynamic dropdown options for fields:', fields);
+    fields.forEach((field) => {
+    if (
+      field.type === 'select' &&
+      !field.optionSource &&
+      Array.isArray(field.options)
+    ) {
+      field.options = field.options.map((option: any) =>
+        typeof option === 'string'
+          ? {
+              name: option,
+              label: option,
+              value: option,
+              id: option,
+            }
+          : option
+      );
+    }
+  });
     const dropdownRequests = fields
       .filter(
         (field) =>
