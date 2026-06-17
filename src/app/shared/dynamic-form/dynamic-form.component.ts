@@ -81,25 +81,6 @@ export class DynamicFormComponent implements OnChanges, OnDestroy {
   patchValue(values: DynamicFormValue): void {
     if (!this.form || !values) return;
     this.form.patchValue(values);
-    // this.sortedFields.forEach(field => {
-    //   if (
-    //     field.type === 'checkbox' &&
-    //     (field.options?.length ?? 0) > 1
-    //   ) {
-    //     const formArray = this.form.get(field.name) as FormArray;
-    //     const selectedValues = (values[field.name] as any[]) || [];
-    //     formArray.controls.forEach((control, index) => {
-    //       const optionValue = this.getOptionValue(field.options[index]);
-    //       control.setValue(
-    //         selectedValues.includes(optionValue)
-    //       );
-    //     });
-    //   } else {
-    //     this.form.get(field.name)?.patchValue(
-    //       values[field.name]
-    //     );
-    //   }
-    // });
     this.valueChange.emit(
       this.normalizeCheckboxValues(this.form.getRawValue())
     );
@@ -286,7 +267,6 @@ export class DynamicFormComponent implements OnChanges, OnDestroy {
       this.cdr.markForCheck();
     });
   }
-
 
   private normalizeCheckboxValues(raw: any): any {
     const result = { ...raw };
