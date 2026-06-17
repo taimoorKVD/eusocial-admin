@@ -130,8 +130,8 @@ export class SetupUserComponent {
         if(user.availabilityDays){
           user.availability_days = res.data.availabilityDays.map(v => v === 'true');
         }
-        if(user.plainPassword){
-          user.password = user.plainPassword;
+        if(user.plain_password){
+          user.password = user.plain_password;
         }
         const patchData: any = {};
         this.formFields.forEach(field => {
