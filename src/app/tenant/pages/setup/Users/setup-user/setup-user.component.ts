@@ -127,8 +127,8 @@ export class SetupUserComponent {
     this.userService.getUserById(Number(this.userId)).subscribe({
       next: (res: any) => {
         const user = res.data;
-        if(user.availabilityDays){
-          user.availability_days = res.data.availabilityDays.map(v => v === 'true');
+        if(user.availability_days){
+          user.availability_days = res.data.availability_days.map(v => v === 'true');
         }
         if(user.plain_password){
           user.password = user.plain_password;
@@ -167,7 +167,6 @@ export class SetupUserComponent {
   }
 
   onFormSubmit(): void {
-     console.log('Submitting form with values:', this.dynamicForm.value);
     if (!this.dynamicForm) {
       return;
     }

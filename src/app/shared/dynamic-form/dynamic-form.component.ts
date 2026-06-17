@@ -35,6 +35,7 @@ export class DynamicFormComponent implements OnChanges, OnDestroy {
   form!: FormGroup;
   sortedFields: DynamicField[] = [];
   imagePreviews: Record<string, string> = {};
+  showPasswords: Record<string, boolean> = {};
 
   private formChangesSub?: Subscription;
 
@@ -185,9 +186,6 @@ export class DynamicFormComponent implements OnChanges, OnDestroy {
       .map(({ field }) => field);
 
     const groupConfig: Record<string, unknown> = {};
-    // for (const field of this.sortedFields) {
-    //   groupConfig[field.name] = [this.getInitialValue(field), this.getValidators(field)];
-    // }
     for (const field of this.sortedFields) {
       if (field.type === 'checkbox') {
         const isSingle = (field.options?.length ?? 0) <= 1;
@@ -221,10 +219,14 @@ export class DynamicFormComponent implements OnChanges, OnDestroy {
     this.form = this.fb.group(groupConfig);
     this.imagePreviews = {};
     this.subscribeToFormChanges();
-    this.valueChange.emit(
-  this.normalizeCheckboxValues(this.form.getRawValue())
-);
+      this.valueChange.emit(
+    this.normalizeCheckboxValues(this.form.getRawValue())
+  );
     this.cdr.markForCheck();
+  }
+
+  togglePassword(fieldName: string): void {
+    this.showPasswords[fieldName] = !this.showPasswords[fieldName];
   }
 
   private getInitialValue(field: DynamicField): unknown {
