@@ -4,7 +4,7 @@ import { map } from 'rxjs/operators';
 import { DynamicField, DynamicFieldType } from '../../../interfaces/dynamic-field';
 import { FieldOption, FieldType, FormField } from '../../form-builder/models/form-field.model';
 import { FieldOptionsService } from '../../form-builder/services/field-options.service';
-import { normalizeCheckboxFieldOptions } from '../../form-builder/utils/field-options.utils';
+import { normalizeCheckboxFieldOptions, normalizeStaticSelectFieldOptions } from '../../form-builder/utils/field-options.utils';
 import { toFieldName } from '../../form-builder/utils/form-field.factory';
 
 const SUPPORTED_TYPES = new Set<DynamicFieldType>([
@@ -57,10 +57,7 @@ export class DynamicFormFieldMapperService {
           ? field.options
           : [];
 
-    const normalizedOptions =
-      field.type === 'checkbox'
-        ? normalizeCheckboxFieldOptions(options)
-        : options;
+    const normalizedOptions = this.normalizeOptions(field, options);
 
     return {
       id: field.id,
@@ -74,6 +71,27 @@ export class DynamicFormFieldMapperService {
       order: field.order,
       options: normalizedOptions,
     };
+  }
+
+  private normalizeOptions(
+    field: FormField,
+    options: Array<string | FieldOption>
+  ): FieldOption[] {
+    if (field.type === 'checkbox') {
+      return normalizeCheckboxFieldOptions(options);
+    }
+
+    if (field.type === 'select') {
+      if (field.optionSource?.type === 'dynamic') {
+        return options as FieldOption[];
+      }
+
+      if (field.optionSource?.type !== 'api') {
+        return normalizeStaticSelectFieldOptions(options);
+      }
+    }
+
+    return options as FieldOption[];
   }
 
   private mapType(type: FieldType): DynamicFieldType | null {

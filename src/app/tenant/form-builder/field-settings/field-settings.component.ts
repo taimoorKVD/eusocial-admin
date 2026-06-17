@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormField, OptionSource } from '../models/form-field.model';
-import { normalizeFieldOption } from '../utils/field-options.utils';
+import { normalizeFieldOption, normalizeStaticSelectFieldOptions } from '../utils/field-options.utils';
 import { DynamicModuleOptionsService } from '../services/dynamic-module-options.service';
 import { FormModuleListItem } from '../../forms/models/form-module.model';
 
@@ -192,11 +192,16 @@ export class FieldSettingsComponent {
     }
 
     const value = (event.target as HTMLTextAreaElement).value;
-
-    this._field.options = value
+    const labels = value
       .split('\n')
       .map(v => v.trim())
       .filter(v => v);
+
+    if (this.isSelectField && this.optionsMode === 'static') {
+      this._field.options = normalizeStaticSelectFieldOptions(labels);
+    } else {
+      this._field.options = labels;
+    }
 
     this._field.optionSource = undefined;
     this.onChange();
@@ -273,6 +278,11 @@ export class FieldSettingsComponent {
           });
         }
       });
+      return;
+    }
+
+    if (field.type === 'select') {
+      this._field.options = normalizeStaticSelectFieldOptions(this._field.options);
     }
   }
 
@@ -296,20 +306,7 @@ export class FieldSettingsComponent {
   }
 
   private resolveOptionsMode(field: FormField): SelectOptionsMode {
-    if (field.optionSource?.type === 'dynamic') {
-      return 'dynamic';
-    }
-
-    const options = field.options || [];
-
-    if (
-      options.length > 0 &&
-      options.every(option => typeof option === 'object' && option !== null)
-    ) {
-      return 'dynamic';
-    }
-
-    return 'static';
+    return field.optionSource?.type === 'dynamic' ? 'dynamic' : 'static';
   }
 
   private ensureModulesLoaded(onLoaded?: () => void): void {
