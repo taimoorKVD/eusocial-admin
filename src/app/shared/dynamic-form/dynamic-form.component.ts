@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
+  computed,
   effect,
   inject,
   input,
@@ -27,6 +28,7 @@ import {
   normalizeCheckboxFormValue,
   sortDynamicFields,
 } from './dynamic-form.builder';
+import { DropdownOverlayService } from '../directives/dropdown-panel/dropdown-overlay.service';
 
 @Component({
   selector: 'app-dynamic-form',
@@ -38,6 +40,9 @@ import {
 export class DynamicFormComponent implements OnDestroy {
   private readonly fb = inject(FormBuilder);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly overlayService = inject(DropdownOverlayService);
+
+  readonly selectDropdownGroup = 'dynamic-form-select';
 
   readonly fields = input.required<DynamicField[]>();
   readonly valueChange = output<DynamicFormValue>();
@@ -46,6 +51,29 @@ export class DynamicFormComponent implements OnDestroy {
   readonly sortedFields = signal<DynamicField[]>([]);
   readonly imagePreviews = signal<Record<string, string>>({});
   readonly showPasswords = signal<Record<string, boolean>>({});
+  readonly selectSearchQueries = signal<Record<string, string>>({});
+
+  readonly filteredSelectOptions = computed(() => {
+    const queries = this.selectSearchQueries();
+    const result: Record<string, (string | DynamicFieldOption)[]> = {};
+
+    for (const field of this.sortedFields()) {
+      if (field.type !== 'select') {
+        continue;
+      }
+
+      const options = field.options ?? [];
+      const query = (queries[field.name] ?? '').trim().toLowerCase();
+
+      result[field.name] = query
+        ? options.filter((option) =>
+            this.getOptionLabel(option).toLowerCase().includes(query),
+          )
+        : options;
+    }
+
+    return result;
+  });
 
   private formChangesSub?: Subscription;
 
@@ -169,6 +197,72 @@ export class DynamicFormComponent implements OnDestroy {
     }));
   }
 
+  onSelectSearch(fieldName: string, event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.selectSearchQueries.update((queries) => ({ ...queries, [fieldName]: value }));
+  }
+
+  getSelectDisplayLabel(field: DynamicField): string {
+    const control = this.form?.get(field.name);
+    const selectedValue = control?.value;
+
+    if (selectedValue === undefined || selectedValue === null || selectedValue === '') {
+      return `Select ${field.label}`;
+    }
+
+    const options = field.options ?? [];
+    const match = options.find(
+      (option, index) => String(getOptionValue(option, index)) === String(selectedValue),
+    );
+
+    return match ? this.getOptionLabel(match) : String(selectedValue);
+  }
+
+  isSelectOptionSelected(
+    field: DynamicField,
+    option: string | DynamicFieldOption,
+    index: number,
+  ): boolean {
+    const control = this.form?.get(field.name);
+    if (!control) {
+      return false;
+    }
+
+    return String(control.value) === String(getOptionValue(option, index));
+  }
+
+  selectOption(
+    field: DynamicField,
+    option?: string | DynamicFieldOption,
+    index = 0,
+  ): void {
+    const control = this.form.get(field.name);
+    if (!control) {
+      return;
+    }
+
+    control.setValue(option === undefined ? '' : getOptionValue(option, index));
+    control.markAsDirty();
+    control.markAsTouched();
+    this.overlayService.close();
+    this.emitNormalizedValue();
+    this.cdr.markForCheck();
+  }
+
+  generatePassword(fieldName: string): void {
+    const control = this.form.get(fieldName);
+    if (!control) {
+      return;
+    }
+
+    control.setValue(this.createRandomPassword());
+    control.markAsDirty();
+    control.markAsTouched();
+    this.showPasswords.update((state) => ({ ...state, [fieldName]: true }));
+    this.emitNormalizedValue();
+    this.cdr.markForCheck();
+  }
+
   isChecked(fieldName: string, value: unknown): boolean {
     const control = this.form.get(fieldName);
     if (!control || !Array.isArray(control.value)) {
@@ -216,6 +310,7 @@ export class DynamicFormComponent implements OnDestroy {
 
     const sorted = sortDynamicFields(fields);
     this.sortedFields.set(sorted);
+    this.selectSearchQueries.set({});
     this.form = this.fb.group(buildDynamicFormGroupConfig(this.fb, sorted));
     this.imagePreviews.set({});
     this.subscribeToFormChanges();
@@ -241,5 +336,29 @@ export class DynamicFormComponent implements OnDestroy {
     this.valueChange.emit(
       normalizeCheckboxFormValue(this.form.getRawValue(), this.sortedFields()),
     );
+  }
+
+  private createRandomPassword(): string {
+    const length = 8 + Math.floor(Math.random() * 5);
+    const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const lower = 'abcdefghijklmnopqrstuvwxyz';
+    const numbers = '0123456789';
+    const special = '!@#$%^&*';
+    const all = upper + lower + numbers + special;
+
+    const chars = [
+      upper[Math.floor(Math.random() * upper.length)],
+      lower[Math.floor(Math.random() * lower.length)],
+      numbers[Math.floor(Math.random() * numbers.length)],
+      special[Math.floor(Math.random() * special.length)],
+      ...Array.from({ length: length - 4 }, () => all[Math.floor(Math.random() * all.length)]),
+    ];
+
+    for (let i = chars.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [chars[i], chars[j]] = [chars[j], chars[i]];
+    }
+
+    return chars.join('');
   }
 }
