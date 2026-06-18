@@ -1,5 +1,8 @@
 import { FieldOption, FormField, OptionSource } from '../models/form-field.model';
-import { normalizeCheckboxFieldOptions } from './field-options.utils';
+import {
+  normalizeCheckboxFieldOptions,
+  normalizeStaticSelectFieldOptions,
+} from './field-options.utils';
 import { normalizeFieldTypeName } from './field-type.utils';
 import { readOptionSourceFromField } from './option-source.utils';
 
@@ -100,6 +103,33 @@ function readFieldTypeName(field: Partial<FormField> & Record<string, unknown>):
   );
 }
 
+function isStaticSelectField(
+  type: FormField['type'],
+  optionSource?: OptionSource
+): boolean {
+  return (
+    type === 'select' &&
+    optionSource?.type !== 'dynamic' &&
+    optionSource?.type !== 'api'
+  );
+}
+
+function resolveFieldOptions(
+  type: FormField['type'],
+  optionSource: OptionSource | undefined,
+  options: FormField['options'] | undefined
+): FormField['options'] {
+  if (type === 'checkbox') {
+    return normalizeCheckboxFieldOptions(options);
+  }
+
+  if (isStaticSelectField(type, optionSource)) {
+    return normalizeStaticSelectFieldOptions(options);
+  }
+
+  return cloneOptions(options);
+}
+
 export function createFieldFromTemplate(template: Partial<FormField>): FormField {
   return sanitizeField(template);
 }
@@ -127,10 +157,7 @@ export function sanitizeField(
     required: readRequired(field),
     isShow: readBooleanFlag(field, 'isShow', 'is_show', true),
     isReadonly: readBooleanFlag(field, 'isReadonly', 'is_readonly', false),
-    options:
-      type === 'checkbox'
-        ? normalizeCheckboxFieldOptions(field.options)
-        : cloneOptions(field.options),
+    options: resolveFieldOptions(type, optionSource, field.options),
     optionSource: cloneOptionSource(optionSource),
     value: field.value ?? field.defaultValue ?? null,
     defaultValue: field.defaultValue ?? null,
