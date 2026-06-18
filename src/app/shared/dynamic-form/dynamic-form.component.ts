@@ -188,14 +188,14 @@ export class DynamicFormComponent implements OnChanges, OnDestroy {
     const groupConfig: Record<string, unknown> = {};
     for (const field of this.sortedFields) {
       if (field.type === 'checkbox') {
-        const isSingle = (field.options?.length ?? 0) <= 1;
+        // const isSingle = (field.options?.length ?? 0) <= 1;
 
-        if (isSingle) {
-          groupConfig[field.name] = [
-            !!field.defaultValue || !!field.value,
-            this.getValidators(field),
-          ];
-        } else {
+        // if (isSingle) {
+        //   groupConfig[field.name] = [
+        //     !!field.defaultValue || !!field.value,
+        //     this.getValidators(field),
+        //   ];
+        // } else {
           const selectedValues = Array.isArray(field.value) ? field.value : [];
 
           const formArray = this.fb.array(
@@ -205,8 +205,8 @@ export class DynamicFormComponent implements OnChanges, OnDestroy {
             })
           );
 
-          groupConfig[field.name] = formArray;
-        }
+          groupConfig[field.name] = new FormControl(selectedValues);
+        // }
 
         continue;
       }
@@ -270,32 +270,59 @@ export class DynamicFormComponent implements OnChanges, OnDestroy {
     });
   }
 
+  isChecked(fieldName: string, value: any): boolean {
+    // console.log(`Checking if value is selected for field "${fieldName}":`, value);
+    // const control = this.form.get(fieldName);
+    // if (!control || !Array.isArray(control.value)) return false;
+
+    // return control.value.includes(value);
+    const control = this.form.get(fieldName);
+
+    console.log('Field:', fieldName);
+    console.log('Control Value:', control?.value);
+    console.log('Checking:', value);
+
+    if (!control || !Array.isArray(control.value)) {
+      return false;
+    }
+
+    return control.value.includes(value);
+  }
+
+  onMultiCheckboxChange(fieldName: string, value: any, event: Event): void {
+    const control = this.form.get(fieldName);
+
+    if (!control) return;
+
+    let current: any[] = control.value ?? [];
+
+    if ((event.target as HTMLInputElement).checked) {
+      current = [...current, value];
+    } else {
+      current = current.filter(v => v !== value);
+    }
+
+    control.setValue(current);
+    control.markAsDirty();
+    control.markAsTouched();
+
+    this.valueChange.emit(this.normalizeCheckboxValues(this.form.getRawValue()));
+  }
   private normalizeCheckboxValues(raw: any): any {
-    const result = { ...raw };
+    console.log('Normalizing checkbox values:', raw);
+    const result: any = { ...raw };
 
     for (const field of this.sortedFields) {
       if (field.type !== 'checkbox') continue;
 
       const value = raw[field.name];
 
-      // single checkbox already boolean
       if ((field.options?.length ?? 0) <= 1) {
         result[field.name] = !!value;
         continue;
       }
 
-      // multi checkbox → convert boolean array → selected values
-      const selected: string[] = [];
-
-      if (Array.isArray(value)) {
-        value.forEach((checked: boolean, i: number) => {
-          if (checked) {
-            selected.push(this.getOptionValue(field.options[i]).toString());
-          }
-        });
-      }
-
-      result[field.name] = selected;
+      result[field.name] = Array.isArray(value) ? value.filter(Boolean) : [];
     }
 
     return result;

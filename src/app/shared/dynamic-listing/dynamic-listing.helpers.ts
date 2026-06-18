@@ -141,7 +141,8 @@ export function formatListingCellValue(record: Record<string, unknown>, field: D
   }
 
   switch (field.type) {
-    case 'checkbox':{
+    case 'checkbox':
+      {
       const values = getCheckboxValues(record, field);
       return values.length ? values.join(', ') : '—';
     }
@@ -191,21 +192,34 @@ export function formatListingCellValue(record: Record<string, unknown>, field: D
       return [];
     }
 
-    return value
-      .map((item, index) => {
-        const isChecked = item === true || item === 'true';
-
-        if (!isChecked) {
-          return null;
-        }
-
-        const option = field.options?.[index];
+     return value
+      .map(item => {
+        const option = field.options?.find(opt =>
+          typeof opt === 'string'
+            ? opt === item
+            : opt.value === item
+        );
 
         return typeof option === 'string'
           ? option
-          : option?.label;
+          : option?.label ?? item;
       })
       .filter(Boolean) as string[];
+    // return value
+    //   .map((item, index) => {
+    //     const isChecked = item === true || item === 'true';
+
+    //     if (!isChecked) {
+    //       return null;
+    //     }
+
+    //     const option = field.options?.[index];
+
+    //     return typeof option === 'string'
+    //       ? option
+    //       : option?.label;
+    //   })
+    //   .filter(Boolean) as string[];
   }
 
 export function getListingImageSrc(record: Record<string, unknown>, field: DynamicField): string | null {
