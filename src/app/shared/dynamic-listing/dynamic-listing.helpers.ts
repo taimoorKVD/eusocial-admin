@@ -37,23 +37,85 @@ export function getVisibleColumns(
   storageKey: string,
   defaultVisibleCount = 4,
 ): DynamicField[] {
-  const sortedFields = sortListingFields(fields);
+  const { sortedFields, visibleFieldIds } = resolveInitialVisibleFieldIds(
+    fields,
+    storageKey,
+    defaultVisibleCount,
+  );
+  const visibleSet = new Set(visibleFieldIds);
 
-  if (!sortedFields.length) {
-    return [];
-  }
+  return sortedFields.filter((field) => visibleSet.has(field.id));
+}
 
+export interface ResolvedColumnVisibility {
+  sortedFields: DynamicField[];
+  visibleFieldIds: string[];
+  persistDefaults: boolean;
+}
+
+export function resolveInitialVisibleFieldIds(
+  fields: DynamicField[],
+  storageKey: string,
+  defaultVisibleCount = 4,
+): ResolvedColumnVisibility {
+  const sortedFields = sortListingFields(fields || []);
   const savedIds = loadVisibleColumnIds(storageKey);
   const validSavedIds = savedIds?.filter((id) =>
     sortedFields.some((field) => field.id === id),
   );
 
-  const visibleIds = validSavedIds?.length
-    ? validSavedIds
-    : getDefaultVisibleFieldIds(sortedFields, defaultVisibleCount);
+  if (validSavedIds?.length) {
+    return {
+      sortedFields,
+      visibleFieldIds: validSavedIds,
+      persistDefaults: false,
+    };
+  }
 
-  const visibleSet = new Set(visibleIds);
-  return sortedFields.filter((field) => visibleSet.has(field.id));
+  return {
+    sortedFields,
+    visibleFieldIds: getDefaultVisibleFieldIds(sortedFields, defaultVisibleCount),
+    persistDefaults: true,
+  };
+}
+
+export function getOrderedVisibleFieldIds(
+  sortedFields: DynamicField[],
+  visibleFieldIds: ReadonlySet<string>,
+): string[] {
+  return sortedFields
+    .filter((field) => visibleFieldIds.has(field.id))
+    .map((field) => field.id);
+}
+
+export function getListingBadgeClass(field: DynamicField): string {
+  switch (field.type) {
+    case 'checkbox':
+    case 'radio':
+      return 'border border-[#ea580c] hover:bg-orange-100';
+    default:
+      return 'bg-gray-50 text-gray-700 border border-gray-200';
+  }
+}
+
+export function splitCommaSeparatedValue(value: unknown): string[] {
+  if (!value) {
+    return [];
+  }
+
+  return value
+    .toString()
+    .split(',')
+    .map((item) => item.trim())
+    .filter((item) => item.length);
+}
+
+export function getRecordTrackId(
+  index: number,
+  record: Record<string, unknown>,
+): string | number {
+  const id = record['id'];
+  return typeof id === 'string' || typeof id === 'number' ? id : index;
 }
 
 export function loadVisibleColumnIds(storageKey: string): string[] | null {
@@ -185,41 +247,22 @@ export function formatListingCellValue(record: Record<string, unknown>, field: D
   }
 }
 
-  export function getCheckboxValues(record: Record<string, unknown>,field: DynamicField): string[] {
+  export function getCheckboxValues(record: Record<string, unknown>, field: DynamicField): string[] {
     const value = record[field.name] ?? record[snakeToCamel(field.name)];
 
     if (!Array.isArray(value) || !field.options?.length) {
       return [];
     }
 
-     return value
-      .map(item => {
-        const option = field.options?.find(opt =>
-          typeof opt === 'string'
-            ? opt === item
-            : opt.value === item
+    return value
+      .map((item) => {
+        const option = field.options?.find((opt) =>
+          typeof opt === 'string' ? opt === item : opt.value === item,
         );
 
-        return typeof option === 'string'
-          ? option
-          : option?.label ?? item;
+        return typeof option === 'string' ? option : (option?.label ?? item);
       })
       .filter(Boolean) as string[];
-    // return value
-    //   .map((item, index) => {
-    //     const isChecked = item === true || item === 'true';
-
-    //     if (!isChecked) {
-    //       return null;
-    //     }
-
-    //     const option = field.options?.[index];
-
-    //     return typeof option === 'string'
-    //       ? option
-    //       : option?.label;
-    //   })
-    //   .filter(Boolean) as string[];
   }
 
 export function getListingImageSrc(record: Record<string, unknown>, field: DynamicField): string | null {
