@@ -9,7 +9,7 @@ import { DynamicFormComponent } from '../../../../../shared/dynamic-form/dynamic
 import { DynamicFormValue } from '../../../../../interfaces/dynamic-field';
 import { forkJoin, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
-
+import { getOptionValue } from '../../../../../shared/dynamic-listing/dynamic-listing.helpers';
 @Component({
   selector: 'app-setup-user',
   standalone: false,
@@ -127,22 +127,19 @@ export class SetupUserComponent {
     this.userService.getUserById(Number(this.userId)).subscribe({
       next: (res: any) => {
         const user = res.data;
-        if(user.availabilityDays){
-          user.availability_days = res.data.availabilityDays.map(v => v === 'true');
-        }
-        if(user.plainPassword){
-          user.password = user.plainPassword;
+        if(user.plain_password){
+          user.password = user.plain_password;
         }
         const patchData: any = {};
         this.formFields.forEach(field => {
           if (field.type === 'checkbox') {
-            if ((field.options?.length ?? 0) > 1) {
-              patchData[field.name] =
-                Array.isArray(user[field.name])
-                  ? user[field.name]
-                  : [];
+            const value = user[field.name];
+            if (Array.isArray(value)) {
+              patchData[field.name] = value;
+            } else if (value) {
+              patchData[field.name] = [value];
             } else {
-              patchData[field.name] = !!user[field.name];
+              patchData[field.name] = [];
             }
           }
            else if(field.type === 'select') {
@@ -167,7 +164,6 @@ export class SetupUserComponent {
   }
 
   onFormSubmit(): void {
-     console.log('Submitting form with values:', this.dynamicForm.value);
     if (!this.dynamicForm) {
       return;
     }

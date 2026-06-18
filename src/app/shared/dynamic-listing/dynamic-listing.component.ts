@@ -149,6 +149,7 @@ export class DynamicListingComponent implements OnChanges {
   }
 
   splitValue(value: any): string[] {
+    console.log('Splitting value:', value);
     if (!value) return [];
 
     return value
