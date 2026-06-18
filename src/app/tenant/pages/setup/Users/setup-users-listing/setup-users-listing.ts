@@ -1,41 +1,53 @@
-import { Component, ChangeDetectorRef } from '@angular/core';
-import { TenantUserService } from '../../../../../services/tenant-user.service';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
+import { finalize } from 'rxjs';
+import { TenantUserService } from '../../../../../services/tenant-user.service';
 import { TenantSessionService } from '../../../../../services/tenant-session.service';
 import { environment } from '../../../../../../environments/environment.prod';
 import { FormStorageService } from '../../../../forms/services/form-storage.service';
 import { normalizeFieldOrder } from '../../../../form-builder/utils/form-field.factory';
-import { DynamicField } from '../../../../../interfaces/dynamic-field';
+import { DynamicField, DynamicFieldType } from '../../../../../interfaces/dynamic-field';
 import { GlobalFilterField } from '../../../../../shared/global-filter/global-filter';
 import {
   getVisibleColumns,
   mapVisibleColumnsToFilterFields,
   pruneFiltersByAllowedKeys,
 } from '../../../../../shared/dynamic-listing/dynamic-listing.helpers';
-import { DynamicFieldType } from '../../../../../interfaces/dynamic-field';
-import { catchError, forkJoin, map, of } from 'rxjs';
+import { loadDynamicDropdownOptions } from '../../../../../shared/dynamic-listing/dynamic-field-options.loader';
 
-const USERS_LISTING_FILTER_EXCLUDE_TYPES: DynamicFieldType[] = [
-  'image',
-  // 'checkbox',
-  // 'radio',
-];
+const USERS_LISTING_FILTER_EXCLUDE_TYPES: DynamicFieldType[] = ['image'];
 
 @Component({
   selector: 'app-setup-users-listing',
   standalone: false,
   templateUrl: './setup-users-listing.html',
   styleUrl: './setup-users-listing.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SetupUsersListing {
-  users: Record<string, unknown>[] = [];
-  formFields: DynamicField[] = [];
-  filterFields: GlobalFilterField[] = [];
-  loading = false;
-  slug: string = '';
-  page = 1;
-  lastPage = 1;
-  total = 0;
+  private readonly userService = inject(TenantUserService);
+  readonly session = inject(TenantSessionService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly formStorageService = inject(FormStorageService);
+  private readonly destroyRef = inject(DestroyRef);
+
+  readonly users = signal<Record<string, unknown>[]>([]);
+  readonly formFields = signal<DynamicField[]>([]);
+  readonly filterFields = signal<GlobalFilterField[]>([]);
+  readonly loading = signal(false);
+  readonly page = signal(1);
+  readonly lastPage = signal(1);
+  readonly total = signal(0);
+
   readonly columnStorageKey = 'tenant-users-listing-columns';
   readonly defaultVisibleCount = 4;
   readonly usersListingFilterOptions = {
@@ -43,141 +55,23 @@ export class SetupUsersListing {
     excludeNamePattern: /password/i,
     excludeLabelPattern: /password/i,
   };
-  private defaultLimit = environment.limit;
+
+  readonly hasFormFields = computed(() => this.formFields().length > 0);
+  readonly hasFilterFields = computed(() => this.filterFields().length > 0);
+  readonly showEmptyConfigMessage = computed(() => !this.loading() && !this.hasFormFields());
+  readonly showPagination = computed(() => !this.loading() && this.users().length > 0);
+
+  private readonly defaultLimit = environment.limit;
   private filters: Record<string, unknown> = {};
   private lastVisibleColumnIds: string[] = [];
 
-  constructor(
-    private userService: TenantUserService,
-    public session: TenantSessionService,
-    private route: ActivatedRoute,
-    private router: Router,
-    private formStorageService: FormStorageService,
-    private cdr: ChangeDetectorRef,
-  ) {}
-
   ngOnInit(): void {
-    this.slug = this.route.parent?.parent?.snapshot.paramMap.get('slug') || '';
     this.loadFormFields();
-    this.allUsers(this.page);
-  }
-
-  loadFormFields(): void {
-    this.formStorageService.loadForm('users').subscribe({
-      next: (res) => {
-        if (!res) {
-          this.formFields = [];
-          return;
-        }
-
-        this.formFields = normalizeFieldOrder(
-          (res.fields || []).filter((field) => field.label !== 'Role'),
-        ) as DynamicField[];
-
-        const visibleColumns = getVisibleColumns(
-          this.formFields,
-          this.columnStorageKey,
-          this.defaultVisibleCount,
-        );
-        this.applyVisibleColumns(visibleColumns);
-      },
-      error: () => {
-        this.formFields = [];
-        this.filterFields = [];
-        this.cdr.markForCheck();
-      },
-    });
+    this.loadUsers(this.page());
   }
 
   onVisibleColumnsChange(columns: DynamicField[]): void {
     this.applyVisibleColumns(columns);
-  }
-
-  private applyVisibleColumns(columns: DynamicField[]): void {
-    const columnIds = columns.map((column) => column.id);
-    const columnsChanged =
-      columnIds.length !== this.lastVisibleColumnIds.length ||
-      columnIds.some((id, index) => id !== this.lastVisibleColumnIds[index]);
-
-    this.lastVisibleColumnIds = columnIds;
-    this.syncFilterFieldsFromVisibleColumns(columns);
-
-    if (!columnsChanged) {
-      this.cdr.markForCheck();
-      return;
-    }
-
-    this.loadDynamicDropdownOptions(columns, () => {
-      this.syncFilterFieldsFromVisibleColumns(columns);
-      this.cdr.markForCheck();
-    });
-  }
-
-  private loadDynamicDropdownOptions(
-    fields: DynamicField[],
-    onComplete?: () => void,
-  ): void {
-    const dropdownRequests = fields
-      .filter(
-        (field) =>
-          field.type === 'select' &&
-          (field.optionSource?.type === 'api' ||  field.optionSource?.type === 'dynamic') &&
-          field.optionSource?.endpoint,
-      )
-      .map((field) =>
-        this.formStorageService.getEndpointApi<any>(field.optionSource!.endpoint!).pipe(
-          map((response) => ({ field, response })),
-          catchError(() => of({ field, response: null })),
-        ),
-      );
-
-    if (!dropdownRequests.length) {
-      onComplete?.();
-      return;
-    }
-
-    forkJoin(dropdownRequests).subscribe((results) => {
-      results.forEach(({ field, response }) => {
-        if (!response) {
-          return;
-        }
-
-        const dataPath = field.optionSource?.response?.dataPath ?? 'data';
-        const labelKey = field.optionSource?.response?.labelKey ?? 'label';
-        const valueKey = field.optionSource?.response?.valueKey ?? 'value';
-        const data = response?.[dataPath] || [];
-
-        field.options = data.map((item: Record<string, unknown>) => ({
-          name: item[labelKey] as string,
-          label: item[labelKey],
-          value: item[valueKey],
-          id: item[valueKey],
-        }));
-      });
-
-      onComplete?.();
-    });
-  }
-
-  private syncFilterFieldsFromVisibleColumns(columns: DynamicField[]): void {
-    const nextFilterFields = mapVisibleColumnsToFilterFields(
-      columns,
-      this.usersListingFilterOptions,
-    );
-    const allowedKeys = new Set(nextFilterFields.map((field) => field.key));
-    const previousFilterKeys = Object.keys(this.filters);
-    const prunedFilters = pruneFiltersByAllowedKeys(this.filters, allowedKeys);
-    const filtersChanged = previousFilterKeys.length !== Object.keys(prunedFilters).length;
-
-    this.filterFields = nextFilterFields;
-    this.filters = prunedFilters;
-
-    if (filtersChanged) {
-      this.page = 1;
-      this.allUsers(this.page);
-    }
-
-    this.cdr.markForCheck();
   }
 
   goToCreate(): void {
@@ -193,69 +87,149 @@ export class SetupUsersListing {
     this.router.navigate(['edit', id], { relativeTo: this.route });
   }
 
-  allUsers(page: number = 1): void {
-    this.loading = true;
-
-    const allowedKeys = new Set(this.filterFields.map((field) => field.key));
-    const activeFilters = pruneFiltersByAllowedKeys(this.filters, allowedKeys);
-
-    const apiCall = Object.keys(activeFilters).length
-      ? this.userService.searchUsers(activeFilters, this.defaultLimit)
-      : this.userService.getUsers(page, this.defaultLimit);
-
-    apiCall.subscribe({
-      next: (res) => {
-        this.users = res.data || [];
-        this.total = Number(res?.meta?.total || 0);
-        this.page = Number(res?.meta?.page || 1);
-        this.lastPage = Number(res?.meta?.lastPage || 1);
-        this.loading = false;
-      },
-      error: () => {
-        this.users = [];
-        this.total = 0;
-        this.loading = false;
-      },
-    });
-  }
-
   deleteUser(record: Record<string, unknown>): void {
     const id = Number(record['id']);
     if (!id || !confirm('Are you sure you want to delete this user?')) {
       return;
     }
 
-    this.userService.deleteUser(id).subscribe(() => {
-      if (this.users.length === 1 && this.page > 1) {
-        this.allUsers(this.page - 1);
-      } else {
-        this.allUsers(this.page);
-      }
-    });
+    this.userService
+      .deleteUser(id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        if (this.users().length === 1 && this.page() > 1) {
+          this.loadUsers(this.page() - 1);
+        } else {
+          this.loadUsers(this.page());
+        }
+      });
   }
 
   prevPage(): void {
-    if (this.page > 1) {
-      this.allUsers(this.page - 1);
+    if (this.page() > 1) {
+      this.loadUsers(this.page() - 1);
     }
   }
 
   nextPage(): void {
-    if (this.page < this.lastPage) {
-      this.allUsers(this.page + 1);
+    if (this.page() < this.lastPage()) {
+      this.loadUsers(this.page() + 1);
     }
   }
 
   onFilterSearch(filters: Record<string, unknown>): void {
-    const allowedKeys = new Set(this.filterFields.map((field) => field.key));
+    const allowedKeys = this.getAllowedFilterKeys();
     this.filters = pruneFiltersByAllowedKeys(filters, allowedKeys);
-    this.page = 1;
-    this.allUsers(this.page);
+    this.page.set(1);
+    this.loadUsers(this.page());
   }
 
   onFilterClear(): void {
     this.filters = {};
-    this.page = 1;
-    this.allUsers(this.page);
+    this.page.set(1);
+    this.loadUsers(this.page());
+  }
+
+  private loadFormFields(): void {
+    this.formStorageService
+      .loadForm('users')
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res) => {
+          if (!res) {
+            this.formFields.set([]);
+            return;
+          }
+
+          const fields = normalizeFieldOrder(
+            (res.fields || []).filter((field) => field.label !== 'Role'),
+          ) as DynamicField[];
+
+          this.formFields.set(fields);
+
+          const visibleColumns = getVisibleColumns(
+            fields,
+            this.columnStorageKey,
+            this.defaultVisibleCount,
+          );
+          this.applyVisibleColumns(visibleColumns);
+        },
+        error: () => {
+          this.formFields.set([]);
+          this.filterFields.set([]);
+        },
+      });
+  }
+
+  private applyVisibleColumns(columns: DynamicField[]): void {
+    const columnIds = columns.map((column) => column.id);
+    const columnsChanged =
+      columnIds.length !== this.lastVisibleColumnIds.length ||
+      columnIds.some((id, index) => id !== this.lastVisibleColumnIds[index]);
+
+    this.lastVisibleColumnIds = columnIds;
+    this.syncFilterFieldsFromVisibleColumns(columns);
+
+    if (!columnsChanged) {
+      return;
+    }
+
+    loadDynamicDropdownOptions(this.formStorageService, columns)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.syncFilterFieldsFromVisibleColumns(columns);
+      });
+  }
+
+  private syncFilterFieldsFromVisibleColumns(columns: DynamicField[]): void {
+    const nextFilterFields = mapVisibleColumnsToFilterFields(
+      columns,
+      this.usersListingFilterOptions,
+    );
+    const allowedKeys = new Set(nextFilterFields.map((field) => field.key));
+    const previousFilterKeys = Object.keys(this.filters);
+    const prunedFilters = pruneFiltersByAllowedKeys(this.filters, allowedKeys);
+    const filtersChanged = previousFilterKeys.length !== Object.keys(prunedFilters).length;
+
+    this.filterFields.set(nextFilterFields);
+    this.filters = prunedFilters;
+
+    if (filtersChanged) {
+      this.page.set(1);
+      this.loadUsers(this.page());
+    }
+  }
+
+  private loadUsers(page: number): void {
+    this.loading.set(true);
+
+    const allowedKeys = this.getAllowedFilterKeys();
+    const activeFilters = pruneFiltersByAllowedKeys(this.filters, allowedKeys);
+
+    const apiCall = Object.keys(activeFilters).length
+      ? this.userService.searchUsers(activeFilters, this.defaultLimit)
+      : this.userService.getUsers(page, this.defaultLimit);
+
+    apiCall
+      .pipe(
+        finalize(() => this.loading.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (res) => {
+          this.users.set(res.data || []);
+          this.total.set(Number(res?.meta?.total || 0));
+          this.page.set(Number(res?.meta?.page || 1));
+          this.lastPage.set(Number(res?.meta?.lastPage || 1));
+        },
+        error: () => {
+          this.users.set([]);
+          this.total.set(0);
+        },
+      });
+  }
+
+  private getAllowedFilterKeys(): Set<string> {
+    return new Set(this.filterFields().map((field) => field.key));
   }
 }

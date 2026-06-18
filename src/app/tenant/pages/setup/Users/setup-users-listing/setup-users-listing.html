@@ -1,6 +1,6 @@
-<ng-container *ngIf="loading">
+@if (loading()) {
   <app-eu-loader></app-eu-loader>
-</ng-container>
+}
 
 <div class="p-4">
 
@@ -10,56 +10,60 @@
     (buttonClick)="goToCreate()">
   </app-top-header>
 
-  <app-global-filter
-    *ngIf="filterFields.length"
-    [fields]="filterFields"
-    (search)="onFilterSearch($event)"
-    (clear)="onFilterClear()">
-  </app-global-filter>
+  @if (hasFilterFields()) {
+    <app-global-filter
+      [fields]="filterFields()"
+      (search)="onFilterSearch($event)"
+      (clear)="onFilterClear()">
+    </app-global-filter>
+  }
 
-  <div class="mt-5" *ngIf="formFields.length">
-    <app-dynamic-listing
-      [fields]="formFields"
-      [records]="users"
-      [storageKey]="columnStorageKey"
-      [defaultVisibleCount]="defaultVisibleCount"
-      [showActions]="true"
-      emptyMessage="No users found"
-      (visibleColumnsChange)="onVisibleColumnsChange($event)"
-      (editRecord)="goToEdit($event)"
-      (deleteRecord)="deleteUser($event)"
-    ></app-dynamic-listing>
-  </div>
-
-  <p *ngIf="!loading && !formFields.length" class="text-sm text-gray-500 font-ibm mt-5">
-    No form fields configured for users listing.
-  </p>
-
-  <div
-    *ngIf="!loading && users.length > 0"
-    class="flex justify-between items-center px-4 py-3 border border-gray-200 border-t-0 rounded-b bg-white"
-  >
-    <span class="text-sm text-gray-500 font-ibm">
-      Page {{ page }} of {{ lastPage }}
-    </span>
-
-    <div class="flex items-center gap-2">
-      <button
-        class="px-3 py-1.5 rounded-lg text-sm font-medium border border-[#ea580c]/30 bg-[#ea580c]/10 text-[#ea580c] hover:bg-[#ea580c]/20 transition disabled:opacity-40 disabled:cursor-not-allowed font-ibm"
-        [disabled]="page === 1"
-        (click)="prevPage()"
-      >
-        ← Prev
-      </button>
-
-      <button
-        class="px-3 py-1.5 rounded-lg text-sm font-medium border border-[#ea580c]/30 bg-[#ea580c]/10 text-[#ea580c] hover:bg-[#ea580c]/20 transition disabled:opacity-40 disabled:cursor-not-allowed font-ibm"
-        [disabled]="page === lastPage"
-        (click)="nextPage()"
-      >
-        Next →
-      </button>
+  @if (hasFormFields()) {
+    <div class="mt-5">
+      <app-dynamic-listing
+        [fields]="formFields()"
+        [records]="users()"
+        [storageKey]="columnStorageKey"
+        [defaultVisibleCount]="defaultVisibleCount"
+        [showActions]="true"
+        emptyMessage="No users found"
+        (visibleColumnsChange)="onVisibleColumnsChange($event)"
+        (editRecord)="goToEdit($event)"
+        (deleteRecord)="deleteUser($event)"
+      ></app-dynamic-listing>
     </div>
-  </div>
+  }
+
+  @if (showEmptyConfigMessage()) {
+    <p class="text-sm text-gray-500 font-ibm mt-5">
+      No form fields configured for users listing.
+    </p>
+  }
+
+  @if (showPagination()) {
+    <div class="flex justify-between items-center px-4 py-3 border border-gray-200 border-t-0 rounded-b bg-white">
+      <span class="text-sm text-gray-500 font-ibm">
+        Page {{ page() }} of {{ lastPage() }}
+      </span>
+
+      <div class="flex items-center gap-2">
+        <button
+          class="px-3 py-1.5 rounded-lg text-sm font-medium border border-[#ea580c]/30 bg-[#ea580c]/10 text-[#ea580c] hover:bg-[#ea580c]/20 transition disabled:opacity-40 disabled:cursor-not-allowed font-ibm"
+          [disabled]="page() === 1"
+          (click)="prevPage()"
+        >
+          ← Prev
+        </button>
+
+        <button
+          class="px-3 py-1.5 rounded-lg text-sm font-medium border border-[#ea580c]/30 bg-[#ea580c]/10 text-[#ea580c] hover:bg-[#ea580c]/20 transition disabled:opacity-40 disabled:cursor-not-allowed font-ibm"
+          [disabled]="page() === lastPage()"
+          (click)="nextPage()"
+        >
+          Next →
+        </button>
+      </div>
+    </div>
+  }
 
 </div>

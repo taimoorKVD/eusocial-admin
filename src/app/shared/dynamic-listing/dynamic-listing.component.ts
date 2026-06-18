@@ -1,21 +1,22 @@
 import {
   ChangeDetectionStrategy,
-  ChangeDetectorRef,
   Component,
-  EventEmitter,
-  Input,
-  OnChanges,
-  Output,
-  SimpleChanges,
+  computed,
+  effect,
+  input,
+  output,
+  signal,
 } from '@angular/core';
 import { DynamicField } from '../../interfaces/dynamic-field';
 import {
   formatListingCellValue,
-  getDefaultVisibleFieldIds,
+  getListingBadgeClass,
   getListingImageSrc,
-  loadVisibleColumnIds,
+  getOrderedVisibleFieldIds,
+  getRecordTrackId,
+  resolveInitialVisibleFieldIds,
   saveVisibleColumnIds,
-  sortListingFields,
+  splitCommaSeparatedValue,
 } from './dynamic-listing.helpers';
 
 @Component({
@@ -25,54 +26,59 @@ import {
   styleUrl: './dynamic-listing.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class DynamicListingComponent implements OnChanges {
+export class DynamicListingComponent {
   readonly columnDropdownGroup = 'dynamic-listing';
   readonly columnDropdownId = 'column-selector';
+  readonly getRecordTrackId = getRecordTrackId;
+  readonly getListingBadgeClass = getListingBadgeClass;
+  readonly splitCommaSeparatedValue = splitCommaSeparatedValue;
 
-  @Input({ required: true }) fields: DynamicField[] = [];
-  @Input({ required: true }) records: Record<string, unknown>[] = [];
-  @Input() storageKey = '';
-  @Input() defaultVisibleCount = 4;
-  @Input() showActions = true;
-  @Input() emptyMessage = 'No records found';
+  readonly fields = input.required<DynamicField[]>();
+  readonly records = input.required<Record<string, unknown>[]>();
+  readonly storageKey = input('');
+  readonly defaultVisibleCount = input(4);
+  readonly showActions = input(true);
+  readonly emptyMessage = input('No records found');
 
-  @Output() editRecord = new EventEmitter<Record<string, unknown>>();
-  @Output() deleteRecord = new EventEmitter<Record<string, unknown>>();
-  @Output() visibleColumnsChange = new EventEmitter<DynamicField[]>();
+  readonly editRecord = output<Record<string, unknown>>();
+  readonly deleteRecord = output<Record<string, unknown>>();
+  readonly visibleColumnsChange = output<DynamicField[]>();
 
-  sortedFields: DynamicField[] = [];
-  visibleFieldIds = new Set<string>();
+  readonly sortedFields = signal<DynamicField[]>([]);
+  readonly visibleFieldIds = signal<Set<string>>(new Set());
 
-  constructor(private cdr: ChangeDetectorRef) {}
+  readonly visibleColumns = computed(() => {
+    const visibleIds = this.visibleFieldIds();
+    return this.sortedFields().filter((field) => visibleIds.has(field.id));
+  });
 
-  ngOnChanges(changes: SimpleChanges): void {
-    if (changes['fields']) {
-      this.initializeColumns();
-    }
-  }
+  readonly hasRecords = computed(() => this.records().length > 0);
 
-  get visibleColumns(): DynamicField[] {
-    return this.sortedFields.filter((field) => this.visibleFieldIds.has(field.id));
-  }
-
-  get hasRecords(): boolean {
-    return this.records.length > 0;
+  constructor() {
+    effect(() => {
+      this.initializeColumns(this.fields());
+    });
   }
 
   isColumnVisible(fieldId: string): boolean {
-    return this.visibleFieldIds.has(fieldId);
+    return this.visibleFieldIds().has(fieldId);
   }
 
   onColumnToggle(field: DynamicField, checked: boolean): void {
-    if (checked) {
-      this.visibleFieldIds.add(field.id);
-    } else if (this.visibleFieldIds.size > 1) {
-      this.visibleFieldIds.delete(field.id);
-    }
+    this.visibleFieldIds.update((current) => {
+      const next = new Set(current);
+
+      if (checked) {
+        next.add(field.id);
+      } else if (next.size > 1) {
+        next.delete(field.id);
+      }
+
+      return next;
+    });
 
     this.persistColumnPreferences();
     this.emitVisibleColumnsChange();
-    this.cdr.markForCheck();
   }
 
   getCellValue(record: Record<string, unknown>, field: DynamicField): string {
@@ -83,15 +89,6 @@ export class DynamicListingComponent implements OnChanges {
     return getListingImageSrc(record, field);
   }
 
-  trackByFieldId(_index: number, field: DynamicField): string {
-    return field.id;
-  }
-
-  trackByRecordId(index: number, record: Record<string, unknown>): string | number {
-    const id = record['id'];
-    return typeof id === 'string' || typeof id === 'number' ? id : index;
-  }
-
   onEdit(record: Record<string, unknown>): void {
     this.editRecord.emit(record);
   }
@@ -100,61 +97,33 @@ export class DynamicListingComponent implements OnChanges {
     this.deleteRecord.emit(record);
   }
 
-  private initializeColumns(): void {
-    this.sortedFields = sortListingFields(this.fields || []);
-
-    const savedIds = loadVisibleColumnIds(this.storageKey);
-    const validSavedIds = savedIds?.filter((id) =>
-      this.sortedFields.some((field) => field.id === id),
+  private initializeColumns(fields: DynamicField[]): void {
+    const { sortedFields, visibleFieldIds, persistDefaults } = resolveInitialVisibleFieldIds(
+      fields,
+      this.storageKey(),
+      this.defaultVisibleCount(),
     );
 
-    if (validSavedIds?.length) {
-      this.visibleFieldIds = new Set(validSavedIds);
-    } else {
-      this.visibleFieldIds = new Set(
-        getDefaultVisibleFieldIds(this.sortedFields, this.defaultVisibleCount),
-      );
+    this.sortedFields.set(sortedFields);
+    this.visibleFieldIds.set(new Set(visibleFieldIds));
+
+    if (persistDefaults) {
       this.persistColumnPreferences();
     }
 
     this.emitVisibleColumnsChange();
-    this.cdr.markForCheck();
   }
 
   private emitVisibleColumnsChange(): void {
     queueMicrotask(() => {
-      this.visibleColumnsChange.emit(this.visibleColumns);
+      this.visibleColumnsChange.emit(this.visibleColumns());
     });
   }
 
   private persistColumnPreferences(): void {
-    const orderedVisibleIds = this.sortedFields
-      .filter((field) => this.visibleFieldIds.has(field.id))
-      .map((field) => field.id);
-
-    saveVisibleColumnIds(this.storageKey, orderedVisibleIds);
-  }
-
-  getFieldClass(field: any): string {
-     switch (field.type) {
-    case 'checkbox':
-      return 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100';
-
-    case 'radio':
-      return 'bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100';
-
-    default:
-      return 'bg-gray-50 text-gray-700 border border-gray-200';
-  }
-  }
-
-  splitValue(value: any): string[] {
-    if (!value) return [];
-
-    return value
-      .toString()
-      .split(',')
-      .map((item: string) => item.trim())
-      .filter((item: string) => item.length);
+    saveVisibleColumnIds(
+      this.storageKey(),
+      getOrderedVisibleFieldIds(this.sortedFields(), this.visibleFieldIds()),
+    );
   }
 }
