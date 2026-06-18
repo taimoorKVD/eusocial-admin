@@ -86,6 +86,28 @@
     appearance: none;
   }
 
+  .global-filter__control {
+    min-height: 2.625rem;
+  }
+
+  .generate-password-link {
+    align-self: flex-start;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #ea580c;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+
+    &:hover {
+      color: #c2410c;
+    }
+  }
+
   .option-group {
     display: flex;
     gap: 0.65rem;
