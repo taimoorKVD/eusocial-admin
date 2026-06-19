@@ -123,8 +123,6 @@ body {
   transition: all 0.2s ease;
 }
 
-
-
 .cdk-drag-preview {
   position: fixed !important;
   pointer-events: none;
@@ -138,3 +136,53 @@ body {
 .cdk-drag {
   position: relative !important;
 }
+
+
+.btn {
+  min-width: 6.5rem;
+  padding: 0.625rem 1.5rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-family: inherit;
+  line-height: 1.25;
+  cursor: pointer;
+  transition: opacity 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &--delete {
+    border: 1px solid #000000;
+    background: #ffffff;
+    color: #000000;
+
+    &:hover:not(:disabled) {
+      background: #f9fafb;
+    }
+  }
+
+  &--cancel {
+    border: 1px solid #f39200;
+    background: #ffffff;
+    color: #f39200;
+
+    &:hover:not(:disabled) {
+      background: #fff7ed;
+    }
+  }
+
+  &--save {
+    border: none;
+    background: #c5d92d;
+    color: #000000;
+
+    &:hover:not(:disabled) {
+      background: #b8cc28;
+    }
+  }
+}
+
+
