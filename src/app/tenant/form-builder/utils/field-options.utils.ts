@@ -68,6 +68,38 @@ export function normalizeFieldOptions(
     .filter((option): option is FieldOption => option !== null);
 }
 
+export function normalizeStaticSelectFieldOptions(
+  options: unknown[] | undefined | null
+): FieldOption[] {
+  if (!Array.isArray(options)) {
+    return [];
+  }
+
+  const labels: string[] = [];
+
+  for (const option of options) {
+    let label: string | null = null;
+
+    if (typeof option === 'string') {
+      label = option.trim() || null;
+    } else {
+      const normalized = normalizeFieldOption(option);
+      label = normalized?.label?.trim() || null;
+    }
+
+    if (label) {
+      labels.push(label);
+    }
+  }
+
+  return labels.map((label, index) => ({
+    id: index + 1,
+    label,
+    value: slugifyOptionValue(label) || `option_${index + 1}`,
+    sortOrder: index,
+  }));
+}
+
 export function normalizeCheckboxFieldOptions(
   options: unknown[] | undefined | null
 ): FieldOption[] {

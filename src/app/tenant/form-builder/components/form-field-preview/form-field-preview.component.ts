@@ -22,6 +22,7 @@ import {
 import {
   normalizeFieldOptions,
   normalizeCheckboxFieldOptions,
+  normalizeStaticSelectFieldOptions,
 } from '../../utils/field-options.utils';
 import { resolveFieldOptionSource } from '../../utils/option-source.utils';
 
@@ -147,8 +148,20 @@ export class FormFieldPreviewComponent implements OnChanges {
   }
 
   private normalizeStaticOptions(options: Array<string | FieldOption> | undefined): FieldOption[] {
-    return this.isCheckboxField
-      ? normalizeCheckboxFieldOptions(options)
-      : normalizeFieldOptions(options);
+    if (this.isCheckboxField) {
+      return normalizeCheckboxFieldOptions(options);
+    }
+
+    if (this.isSelectField) {
+      if (this.field.optionSource?.type === 'dynamic') {
+        return normalizeFieldOptions(options);
+      }
+
+      if (this.field.optionSource?.type !== 'api') {
+        return normalizeStaticSelectFieldOptions(options);
+      }
+    }
+
+    return normalizeFieldOptions(options);
   }
 }
