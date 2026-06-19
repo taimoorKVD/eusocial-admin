@@ -1,0 +1,99 @@
+.tenant-sidebar {
+  background: #000000;
+  border-right: none;
+  box-shadow: none;
+
+  &__logo {
+    padding: 1.25rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  &__menu {
+    padding: 0.75rem 0;
+  }
+
+  &__link,
+  &__sublink,
+  &__group-toggle {
+    color: #ffffff;
+    font-family: inherit;
+    font-size: 0.875rem;
+    transition: background-color 0.15s ease, color 0.15s ease;
+  }
+
+  &__link,
+  &__group-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: none;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    svg {
+      color: #ffffff;
+      stroke: #ffffff;
+    }
+  }
+
+  &__link--active {
+    color: #f39200;
+    font-weight: 600;
+  }
+
+  &__group-toggle {
+    justify-content: flex-start;
+
+    .tenant-sidebar__chevron {
+      color: #ffffff;
+      font-size: 0.65rem;
+      width: 0.75rem;
+      flex-shrink: 0;
+    }
+  }
+
+  &__submenu {
+    margin-top: 0.25rem;
+  }
+
+  &__sublink {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.7rem 1rem 0.7rem 2.5rem;
+    text-decoration: none;
+    font-size: 0.8125rem;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    svg {
+      color: #ffffff;
+      stroke: #ffffff;
+    }
+  }
+
+  &__sublink--active {
+    background: #ffffff;
+    color: #f39200 !important;
+    font-weight: 600;
+    border-radius: 0;
+
+    svg {
+      color: #f39200;
+      stroke: #f39200;
+    }
+  }
+
+  &__close-mobile {
+    color: #ffffff;
+  }
+}
