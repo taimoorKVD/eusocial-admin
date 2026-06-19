@@ -1,17 +1,31 @@
 .dynamic-listing {
-  .column-selector {
-    animation: fadeIn 0.15s ease-out;
+  .column-modal {
+    animation: columnModalIn 0.2s ease-out;
   }
 }
 
-@keyframes fadeIn {
+.column-modal-backdrop {
+  animation: columnBackdropIn 0.15s ease-out;
+}
+
+@keyframes columnModalIn {
   from {
     opacity: 0;
-    transform: translateY(-4px);
+    transform: scale(0.96) translateY(8px);
   }
 
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes columnBackdropIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
   }
 }

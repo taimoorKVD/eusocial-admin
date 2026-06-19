@@ -27,11 +27,11 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DynamicListingComponent {
-  readonly columnDropdownGroup = 'dynamic-listing';
-  readonly columnDropdownId = 'column-selector';
   readonly getRecordTrackId = getRecordTrackId;
   readonly getListingBadgeClass = getListingBadgeClass;
   readonly splitCommaSeparatedValue = splitCommaSeparatedValue;
+
+  readonly columnModalOpen = signal(false);
 
   readonly fields = input.required<DynamicField[]>();
   readonly records = input.required<Record<string, unknown>[]>();
@@ -62,6 +62,14 @@ export class DynamicListingComponent {
 
   isColumnVisible(fieldId: string): boolean {
     return this.visibleFieldIds().has(fieldId);
+  }
+
+  openColumnModal(): void {
+    this.columnModalOpen.set(true);
+  }
+
+  closeColumnModal(): void {
+    this.columnModalOpen.set(false);
   }
 
   onColumnToggle(field: DynamicField, checked: boolean): void {
