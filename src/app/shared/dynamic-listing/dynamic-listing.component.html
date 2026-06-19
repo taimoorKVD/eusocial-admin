@@ -51,17 +51,48 @@
           </button>
         </div>
 
-        <div class="column-modal__body overflow-y-auto py-2 flex-1 min-h-0">
-          @for (field of sortedFields(); track field.id) {
-            <label class="flex items-center gap-3 px-5 py-2.5 hover:bg-gray-50 cursor-pointer">
-              <input
-                type="checkbox"
-                class="h-4 w-4 rounded border-gray-300 text-[#ea580c] focus:ring-[#ea580c]"
-                [checked]="isColumnVisible(field.id)"
-                (change)="onColumnToggle(field, $any($event.target).checked)"
+        <div class="px-5 py-3 border-b border-gray-100">
+          <div class="relative">
+            <svg
+              class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
               />
-              <span class="text-sm text-gray-700 font-ibm">{{ field.label }}</span>
-            </label>
+            </svg>
+            <input
+              type="text"
+              class="w-full pl-10 pr-3 py-2 rounded-md border border-gray-200 text-sm text-gray-700 font-ibm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#ea580c]/30 focus:border-[#ea580c]"
+              [value]="columnModalSearch()"
+              (input)="onColumnModalSearch($event)"
+              placeholder="Search columns"
+            />
+          </div>
+        </div>
+
+        <div class="column-modal__body overflow-y-auto py-2 flex-1 min-h-0">
+          @if (filteredModalColumns().length === 0) {
+            <div class="px-5 py-4 text-sm text-gray-500 font-ibm">
+              No columns found
+            </div>
+          } @else {
+            @for (field of filteredModalColumns(); track field.id) {
+              <label class="flex items-center gap-3 px-5 py-2.5 hover:bg-gray-50 cursor-pointer">
+                <input
+                  type="checkbox"
+                  class="h-4 w-4 rounded border-gray-300 text-[#ea580c] focus:ring-[#ea580c]"
+                  [checked]="isColumnVisible(field.id)"
+                  (change)="onColumnToggle(field, $any($event.target).checked)"
+                />
+                <span class="text-sm text-gray-700 font-ibm">{{ field.label }}</span>
+              </label>
+            }
           }
         </div>
 

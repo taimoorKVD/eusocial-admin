@@ -32,6 +32,18 @@ export class DynamicListingComponent {
   readonly splitCommaSeparatedValue = splitCommaSeparatedValue;
 
   readonly columnModalOpen = signal(false);
+  readonly columnModalSearch = signal('');
+
+  readonly filteredModalColumns = computed(() => {
+    const query = this.columnModalSearch().trim().toLowerCase();
+    const fields = this.sortedFields();
+
+    if (!query) {
+      return fields;
+    }
+
+    return fields.filter((field) => field.label.toLowerCase().includes(query));
+  });
 
   readonly fields = input.required<DynamicField[]>();
   readonly records = input.required<Record<string, unknown>[]>();
@@ -70,6 +82,11 @@ export class DynamicListingComponent {
 
   closeColumnModal(): void {
     this.columnModalOpen.set(false);
+    this.columnModalSearch.set('');
+  }
+
+  onColumnModalSearch(event: Event): void {
+    this.columnModalSearch.set((event.target as HTMLInputElement).value);
   }
 
   onColumnToggle(field: DynamicField, checked: boolean): void {
