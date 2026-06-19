@@ -14,7 +14,12 @@ export function normalizeStaticSelectOptions(fields: DynamicField[]): void {
               value: option,
               id: option,
             }
-          : option,
+          : {
+            name: option.label,
+            label: option.label,
+            value: option.value,
+            id: option.value,
+          }
       );
     }
   }
