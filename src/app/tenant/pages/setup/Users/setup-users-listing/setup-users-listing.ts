@@ -22,6 +22,7 @@ import {
   pruneFiltersByAllowedKeys,
 } from '../../../../../shared/dynamic-listing/dynamic-listing.helpers';
 import { loadDynamicDropdownOptions } from '../../../../../shared/dynamic-listing/dynamic-field-options.loader';
+import { ToastrService } from 'ngx-toastr';
 
 const USERS_LISTING_FILTER_EXCLUDE_TYPES: DynamicFieldType[] = ['image'];
 
@@ -34,6 +35,7 @@ const USERS_LISTING_FILTER_EXCLUDE_TYPES: DynamicFieldType[] = ['image'];
 })
 export class SetupUsersListing {
   private readonly userService = inject(TenantUserService);
+  private readonly toastr = inject(ToastrService);
   readonly session = inject(TenantSessionService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -60,8 +62,14 @@ export class SetupUsersListing {
   readonly hasFilterFields = computed(() => this.filterFields().length > 0);
   readonly showEmptyConfigMessage = computed(() => !this.loading() && !this.hasFormFields());
   readonly showPagination = computed(() => !this.loading() && this.users().length > 0);
+  readonly showDeleteConfirmModal = signal(false);
+
+  readonly deleteConfirmTitle = 'Delete User';
+  readonly deleteConfirmDescription =
+    'Please confirm that you want to delete this user. All related information will be permanently removed.';
 
   private readonly defaultLimit = environment.limit;
+  private pendingDeleteId: number | null = null;
   private filters: Record<string, unknown> = {};
   private lastVisibleColumnIds: string[] = [];
 
@@ -89,20 +97,43 @@ export class SetupUsersListing {
 
   deleteUser(record: Record<string, unknown>): void {
     const id = Number(record['id']);
-    if (!id || !confirm('Are you sure you want to delete this user?')) {
+    if (!id) {
+      return;
+    }
+
+    this.pendingDeleteId = id;
+    this.showDeleteConfirmModal.set(true);
+  }
+
+  onConfirmDeleteUser(): void {
+    const id = this.pendingDeleteId;
+    if (!id) {
       return;
     }
 
     this.userService
       .deleteUser(id)
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => {
-        if (this.users().length === 1 && this.page() > 1) {
-          this.loadUsers(this.page() - 1);
-        } else {
-          this.loadUsers(this.page());
-        }
+      .subscribe({
+        next: () => {
+          this.toastr.success('User deleted successfully');
+          if (this.users().length === 1 && this.page() > 1) {
+            this.loadUsers(this.page() - 1);
+          } else {
+            this.loadUsers(this.page());
+          }
+        },
+        error: (err) => {
+          this.toastr.error(err?.error?.message || 'Failed to delete user');
+        },
       });
+
+    this.closeDeleteConfirmModal();
+  }
+
+  closeDeleteConfirmModal(): void {
+    this.showDeleteConfirmModal.set(false);
+    this.pendingDeleteId = null;
   }
 
   prevPage(): void {

@@ -1,3 +1,13 @@
+<app-confirm-modal
+  [isOpen]="showDeleteConfirmModal()"
+  [title]="deleteConfirmTitle"
+  [description]="deleteConfirmDescription"
+  confirmText="Confirm"
+  cancelText="Close"
+  (confirmed)="onConfirmDeleteUser()"
+  (closed)="closeDeleteConfirmModal()"
+></app-confirm-modal>
+
 @if (loading()) {
   <app-eu-loader></app-eu-loader>
 }
