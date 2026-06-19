@@ -1,31 +1,39 @@
-<div *ngIf="isOpen"
-     class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+@if (isOpen) {
+  <div
+    class="confirm-modal-backdrop"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-labelledby]="'confirm-modal-title'"
+    (click)="onBackdropClick($event)"
+  >
+    <div class="confirm-modal-panel">
+      <h2 id="confirm-modal-title" class="confirm-modal-title font-ibm">
+        {{ title }}
+      </h2>
 
-  <div class="bg-white w-full max-w-md rounded shadow-lg p-6">
+      @if (displayDescription) {
+        <p class="confirm-modal-description font-ibm">
+          {{ displayDescription }}
+        </p>
+      }
 
-    <h2 class="text-xl font-semibold mb-3">
-      {{ title }}
-    </h2>
+      <div class="confirm-modal-actions">
+        <button
+          type="button"
+          class="confirm-modal-btn confirm-modal-btn--secondary font-ibm"
+          (click)="onClose()"
+        >
+          {{ cancelText }}
+        </button>
 
-    <p class="text-gray-600 mb-6">
-      {{ message }}
-    </p>
-
-    <div class="flex justify-end gap-3">
-
-      <button
-        (click)="onClose()"
-        class="px-5 py-2 border border-gray-400 text-gray-600 rounded-md px-3 py-2 text-sm font-medium">
-        {{ cancelText }}
-      </button>
-
-      <button
-        (click)="onConfirm()"
-        class="rounded-md bg-[#0054AC] px-3 py-2 text-sm font-medium text-white hover:bg-[#00448c]">
-        {{ confirmText }}
-      </button>
-
+        <button
+          type="button"
+          class="confirm-modal-btn btn btn--cancel font-ibm"
+          (click)="onConfirm()"
+        >
+          {{ confirmText }}
+        </button>
+      </div>
     </div>
-
   </div>
-</div>
+}

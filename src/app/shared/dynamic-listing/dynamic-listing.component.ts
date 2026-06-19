@@ -27,11 +27,23 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DynamicListingComponent {
-  readonly columnDropdownGroup = 'dynamic-listing';
-  readonly columnDropdownId = 'column-selector';
   readonly getRecordTrackId = getRecordTrackId;
   readonly getListingBadgeClass = getListingBadgeClass;
   readonly splitCommaSeparatedValue = splitCommaSeparatedValue;
+
+  readonly columnModalOpen = signal(false);
+  readonly columnModalSearch = signal('');
+
+  readonly filteredModalColumns = computed(() => {
+    const query = this.columnModalSearch().trim().toLowerCase();
+    const fields = this.sortedFields();
+
+    if (!query) {
+      return fields;
+    }
+
+    return fields.filter((field) => field.label.toLowerCase().includes(query));
+  });
 
   readonly fields = input.required<DynamicField[]>();
   readonly records = input.required<Record<string, unknown>[]>();
@@ -62,6 +74,19 @@ export class DynamicListingComponent {
 
   isColumnVisible(fieldId: string): boolean {
     return this.visibleFieldIds().has(fieldId);
+  }
+
+  openColumnModal(): void {
+    this.columnModalOpen.set(true);
+  }
+
+  closeColumnModal(): void {
+    this.columnModalOpen.set(false);
+    this.columnModalSearch.set('');
+  }
+
+  onColumnModalSearch(event: Event): void {
+    this.columnModalSearch.set((event.target as HTMLInputElement).value);
   }
 
   onColumnToggle(field: DynamicField, checked: boolean): void {

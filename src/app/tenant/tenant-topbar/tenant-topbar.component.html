@@ -1,80 +1,50 @@
-<header class="h-14 border-b border-gray-300 bg-[#f5f5f5] flex items-center justify-between lg:px-4 lg:pl-[30px] pl-[20px]"
-  style="border-bottom:1px solid #6c71727a;">
+<header class="tenant-topbar profile-dropdown">
 
-  <!-- Left -->
-  <!-- <button class="md:hidden text-2xl">☰</button> -->
-  <button class="md:hidden text-2xl" (click)="toggleSidebar.emit()">
+  <button class="tenant-topbar__menu-toggle md:hidden" (click)="toggleSidebar.emit()">
     ☰
   </button>
-  <p class="text-[14px] font-medium font-ibm text-[#0054AC]">Editor</p>
 
-  <!-- Title -->
-  <!-- <div class="font-semibold">
-    <h2 class="font-libre font-normal text-[#000000] text-[22px] lg:block md:block sm:hidden">
-      AI assistance message
-    </h2>
-  </div> -->
+  <p class="tenant-topbar__title">AI Assistant Message</p>
 
-  <!-- Right -->
-  <div class="flex items-center gap-4 relative profile-dropdown px-4 py-2">
+  <div class="tenant-topbar__actions">
 
-    <!-- <div> -->
-      <!-- Search Icon -->
-      <button class="text-gray-600 hover:text-[#83affd] transition-colors">
-        <svg class="w-7 h-7" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg"
-          xmlns:xlink="http://www.w3.org/1999/xlink">
-          <rect width="30" height="30" fill="url(#pattern0_0_4)" />
-          <defs>
-            <pattern id="pattern0_0_4" patternContentUnits="objectBoundingBox" width="1" height="1">
-              <use xlink:href="#image0_0_4" transform="scale(0.0166667)" />
-            </pattern>
-            <image id="image0_0_4" width="60" height="60" preserveAspectRatio="none"
-              xlink:href="data:image/png;base64,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" />
-          </defs>
-        </svg>
+    <button type="button" class="tenant-topbar__icon-button" aria-label="Search">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round"
+          d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+      </svg>
+    </button>
 
-      </button>
-    <!-- </div> -->
+    <button type="button" class="tenant-topbar__icon-button" aria-label="Notifications">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round"
+          d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0a3 3 0 11-6 0m6 0H9" />
+      </svg>
+    </button>
 
-    <!-- <div> -->
-      <!-- Notification Icon -->
-      <button class="relative text-gray-600 hover:text-[#83affd] transition-colors">
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0a3 3 0 11-6 0m6 0H9" />
-        </svg>
-      </button>
-    <!-- </div> -->
+    <div class="tenant-topbar__divider"></div>
 
-    <!-- Trigger -->
-    <div class="flex items-center gap-2 cursor-pointer bg-white shadow-md rounded-xl px-3 py-1" (click)="toggleDropdown()">
-      <!-- Image -->
-      <div class="">
-        <img src="assets/profile-1.png" class="w-[30px] h-[30px]" />
-      </div>
+    <div class="tenant-topbar__profile" (click)="toggleDropdown()">
+      <img src="assets/profile-1.png" alt="" class="tenant-topbar__avatar" />
 
-      <!-- Name -->
-      <span class="text-sm text-gray-700">
+      <span class="tenant-topbar__username">
         {{ userName }}
       </span>
 
-      <!-- Arrow -->
-      <svg class="w-4 h-4 transition-transform duration-200" [class.rotate-180]="dropdownOpen" fill="none"
-        stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+      <svg class="tenant-topbar__settings-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round"
+          d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
       </svg>
     </div>
 
-    <!-- Dropdown -->
-    <div *ngIf="dropdownOpen" class="absolute right-[15px] top-[40px] mt-2 w-[110px] bg-white border rounded shadow-md z-50">
-      <!-- <button class="block w-full text-left px-4 py-2 hover:bg-gray-100" (click)="goToProfile()">
-        Profile
-      </button> -->
-
-      <button class="block w-full text-left px-4 py-2 hover:bg-gray-100" (click)="logout()">
-        Logout
-      </button>
-    </div>
+    @if (dropdownOpen) {
+      <div class="tenant-topbar__dropdown">
+        <button type="button" (click)="logout()">
+          Logout
+        </button>
+      </div>
+    }
 
   </div>
 

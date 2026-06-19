@@ -20,13 +20,21 @@
       (valueChange)="onDynamicFormChange($event)"
     ></app-dynamic-form>
 
-    <div class="flex justify-end mt-8">
+    <div class="tenant-user-actions">
+      <button type="button" class="btn btn--delete">
+        Delete
+      </button>
+
+      <button type="button" class="btn btn--cancel">
+        Cancel
+      </button>
+
       <button
         type="button"
         (click)="onFormSubmit()"
-        class="px-6 py-2.5 bg-[#ea580c] hover:bg-[#ea580c] text-white text-[13px] font-ibm font-medium rounded-lg transition-colors duration-150 disabled:opacity-50"
+        class="btn btn--save"
       >
-        Submit
+        Save
       </button>
     </div>
   }
