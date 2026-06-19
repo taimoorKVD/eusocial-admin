@@ -1,0 +1,117 @@
+.confirm-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background-color: rgb(0 0 0 / 50%);
+  animation: confirm-modal-backdrop-in 0.2s ease-out;
+}
+
+.confirm-modal-panel {
+  width: 100%;
+  max-width: 28rem;
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  background-color: #fff;
+  box-shadow:
+    0 20px 25px -5px rgb(0 0 0 / 10%),
+    0 8px 10px -6px rgb(0 0 0 / 10%);
+  animation: confirm-modal-panel-in 0.25s ease-out;
+}
+
+.confirm-modal-title {
+  margin: 0 0 0.75rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #161616;
+}
+
+.confirm-modal-description {
+  margin: 0 0 1.5rem;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: #525252;
+}
+
+.confirm-modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.confirm-modal-btn {
+  min-width: 5.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.25rem;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.confirm-modal-btn--secondary {
+  border: 1px solid #c6c6c6;
+  background-color: #fff;
+  color: #525252;
+
+  &:hover {
+    background-color: #f4f4f4;
+    border-color: #a8a8a8;
+  }
+}
+
+.confirm-modal-btn--primary {
+  border: 1px solid #0054ac;
+  background-color: #0054ac;
+  color: #fff;
+
+  &:hover {
+    background-color: #00448c;
+    border-color: #00448c;
+  }
+}
+
+@keyframes confirm-modal-backdrop-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes confirm-modal-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 640px) {
+  .confirm-modal-panel {
+    padding: 1.25rem;
+  }
+
+  .confirm-modal-actions {
+    flex-direction: column-reverse;
+  }
+
+  .confirm-modal-btn {
+    width: 100%;
+  }
+}
