@@ -1,7 +1,7 @@
 .tenant-topbar {
   height: 3.75rem;
   background: #ffffff;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid #161616d4;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -38,7 +38,7 @@
     justify-content: center;
     width: 2.25rem;
     height: 2.25rem;
-    border: 1px solid #e0e0e0;
+    border: 1px solid #161616d4;
     border-radius: 9999px;
     background: #ffffff;
     color: #4b5563;
@@ -58,7 +58,7 @@
   &__divider {
     width: 1px;
     height: 2rem;
-    background: #e0e0e0;
+    background: #161616d4;
   }
 
   &__profile {
