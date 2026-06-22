@@ -7,20 +7,14 @@
     (click)="onBackdropClick($event)"
   >
     <div class="confirm-modal-panel">
-      <h2 id="confirm-modal-title" class="confirm-modal-title font-ibm">
-        {{ title }}
-      </h2>
-
-      @if (displayDescription) {
-        <p class="confirm-modal-description font-ibm">
-          {{ displayDescription }}
-        </p>
-      }
+      <p id="confirm-modal-title" class="confirm-modal-message font-ibm">
+        {{ displayMessage }}
+      </p>
 
       <div class="confirm-modal-actions">
         <button
           type="button"
-          class="confirm-modal-btn confirm-modal-btn--secondary font-ibm"
+          class="confirm-modal-btn confirm-modal-btn--cancel font-ibm"
           (click)="onClose()"
         >
           {{ cancelText }}
@@ -28,7 +22,7 @@
 
         <button
           type="button"
-          class="confirm-modal-btn btn btn--cancel font-ibm"
+          class="confirm-modal-btn confirm-modal-btn--confirm font-ibm"
           (click)="onConfirm()"
         >
           {{ confirmText }}

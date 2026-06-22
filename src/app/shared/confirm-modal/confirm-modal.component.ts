@@ -22,6 +22,18 @@ export class ConfirmModalComponent {
     return this.description || this.message;
   }
 
+  get displayMessage(): string {
+    const description = this.displayDescription?.trim();
+    const title = this.title?.trim();
+
+    if (description && title && description !== title) {
+      return `${description}`;
+      // return `${title}. ${description}`;
+    }
+
+    return description || title || 'Are you sure?';
+  }
+
   onConfirm(): void {
     this.confirmed.emit();
   }
