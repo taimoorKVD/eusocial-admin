@@ -1,8 +1,8 @@
 <header class="tenant-topbar profile-dropdown">
-
+<!--
   <button class="tenant-topbar__menu-toggle md:hidden" (click)="toggleSidebar.emit()">
     ☰
-  </button>
+  </button> -->
 
   <p class="tenant-topbar__title">AI Assistant Message</p>
 
@@ -25,7 +25,13 @@
     <div class="tenant-topbar__divider"></div>
 
     <div class="tenant-topbar__profile" (click)="toggleDropdown()">
-      <img src="assets/profile-1.png" alt="" class="tenant-topbar__avatar" />
+      <div class="tenant-topbar__avatar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M20 21a8 8 0 1 0-16 0" />
+          <circle cx="12" cy="8" r="4" />
+        </svg>
+      </div>
 
       <span class="tenant-topbar__username">
         {{ userName }}

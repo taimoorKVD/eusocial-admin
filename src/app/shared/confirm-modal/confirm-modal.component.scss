@@ -12,9 +12,9 @@
 
 .confirm-modal-panel {
   width: 100%;
-  max-width: 28rem;
-  padding: 1.5rem;
-  border-radius: 0.75rem;
+  max-width: 32rem;
+  padding: 2rem 2.5rem;
+  border-radius: 1rem;
   background-color: #fff;
   box-shadow:
     0 20px 25px -5px rgb(0 0 0 / 10%),
@@ -22,61 +22,52 @@
   animation: confirm-modal-panel-in 0.25s ease-out;
 }
 
-.confirm-modal-title {
-  margin: 0 0 0.75rem;
-  font-size: 1.25rem;
-  font-weight: 600;
-  line-height: 1.4;
-  color: #161616;
-}
-
-.confirm-modal-description {
-  margin: 0 0 1.5rem;
-  font-size: 0.9375rem;
-  line-height: 1.6;
-  color: #525252;
+.confirm-modal-message {
+  margin: 0 0 2rem;
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.5;
+  text-align: center;
+  color: #000;
 }
 
 .confirm-modal-actions {
   display: flex;
   flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 0.75rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9375rem;
 }
 
 .confirm-modal-btn {
-  min-width: 5.5rem;
-  padding: 0.5rem 1rem;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-  font-weight: 500;
+  min-width: 7.5rem;
+  padding: 0.625rem 1.75rem;
+  border: none;
+  border-radius: 0.625rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
   line-height: 1.25rem;
   cursor: pointer;
   transition:
     background-color 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease;
+    opacity 0.15s ease;
 }
 
-.confirm-modal-btn--secondary {
-  border: 1px solid #c6c6c6;
-  background-color: #fff;
-  color: #525252;
-
-  &:hover {
-    background-color: #f4f4f4;
-    border-color: #a8a8a8;
-  }
-}
-
-.confirm-modal-btn--primary {
-  border: 1px solid #0054ac;
-  background-color: #0054ac;
+.confirm-modal-btn--cancel {
+  background-color: #000;
   color: #fff;
 
   &:hover {
-    background-color: #00448c;
-    border-color: #00448c;
+    background-color: #1a1a1a;
+  }
+}
+
+.confirm-modal-btn--confirm {
+  background-color: #c0d23e;
+  color: #000;
+
+  &:hover {
+    background-color: #b4c438;
   }
 }
 
@@ -104,11 +95,17 @@
 
 @media (max-width: 640px) {
   .confirm-modal-panel {
-    padding: 1.25rem;
+    padding: 1.5rem 1.25rem;
+  }
+
+  .confirm-modal-message {
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
   }
 
   .confirm-modal-actions {
-    flex-direction: column-reverse;
+    flex-direction: column;
+    width: 100%;
   }
 
   .confirm-modal-btn {
