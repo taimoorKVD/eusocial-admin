@@ -48,9 +48,9 @@
   </div>
 
   <!-- PALETTE + SETTINGS -->
-  <div class="col-span-5 bg-white shadow-sm lg:col-span-2">
+  <div class="col-span-5 bg-[#f4f4f4] shadow-sm lg:col-span-2">
 
-    <div class="flex items-center gap-2 p-6 justify-between">
+    <div class="flex items-center bg-white gap-2 p-6 justify-between">
       <div class="flex items-center">
         <button class="text-[#83affd] text-[12px] font-ibm font-medium">
           Add
@@ -79,7 +79,7 @@
       </div>
     </div>
 
-    <div class="bg-[#f4f4f4]">
+    <div>
       <nav class="flex items-center justify-between gap-2 border-[#b2b2b2] border-b">
         <button type="button" class="px-3 py-4 text-sm font-medium transition focus:outline-none"
           [ngClass]="activeTab === 'fields' ? ' border-[#0054AC] border-b text-[#0054AC] text-[16px] tracking-[0.32px] font-medium' : 'text-slate-500 hover:bg-slate-100'"
@@ -99,7 +99,7 @@
       </nav>
     </div>
 
-    <div class="p-4 bg-[#f4f4f4]">
+    <div class="p-4">
       <div [class.hidden]="activeTab !== 'fields'">
         <app-builder [connectedDropLists]="[canvasListId]"></app-builder>
       </div>
