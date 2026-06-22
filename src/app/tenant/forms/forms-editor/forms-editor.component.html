@@ -110,7 +110,7 @@
       </div>
 
       <div [class.hidden]="activeTab !== 'settings'" class="space-y-4">
-        <div *ngIf="hiddenFields.length" class="rounded-md border border-amber-100 bg-amber-50 px-3 py-2.5">
+        <!-- <div *ngIf="hiddenFields.length" class="rounded-md border border-amber-100 bg-amber-50 px-3 py-2.5">
           <p class="text-xs font-medium text-amber-800">Hidden fields</p>
           <p class="mt-0.5 text-[11px] text-amber-700">
             These fields stay in the form schema but are hidden on the canvas.
@@ -122,7 +122,7 @@
               {{ field.label }}
             </button>
           </div>
-        </div>
+        </div> -->
 
         <ng-container *ngIf="selectedField; else noSelection">
           <app-field-settings [field]="selectedField" [activeModuleName]="moduleName" (update)="updateField($event)"

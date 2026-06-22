@@ -8,7 +8,7 @@
   height: 4rem;
   min-height: 4rem;
   background-color: #f8f9fa;
-  border-bottom: 1px solid #161616;
+  border-bottom: 1px solid #6C7172;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -87,7 +87,7 @@
     }
 
     &:first-of-type {
-      border: 1px solid #161616;
+      border: 1px solid #6C7172;
       border-radius: 50%;
       background-color: #f8f9fa;
 
@@ -106,7 +106,7 @@
     width: 1px;
     flex-shrink: 0;
     margin-left: 1.125rem;
-    background-color: #161616;
+    background-color: #6C7172;
   }
 
   &__profile {
@@ -132,7 +132,7 @@
     height: 1.8rem;
     border-radius: 50%;
     object-fit: cover;
-    background-color: #1a1a1acf;
+    background-color: #6C7172;
     flex-shrink: 0;
     color: #fff;
   }
