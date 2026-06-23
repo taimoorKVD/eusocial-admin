@@ -29,6 +29,10 @@
     <a [routerLink]="['/tenant',  session.getSlug(), 'home']" routerLinkActive="tenant-sidebar__link--active"
       class="tenant-sidebar__link font-ibm">
 
+      <!-- <svg style="opacity: 0" width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M6.83333 1V12.6667M1 6.83333L6.83333 12.6667L12.6667 6.83333" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg> -->
+
       <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
         xmlns="http://www.w3.org/2000/svg">
         <path stroke-linecap="round" stroke-linejoin="round" d="M3 10.5 12 3l9 7.5" />
@@ -44,9 +48,10 @@
       routerLinkActive="tenant-sidebar__link--active"
       class="tenant-sidebar__link font-ibm">
 
-      <!-- <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-        <path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-4.4 0-8 2.2-8 5v3h16v-3c0-2.8-3.6-5-8-5z"/>
+       <!-- <svg style="opacity: 0" width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M6.83333 1V12.6667M1 6.83333L6.83333 12.6667L12.6667 6.83333" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg> -->
+
       <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
         xmlns="http://www.w3.org/2000/svg">
         <path stroke-linecap="round" stroke-linejoin="round" d="M4 20h16" />
@@ -64,13 +69,23 @@
       <button (click)="toggleSetup()"
         class="tenant-sidebar__group-toggle font-ibm">
 
-        <span class="tenant-sidebar__chevron">{{ openSetup ? '▼' : '▶' }}</span>
 
-          <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        <span *ngIf="!openSetup">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4.16667 10L15.8333 10M10 15.8334L15.8333 10L10 4.16671" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <span *ngIf="openSetup">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M6.83333 1V12.6667M1 6.83333L6.83333 12.6667L12.6667 6.83333" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+
+          <!-- <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor"
             stroke-width="1.8" xmlns="http://www.w3.org/2000/svg">
             <path stroke-linecap="round" stroke-linejoin="round"
               d="M3 7.5A1.5 1.5 0 0 1 4.5 6H9l1.5 1.5h9A1.5 1.5 0 0 1 21 9v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18V7.5Z" />
-          </svg>
+          </svg> -->
           Setup
       </button>
 
@@ -163,9 +178,19 @@
       <button (click)="toggleExtraManagement()"
         class="tenant-sidebar__group-toggle font-ibm">
 
-        <span class="tenant-sidebar__chevron">{{ openExtraManagement ? '▼' : '▶' }}</span>
+        <!-- <span class="tenant-sidebar__chevron">{{ openExtraManagement ? '▼' : '▶' }}</span> -->
+        <span *ngIf="!openExtraManagement">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4.16667 10L15.8333 10M10 15.8334L15.8333 10L10 4.16671" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <span *ngIf="openExtraManagement">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M6.83333 1V12.6667M1 6.83333L6.83333 12.6667L12.6667 6.83333" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
 
-          <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          <!-- <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor"
             stroke-width="1.8" xmlns="http://www.w3.org/2000/svg">
             <path stroke-linecap="round" stroke-linejoin="round" d="M5 6h14" />
             <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h8" />
@@ -173,7 +198,7 @@
             <circle cx="7" cy="6" r="1" fill="currentColor" stroke="none" />
             <circle cx="15" cy="12" r="1" fill="currentColor" stroke="none" />
             <circle cx="13" cy="18" r="1" fill="currentColor" stroke="none" />
-          </svg>
+          </svg> -->
           Extra Management
       </button>
 
@@ -215,9 +240,19 @@
       <button (click)="toggleOpenFormBuilder()"
         class="tenant-sidebar__group-toggle font-ibm">
 
-        <span class="tenant-sidebar__chevron">{{ openFormBuilder ? '▼' : '▶' }}</span>
+        <!-- <span class="tenant-sidebar__chevron">{{ openFormBuilder ? '▼' : '▶' }}</span> -->
+        <span *ngIf="!openFormBuilder">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4.16667 10L15.8333 10M10 15.8334L15.8333 10L10 4.16671" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <span *ngIf="openFormBuilder">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M6.83333 1V12.6667M1 6.83333L6.83333 12.6667L12.6667 6.83333" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
 
-          <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          <!-- <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor"
             stroke-width="1.8" xmlns="http://www.w3.org/2000/svg">
             <path stroke-linecap="round" stroke-linejoin="round" d="M5 6h14" />
             <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h8" />
@@ -225,7 +260,7 @@
             <circle cx="7" cy="6" r="1" fill="currentColor" stroke="none" />
             <circle cx="15" cy="12" r="1" fill="currentColor" stroke="none" />
             <circle cx="13" cy="18" r="1" fill="currentColor" stroke="none" />
-          </svg>
+          </svg> -->
           Form Builder
       </button>
 

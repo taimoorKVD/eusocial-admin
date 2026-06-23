@@ -35,7 +35,7 @@
         type="checkbox"
         [(ngModel)]="field.required"
         (change)="onChange()"
-        class="h-4 w-4 rounded border-slate-300 text-[#0054AC] focus:ring-[#0054AC]"
+        class="field-settings-checkbox"
       />
       <label for="field-required" class="text-sm text-slate-700">Required field</label>
     </div>
@@ -46,7 +46,7 @@
         type="checkbox"
         [ngModel]="field.isShow !== false"
         (ngModelChange)="onShowChange($event)"
-        class="h-4 w-4 rounded border-slate-300 text-[#0054AC] focus:ring-[#0054AC]"
+        class="field-settings-checkbox"
       />
       <label for="field-is-show" class="text-sm text-slate-700">Show field</label>
     </div>
@@ -57,7 +57,7 @@
         type="checkbox"
         [(ngModel)]="field.isReadonly"
         (change)="onChange()"
-        class="h-4 w-4 rounded border-slate-300 text-[#0054AC] focus:ring-[#0054AC]"
+        class="field-settings-checkbox"
       />
       <label for="field-is-readonly" class="text-sm text-slate-700">Readonly field</label>
     </div>
@@ -73,7 +73,7 @@
             name="select-options-mode"
             [checked]="optionsMode === 'static'"
             (change)="setOptionsMode('static')"
-            class="h-4 w-4 border-slate-300 text-[#0054AC] focus:ring-[#0054AC]"
+            class="field-settings-radio"
           />
           Static Options
         </label>
@@ -84,7 +84,7 @@
             name="select-options-mode"
             [checked]="optionsMode === 'dynamic'"
             (change)="setOptionsMode('dynamic')"
-            class="h-4 w-4 border-slate-300 text-[#0054AC] focus:ring-[#0054AC]"
+            class="field-settings-radio"
           />
           Dynamic Options
         </label>
@@ -107,7 +107,7 @@
         <select
           [ngModel]="selectedModuleSlug"
           (ngModelChange)="onModuleChange($event)"
-          class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC]"
+          class="field-settings-select"
         >
           <option [ngValue]="''">Select a module</option>
           <option
@@ -127,7 +127,7 @@
         <select
           [ngModel]="selectedDisplayColumn"
           (ngModelChange)="onDisplayColumnChange($event)"
-          class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC]"
+          class="field-settings-select"
         >
           <option [ngValue]="''">Select a column</option>
           <option *ngFor="let column of moduleColumns" [ngValue]="column">

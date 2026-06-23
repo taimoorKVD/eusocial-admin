@@ -5,6 +5,12 @@
 <app-confirm-modal [isOpen]="showExitConfirmModal" title="Are you sure you want to exit?" message=""
   confirmText="Confirm" cancelText="Cancel" (confirmed)="onConfirmExit()" (closed)="onCancelExit()"></app-confirm-modal>
 
+<app-form-preview-modal
+  [isOpen]="showPreviewModal"
+  [formFields]="builderSchema"
+  (closed)="closePreviewModal()"
+></app-form-preview-modal>
+
 <div class="grid grid-cols-5 gap-4 font-ibm bg-[#fff]">
 
   <!-- CANVAS -->
@@ -50,8 +56,8 @@
   <!-- PALETTE + SETTINGS -->
   <div class="col-span-5 bg-[#f4f4f4] shadow-sm lg:col-span-2">
 
-    <div class="flex items-center bg-white gap-2 p-6 justify-between">
-      <div class="flex items-center">
+    <div class="flex items-center bg-white gap-2 p-6 justify-end">
+      <!-- <div class="flex items-center">
         <button class="text-[#83affd] text-[12px] font-ibm font-medium">
           Add
         </button>
@@ -70,9 +76,19 @@
         <button class="text-[#83affd] text-[12px] font-ibm font-medium">
           Delete
         </button>
-      </div>
-      <div>
-        <button type="button" class="bg-[#ea580c] px-[25px] py-2 text-sm font-medium text-white hover:bg-[#fe9015]"
+      </div> -->
+      <div class="flex items-center gap-3">
+        @if (moduleName === 'users') {
+          <button
+            type="button"
+            class="btn btn--cancel"
+            (click)="openPreviewModal()"
+          >
+            Preview Form
+          </button>
+        }
+
+        <button type="button" class="btn btn--save"
           (click)="saveForm()">
           Save Form
         </button>
@@ -82,17 +98,17 @@
     <div>
       <nav class="flex items-center justify-between gap-2 border-[#b2b2b2] border-b">
         <button type="button" class="px-3 py-4 text-sm font-medium transition focus:outline-none"
-          [ngClass]="activeTab === 'fields' ? ' border-[#0054AC] border-b text-[#0054AC] text-[16px] tracking-[0.32px] font-medium' : 'text-slate-500 hover:bg-slate-100'"
+          [ngClass]="activeTab === 'fields' ? ' border-[#FF9015] border-b text-[#FF9015] text-[16px] tracking-[0.32px] font-medium' : 'text-slate-500 hover:bg-slate-100'"
           (click)="setActiveTab('fields')">
           Input Fields
         </button>
         <button type="button" class="px-3 py-4 text-sm font-medium transition focus:outline-none"
-          [ngClass]="activeTab === 'settings' ? ' border-[#0054AC] border-b text-[#0054AC] text-[16px] tracking-[0.32px] font-medium' : 'text-slate-500 hover:bg-slate-100'"
+          [ngClass]="activeTab === 'settings' ? ' border-[#FF9015] border-b text-[#FF9015] text-[16px] tracking-[0.32px] font-medium' : 'text-slate-500 hover:bg-slate-100'"
           (click)="setActiveTab('settings')">
           Input Customization
         </button>
         <button type="button" class="px-3 py-4 text-sm font-medium transition focus:outline-none"
-          [ngClass]="activeTab === 'versions' ? ' border-[#0054AC] border-b text-[#0054AC] text-[16px] tracking-[0.32px] font-medium' : 'text-slate-500 hover:bg-slate-100'"
+          [ngClass]="activeTab === 'versions' ? ' border-[#FF9015] border-b text-[#FF9015] text-[16px] tracking-[0.32px] font-medium' : 'text-slate-500 hover:bg-slate-100'"
           (click)="setActiveTab('versions')">
           Versions
         </button>

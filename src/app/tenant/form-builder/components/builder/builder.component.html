@@ -17,19 +17,16 @@
       class="palette-item"
     >
       <span
-        class="group/info absolute right-1.5 top-1.5 z-10 inline-flex rounded-full p-0.5 text-gray-400 outline-none transition-colors hover:text-gray-600 focus-visible:text-gray-600 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
+        class="palette-tooltip-trigger app-tooltip-trigger"
         tabindex="0"
         role="button"
         [attr.aria-label]="'More information about ' + field.label"
       >
-        <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <svg class="palette-tooltip-trigger__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
           <circle cx="12" cy="12" r="10" />
           <path stroke-linecap="round" d="M12 16v-4M12 8h.01" />
         </svg>
-        <span
-            role="tooltip"
-            class="pointer-events-none invisible absolute bottom-full right-0 z-20 mb-1.5 w-44 rounded-md bg-gray-900 px-2.5 py-2 text-left text-[11px] font-normal leading-snug text-white opacity-0 shadow-lg transition-opacity duration-150 group-hover/info:visible group-hover/info:opacity-100 group-focus/info:visible group-focus/info:opacity-100"
-          >
+        <span role="tooltip" class="app-tooltip app-tooltip--top-end font-ibm">
           <ng-container [ngSwitch]="field.type">
             <ng-container *ngSwitchCase="'text'">Use for short text entries such as titles, usernames, or single-line responses.</ng-container>
             <ng-container *ngSwitchCase="'email'">Collect a valid email address from the user.</ng-container>

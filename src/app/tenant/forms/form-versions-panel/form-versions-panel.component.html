@@ -44,7 +44,7 @@
           type="button"
           (click)="openPreview(item)"
           [disabled]="item.previewing"
-          class="rounded-md border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-600 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+          class="rounded-md border border-[#FF9015] px-2.5 py-1 text-xs font-medium text-[#FF9015] transition hover:bg-[#FF9015] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
         >
           {{ item.previewing ? 'Loading…' : 'Preview' }}
         </button>
@@ -53,7 +53,7 @@
           type="button"
           (click)="restoreVersion(item)"
           [disabled]="item.restoring"
-          class="rounded-md border border-[#0054AC] px-2.5 py-1 text-xs font-medium text-[#0054AC] transition hover:bg-[#0054AC] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+          class="rounded-md border border-[#D0DD28] px-2.5 py-1 text-xs font-medium text-[#D0DD28] transition hover:bg-[#D0DD28] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
         >
           {{ item.restoring ? 'Restoring…' : 'Restore' }}
         </button>
