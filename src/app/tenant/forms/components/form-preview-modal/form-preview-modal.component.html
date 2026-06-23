@@ -1,16 +1,26 @@
-@if (isOpen) {
+@if (isVisible()) {
   <div
     class="form-preview-backdrop"
+    [class.form-preview-backdrop--closing]="isClosing()"
     role="dialog"
     aria-modal="true"
     aria-labelledby="form-preview-title"
     (click)="onBackdropClick($event)"
   >
-    <div class="form-preview-panel">
+    <div
+      class="form-preview-panel"
+      [class.form-preview-panel--closing]="isClosing()"
+    >
       <div class="form-preview-header">
-        <h2 id="form-preview-title" class="form-preview-title font-ibm">
-          Form Preview
-        </h2>
+        <div class="form-preview-header__text">
+          <h2 id="form-preview-title" class="form-preview-title font-ibm">
+            Form Preview
+          </h2>
+          <p class="form-preview-subtitle font-ibm">
+            Read-only preview of how this form appears to users.
+          </p>
+        </div>
+
         <button
           type="button"
           class="form-preview-close"
@@ -25,15 +35,27 @@
 
       <div class="form-preview-body">
         @if (loading()) {
-          <div class="form-preview-loader">
-            <app-eu-loader></app-eu-loader>
+          <div class="form-preview-skeleton" aria-hidden="true">
+            @for (row of [1, 2, 3, 4]; track row) {
+              <div class="form-preview-skeleton__row">
+                <div class="form-preview-skeleton__label"></div>
+                <div class="form-preview-skeleton__control"></div>
+              </div>
+            }
           </div>
         } @else if (previewFields().length === 0) {
           <p class="form-preview-empty font-ibm">
             No visible fields to preview. Add fields to the canvas to see how the form will look.
           </p>
         } @else {
-          <app-dynamic-form [fields]="previewFields()"></app-dynamic-form>
+          <div
+            class="form-preview-content"
+            [class.form-preview-content--ready]="formReady()"
+          >
+            @if (formReady()) {
+              <app-dynamic-form [fields]="previewFields()"></app-dynamic-form>
+            }
+          </div>
         }
       </div>
 
