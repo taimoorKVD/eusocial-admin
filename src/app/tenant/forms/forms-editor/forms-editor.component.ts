@@ -33,6 +33,7 @@ export class FormsEditorComponent
   formName = 'Users Dynamic Form';
   formId: string | number | null = null;
   showExitConfirmModal = false;
+  showPreviewModal = false;
 
   private readonly loadingStates = new Set<string>();
   private savedSnapshot = '';
@@ -397,6 +398,18 @@ export class FormsEditorComponent
 
   previewPayload(): void {
     console.log('Preview payload:', this.buildPayload());
+  }
+
+  openPreviewModal(): void {
+    if (this.moduleName !== 'users') {
+      return;
+    }
+
+    this.showPreviewModal = true;
+  }
+
+  closePreviewModal(): void {
+    this.showPreviewModal = false;
   }
 
   private handleModuleNavigation(nextModule: string): void {

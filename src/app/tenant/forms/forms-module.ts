@@ -11,6 +11,7 @@ import { FormBuilderModule } from '../form-builder/form-builder-module';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { FieldSettingsComponent } from '../form-builder/field-settings/field-settings.component';
 import { SharedModule } from '../../shared/shared.module';
+import { FormPreviewModalComponent } from './components/form-preview-modal/form-preview-modal.component';
 
 
 @NgModule({
@@ -18,6 +19,7 @@ import { SharedModule } from '../../shared/shared.module';
     FormsListComponent,
     FormsEditorComponent,
     FormVersionsPanelComponent,
+    FormPreviewModalComponent,
   ],
   imports: [
     CommonModule,
