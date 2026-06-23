@@ -317,9 +317,9 @@ body {
   }
 
   &--cancel {
-    border: 1px solid #f39200;
+    border: 1px solid #FF9015;
     background: #ffffff;
-    color: #f39200;
+    color: #FF9015;
 
     &:hover:not(:disabled) {
       background: #fff7ed;
@@ -328,11 +328,11 @@ body {
 
   &--save {
     border: none;
-    background: #c5d92d;
+    background: #D0DD28;
     color: #000000;
 
     &:hover:not(:disabled) {
-      background: #b8cc28;
+      background: #D0DD28;
     }
   }
 }

@@ -81,14 +81,14 @@
         @if (moduleName === 'users') {
           <button
             type="button"
-            class="rounded-md border border-[#0054AC] px-[20px] py-2 text-sm font-medium text-[#0054AC] transition hover:bg-[#0054AC]/5"
+            class="btn btn--cancel"
             (click)="openPreviewModal()"
           >
             Preview Form
           </button>
         }
 
-        <button type="button" class="bg-[#ea580c] px-[25px] py-2 text-sm font-medium text-white hover:bg-[#fe9015]"
+        <button type="button" class="btn btn--save"
           (click)="saveForm()">
           Save Form
         </button>
@@ -98,17 +98,17 @@
     <div>
       <nav class="flex items-center justify-between gap-2 border-[#b2b2b2] border-b">
         <button type="button" class="px-3 py-4 text-sm font-medium transition focus:outline-none"
-          [ngClass]="activeTab === 'fields' ? ' border-[#0054AC] border-b text-[#0054AC] text-[16px] tracking-[0.32px] font-medium' : 'text-slate-500 hover:bg-slate-100'"
+          [ngClass]="activeTab === 'fields' ? ' border-[#FF9015] border-b text-[#FF9015] text-[16px] tracking-[0.32px] font-medium' : 'text-slate-500 hover:bg-slate-100'"
           (click)="setActiveTab('fields')">
           Input Fields
         </button>
         <button type="button" class="px-3 py-4 text-sm font-medium transition focus:outline-none"
-          [ngClass]="activeTab === 'settings' ? ' border-[#0054AC] border-b text-[#0054AC] text-[16px] tracking-[0.32px] font-medium' : 'text-slate-500 hover:bg-slate-100'"
+          [ngClass]="activeTab === 'settings' ? ' border-[#FF9015] border-b text-[#FF9015] text-[16px] tracking-[0.32px] font-medium' : 'text-slate-500 hover:bg-slate-100'"
           (click)="setActiveTab('settings')">
           Input Customization
         </button>
         <button type="button" class="px-3 py-4 text-sm font-medium transition focus:outline-none"
-          [ngClass]="activeTab === 'versions' ? ' border-[#0054AC] border-b text-[#0054AC] text-[16px] tracking-[0.32px] font-medium' : 'text-slate-500 hover:bg-slate-100'"
+          [ngClass]="activeTab === 'versions' ? ' border-[#FF9015] border-b text-[#FF9015] text-[16px] tracking-[0.32px] font-medium' : 'text-slate-500 hover:bg-slate-100'"
           (click)="setActiveTab('versions')">
           Versions
         </button>
