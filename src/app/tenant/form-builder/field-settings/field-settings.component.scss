@@ -1,0 +1,93 @@
+$theme-accent: #ea580c;
+$theme-accent-hover: #c2410c;
+$theme-accent-soft: rgb(234 88 12 / 12%);
+$theme-accent-ring: rgb(234 88 12 / 25%);
+$theme-border: #e2e8f0;
+$theme-border-hover: #fdba74;
+$theme-text: #334155;
+
+.field-settings-checkbox,
+.field-settings-radio {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  flex-shrink: 0;
+  border: 1px solid #cbd5e1;
+  background-color: #fff;
+  accent-color: $theme-accent;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background-color 0.15s ease;
+
+  &:hover {
+    border-color: $theme-accent;
+    background-color: #fffaf5;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: $theme-accent;
+    box-shadow: 0 0 0 3px $theme-accent-soft;
+  }
+
+  &:focus-visible {
+    outline: none;
+    border-color: $theme-accent;
+    box-shadow: 0 0 0 3px $theme-accent-ring;
+  }
+}
+
+.field-settings-checkbox {
+  border-radius: 0.25rem;
+}
+
+.field-settings-radio {
+  border-radius: 50%;
+}
+
+.field-settings-select {
+  width: 100%;
+  border: 1px solid $theme-border;
+  border-radius: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: $theme-text;
+  background-color: #fff;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background-color 0.15s ease;
+
+  &:hover {
+    border-color: $theme-border-hover;
+    background-color: #fffaf5;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: $theme-accent;
+    box-shadow: 0 0 0 3px $theme-accent-soft;
+    background-color: #fff;
+  }
+
+  &:focus-visible {
+    outline: none;
+    border-color: $theme-accent;
+    box-shadow: 0 0 0 3px $theme-accent-ring;
+  }
+
+  option {
+    color: $theme-text;
+    background-color: #fff;
+  }
+
+  option:checked {
+    background: $theme-accent linear-gradient(0deg, $theme-accent 0%, $theme-accent 100%);
+    color: #fff;
+  }
+}
