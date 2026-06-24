@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, signal } from '@angular/core';
 import { FormField, OptionSource } from '../models/form-field.model';
 import { normalizeFieldOption, normalizeStaticSelectFieldOptions } from '../utils/field-options.utils';
 import { DynamicModuleOptionsService } from '../services/dynamic-module-options.service';
@@ -475,17 +475,63 @@ export class FieldSettingsComponent {
     };
   }
 
-  private readDynamicConfig(
-    field: FormField
-  ): { moduleSlug: string; displayColumn: string } | null {
-    if (field.optionSource?.type !== 'dynamic' || !field.optionSource.endpoint) {
-      return null;
+    private readDynamicConfig(
+      field: FormField
+    ): { moduleSlug: string; displayColumn: string } | null {
+      if (field.optionSource?.type !== 'dynamic' || !field.optionSource.endpoint) {
+        return null;
+      }
+
+      return {
+        moduleSlug: field.optionSource.endpoint,
+        displayColumn: field.optionSource.response?.labelKey ?? 'name',
+      };
     }
 
-    return {
-      moduleSlug: field.optionSource.endpoint,
-      displayColumn: field.optionSource.response?.labelKey ?? 'name',
-    };
+    readonly isModuleDropdownOpen = signal(false);
+
+  toggleModuleDropdown(): void {
+    this.isModuleDropdownOpen.update(value => !value);
+  }
+
+  closeModuleDropdown(): void {
+    this.isModuleDropdownOpen.set(false);
+  }
+
+  selectModule(slug: string): void {
+    this.selectedModuleSlug = slug;
+    this.onModuleChange(slug);
+    this.closeModuleDropdown();
+  }
+
+  getSelectedModuleLabel(): string {
+    const selected = this.availableModules.find(
+      module => this.getModuleSlug(module) === this.selectedModuleSlug
+    );
+
+    return selected
+      ? this.getModuleLabel(selected)
+      : 'Select a module';
+  }
+
+  readonly isDisplayColumnDropdownOpen = signal(false);
+
+  toggleDisplayColumnDropdown(): void {
+    this.isDisplayColumnDropdownOpen.update(value => !value);
+  }
+
+  closeDisplayColumnDropdown(): void {
+    this.isDisplayColumnDropdownOpen.set(false);
+  }
+
+  selectDisplayColumn(column: string): void {
+    this.selectedDisplayColumn = column;
+    this.onDisplayColumnChange(column);
+    this.closeDisplayColumnDropdown();
+  }
+
+  getSelectedDisplayColumnLabel(): string {
+    return this.selectedDisplayColumn || 'Select a column';
   }
 
 }

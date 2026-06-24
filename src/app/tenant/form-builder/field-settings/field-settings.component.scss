@@ -93,3 +93,55 @@ $theme-text: #334155;
 }
 
 
+.module-select {
+  position: relative;
+  width: 100%;
+}
+
+.field-settings-select {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.module-select__menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 1000;
+
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 10px 20px rgb(0 0 0 / 10%);
+  overflow: hidden;
+}
+
+.module-select__option {
+  width: 100%;
+  border: none;
+  background: transparent;
+  text-align: left;
+  padding: 10px 12px;
+  cursor: pointer;
+  font-size: 14px;
+
+  &:hover {
+    background: #fff3e7;
+  }
+}
+
+.module-select__option--selected {
+  background: #fff3e7;
+  font-weight: 500;
+}
+
+.dropdown-arrow {
+  transition: transform 0.2s ease;
+}
+
+.dropdown-arrow--open {
+  transform: rotate(180deg);
+}

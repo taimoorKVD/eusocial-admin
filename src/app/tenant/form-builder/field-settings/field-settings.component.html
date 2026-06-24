@@ -104,7 +104,7 @@
     <div *ngIf="optionsMode === 'dynamic'" class="space-y-3">
       <div>
         <label class="mb-1.5 block text-xs font-medium text-slate-600">Select Module</label>
-        <select
+        <!-- <select
           [ngModel]="selectedModuleSlug"
           (ngModelChange)="onModuleChange($event)"
           class="field-settings-select"
@@ -116,7 +116,66 @@
           >
             {{ getModuleLabel(module) }}
           </option>
-        </select>
+        </select> -->
+        <div class="module-select">
+          <button
+            type="button"
+            class="field-settings-select"
+            (click)="toggleModuleDropdown()"
+          >
+            <span>{{ getSelectedModuleLabel() }}</span>
+
+             <span class="dropdown-arrow">
+                @if (isDisplayColumnDropdownOpen()) {
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M18 15L12 9L6 15"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                } @else {
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M6 9L12 15L18 9"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                }
+              </span>
+          </button>
+
+          @if (isModuleDropdownOpen()) {
+            <div class="module-select__menu">
+              <button
+                type="button"
+                class="module-select__option"
+                (click)="selectModule('')"
+              >
+                Select a module
+              </button>
+
+              @for (module of availableModules; track getModuleSlug(module)) {
+                <button
+                  type="button"
+                  class="module-select__option"
+                  [class.module-select__option--selected]="
+                    selectedModuleSlug === getModuleSlug(module)
+                  "
+                  (click)="selectModule(getModuleSlug(module))"
+                >
+                  {{ getModuleLabel(module) }}
+                </button>
+              }
+            </div>
+          }
+        </div>
+
         <p *ngIf="modulesLoading" class="mt-1 text-xs text-slate-400">Loading modules...</p>
         <p *ngIf="modulesError" class="mt-1 text-xs text-red-500">{{ modulesError }}</p>
         <p *ngIf="recordsLoading" class="mt-1 text-xs text-slate-400">Loading records...</p>
@@ -124,7 +183,7 @@
 
       <div *ngIf="selectedModuleSlug && moduleColumns.length">
         <label class="mb-1.5 block text-xs font-medium text-slate-600">Select Display Column</label>
-        <select
+        <!-- <select
           [ngModel]="selectedDisplayColumn"
           (ngModelChange)="onDisplayColumnChange($event)"
           class="field-settings-select"
@@ -133,7 +192,65 @@
           <option *ngFor="let column of moduleColumns" [ngValue]="column">
             {{ column }}
           </option>
-        </select>
+        </select> -->
+         <div class="module-select">
+            <button
+              type="button"
+              class="field-settings-select"
+              (click)="toggleDisplayColumnDropdown()"
+            >
+              <span>{{ getSelectedDisplayColumnLabel() }}</span>
+
+              <span class="dropdown-arrow">
+                @if (isDisplayColumnDropdownOpen()) {
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M18 15L12 9L6 15"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                } @else {
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M6 9L12 15L18 9"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                }
+              </span>
+            </button>
+
+            @if (isDisplayColumnDropdownOpen()) {
+              <div class="module-select__menu">
+                <button
+                  type="button"
+                  class="module-select__option"
+                  (click)="selectDisplayColumn('')"
+                >
+                  Select a column
+                </button>
+
+                @for (column of moduleColumns; track column) {
+                  <button
+                    type="button"
+                    class="module-select__option"
+                    [class.module-select__option--selected]="
+                      selectedDisplayColumn === column
+                    "
+                    (click)="selectDisplayColumn(column)"
+                  >
+                    {{ column }}
+                  </button>
+                }
+              </div>
+            }
+          </div>
       </div>
 
       <p
