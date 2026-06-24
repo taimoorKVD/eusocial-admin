@@ -1,21 +1,21 @@
 import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { ToastrService } from 'ngx-toastr';
+import { FormField } from '../../form-builder/models/form-field.model';
+import { normalizeFieldOrder } from '../../form-builder/utils/form-field.factory';
 import {
-  FieldOption,
-  FormField,
-  OptionSource,
-} from '../../form-builder/models/form-field.model';
-import {
-  createFieldFromTemplate,
-  generateFieldId,
-  normalizeFieldOrder,
-  sanitizeField,
-  toFieldName,
-} from '../../form-builder/utils/form-field.factory';
+  applyCanvasDrop,
+  duplicateFormField,
+  removeFormField,
+  updateFormField,
+} from '../../form-builder/utils/form-field-operations';
+import { FormBuilderTab } from '../components/form-builder-workspace/form-builder-workspace.component';
 import { FormStorageService } from '../services/form-storage.service';
 import { FormsEditorCanDeactivate } from '../guards/forms-editor-can-deactivate.interface';
+import {
+  buildFormSchemaPayload,
+  serializeSchemaFields,
+} from '../utils/form-schema-payload.utils';
 
 @Component({
   selector: 'app-forms-editor',
@@ -29,7 +29,7 @@ export class FormsEditorComponent
   moduleName = '';
   builderSchema: FormField[] = [];
   selectedFieldId: string | null = null;
-  activeTab: 'fields' | 'settings' | 'versions' = 'fields';
+  activeTab: FormBuilderTab = 'fields';
   formName = 'Users Dynamic Form';
   formId: string | number | null = null;
   showExitConfirmModal = false;
@@ -46,7 +46,6 @@ export class FormsEditorComponent
     return this.loadingStates.size > 0;
   }
 
-  /** Connected list IDs (palette ↔ canvas). */
   readonly paletteListId = 'sidebarList';
   readonly canvasListId = 'canvasList';
 
@@ -56,18 +55,6 @@ export class FormsEditorComponent
     private formStorageService: FormStorageService,
     private toastr: ToastrService
   ) {}
-
-  get selectedField(): FormField | null {
-    if (!this.selectedFieldId) {
-      return null;
-    }
-
-    return this.builderSchema.find(field => field.id === this.selectedFieldId) || null;
-  }
-
-  get hiddenFields(): FormField[] {
-    return this.builderSchema.filter(field => field.isShow === false);
-  }
 
   ngOnInit(): void {
     this.route.paramMap.subscribe(params => {
@@ -127,25 +114,13 @@ export class FormsEditorComponent
     }
   }
 
-  onCanvasDrop(event: CdkDragDrop<FormField[]>): void {
-    if (event.previousContainer === event.container) {
-      const reordered = [...this.builderSchema];
-      moveItemInArray(reordered, event.previousIndex, event.currentIndex);
-      this.builderSchema = normalizeFieldOrder(reordered);
-      return;
+  onCanvasDrop(event: Parameters<typeof applyCanvasDrop>[0]): void {
+    const result = applyCanvasDrop(event, this.builderSchema);
+    this.builderSchema = result.schema;
+
+    if (result.insertedField) {
+      this.onSelectField(result.insertedField);
     }
-
-    const template = event.item.data as Partial<FormField>;
-    const field = createFieldFromTemplate(template);
-    const updated = [...this.builderSchema];
-    const insertIndex = Math.min(
-      Math.max(event.currentIndex, 0),
-      updated.length
-    );
-
-    updated.splice(insertIndex, 0, field);
-    this.builderSchema = normalizeFieldOrder(updated);
-    this.onSelectField(field);
   }
 
   onSelectField(field: FormField): void {
@@ -153,81 +128,17 @@ export class FormsEditorComponent
     this.activeTab = 'settings';
   }
 
-  trackByFieldId(_index: number, field: FormField): string {
-    return field.id;
-  }
-
-  private cloneOptionSourceOptions(
-    options?: string[] | FieldOption[]
-  ): string[] | FieldOption[] | undefined {
-    if (!options) {
-      return undefined;
-    }
-
-    if (options.every(option => typeof option === 'string')) {
-      return [...options] as string[];
-    }
-
-    return (options as FieldOption[]).map(option => ({ ...option }));
-  }
-
-  private cloneOptionSource(optionSource?: OptionSource): OptionSource | undefined {
-    if (!optionSource) {
-      return undefined;
-    }
-
-    return {
-      ...optionSource,
-      response: optionSource.response ? { ...optionSource.response } : undefined,
-      options: this.cloneOptionSourceOptions(optionSource.options),
-    };
-  }
-
   onDuplicateField(field: FormField): void {
-    const index = this.builderSchema.findIndex(item => item.id === field.id);
-    if (index === -1) {
-      return;
+    const result = duplicateFormField(field, this.builderSchema);
+    this.builderSchema = result.schema;
+
+    if (result.duplicate) {
+      this.onSelectField(result.duplicate);
     }
-
-    const duplicateLabel = `${field.label} Copy`;
-    const duplicateName = this.buildUniqueFieldName(toFieldName(duplicateLabel));
-
-    const clone = createFieldFromTemplate({
-      ...field,
-      id: generateFieldId(),
-      label: duplicateLabel,
-      name: duplicateName,
-      options: (field.options || []).map(option =>
-        typeof option === 'string' ? option : { ...option }
-      ),
-      optionSource: this.cloneOptionSource(field.optionSource),
-      condition: field.condition
-        ? { ...field.condition }
-        : { fieldId: '', value: '' },
-      validations: field.validations ? { ...field.validations } : {},
-    });
-
-    this.builderSchema = normalizeFieldOrder([
-      ...this.builderSchema.slice(0, index + 1),
-      clone,
-      ...this.builderSchema.slice(index + 1),
-    ]);
-    this.onSelectField(clone);
   }
 
   onDeleteField(field: FormField): void {
-    const deleteIndex = this.builderSchema.findIndex(item => item === field);
-    const fallbackIndex = this.builderSchema.findIndex(item => item.id === field.id);
-    const targetIndex = deleteIndex >= 0 ? deleteIndex : fallbackIndex;
-
-    if (targetIndex === -1) {
-      return;
-    }
-
-    this.builderSchema = normalizeFieldOrder([
-      ...this.builderSchema.slice(0, targetIndex),
-      ...this.builderSchema.slice(targetIndex + 1),
-    ]);
+    this.builderSchema = removeFormField(field, this.builderSchema);
 
     if (
       this.selectedFieldId &&
@@ -238,11 +149,7 @@ export class FormsEditorComponent
     }
   }
 
-  setActiveTab(tab: 'fields' | 'settings' | 'versions'): void {
-    if (tab === 'settings' && !this.selectedFieldId) {
-      return;
-    }
-
+  onActiveTabChange(tab: FormBuilderTab): void {
     this.activeTab = tab;
   }
 
@@ -279,92 +186,19 @@ export class FormsEditorComponent
   }
 
   updateField(updated: FormField): void {
-    const index = this.builderSchema.findIndex(field => field.id === updated.id);
-
-    if (index === -1) {
-      return;
-    }
-
-    const normalizedField = sanitizeField({
-      ...updated,
-      isShow: updated.isShow !== false,
-      isReadonly: updated.isReadonly === true,
-      options: [...(updated.options || [])],
-      optionSource: updated.optionSource
-        ? { ...updated.optionSource }
-        : undefined,
-      condition: updated.condition
-        ? { ...updated.condition }
-        : { fieldId: '', value: '' },
-    });
-
-    this.builderSchema = normalizeFieldOrder(
-      this.builderSchema.map((field, fieldIndex) =>
-        fieldIndex === index ? normalizedField : field
-      )
-    );
-    this.selectedFieldId = normalizedField.id;
-    this.activeTab = 'settings';
-  }
-
-  private buildUniqueFieldName(baseName: string): string {
-    const normalizedBase = baseName.trim() || 'field';
-    const existingNames = new Set(
-      this.builderSchema
-        .map(field => String(field.name || '').trim().toLowerCase())
-        .filter(Boolean)
+    this.builderSchema = updateFormField(updated, this.builderSchema);
+    const normalizedField = this.builderSchema.find(
+      field => field.id === updated.id
     );
 
-    if (!existingNames.has(normalizedBase.toLowerCase())) {
-      return normalizedBase;
+    if (normalizedField) {
+      this.selectedFieldId = normalizedField.id;
+      this.activeTab = 'settings';
     }
-
-    let suffix = 2;
-    let candidate = `${normalizedBase}_${suffix}`;
-
-    while (existingNames.has(candidate.toLowerCase())) {
-      suffix += 1;
-      candidate = `${normalizedBase}_${suffix}`;
-    }
-
-    return candidate;
   }
 
   buildPayload() {
-    const orderedFields = normalizeFieldOrder([...this.builderSchema]);
-
-    return {
-      schema: {
-        sections: [],
-        fields: orderedFields.map((field, index) => ({
-          ...field,
-          id: field.id,
-          fieldTypeName: field.fieldTypeName || field.type,
-          fieldKey: 'name',
-          label: field.label,
-          name: toFieldName(field.label),
-          placeholder: field.placeholder,
-          isRequired: field.required,
-          isShow: field.isShow !== false,
-          optionSource: field.optionSource,
-          isReadonly: field.isReadonly === true,
-          isSystemField: true,
-          isEditable: true,
-          isDeletable: false,
-          layoutConfig: {
-            grid_width_mobile: 12,
-            grid_width_desktop: 6,
-          },
-          defaultValue: field.defaultValue ?? field.value ?? null,
-          options: field.options || [],
-          validations: field.validations || {},
-          sortOrder: index + 1,
-          width: field.width ?? 12,
-        })),
-        conditionalRules: [],
-      },
-      markAsDraft: false,
-    };
+    return buildFormSchemaPayload(this.builderSchema);
   }
 
   saveForm(): void {
@@ -479,15 +313,11 @@ export class FormsEditorComponent
       return false;
     }
 
-    return this.serializeSchema(this.builderSchema) !== this.savedSnapshot;
+    return serializeSchemaFields(this.builderSchema) !== this.savedSnapshot;
   }
 
   private updateSavedSnapshot(): void {
-    this.savedSnapshot = this.serializeSchema(this.builderSchema);
-  }
-
-  private serializeSchema(fields: FormField[]): string {
-    return JSON.stringify(this.buildPayload().schema.fields);
+    this.savedSnapshot = serializeSchemaFields(this.builderSchema);
   }
 
   private revertModuleRoute(): void {

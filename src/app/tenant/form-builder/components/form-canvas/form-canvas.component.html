@@ -1,7 +1,7 @@
 <div
   cdkDropList
   #canvasList="cdkDropList"
-  id="canvasList"
+  [id]="dropListId"
   class="form-canvas-drop-list grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-x-6 md:gap-y-4"
   [cdkDropListData]="schema"
   [cdkDropListConnectedTo]="connectedDropLists"

@@ -25,6 +25,7 @@ export class FormCanvasComponent {
   @Input() schema: FormField[] = [];
   @Input() selectedFieldId: string | null = null;
   @Input() connectedDropLists: Array<CdkDropList<FormField[]> | string> = [];
+  @Input() dropListId = 'canvasList';
 
   @Output() dropped = new EventEmitter<CdkDragDrop<FormField[]>>();
   @Output() selectField = new EventEmitter<FormField>();
