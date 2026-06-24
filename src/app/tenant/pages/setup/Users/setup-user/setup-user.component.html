@@ -1,3 +1,13 @@
+<app-confirm-modal
+  [isOpen]="showConfirmModal()"
+  [title]="confirmModalTitle"
+  [description]="confirmModalDescription"
+  confirmText="Confirm"
+  cancelText="Close"
+  (confirmed)="onConfirmed()"
+  (closed)="onClosed()"
+></app-confirm-modal>
+
 @if (showUserFormLoader()) {
   <app-eu-loader></app-eu-loader>
 }
@@ -54,11 +64,13 @@
         ></app-dynamic-form>
 
         <div class="tenant-user-actions">
-          <button type="button" class="btn btn--delete">
-            Delete
-          </button>
+          @if (userId()) {
+            <button type="button" (click)="onFormDelete()" class="btn btn--delete">
+              Delete
+            </button>
+          }
 
-          <button type="button" class="btn btn--cancel">
+          <button (click)="onFormCancel()" type="button" class="btn btn--cancel">
             Cancel
           </button>
 

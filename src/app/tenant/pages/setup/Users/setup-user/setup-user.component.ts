@@ -479,4 +479,81 @@ export class SetupUserComponent {
       value: item[valueKey],
     })) as DynamicField['options'];
   }
+
+  readonly showConfirmModal = signal(false);
+  confirmModalTitle = '';
+  confirmModalDescription = '';
+
+  private pendingAction: 'delete' | 'cancel' | null = null;
+
+  onFormDelete() {
+    this.pendingAction = 'delete';
+
+    this.confirmModalTitle = 'Delete User';
+    this.confirmModalDescription =
+      'Are you sure you want to delete this user?';
+
+    this.showConfirmModal.set(true);
+  }
+
+  onFormCancel() {
+    this.pendingAction = 'cancel';
+
+    this.confirmModalTitle = 'Discard Changes';
+    this.confirmModalDescription =
+      'Are you sure you want to leave this page? Any unsaved changes will be lost.';
+
+    this.showConfirmModal.set(true);
+  }
+
+  onConfirmed() {
+    this.showConfirmModal.set(false);
+
+    switch (this.pendingAction) {
+      case 'delete':
+        this.deleteUser();
+        break;
+
+      case 'cancel':
+        this.router.navigate([
+          '/tenant',
+          this.tenantSession.getSlug(),
+          'users',
+        ]);
+        break;
+    }
+
+    this.pendingAction = null;
+  }
+
+  onClosed() {
+    this.showConfirmModal.set(false);
+    this.pendingAction = null;
+  }
+
+  private deleteUser() {
+    const id = this.userId();
+
+    if (!id) return;
+
+    this.userService
+      .deleteUser(Number(id))
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.toastr.success('User deleted successfully');
+          this.router.navigate([
+            '/tenant',
+            this.tenantSession.getSlug(),
+            'users',
+          ]);
+        },
+        error: (err) => {
+          this.toastr.error(
+            err?.error?.message || 'Failed to delete user'
+          );
+        },
+      });
+  }
+
 }
