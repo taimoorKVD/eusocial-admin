@@ -142,7 +142,7 @@
                 >
                   <span
                     class="truncate"
-                    [class.text-gray-400]="!form.get(field.name)?.value"
+                    [class.text-[#000000]]="!form.get(field.name)?.value"
                   >
                     {{ getSelectDisplayLabel(field) }}
                   </span>
@@ -187,7 +187,7 @@
                         <button
                           type="button"
                           (click)="selectOption(field)"
-                          class="w-full text-left px-3 py-2 rounded-md text-sm font-ibm text-gray-600 hover:bg-gray-100 transition-colors"
+                          class="w-full text-left px-3 py-2 rounded-md text-sm font-ibm text-[#000000] hover:bg-[#FFF3E7] transition-colors"
                         >
                           {{ 'Select ' + field.label }}
                         </button>
@@ -196,9 +196,9 @@
                           <button
                             type="button"
                             (click)="selectOption(field, option, $index)"
-                            class="w-full text-left px-3 py-2 rounded-md text-sm font-ibm text-gray-700 hover:bg-blue-50 hover:text-[#ea580c] transition-colors"
-                            [class.bg-blue-50]="isSelectOptionSelected(field, option, $index)"
-                            [class.text-[#ea580c]]="isSelectOptionSelected(field, option, $index)"
+                            class="w-full text-left px-3 py-2 rounded-md text-sm font-ibm text-[#000000] hover:bg-[#FFF3E7] transition-colors"
+                            [class.bg-[#FFF3E7]]="isSelectOptionSelected(field, option, $index)"
+                            [class.text-[#000000]]="isSelectOptionSelected(field, option, $index)"
                           >
                             {{ getOptionLabel(option) }}
                           </button>
@@ -217,24 +217,49 @@
             }
 
             @case ('checkbox') {
-              <div class="option-group option-group--checkbox">
-                <div formArrayName="{{ field.name }}" class="checkbox-wrapper">
-                  @for (option of field.options; track getOptionValue(option, $index); let i = $index) {
-                    <div class="option-item">
-                      <input
-                        type="checkbox"
-                        class="option-input"
-                        [id]="field.name + '_' + i"
-                        [checked]="isChecked(field.name, getOptionValue(option, i))"
-                        (change)="onMultiCheckboxChange(field.name, getOptionValue(option, i), $event)"
-                      />
-                      <label class="option-label" [for]="field.name + '_' + i">
-                        {{ getOptionLabel(option) }}
+              @if (field.name === 'availability_days') {
+                <div class="availability-days-group">
+                  <div class="availability-days-row">
+                    @for (option of field.options; track getOptionValue(option, $index); let i = $index) {
+                      <label
+                        class="availability-days-option"
+                        [class.availability-days-option--selected]="isChecked(field.name, getOptionValue(option, i))"
+                        [for]="field.name + '_' + i"
+                      >
+                        <input
+                          type="checkbox"
+                          class="availability-days-option__input"
+                          [id]="field.name + '_' + i"
+                          [checked]="isChecked(field.name, getOptionValue(option, i))"
+                          (change)="onMultiCheckboxChange(field.name, getOptionValue(option, i), $event)"
+                        />
+                        <span class="availability-days-option__label">
+                          {{ getOptionLabel(option) }}
+                        </span>
                       </label>
-                    </div>
-                  }
+                    }
+                  </div>
                 </div>
-              </div>
+              } @else {
+                <div class="option-group option-group--checkbox">
+                  <div formArrayName="{{ field.name }}" class="checkbox-wrapper">
+                    @for (option of field.options; track getOptionValue(option, $index); let i = $index) {
+                      <div class="option-item">
+                        <input
+                          type="checkbox"
+                          class="option-input"
+                          [id]="field.name + '_' + i"
+                          [checked]="isChecked(field.name, getOptionValue(option, i))"
+                          (change)="onMultiCheckboxChange(field.name, getOptionValue(option, i), $event)"
+                        />
+                        <label class="option-label" [for]="field.name + '_' + i">
+                          {{ getOptionLabel(option) }}
+                        </label>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
             }
 
             @case ('radio') {

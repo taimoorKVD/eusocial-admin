@@ -47,7 +47,7 @@
                   [class.border-[#ea580c]]="filterDropdown.isOpen"
                   [attr.aria-expanded]="filterDropdown.isOpen"
                 >
-                  <span class="truncate" [class.text-gray-400]="!filters()[field.key]">
+                  <span class="truncate" [class.text-[#000000]]="!filters()[field.key]">
                     {{ getSelectDisplayLabel(field) }}
                   </span>
                   <svg
@@ -100,9 +100,9 @@
                           <button
                             type="button"
                             (click)="selectOption(field, option)"
-                            class="w-full text-left px-3 py-2 rounded-md text-sm font-ibm text-gray-700 hover:bg-blue-50 hover:text-[#ea580c] transition-colors"
-                            [class.bg-blue-50]="filters()[field.key] == option.id"
-                            [class.text-[#ea580c]]="filters()[field.key] == option.id"
+                            class="w-full text-left px-3 py-2 rounded-md text-sm font-ibm text-[#000000] hover:bg-[#FFF3E7] transition-colors"
+                            [class.bg-[#FFF3E7]]="filters()[field.key] == option.id"
+                            [class.text-[#000000]]="filters()[field.key] == option.id"
                           >
                             {{ option.name }}
                           </button>
@@ -139,21 +139,44 @@
             }
 
             @case ('checkbox') {
-              <div class="flex flex-col gap-2">
-                @for (option of field.options; track getOptionValue(option)) {
-                  <label class="flex items-center gap-2 text-sm text-gray-700 font-ibm cursor-pointer">
-                    <input
-                      type="checkbox"
-                      [name]="field.key"
-                      [value]="getOptionValue(option)"
-                      [checked]="isChecked(field.key, option)"
-                      (change)="onCheckboxChange(field.key, option, $event)"
-                      class="accent-[#ea580c]"
-                    />
-                    <span>{{ getOptionLabel(option) }}</span>
-                  </label>
-                }
-              </div>
+              @if (field.key === 'availability_days') {
+                <div class="availability-days-row">
+                  @for (option of field.options; track getOptionValue(option)) {
+                    <label
+                      class="availability-days-option"
+                      [class.availability-days-option--selected]="isChecked(field.key, option)"
+                    >
+                      <input
+                        type="checkbox"
+                        class="availability-days-option__input"
+                        [name]="field.key"
+                        [value]="getOptionValue(option)"
+                        [checked]="isChecked(field.key, option)"
+                        (change)="onCheckboxChange(field.key, option, $event)"
+                      />
+                      <span class="availability-days-option__label">
+                        {{ getOptionLabel(option) }}
+                      </span>
+                    </label>
+                  }
+                </div>
+              } @else {
+                <div class="flex flex-col gap-2">
+                  @for (option of field.options; track getOptionValue(option)) {
+                    <label class="flex items-center gap-2 text-sm text-gray-700 font-ibm cursor-pointer">
+                      <input
+                        type="checkbox"
+                        [name]="field.key"
+                        [value]="getOptionValue(option)"
+                        [checked]="isChecked(field.key, option)"
+                        (change)="onCheckboxChange(field.key, option, $event)"
+                        class="accent-[#ea580c]"
+                      />
+                      <span>{{ getOptionLabel(option) }}</span>
+                    </label>
+                  }
+                </div>
+              }
             }
 
             @default {

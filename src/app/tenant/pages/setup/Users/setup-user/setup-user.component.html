@@ -38,7 +38,7 @@
       Create / View Users
     </h2>
 
-    @if (!builderVisible()) {
+    @if (!builderVisible() && !userId()) {
       <button
         type="button"
         class="btn btn--cancel"
