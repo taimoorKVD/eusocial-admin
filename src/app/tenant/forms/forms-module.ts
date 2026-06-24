@@ -5,31 +5,19 @@ import { FormsModule as NgFormsModule } from '@angular/forms';
 import { FormsRoutingModule } from './forms-routing-module';
 import { FormsListComponent } from './forms-list/forms-list.component';
 import { FormsEditorComponent } from './forms-editor/forms-editor.component';
-import { FormVersionsPanelComponent } from './form-versions-panel/form-versions-panel.component';
 import { TenantModule } from '../tenant.module';
-import { FormBuilderModule } from '../form-builder/form-builder-module';
-import { DragDropModule } from '@angular/cdk/drag-drop';
-import { FieldSettingsComponent } from '../form-builder/field-settings/field-settings.component';
+import { FormEditorCoreModule } from './form-editor-core.module';
 import { SharedModule } from '../../shared/shared.module';
-import { FormPreviewModalComponent } from './components/form-preview-modal/form-preview-modal.component';
-
 
 @NgModule({
-  declarations: [
-    FormsListComponent,
-    FormsEditorComponent,
-    FormVersionsPanelComponent,
-    FormPreviewModalComponent,
-  ],
+  declarations: [FormsListComponent, FormsEditorComponent],
   imports: [
     CommonModule,
     NgFormsModule,
     FormsRoutingModule,
     TenantModule,
-    FormBuilderModule,
-    DragDropModule,
+    FormEditorCoreModule,
     SharedModule,
-
-  ]
+  ],
 })
-export class FormsModule { }
+export class FormsModule {}

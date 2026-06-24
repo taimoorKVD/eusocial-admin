@@ -1,0 +1,91 @@
+<div class="grid grid-cols-5 gap-4 font-ibm bg-[#fff]">
+  <div class="col-span-5 lg:col-span-3 py-6 pr-4 pl-6">
+    <ng-content select="[formBuilderCanvas]"></ng-content>
+  </div>
+
+  <div class="col-span-5 bg-[#f4f4f4] shadow-sm lg:col-span-2">
+    <div class="flex items-center bg-white gap-2 p-6 justify-end">
+      <div class="flex items-center gap-3">
+        @if (showPreviewAction) {
+          <button
+            type="button"
+            class="btn btn--cancel"
+            (click)="preview.emit()"
+          >
+            Preview Form
+          </button>
+        }
+
+        <button type="button" class="btn btn--save" (click)="save.emit()">
+          Save Form
+        </button>
+      </div>
+    </div>
+
+    <div>
+      <nav class="flex items-center justify-between gap-2 border-[#b2b2b2] border-b">
+        <button
+          type="button"
+          class="px-3 py-4 text-sm font-medium transition focus:outline-none"
+          [ngClass]="activeTab === 'fields' ? ' border-[#FF9015] border-b text-[#FF9015] text-[16px] tracking-[0.32px] font-medium' : 'text-slate-500 hover:bg-slate-100'"
+          (click)="setActiveTab('fields')"
+        >
+          Input Fields
+        </button>
+        <button
+          type="button"
+          class="px-3 py-4 text-sm font-medium transition focus:outline-none"
+          [ngClass]="activeTab === 'settings' ? ' border-[#FF9015] border-b text-[#FF9015] text-[16px] tracking-[0.32px] font-medium' : 'text-slate-500 hover:bg-slate-100'"
+          (click)="setActiveTab('settings')"
+        >
+          Input Customization
+        </button>
+        <button
+          type="button"
+          class="px-3 py-4 text-sm font-medium transition focus:outline-none"
+          [ngClass]="activeTab === 'versions' ? ' border-[#FF9015] border-b text-[#FF9015] text-[16px] tracking-[0.32px] font-medium' : 'text-slate-500 hover:bg-slate-100'"
+          (click)="setActiveTab('versions')"
+        >
+          Versions
+        </button>
+      </nav>
+    </div>
+
+    <div class="p-4">
+      <div [class.hidden]="activeTab !== 'fields'">
+        <app-builder
+          [dropListId]="paletteListId"
+          [connectedDropLists]="[canvasListId]"
+        ></app-builder>
+      </div>
+
+      @if (activeTab === 'versions') {
+        <app-form-versions-panel
+          [moduleName]="moduleName"
+          (restore)="restoreVersion.emit($event)"
+          (loadingChange)="versionsLoadingChange.emit($event)"
+        ></app-form-versions-panel>
+      }
+
+      <div [class.hidden]="activeTab !== 'settings'" class="space-y-4">
+        @if (selectedField) {
+          <app-field-settings
+            [field]="selectedField"
+            [activeModuleName]="moduleName"
+            (update)="updateField.emit($event)"
+            (duplicate)="onDuplicateSelectedField()"
+            (delete)="onDeleteSelectedField()"
+            (loadingChange)="dynamicOptionsLoadingChange.emit($event)"
+          ></app-field-settings>
+        } @else {
+          <div class="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">
+            Click a field on the canvas to edit its settings.
+            @if (hiddenFields.length) {
+              <span> Or pick a hidden field above to re-enable it.</span>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+</div>

@@ -29,7 +29,7 @@ function cloneOptions(
   );
 }
 
-function cloneOptionSourceOptions(
+export function cloneOptionSourceOptions(
   options?: string[] | FieldOption[]
 ): string[] | FieldOption[] | undefined {
   if (!options) {
@@ -43,7 +43,7 @@ function cloneOptionSourceOptions(
   return (options as FieldOption[]).map(option => ({ ...option }));
 }
 
-function cloneOptionSource(optionSource?: OptionSource): OptionSource | undefined {
+export function cloneOptionSource(optionSource?: OptionSource): OptionSource | undefined {
   if (!optionSource) {
     return undefined;
   }

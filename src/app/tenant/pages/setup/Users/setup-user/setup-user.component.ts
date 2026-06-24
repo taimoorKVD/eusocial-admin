@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  HostListener,
   computed,
   inject,
   signal,
@@ -14,7 +15,16 @@ import { catchError, finalize, forkJoin, map, of, switchMap } from 'rxjs';
 import { TenantUserService } from '../../../../../services/tenant-user.service';
 import { TenantSessionService } from '../../../../../services/tenant-session.service';
 import { FormStorageService } from '../../../../forms/services/form-storage.service';
+import { FormField } from '../../../../form-builder/models/form-field.model';
 import { normalizeFieldOrder } from '../../../../form-builder/utils/form-field.factory';
+import {
+  applyCanvasDrop,
+  duplicateFormField,
+  removeFormField,
+  updateFormField,
+} from '../../../../form-builder/utils/form-field-operations';
+import { FormBuilderTab } from '../../../../forms/components/form-builder-workspace/form-builder-workspace.component';
+import { serializeSchemaFields } from '../../../../forms/utils/form-schema-payload.utils';
 import { DynamicFormComponent } from '../../../../../shared/dynamic-form/dynamic-form.component';
 import {
   DynamicField,
@@ -44,12 +54,42 @@ export class SetupUserComponent {
   readonly userId = signal('');
   readonly latestFormValue = signal<DynamicFormValue>({});
 
+  readonly builderVisible = signal(false);
+  readonly builderLoading = signal(false);
+
+  readonly builderSchema = signal<FormField[]>([]);
+  readonly selectedFieldId = signal<string | null>(null);
+  readonly activeTab = signal<FormBuilderTab>('fields');
+  readonly showPreviewModal = signal(false);
+  readonly showBuilderExitConfirm = signal(false);
+
+  readonly paletteListId = 'userSetupPaletteList';
+  readonly canvasListId = 'userSetupCanvasList';
+
+  private formName = 'Users Dynamic Form';
+  private formId: string | number | null = null;
+  private savedSnapshot = '';
+  private schemaReady = false;
+
   readonly hasFormFields = computed(() => this.formFields().length > 0);
-  readonly showEmptyState = computed(() => !this.loading() && !this.hasFormFields());
+  readonly showEmptyState = computed(
+    () => !this.loading() && !this.hasFormFields() && !this.builderVisible()
+  );
+  readonly showUserFormLoader = computed(
+    () => this.loading() && !this.builderVisible()
+  );
 
   ngOnInit(): void {
     this.userId.set(this.route.snapshot.paramMap.get('id') || '');
     this.loadFormFields();
+  }
+
+  @HostListener('window:beforeunload', ['$event'])
+  onBeforeUnload(event: BeforeUnloadEvent): void {
+    if (this.builderVisible() && this.hasBuilderUnsavedChanges()) {
+      event.preventDefault();
+      event.returnValue = '';
+    }
   }
 
   onDynamicFormChange(value: DynamicFormValue): void {
@@ -99,6 +139,209 @@ export class SetupUserComponent {
           this.toastr.error(err?.error?.message || 'Failed to create user');
         },
       });
+  }
+
+  onEditForm(): void {
+    if (this.builderVisible() || this.builderLoading()) {
+      return;
+    }
+
+    this.builderLoading.set(true);
+    this.resetBuilderState();
+
+    this.formStorageService
+      .loadForm('users')
+      .pipe(
+        finalize(() => this.builderLoading.set(false)),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe({
+        next: saved => {
+          if (saved) {
+            this.formName = saved.formName || this.formName;
+            this.formId = saved.formId ?? null;
+            this.builderSchema.set(normalizeFieldOrder(saved.fields || []));
+          } else {
+            this.builderSchema.set([]);
+          }
+
+          this.schemaReady = true;
+          this.updateBuilderSnapshot();
+          this.builderVisible.set(true);
+        },
+        error: error => {
+          console.error('Failed to load form schema:', error);
+          this.toastr.error('Failed to load form configuration');
+          this.builderSchema.set([]);
+          this.schemaReady = true;
+          this.updateBuilderSnapshot();
+        },
+      });
+  }
+
+  onCloseBuilder(): void {
+    if (this.hasBuilderUnsavedChanges()) {
+      this.showBuilderExitConfirm.set(true);
+      return;
+    }
+
+    this.closeBuilder();
+  }
+
+  onConfirmBuilderExit(): void {
+    this.showBuilderExitConfirm.set(false);
+    this.closeBuilder();
+  }
+
+  onCancelBuilderExit(): void {
+    this.showBuilderExitConfirm.set(false);
+  }
+
+  onCanvasDrop(event: Parameters<typeof applyCanvasDrop>[0]): void {
+    const result = applyCanvasDrop(event, this.builderSchema());
+    this.builderSchema.set(result.schema);
+
+    if (result.insertedField) {
+      this.onSelectField(result.insertedField);
+    }
+  }
+
+  onSelectField(field: FormField): void {
+    this.selectedFieldId.set(field.id);
+    this.activeTab.set('settings');
+  }
+
+  onDuplicateField(field: FormField): void {
+    const result = duplicateFormField(field, this.builderSchema());
+    this.builderSchema.set(result.schema);
+
+    if (result.duplicate) {
+      this.onSelectField(result.duplicate);
+    }
+  }
+
+  onDeleteField(field: FormField): void {
+    const nextSchema = removeFormField(field, this.builderSchema());
+    this.builderSchema.set(nextSchema);
+
+    const selectedId = this.selectedFieldId();
+    if (selectedId && !nextSchema.some(item => item.id === selectedId)) {
+      this.selectedFieldId.set(null);
+      this.activeTab.set('fields');
+    }
+  }
+
+  onActiveTabChange(tab: FormBuilderTab): void {
+    this.activeTab.set(tab);
+  }
+
+  onRestoreVersion(_fields: FormField[]): void {
+    this.selectedFieldId.set(null);
+    this.activeTab.set('fields');
+    this.builderLoading.set(true);
+
+    this.formStorageService
+      .loadForm('users')
+      .pipe(
+        finalize(() => this.builderLoading.set(false)),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe({
+        next: saved => {
+          if (saved) {
+            this.formName = saved.formName || this.formName;
+            this.formId = saved.formId ?? null;
+            this.builderSchema.set(normalizeFieldOrder(saved.fields || []));
+            this.updateBuilderSnapshot();
+          }
+        },
+        error: () => {
+          this.toastr.error('Restore succeeded but failed to reload schema');
+        },
+      });
+  }
+
+  onDynamicOptionsLoading(_loading: boolean): void {
+    // Reserved for future loading indicators inside the inline builder.
+  }
+
+  onVersionsLoadingChange(_loading: boolean): void {
+    // Reserved for future loading indicators inside the inline builder.
+  }
+
+  updateField(updated: FormField): void {
+    const nextSchema = updateFormField(updated, this.builderSchema());
+    this.builderSchema.set(nextSchema);
+
+    const normalizedField = nextSchema.find(field => field.id === updated.id);
+    if (normalizedField) {
+      this.selectedFieldId.set(normalizedField.id);
+      this.activeTab.set('settings');
+    }
+  }
+
+  saveBuilderForm(): void {
+    this.builderLoading.set(true);
+    const orderedSchema = normalizeFieldOrder([...this.builderSchema()]);
+    this.builderSchema.set(orderedSchema);
+
+    this.formStorageService
+      .saveForm('users', {
+        formName: this.formName,
+        formId: this.formId,
+        fields: orderedSchema,
+        markAsDraft: false,
+      })
+      .pipe(
+        finalize(() => this.builderLoading.set(false)),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe({
+        next: () => {
+          this.updateBuilderSnapshot();
+          this.toastr.success('Form saved successfully');
+          this.closeBuilder();
+          this.loadFormFields();
+        },
+        error: error => {
+          console.error('Failed to save form schema:', error);
+          this.toastr.error('Failed to save form');
+        },
+      });
+  }
+
+  openPreviewModal(): void {
+    this.showPreviewModal.set(true);
+  }
+
+  closePreviewModal(): void {
+    this.showPreviewModal.set(false);
+  }
+
+  private closeBuilder(): void {
+    this.builderVisible.set(false);
+    this.resetBuilderState();
+  }
+
+  private resetBuilderState(): void {
+    this.builderSchema.set([]);
+    this.selectedFieldId.set(null);
+    this.activeTab.set('fields');
+    this.showPreviewModal.set(false);
+    this.savedSnapshot = '';
+    this.schemaReady = false;
+  }
+
+  private hasBuilderUnsavedChanges(): boolean {
+    if (!this.schemaReady) {
+      return false;
+    }
+
+    return serializeSchemaFields(this.builderSchema()) !== this.savedSnapshot;
+  }
+
+  private updateBuilderSnapshot(): void {
+    this.savedSnapshot = serializeSchemaFields(this.builderSchema());
   }
 
   private loadFormFields(): void {
