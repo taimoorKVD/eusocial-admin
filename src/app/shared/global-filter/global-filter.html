@@ -47,7 +47,7 @@
                   [class.border-[#ea580c]]="filterDropdown.isOpen"
                   [attr.aria-expanded]="filterDropdown.isOpen"
                 >
-                  <span class="truncate" [class.text-gray-400]="!filters()[field.key]">
+                  <span class="truncate" [class.text-[#000000]]="!filters()[field.key]">
                     {{ getSelectDisplayLabel(field) }}
                   </span>
                   <svg
@@ -100,9 +100,9 @@
                           <button
                             type="button"
                             (click)="selectOption(field, option)"
-                            class="w-full text-left px-3 py-2 rounded-md text-sm font-ibm text-gray-700 hover:bg-blue-50 hover:text-[#ea580c] transition-colors"
-                            [class.bg-blue-50]="filters()[field.key] == option.id"
-                            [class.text-[#ea580c]]="filters()[field.key] == option.id"
+                            class="w-full text-left px-3 py-2 rounded-md text-sm font-ibm text-[#000000] hover:bg-[#FFF3E7] transition-colors"
+                            [class.bg-[#FFF3E7]]="filters()[field.key] == option.id"
+                            [class.text-[#000000]]="filters()[field.key] == option.id"
                           >
                             {{ option.name }}
                           </button>
