@@ -86,7 +86,7 @@
               <label class="flex items-center gap-3 px-5 py-2.5 hover:bg-gray-50 cursor-pointer">
                 <input
                   type="checkbox"
-                  class="h-4 w-4 rounded border-gray-300 text-[#ea580c] focus:ring-[#ea580c]"
+                  class="h-4 w-4 rounded accent-[#ea580c]"
                   [checked]="isColumnVisible(field.id)"
                   (change)="onColumnToggle(field, $any($event.target).checked)"
                 />
@@ -99,7 +99,7 @@
         <div class="px-5 py-4 border-t border-gray-100 flex justify-end">
           <button
             type="button"
-            class="inline-flex items-center justify-center px-4 py-2.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 text-sm font-medium font-ibm transition-colors"
+            class="btn btn--delete"
             (click)="closeColumnModal()"
           >
             Close
