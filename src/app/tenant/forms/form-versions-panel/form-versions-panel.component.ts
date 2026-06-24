@@ -1,4 +1,5 @@
 import {
+  ChangeDetectorRef,
   Component,
   EventEmitter,
   Input,
@@ -44,7 +45,8 @@ export class FormVersionsPanelComponent implements OnChanges {
 
   constructor(
     private versionService: FormVersionService,
-    private toastr: ToastrService
+    private toastr: ToastrService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -67,11 +69,13 @@ export class FormVersionsPanelComponent implements OnChanges {
         item.detail = detail;
         this.restore.emit(detail.fields);
         this.toastr.success(`${this.versionLabel(item.version)} restored successfully`);
+        this.cdr.markForCheck();
       },
       error: () => {
         item.restoring = false;
         this.loadingChange.emit(false);
         this.toastr.error('Failed to restore version');
+        this.cdr.markForCheck();
       },
     });
   }
@@ -99,12 +103,14 @@ export class FormVersionsPanelComponent implements OnChanges {
         item.previewing = false;
         this.previewLoading = false;
         this.previewFields = detail.fields;
+        this.cdr.markForCheck();
       },
       error: () => {
         item.previewing = false;
         this.previewLoading = false;
         this.previewModalOpen = false;
         this.toastr.error('Failed to load version preview');
+        this.cdr.markForCheck();
       },
     });
   }
@@ -156,10 +162,12 @@ export class FormVersionsPanelComponent implements OnChanges {
           restoring: false,
           previewing: false,
         }));
+        this.cdr.markForCheck();
       },
       error: () => {
         this.loading = false;
         this.error = 'Failed to load versions.';
+        this.cdr.markForCheck();
       },
     });
   }

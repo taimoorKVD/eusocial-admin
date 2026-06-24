@@ -62,6 +62,7 @@ export class SetupUserComponent {
   readonly activeTab = signal<FormBuilderTab>('fields');
   readonly showPreviewModal = signal(false);
   readonly showBuilderExitConfirm = signal(false);
+  readonly builderVersionsLoading = signal(false);
 
   readonly paletteListId = 'userSetupPaletteList';
   readonly canvasListId = 'userSetupCanvasList';
@@ -265,8 +266,8 @@ export class SetupUserComponent {
     // Reserved for future loading indicators inside the inline builder.
   }
 
-  onVersionsLoadingChange(_loading: boolean): void {
-    // Reserved for future loading indicators inside the inline builder.
+  onVersionsLoadingChange(loading: boolean): void {
+    this.builderVersionsLoading.set(loading);
   }
 
   updateField(updated: FormField): void {
