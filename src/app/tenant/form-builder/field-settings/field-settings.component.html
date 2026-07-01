@@ -40,7 +40,7 @@
       <label for="field-required" class="text-sm text-slate-700">Required field</label>
     </div>
 
-    <div class="flex items-center gap-2">
+    <!-- <div class="flex items-center gap-2">
       <input
         id="field-is-show"
         type="checkbox"
@@ -60,7 +60,7 @@
         class="field-settings-checkbox"
       />
       <label for="field-is-readonly" class="text-sm text-slate-700">Readonly field</label>
-    </div>
+    </div> -->
   </div>
 
   <div *ngIf="isSelectField" class="space-y-3">
@@ -296,3 +296,14 @@
   </div>
 
 </div>
+
+<app-confirm-modal
+  [isOpen]="isDeleteModalOpen"
+  title="Remove Field"
+  message="Remove this field from the form?"
+  confirmText="Remove"
+  cancelText="Cancel"
+  (confirmed)="onDeleteConfirm()"
+  (closed)="onDeleteModalClose()"
+>
+</app-confirm-modal>

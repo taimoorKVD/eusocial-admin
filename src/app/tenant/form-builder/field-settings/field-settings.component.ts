@@ -135,6 +135,7 @@ export class FieldSettingsComponent {
   }
 
   onModuleChange(moduleSlug: string): void {
+    console.log('Module changed to:', moduleSlug);
     if (!moduleSlug) {
       this.selectedModuleSlug = '';
       this.selectedDisplayColumn = '';
@@ -224,12 +225,19 @@ export class FieldSettingsComponent {
     this.duplicate.emit();
   }
 
-  onDeleteClick(): void {
-    if (!confirm('Remove this field from the form?')) {
-      return;
-    }
+  isDeleteModalOpen = false;
 
+  onDeleteClick(): void {
+    this.isDeleteModalOpen = true;
+  }
+
+  onDeleteConfirm(): void {
+    this.isDeleteModalOpen = false;
     this.delete.emit();
+  }
+
+  onDeleteModalClose(): void {
+    this.isDeleteModalOpen = false;
   }
 
   private assignField(value: FormField): void {

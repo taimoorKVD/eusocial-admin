@@ -282,11 +282,15 @@ export class SetupUserComponent {
   }
 
   saveBuilderForm(): void {
-    this.builderLoading.set(true);
     const orderedSchema = normalizeFieldOrder([...this.builderSchema()]);
     this.builderSchema.set(orderedSchema);
-
-    this.formStorageService
+    const hasRequiredField = orderedSchema.some(field => field.required);
+    if (!hasRequiredField) {
+      this.toastr.error('Please mark at least one field as required.');
+      return;
+    }
+    this.builderLoading.set(true);
+      this.formStorageService
       .saveForm('users', {
         formName: this.formName,
         formId: this.formId,
@@ -305,8 +309,7 @@ export class SetupUserComponent {
           this.loadFormFields();
         },
         error: error => {
-          console.error('Failed to save form schema:', error);
-          this.toastr.error('Failed to save form');
+          this.toastr.error(error.error?.message || 'Failed to save form configuration');
         },
       });
   }
