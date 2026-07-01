@@ -249,6 +249,22 @@ export class DynamicFormComponent implements OnDestroy {
     this.cdr.markForCheck();
   }
 
+  clearSelectedOption(field: DynamicField, event: MouseEvent): void {
+    event.stopPropagation(); // Dropdown open na ho
+
+    const control = this.form.get(field.name);
+    if (!control) {
+      return;
+    }
+
+    control.setValue('');
+    control.markAsDirty();
+    control.markAsTouched();
+
+    this.emitNormalizedValue();
+    this.cdr.markForCheck();
+  }
+
   generatePassword(fieldName: string): void {
     const control = this.form.get(fieldName);
     if (!control) {

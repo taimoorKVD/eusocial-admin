@@ -63,6 +63,7 @@ export class FormCanvasComponent {
 
   /** UI-only hide — field stays in schema, DOM, and CDK data. */
   isFieldHidden(field: FormField): boolean {
-    return field.isShow === false;
+    return false;
+    // return field.isShow === false;
   }
 }
