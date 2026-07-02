@@ -18,10 +18,10 @@ export class ErrorInterceptor implements HttpInterceptor {
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     return next.handle(req).pipe(
       catchError((error: HttpErrorResponse) => {
-        // ⚠️ Handle Unauthorized (401) or Forbidden (403)
+
         if ([401, 403].includes(error.status)) {
           console.warn(`${error.status} → logging out user`);
-          this.auth.logout(); // clear localStorage and redirect
+          this.auth.logout();
         }
 
         // Optionally handle server errors
