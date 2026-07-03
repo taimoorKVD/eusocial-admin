@@ -157,6 +157,7 @@ export function sanitizeField(
     required: readRequired(field),
     isShow: readBooleanFlag(field, 'isShow', 'is_show', true),
     isReadonly: readBooleanFlag(field, 'isReadonly', 'is_readonly', false),
+    isEditable: readBooleanFlag(field, 'isEditable', 'is_editable', true),
     options: resolveFieldOptions(type, optionSource, field.options),
     optionSource: cloneOptionSource(optionSource),
     value: field.value ?? field.defaultValue ?? null,

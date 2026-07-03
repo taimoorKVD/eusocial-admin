@@ -8,13 +8,25 @@
     </p>
   </div>
 
+  <div
+    *ngIf="!isFieldEditable"
+    class="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-700"
+  >
+    <svg class="mt-0.5 h-4 w-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+      <rect x="5" y="11" width="14" height="10" rx="2" />
+      <path stroke-linecap="round" d="M8 11V7a4 4 0 0 1 8 0v4" />
+    </svg>
+    <span>This field is locked and cannot be edited.</span>
+  </div>
+
   <div>
     <label class="mb-1.5 block text-xs font-medium text-slate-600">Label</label>
     <input
       type="text"
       [(ngModel)]="field.label"
       (input)="onChange()"
-      class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC]"
+      [disabled]="!isFieldEditable"
+      class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
     />
   </div>
 
@@ -24,7 +36,8 @@
       type="text"
       [(ngModel)]="field.placeholder"
       (input)="onChange()"
-      class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC]"
+      [disabled]="!isFieldEditable"
+      class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
     />
   </div>
 
@@ -35,6 +48,7 @@
         type="checkbox"
         [(ngModel)]="field.required"
         (change)="onChange()"
+        [disabled]="!isFieldEditable"
         class="field-settings-checkbox"
       />
       <label for="field-required" class="text-sm text-slate-700">Required field</label>
@@ -73,6 +87,7 @@
             name="select-options-mode"
             [checked]="optionsMode === 'static'"
             (change)="setOptionsMode('static')"
+            [disabled]="!isFieldEditable"
             class="field-settings-radio"
           />
           Static Options
@@ -84,6 +99,7 @@
             name="select-options-mode"
             [checked]="optionsMode === 'dynamic'"
             (change)="setOptionsMode('dynamic')"
+            [disabled]="!isFieldEditable"
             class="field-settings-radio"
           />
           Dynamic Options
@@ -97,7 +113,8 @@
         rows="5"
         [value]="optionsText"
         (input)="updateOptions($event)"
-        class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC]"
+        [disabled]="!isFieldEditable"
+        class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
       ></textarea>
     </div>
 
@@ -122,6 +139,7 @@
             type="button"
             class="field-settings-select"
             (click)="toggleModuleDropdown()"
+            [disabled]="!isFieldEditable"
           >
             <span>{{ getSelectedModuleLabel() }}</span>
 
@@ -198,6 +216,7 @@
               type="button"
               class="field-settings-select"
               (click)="toggleDisplayColumnDropdown()"
+              [disabled]="!isFieldEditable"
             >
               <span>{{ getSelectedDisplayColumnLabel() }}</span>
 
@@ -273,7 +292,8 @@
         rows="5"
         [value]="optionsText"
         (input)="updateOptions($event)"
-        class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC]"
+        [disabled]="!isFieldEditable"
+        class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
       ></textarea>
     </ng-container>
   </div>
@@ -281,15 +301,17 @@
   <div class="flex gap-2 border-t border-slate-100 pt-4">
     <button
       type="button"
-      class="flex-1 rounded-md border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+      class="flex-1 rounded-md border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:border-slate-100 disabled:text-slate-300 disabled:hover:bg-transparent"
       (click)="onDuplicateClick()"
+      [disabled]="!isFieldEditable"
     >
       Duplicate
     </button>
     <button
       type="button"
-      class="flex-1 rounded-md border border-red-200 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
+      class="flex-1 rounded-md border border-red-200 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:border-slate-100 disabled:text-slate-300 disabled:hover:bg-transparent"
       (click)="onDeleteClick()"
+      [disabled]="!isFieldEditable"
     >
       Delete
     </button>

@@ -81,7 +81,7 @@ export class FieldSettingsComponent {
   constructor(private dynamicModuleOptionsService: DynamicModuleOptionsService) {}
 
   onChange(): void {
-    if (!this._field) {
+    if (!this._field || !this.isFieldEditable) {
       return;
     }
 
@@ -98,7 +98,7 @@ export class FieldSettingsComponent {
   }
 
   onShowChange(show: boolean): void {
-    if (!this._field) {
+    if (!this._field || !this.isFieldEditable) {
       return;
     }
 
@@ -110,6 +110,10 @@ export class FieldSettingsComponent {
     return this._field?.isShow === false;
   }
 
+  get isFieldEditable(): boolean {
+    return this._field?.isEditable !== false;
+  }
+
   get isSelectField(): boolean {
     return this._field?.type === 'select';
   }
@@ -119,6 +123,10 @@ export class FieldSettingsComponent {
   }
 
   setOptionsMode(mode: SelectOptionsMode): void {
+    if (!this.isFieldEditable) {
+      return;
+    }
+
     this.optionsMode = mode;
 
     if (mode === 'dynamic') {
@@ -135,6 +143,10 @@ export class FieldSettingsComponent {
   }
 
   onModuleChange(moduleSlug: string): void {
+    if (!this.isFieldEditable) {
+      return;
+    }
+
     console.log('Module changed to:', moduleSlug);
     if (!moduleSlug) {
       this.selectedModuleSlug = '';
@@ -159,6 +171,10 @@ export class FieldSettingsComponent {
   }
 
   onDisplayColumnChange(column: string): void {
+    if (!this.isFieldEditable) {
+      return;
+    }
+
     this.selectedDisplayColumn = column;
 
     if (!column) {
@@ -188,7 +204,7 @@ export class FieldSettingsComponent {
   }
 
   updateOptions(event: Event): void {
-    if (!this._field) {
+    if (!this._field || !this.isFieldEditable) {
       return;
     }
 
@@ -222,12 +238,20 @@ export class FieldSettingsComponent {
   }
 
   onDuplicateClick(): void {
+    if (!this.isFieldEditable) {
+      return;
+    }
+
     this.duplicate.emit();
   }
 
   isDeleteModalOpen = false;
 
   onDeleteClick(): void {
+    if (!this.isFieldEditable) {
+      return;
+    }
+
     this.isDeleteModalOpen = true;
   }
 
@@ -507,6 +531,10 @@ export class FieldSettingsComponent {
   }
 
   selectModule(slug: string): void {
+    if (!this.isFieldEditable) {
+      return;
+    }
+
     this.selectedModuleSlug = slug;
     this.onModuleChange(slug);
     this.closeModuleDropdown();
@@ -533,6 +561,10 @@ export class FieldSettingsComponent {
   }
 
   selectDisplayColumn(column: string): void {
+    if (!this.isFieldEditable) {
+      return;
+    }
+
     this.selectedDisplayColumn = column;
     this.onDisplayColumnChange(column);
     this.closeDisplayColumnDropdown();

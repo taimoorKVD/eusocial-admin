@@ -37,6 +37,17 @@ $theme-text: #334155;
     border-color: $theme-accent;
     box-shadow: 0 0 0 3px $theme-accent-ring;
   }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+    background-color: #f1f5f9;
+
+    &:hover {
+      border-color: #cbd5e1;
+      background-color: #f1f5f9;
+    }
+  }
 }
 
 .field-settings-checkbox {
@@ -89,6 +100,18 @@ $theme-text: #334155;
   option:checked {
     background: $theme-accent linear-gradient(0deg, $theme-accent 0%, $theme-accent 100%);
     color: #fff;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+    background-color: #f1f5f9;
+    color: #94a3b8;
+
+    &:hover {
+      border-color: $theme-border;
+      background-color: #f1f5f9;
+    }
   }
 }
 
