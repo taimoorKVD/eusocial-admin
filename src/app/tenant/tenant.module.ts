@@ -14,8 +14,9 @@ import { UserDashboardComponent } from './pages/user-dashboard/user-dashboard.co
 import { SetupJobPositionComponent } from './pages/setup/Job-Positions/setup-job-position/setup-job-position.component';
 import { TenantLoginComponent } from './tenant-login/tenant-login.component';
 import { SetupVendorsComponent } from './pages/setup/Vendor/setup-vendors/setup-vendors.component';
-import { SetupItems } from './pages/setup/setup-items/setup-items';
 import { SetupReportingGroup } from './pages/setup/setup-reporting-group/setup-reporting-group';
+import { SetupItemsListing } from './pages/setup/Items/setup-items-listing/setup-items-listing';
+import { SetupItemComponent } from './pages/setup/Items/setup-item/setup-item.component';
 import { SetupUserComponent } from './pages/setup/Users/setup-user/setup-user.component';
 import { SetupUsersListing } from './pages/setup/Users/setup-users-listing/setup-users-listing';
 import { SetupJobPositionListingComponent } from './pages/setup/Job-Positions/setup-job-position-listing/setup-job-position-listing.component';
@@ -46,7 +47,8 @@ import { FormEditorCoreModule } from './forms/form-editor-core.module';
     TenantResetPasswordComponent,
     SetupVendorsComponent,
     SetupVendorsListingComponent,
-    SetupItems,
+    SetupItemsListing,
+    SetupItemComponent,
     SetupReportingGroup,
     LocationComponent,
     LocationListingComponent,

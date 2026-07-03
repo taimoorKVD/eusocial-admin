@@ -12,7 +12,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ToastrService } from 'ngx-toastr';
 import { ActivatedRoute, Router } from '@angular/router';
 import { catchError, finalize, forkJoin, map, of, switchMap } from 'rxjs';
-import { TenantUserService } from '../../../../../services/tenant-user.service';
+import { TenantItemService } from '../../../../../services/tenant-item.service';
 import { TenantSessionService } from '../../../../../services/tenant-session.service';
 import { FormStorageService } from '../../../../forms/services/form-storage.service';
 import { FormField } from '../../../../form-builder/models/form-field.model';
@@ -32,26 +32,26 @@ import {
 } from '../../../../../interfaces/dynamic-field';
 
 @Component({
-  selector: 'app-setup-user',
+  selector: 'app-setup-item',
   standalone: false,
-  templateUrl: './setup-user.component.html',
-  styleUrl: './setup-user.component.scss',
+  templateUrl: './setup-item.component.html',
+  styleUrl: './setup-item.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class SetupUserComponent {
+export class SetupItemComponent {
   private readonly toastr = inject(ToastrService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly tenantSession = inject(TenantSessionService);
   private readonly formStorageService = inject(FormStorageService);
-  private readonly userService = inject(TenantUserService);
+  private readonly itemService = inject(TenantItemService);
   private readonly destroyRef = inject(DestroyRef);
 
   private readonly dynamicForm = viewChild(DynamicFormComponent);
 
   readonly loading = signal(false);
   readonly formFields = signal<DynamicField[]>([]);
-  readonly userId = signal('');
+  readonly itemId = signal('');
   readonly latestFormValue = signal<DynamicFormValue>({});
 
   readonly builderVisible = signal(false);
@@ -64,10 +64,10 @@ export class SetupUserComponent {
   readonly showBuilderExitConfirm = signal(false);
   readonly builderVersionsLoading = signal(false);
 
-  readonly paletteListId = 'userSetupPaletteList';
-  readonly canvasListId = 'userSetupCanvasList';
+  readonly paletteListId = 'itemSetupPaletteList';
+  readonly canvasListId = 'itemSetupCanvasList';
 
-  private formName = 'Users Dynamic Form';
+  private formName = 'Items Dynamic Form';
   private formId: string | number | null = null;
   private savedSnapshot = '';
   private schemaReady = false;
@@ -76,12 +76,12 @@ export class SetupUserComponent {
   readonly showEmptyState = computed(
     () => !this.loading() && !this.hasFormFields() && !this.builderVisible()
   );
-  readonly showUserFormLoader = computed(
+  readonly showItemFormLoader = computed(
     () => this.loading() && !this.builderVisible()
   );
 
   ngOnInit(): void {
-    this.userId.set(this.route.snapshot.paramMap.get('id') || '');
+    this.itemId.set(this.route.snapshot.paramMap.get('id') || '');
     this.loadFormFields();
   }
 
@@ -109,35 +109,35 @@ export class SetupUserComponent {
     }
 
     const formValues = this.mapFormValuesToFieldIds(form.value);
-    const id = this.userId();
+    const id = this.itemId();
 
     if (id) {
-      this.userService
-        .updateUser(Number(id), formValues)
+      this.itemService
+        .updateItem(Number(id), formValues)
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: () => {
-            this.toastr.success('User updated successfully');
-            this.router.navigate(['/tenant', this.tenantSession.getSlug(), 'users']);
+            this.toastr.success('Item updated successfully');
+            this.router.navigate(['/tenant', this.tenantSession.getSlug(), 'items']);
           },
           error: (err) => {
-            this.toastr.error(err?.error?.message || 'Failed to update user');
+            this.toastr.error(err?.error?.message || 'Failed to update item');
           },
         });
       return;
     }
 
-    this.userService
-      .createUser(formValues)
+    this.itemService
+      .createItem(formValues)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {
-          this.toastr.success('User created successfully');
-          this.router.navigate(['/tenant', this.tenantSession.getSlug(), 'users']);
+          this.toastr.success('Item created successfully');
+          this.router.navigate(['/tenant', this.tenantSession.getSlug(), 'items']);
         },
         error: (err) => {
-          console.error('Create user error:', err);
-          this.toastr.error(err?.error?.message || 'Failed to create user');
+          console.error('Create item error:', err);
+          this.toastr.error(err?.error?.message || 'Failed to create item');
         },
       });
   }
@@ -151,7 +151,7 @@ export class SetupUserComponent {
     this.resetBuilderState();
 
     this.formStorageService
-      .loadForm('users')
+      .loadForm('items')
       .pipe(
         finalize(() => this.builderLoading.set(false)),
         takeUntilDestroyed(this.destroyRef)
@@ -242,7 +242,7 @@ export class SetupUserComponent {
     this.builderLoading.set(true);
 
     this.formStorageService
-      .loadForm('users')
+      .loadForm('items')
       .pipe(
         finalize(() => this.builderLoading.set(false)),
         takeUntilDestroyed(this.destroyRef)
@@ -284,14 +284,9 @@ export class SetupUserComponent {
   saveBuilderForm(): void {
     const orderedSchema = normalizeFieldOrder([...this.builderSchema()]);
     this.builderSchema.set(orderedSchema);
-    const hasRequiredField = orderedSchema.some(field => field.required);
-    // if (!hasRequiredField) {
-    //   this.toastr.error('Please mark at least one field as required.');
-    //   return;
-    // }
     this.builderLoading.set(true);
       this.formStorageService
-      .saveForm('users', {
+      .saveForm('items', {
         formName: this.formName,
         formId: this.formId,
         fields: orderedSchema,
@@ -352,16 +347,14 @@ export class SetupUserComponent {
     this.loading.set(true);
 
     this.formStorageService
-      .loadForm('users')
+      .loadForm('items')
       .pipe(
         switchMap((res) => {
           if (!res) {
             return of([] as DynamicField[]);
           }
 
-          const fields = normalizeFieldOrder(
-            res.fields.filter((field) => field.label !== 'Role') || [],
-          ) as DynamicField[];
+          const fields = normalizeFieldOrder(res.fields || []) as DynamicField[];
 
           const dropdownRequests = fields
             .filter(
@@ -401,8 +394,8 @@ export class SetupUserComponent {
       .subscribe({
         next: (fields) => {
           this.formFields.set(fields);
-          if (this.userId()) {
-            this.loadUser();
+          if (this.itemId()) {
+            this.loadItem();
           }
         },
         error: () => {
@@ -411,19 +404,15 @@ export class SetupUserComponent {
       });
   }
 
-  private loadUser(): void {
-    this.userService
-      .getUserById(Number(this.userId()))
+  private loadItem(): void {
+    this.itemService
+      .getItemById(Number(this.itemId()))
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (res: { data: Record<string, unknown> }) => {
-          const user = { ...res.data };
+          const item = { ...res.data };
 
-          if (user['plain_password']) {
-            user['password'] = user['plain_password'];
-          }
-
-          const patchData = this.buildUserPatchData(user, this.formFields());
+          const patchData = this.buildItemPatchData(item, this.formFields());
 
           setTimeout(() => {
             this.dynamicForm()?.patchValue(patchData);
@@ -432,14 +421,14 @@ export class SetupUserComponent {
       });
   }
 
-  private buildUserPatchData(
-    user: Record<string, unknown>,
+  private buildItemPatchData(
+    item: Record<string, unknown>,
     fields: DynamicField[],
   ): DynamicFormValue {
     const patchData: DynamicFormValue = {};
 
     for (const field of fields) {
-      const value = this.resolveFieldValue(user, field);
+      const value = this.resolveFieldValue(item, field);
 
       if (field.type === 'checkbox') {
         if (Array.isArray(value)) {
@@ -523,9 +512,9 @@ export class SetupUserComponent {
   onFormDelete() {
     this.pendingAction = 'delete';
 
-    this.confirmModalTitle = 'Delete User';
+    this.confirmModalTitle = 'Delete Item';
     this.confirmModalDescription =
-      'Are you sure you want to delete this user?';
+      'Are you sure you want to delete this item?';
 
     this.showConfirmModal.set(true);
   }
@@ -545,14 +534,14 @@ export class SetupUserComponent {
 
     switch (this.pendingAction) {
       case 'delete':
-        this.deleteUser();
+        this.deleteItem();
         break;
 
       case 'cancel':
         this.router.navigate([
           '/tenant',
           this.tenantSession.getSlug(),
-          'users',
+          'items',
         ]);
         break;
     }
@@ -565,33 +554,33 @@ export class SetupUserComponent {
     this.pendingAction = null;
   }
 
-  private deleteUser() {
-    const id = this.userId();
+  private deleteItem() {
+    const id = this.itemId();
 
     if (!id) return;
 
-    this.userService
-      .deleteUser(Number(id))
+    this.itemService
+      .deleteItem(Number(id))
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {
-          this.toastr.success('User deleted successfully');
+          this.toastr.success('Item deleted successfully');
           this.router.navigate([
             '/tenant',
             this.tenantSession.getSlug(),
-            'users',
+            'items',
           ]);
         },
         error: (err) => {
           this.toastr.error(
-            err?.error?.message || 'Failed to delete user'
+            err?.error?.message || 'Failed to delete item'
           );
         },
       });
   }
 
-  goToUserListing(): void {
-    this.router.navigate(['/tenant', this.tenantSession.getSlug(), 'users']);
+  goToItemListing(): void {
+    this.router.navigate(['/tenant', this.tenantSession.getSlug(), 'items']);
   }
 
 }

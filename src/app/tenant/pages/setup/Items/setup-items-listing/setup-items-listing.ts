@@ -9,7 +9,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { finalize } from 'rxjs';
-import { TenantUserService } from '../../../../../services/tenant-user.service';
+import { TenantItemService } from '../../../../../services/tenant-item.service';
 import { TenantSessionService } from '../../../../../services/tenant-session.service';
 import { environment } from '../../../../../../environments/environment.prod';
 import { FormStorageService } from '../../../../forms/services/form-storage.service';
@@ -24,17 +24,17 @@ import {
 import { loadDynamicDropdownOptions } from '../../../../../shared/dynamic-listing/dynamic-field-options.loader';
 import { ToastrService } from 'ngx-toastr';
 
-const USERS_LISTING_FILTER_EXCLUDE_TYPES: DynamicFieldType[] = ['image'];
+const ITEMS_LISTING_FILTER_EXCLUDE_TYPES: DynamicFieldType[] = ['image'];
 
 @Component({
-  selector: 'app-setup-users-listing',
+  selector: 'app-setup-items-listing',
   standalone: false,
-  templateUrl: './setup-users-listing.html',
-  styleUrl: './setup-users-listing.scss',
+  templateUrl: './setup-items-listing.html',
+  styleUrl: './setup-items-listing.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class SetupUsersListing {
-  private readonly userService = inject(TenantUserService);
+export class SetupItemsListing {
+  private readonly itemService = inject(TenantItemService);
   private readonly toastr = inject(ToastrService);
   readonly session = inject(TenantSessionService);
   private readonly route = inject(ActivatedRoute);
@@ -42,11 +42,11 @@ export class SetupUsersListing {
   private readonly formStorageService = inject(FormStorageService);
   private readonly destroyRef = inject(DestroyRef);
 
-  readonly users = signal<Record<string, unknown>[]>([]);
+  readonly items = signal<Record<string, unknown>[]>([]);
   readonly formFields = signal<DynamicField[]>([]);
-  readonly displayUsers = computed(() => {
+  readonly displayItems = computed(() => {
     const fields = this.formFields();
-    return this.users().map((record) =>
+    return this.items().map((record) =>
       this.mapRecordToFieldNames(record, fields),
     );
   });
@@ -56,23 +56,21 @@ export class SetupUsersListing {
   readonly lastPage = signal(1);
   readonly total = signal(0);
 
-  readonly columnStorageKey = 'tenant-users-listing-columns';
+  readonly columnStorageKey = 'tenant-items-listing-columns';
   readonly defaultVisibleCount = 4;
-  readonly usersListingFilterOptions = {
-    excludeTypes: USERS_LISTING_FILTER_EXCLUDE_TYPES,
-    excludeNamePattern: /password/i,
-    excludeLabelPattern: /password/i,
+  readonly itemsListingFilterOptions = {
+    excludeTypes: ITEMS_LISTING_FILTER_EXCLUDE_TYPES,
   };
 
   readonly hasFormFields = computed(() => this.formFields().length > 0);
   readonly hasFilterFields = computed(() => this.filterFields().length > 0);
   readonly showEmptyConfigMessage = computed(() => !this.loading() && !this.hasFormFields());
-  readonly showPagination = computed(() => !this.loading() && this.users().length > 0);
+  readonly showPagination = computed(() => !this.loading() && this.items().length > 0);
   readonly showDeleteConfirmModal = signal(false);
 
-  readonly deleteConfirmTitle = 'Delete User';
+  readonly deleteConfirmTitle = 'Delete Item';
   readonly deleteConfirmDescription =
-    'Please confirm that you want to delete this user. All related information will be permanently removed.';
+    'Please confirm that you want to delete this item. All related information will be permanently removed.';
 
   private readonly defaultLimit = environment.limit;
   private pendingDeleteId: number | null = null;
@@ -81,7 +79,7 @@ export class SetupUsersListing {
 
   ngOnInit(): void {
     this.loadFormFields();
-    this.loadUsers(this.page());
+    this.loadItems(this.page());
   }
 
   onVisibleColumnsChange(columns: DynamicField[]): void {
@@ -89,7 +87,7 @@ export class SetupUsersListing {
   }
 
   goToCreate(): void {
-    this.router.navigate(['/tenant', this.session.getSlug(), 'users', 'create']);
+    this.router.navigate(['/tenant', this.session.getSlug(), 'items', 'create']);
   }
 
   goToEdit(record: Record<string, unknown>): void {
@@ -101,7 +99,7 @@ export class SetupUsersListing {
     this.router.navigate(['edit', id], { relativeTo: this.route });
   }
 
-  deleteUser(record: Record<string, unknown>): void {
+  deleteItem(record: Record<string, unknown>): void {
     const id = Number(record['id']);
     if (!id) {
       return;
@@ -111,26 +109,26 @@ export class SetupUsersListing {
     this.showDeleteConfirmModal.set(true);
   }
 
-  onConfirmDeleteUser(): void {
+  onConfirmDeleteItem(): void {
     const id = this.pendingDeleteId;
     if (!id) {
       return;
     }
 
-    this.userService
-      .deleteUser(id)
+    this.itemService
+      .deleteItem(id)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {
-          this.toastr.success('User deleted successfully');
-          if (this.users().length === 1 && this.page() > 1) {
-            this.loadUsers(this.page() - 1);
+          this.toastr.success('Item deleted successfully');
+          if (this.items().length === 1 && this.page() > 1) {
+            this.loadItems(this.page() - 1);
           } else {
-            this.loadUsers(this.page());
+            this.loadItems(this.page());
           }
         },
         error: (err) => {
-          this.toastr.error(err?.error?.message || 'Failed to delete user');
+          this.toastr.error(err?.error?.message || 'Failed to delete item');
         },
       });
 
@@ -144,13 +142,13 @@ export class SetupUsersListing {
 
   prevPage(): void {
     if (this.page() > 1) {
-      this.loadUsers(this.page() - 1);
+      this.loadItems(this.page() - 1);
     }
   }
 
   nextPage(): void {
     if (this.page() < this.lastPage()) {
-      this.loadUsers(this.page() + 1);
+      this.loadItems(this.page() + 1);
     }
   }
 
@@ -158,18 +156,18 @@ export class SetupUsersListing {
     const allowedKeys = this.getAllowedFilterKeys();
     this.filters = pruneFiltersByAllowedKeys(filters, allowedKeys);
     this.page.set(1);
-    this.loadUsers(this.page());
+    this.loadItems(this.page());
   }
 
   onFilterClear(): void {
     this.filters = {};
     this.page.set(1);
-    this.loadUsers(this.page());
+    this.loadItems(this.page());
   }
 
   private loadFormFields(): void {
     this.formStorageService
-      .loadForm('users')
+      .loadForm('items')
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (res) => {
@@ -178,9 +176,7 @@ export class SetupUsersListing {
             return;
           }
 
-          const fields = normalizeFieldOrder(
-            (res.fields || []).filter((field) => field.label !== 'Role' && field.name !== 'password'),
-          ) as DynamicField[];
+          const fields = normalizeFieldOrder(res.fields || []) as DynamicField[];
 
           this.formFields.set(fields);
 
@@ -224,7 +220,7 @@ export class SetupUsersListing {
   private syncFilterFieldsFromVisibleColumns(columns: DynamicField[]): void {
     const nextFilterFields = mapVisibleColumnsToFilterFields(
       columns,
-      this.usersListingFilterOptions,
+      this.itemsListingFilterOptions,
     );
     const allowedKeys = new Set(nextFilterFields.map((field) => field.key));
     const previousFilterKeys = Object.keys(this.filters);
@@ -236,22 +232,22 @@ export class SetupUsersListing {
 
     if (filtersChanged) {
       this.page.set(1);
-      this.loadUsers(this.page());
+      this.loadItems(this.page());
     }
   }
 
-  private loadUsers(page: number): void {
+  private loadItems(page: number): void {
     this.loading.set(true);
 
     const allowedKeys = this.getAllowedFilterKeys();
     const activeFilters = pruneFiltersByAllowedKeys(this.filters, allowedKeys);
 
     const apiCall = Object.keys(activeFilters).length
-      ? this.userService.searchUsers(
+      ? this.itemService.searchItems(
           this.mapFiltersToFieldIds(activeFilters),
           this.defaultLimit,
         )
-      : this.userService.getUsers(page, this.defaultLimit);
+      : this.itemService.getItems(page, this.defaultLimit);
 
     apiCall
       .pipe(
@@ -260,13 +256,13 @@ export class SetupUsersListing {
       )
       .subscribe({
         next: (res) => {
-          this.users.set(res.data || []);
+          this.items.set(res.data || []);
           this.total.set(Number(res?.meta?.total || 0));
           this.page.set(Number(res?.meta?.page || 1));
           this.lastPage.set(Number(res?.meta?.lastPage || 1));
         },
         error: () => {
-          this.users.set([]);
+          this.items.set([]);
           this.total.set(0);
         },
       });
