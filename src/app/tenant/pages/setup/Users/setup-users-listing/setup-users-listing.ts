@@ -214,6 +214,9 @@ export class SetupUsersListing {
     loadDynamicDropdownOptions(this.formStorageService, columns)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
+        // Options are mutated in place on the field objects. Emit a new array
+        // reference so the OnPush listing re-renders and shows labels, not IDs.
+        this.formFields.update((fields) => [...fields]);
         this.syncFilterFieldsFromVisibleColumns(columns);
       });
   }
