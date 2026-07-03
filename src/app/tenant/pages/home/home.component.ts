@@ -9,11 +9,10 @@ import { TenantUserService } from '../../../services/tenant-user.service';
   styleUrl: './home.component.scss'
 })
 export class HomeComponent {
-constructor(private tenantUserService: TenantUserService) {}
-
-ngOnInit(): void {
-  this.tenantUserService.getUsers().subscribe((users) => {
-    console.log(users);
-  });
-}
+  constructor(private tenantUserService: TenantUserService) {}
+  ngOnInit(): void {
+    this.tenantUserService.getUsers().subscribe((users) => {
+      console.log(users);
+    });
+  }
 }

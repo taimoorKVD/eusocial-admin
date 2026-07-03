@@ -67,4 +67,11 @@ sendCredentials(tenantId: number, email: string) {
     { email }
   );
 }
+
+  resetDemo(): Observable<any> {
+    return this.http.get(
+      `${environment.apiUrl}/system/reset-demo`,
+      {}
+    );
+  }
 }

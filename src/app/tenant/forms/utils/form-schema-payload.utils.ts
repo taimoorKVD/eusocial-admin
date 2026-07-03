@@ -23,7 +23,7 @@ export function buildFormSchemaPayload(fields: FormField[]) {
         optionSource: field.optionSource,
         isReadonly: field.isReadonly === true,
         isSystemField: true,
-        isEditable: true,
+        isEditable: field.isEditable !== false,
         isDeletable: false,
         layoutConfig: {
           grid_width_mobile: 12,

@@ -9,12 +9,11 @@ import { Component } from '@angular/core';
 export class SetupItems {
   chooseItems = null; // selected value
 
-
-items = [
-  { label: 'John Doe', value: 1 },
-  { label: 'Ali Khan', value: 2 },
-  { label: 'Umar', value: 3 }
-];
+  items = [
+    { label: 'John Doe', value: 1 },
+    { label: 'Ali Khan', value: 2 },
+    { label: 'Umar', value: 3 }
+  ];
 
  categories = [
     {

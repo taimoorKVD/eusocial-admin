@@ -44,6 +44,12 @@ export class SetupUsersListing {
 
   readonly users = signal<Record<string, unknown>[]>([]);
   readonly formFields = signal<DynamicField[]>([]);
+  readonly displayUsers = computed(() => {
+    const fields = this.formFields();
+    return this.users().map((record) =>
+      this.mapRecordToFieldNames(record, fields),
+    );
+  });
   readonly filterFields = signal<GlobalFilterField[]>([]);
   readonly loading = signal(false);
   readonly page = signal(1);
@@ -238,7 +244,10 @@ export class SetupUsersListing {
     const activeFilters = pruneFiltersByAllowedKeys(this.filters, allowedKeys);
 
     const apiCall = Object.keys(activeFilters).length
-      ? this.userService.searchUsers(activeFilters, this.defaultLimit)
+      ? this.userService.searchUsers(
+          this.mapFiltersToFieldIds(activeFilters),
+          this.defaultLimit,
+        )
       : this.userService.getUsers(page, this.defaultLimit);
 
     apiCall
@@ -262,5 +271,43 @@ export class SetupUsersListing {
 
   private getAllowedFilterKeys(): Set<string> {
     return new Set(this.filterFields().map((field) => field.key));
+  }
+
+  private getFieldKey(field: DynamicField): string {
+    return field.id || field.name;
+  }
+
+  private mapRecordToFieldNames(
+    record: Record<string, unknown>,
+    fields: DynamicField[],
+  ): Record<string, unknown> {
+    const mapped: Record<string, unknown> = { ...record };
+
+    for (const field of fields) {
+      const key = this.getFieldKey(field);
+      if (key === field.name) {
+        continue;
+      }
+
+      if (record[key] !== undefined) {
+        mapped[field.name] = record[key];
+      }
+    }
+
+    return mapped;
+  }
+
+  private mapFiltersToFieldIds(
+    filters: Record<string, unknown>,
+  ): Record<string, unknown> {
+    const mapped: Record<string, unknown> = {};
+
+    for (const [name, value] of Object.entries(filters)) {
+      const field = this.formFields().find((item) => item.name === name);
+      const key = field ? this.getFieldKey(field) : name;
+      mapped[key] = value;
+    }
+
+    return mapped;
   }
 }

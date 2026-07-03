@@ -108,7 +108,7 @@ export class SetupUserComponent {
       return;
     }
 
-    const formValues = form.value;
+    const formValues = this.mapFormValuesToFieldIds(form.value);
     const id = this.userId();
 
     if (id) {
@@ -285,10 +285,10 @@ export class SetupUserComponent {
     const orderedSchema = normalizeFieldOrder([...this.builderSchema()]);
     this.builderSchema.set(orderedSchema);
     const hasRequiredField = orderedSchema.some(field => field.required);
-    if (!hasRequiredField) {
-      this.toastr.error('Please mark at least one field as required.');
-      return;
-    }
+    // if (!hasRequiredField) {
+    //   this.toastr.error('Please mark at least one field as required.');
+    //   return;
+    // }
     this.builderLoading.set(true);
       this.formStorageService
       .saveForm('users', {
@@ -439,8 +439,9 @@ export class SetupUserComponent {
     const patchData: DynamicFormValue = {};
 
     for (const field of fields) {
+      const value = this.resolveFieldValue(user, field);
+
       if (field.type === 'checkbox') {
-        const value = user[field.name];
         if (Array.isArray(value)) {
           patchData[field.name] = value;
         } else if (value) {
@@ -452,7 +453,6 @@ export class SetupUserComponent {
       }
 
       if (field.type === 'select') {
-        const value = user[field.name];
         patchData[field.name] =
           value == null
             ? ''
@@ -462,10 +462,41 @@ export class SetupUserComponent {
         continue;
       }
 
-      patchData[field.name] = user[field.name];
+      patchData[field.name] = value;
     }
 
     return patchData;
+  }
+
+  private getFieldKey(field: DynamicField): string {
+    return field.id || field.name;
+  }
+
+  private resolveFieldValue(
+    record: Record<string, unknown>,
+    field: DynamicField,
+  ): unknown {
+    const key = this.getFieldKey(field);
+    const value = record[key];
+    return value === undefined ? record[field.name] : value;
+  }
+
+  private mapFormValuesToFieldIds(values: DynamicFormValue): DynamicFormValue {
+    const payload: DynamicFormValue = { ...values };
+
+    for (const field of this.formFields()) {
+      const key = this.getFieldKey(field);
+      if (key === field.name) {
+        continue;
+      }
+
+      if (Object.prototype.hasOwnProperty.call(values, field.name)) {
+        payload[key] = values[field.name];
+        delete payload[field.name];
+      }
+    }
+
+    return payload;
   }
 
   private applyApiOptionsToField(

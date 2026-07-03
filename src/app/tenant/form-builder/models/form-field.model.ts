@@ -39,6 +39,7 @@ export interface FormField {
   required: boolean;
   isShow?: boolean;
   isReadonly?: boolean;
+  isEditable?: boolean;
   options: Array<string | FieldOption>;
   optionSource?: OptionSource;
 

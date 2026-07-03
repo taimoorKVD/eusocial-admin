@@ -1,4 +1,4 @@
-import { FieldOption, FormField, OptionSource } from '../models/form-field.model';
+import { FieldOption, FieldType, FormField, OptionSource } from '../models/form-field.model';
 import {
   normalizeCheckboxFieldOptions,
   normalizeStaticSelectFieldOptions,
@@ -8,6 +8,22 @@ import { readOptionSourceFromField } from './option-source.utils';
 
 export function generateFieldId(): string {
   return `fld_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+}
+
+const PLACEHOLDER_AUTO_GENERATION_TYPES: ReadonlySet<FieldType> = new Set([
+  'text',
+  'email',
+  'number',
+  'textarea',
+]);
+
+export function supportsPlaceholderAutoGeneration(type: FieldType | undefined): boolean {
+  return type ? PLACEHOLDER_AUTO_GENERATION_TYPES.has(type) : false;
+}
+
+export function buildPlaceholderFromLabel(label: string | null | undefined): string {
+  const trimmedLabel = String(label ?? '').trim();
+  return trimmedLabel ? `Enter ${trimmedLabel}` : '';
 }
 
 export function toFieldName(label: string | null | undefined): string {
@@ -157,6 +173,7 @@ export function sanitizeField(
     required: readRequired(field),
     isShow: readBooleanFlag(field, 'isShow', 'is_show', true),
     isReadonly: readBooleanFlag(field, 'isReadonly', 'is_readonly', false),
+    isEditable: readBooleanFlag(field, 'isEditable', 'is_editable', true),
     options: resolveFieldOptions(type, optionSource, field.options),
     optionSource: cloneOptionSource(optionSource),
     value: field.value ?? field.defaultValue ?? null,

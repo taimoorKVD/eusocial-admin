@@ -54,6 +54,18 @@ export class Tenants {
     this.allTenants();
   }
 
+
+  resetDemo() {
+  this.tenantService.resetDemo().subscribe({
+    next: (res) => {
+      console.log(res);
+      alert('Demo reset successfully.');
+      },
+      error: (err) => {
+        console.error(err);
+      },
+    });
+  }
   allTenants(page: number = 1): void {
     this.loading = true;
     this.message = '';

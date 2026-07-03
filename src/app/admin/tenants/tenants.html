@@ -3,6 +3,15 @@
       <app-eu-loader></app-eu-loader>
     </ng-container>
 
+    <div class="flex justify-end mb-2">
+      <button
+        type="button"
+        class="btn btn--cancel"
+        (click)="resetDemo()">
+        Reset Tenant
+      </button>
+    </div>
+
     <app-top-header
       [title]="'Tenants Management'"
       [buttonLabel]="' + Create Tenant'"
