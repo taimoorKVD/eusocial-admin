@@ -1,11 +1,13 @@
 import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { FormField } from '../models/form-field.model';
 import {
+  buildPlaceholderFromLabel,
   cloneOptionSource,
   createFieldFromTemplate,
   generateFieldId,
   normalizeFieldOrder,
   sanitizeField,
+  supportsPlaceholderAutoGeneration,
   toFieldName,
 } from './form-field.factory';
 
@@ -47,6 +49,11 @@ export function applyCanvasDrop(
 
   const template = event.item.data as Partial<FormField>;
   const field = createFieldFromTemplate(template);
+
+  if (supportsPlaceholderAutoGeneration(field.type)) {
+    field.placeholder = buildPlaceholderFromLabel(field.label);
+  }
+
   const updated = [...schema];
   const insertIndex = Math.min(
     Math.max(event.currentIndex, 0),

@@ -24,7 +24,7 @@
     <input
       type="text"
       [(ngModel)]="field.label"
-      (input)="onChange()"
+      (input)="onLabelChange()"
       [disabled]="!isFieldEditable"
       class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
     />
@@ -35,7 +35,7 @@
     <input
       type="text"
       [(ngModel)]="field.placeholder"
-      (input)="onChange()"
+      (input)="onPlaceholderChange()"
       [disabled]="!isFieldEditable"
       class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
     />
