@@ -35,7 +35,10 @@
 
 <div class="tenant-user-page p-6 min-h-screen">
   <div class="tenant-user-page__header">
-    <h2 class="text-[16px] font-medium font-ibm text-[#ea580c]">
+    <h2
+      class="cursor-pointer text-[16px] font-medium font-ibm text-[#ea580c] hover:underline"
+      (click)="goToUserListing()"
+    >
       Create / View Users
     </h2>
 
@@ -45,7 +48,7 @@
         class="btn btn--cancel"
         (click)="onEditForm()"
       >
-        Edit Form
+        Edit Builder Form
       </button>
     }
   </div>

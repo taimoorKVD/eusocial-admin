@@ -579,4 +579,8 @@ export class SetupItemComponent {
       });
   }
 
+  goToItemListing(): void {
+    this.router.navigate(['/tenant', this.tenantSession.getSlug(), 'items']);
+  }
+
 }

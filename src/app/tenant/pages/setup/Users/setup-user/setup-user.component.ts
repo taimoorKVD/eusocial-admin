@@ -590,4 +590,8 @@ export class SetupUserComponent {
       });
   }
 
+  goToUserListing(): void {
+    this.router.navigate(['/tenant', this.tenantSession.getSlug(), 'users']);
+  }
+
 }
