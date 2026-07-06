@@ -159,6 +159,7 @@ export class SetupItemComponent {
       .subscribe({
         next: saved => {
           if (saved) {
+            console.log('Loaded form schema:', saved);
             this.formName = saved.formName || this.formName;
             this.formId = saved.formId ?? null;
             this.builderSchema.set(normalizeFieldOrder(saved.fields || []));
@@ -249,6 +250,7 @@ export class SetupItemComponent {
       )
       .subscribe({
         next: saved => {
+          console.log('Restored version loaded:', saved);
           if (saved) {
             this.formName = saved.formName || this.formName;
             this.formId = saved.formId ?? null;
