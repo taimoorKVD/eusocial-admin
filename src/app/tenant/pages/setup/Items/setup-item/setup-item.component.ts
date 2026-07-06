@@ -26,6 +26,7 @@ import {
 import { FormBuilderTab } from '../../../../forms/components/form-builder-workspace/form-builder-workspace.component';
 import { serializeSchemaFields } from '../../../../forms/utils/form-schema-payload.utils';
 import { DynamicFormComponent } from '../../../../../shared/dynamic-form/dynamic-form.component';
+import { remapDynamicFormValuesByFieldId } from '../../../../../shared/dynamic-form/dynamic-form.builder';
 import {
   DynamicField,
   DynamicFormValue,
@@ -159,6 +160,7 @@ export class SetupItemComponent {
       .subscribe({
         next: saved => {
           if (saved) {
+            console.log('Loaded form schema:', saved);
             this.formName = saved.formName || this.formName;
             this.formId = saved.formId ?? null;
             this.builderSchema.set(normalizeFieldOrder(saved.fields || []));
@@ -249,6 +251,7 @@ export class SetupItemComponent {
       )
       .subscribe({
         next: saved => {
+          console.log('Restored version loaded:', saved);
           if (saved) {
             this.formName = saved.formName || this.formName;
             this.formId = saved.formId ?? null;
@@ -393,7 +396,20 @@ export class SetupItemComponent {
       )
       .subscribe({
         next: (fields) => {
+          const previousFields = this.formFields();
+          const preservedValues = this.latestFormValue();
           this.formFields.set(fields);
+
+          const remappedValues = remapDynamicFormValuesByFieldId(
+            preservedValues,
+            previousFields,
+            fields,
+          );
+
+          if (Object.keys(remappedValues).length) {
+            setTimeout(() => this.dynamicForm()?.patchValue(remappedValues));
+          }
+
           if (this.itemId()) {
             this.loadItem();
           }

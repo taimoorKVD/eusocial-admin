@@ -26,6 +26,7 @@ import {
   getInitialFieldValue,
   getOptionValue,
   normalizeCheckboxFormValue,
+  serializeDynamicFieldsSchema,
   sortDynamicFields,
 } from './dynamic-form.builder';
 import { DropdownOverlayService } from '../directives/dropdown-panel/dropdown-overlay.service';
@@ -49,9 +50,11 @@ export class DynamicFormComponent implements OnDestroy {
 
   form!: FormGroup;
   readonly sortedFields = signal<DynamicField[]>([]);
+  readonly formReady = signal(false);
   readonly imagePreviews = signal<Record<string, string>>({});
   readonly showPasswords = signal<Record<string, boolean>>({});
   readonly selectSearchQueries = signal<Record<string, string>>({});
+  private fieldsSchemaKey = '';
 
   readonly filteredSelectOptions = computed(() => {
     const queries = this.selectSearchQueries();
@@ -78,9 +81,12 @@ export class DynamicFormComponent implements OnDestroy {
   private formChangesSub?: Subscription;
 
   constructor() {
-    effect(() => {
-      this.buildForm(this.fields());
-    });
+    effect(
+      () => {
+        this.syncFormToFields(this.fields());
+      },
+      { allowSignalWrites: true },
+    );
   }
 
   ngOnDestroy(): void {
@@ -313,25 +319,82 @@ export class DynamicFormComponent implements OnDestroy {
     );
   }
 
+  private syncFormToFields(fields: DynamicField[]): void {
+    const schemaKey = serializeDynamicFieldsSchema(fields);
+
+    if (schemaKey === this.fieldsSchemaKey && this.formReady()) {
+      return;
+    }
+
+    this.fieldsSchemaKey = schemaKey;
+    this.buildForm(fields);
+  }
+
   private buildForm(fields: DynamicField[]): void {
     this.formChangesSub?.unsubscribe();
+    const preservedValues = this.collectPreservedValuesByFieldId();
+    this.formReady.set(false);
 
     if (!fields?.length) {
       this.form = this.fb.group({});
       this.sortedFields.set([]);
       this.imagePreviews.set({});
+      this.selectSearchQueries.set({});
       this.cdr.markForCheck();
       return;
     }
 
     const sorted = sortDynamicFields(fields);
-    this.sortedFields.set(sorted);
-    this.selectSearchQueries.set({});
-    this.form = this.fb.group(buildDynamicFormGroupConfig(this.fb, sorted));
-    this.imagePreviews.set({});
-    this.subscribeToFormChanges();
-    this.emitNormalizedValue();
-    this.cdr.markForCheck();
+
+    queueMicrotask(() => {
+      this.sortedFields.set(sorted);
+      this.selectSearchQueries.set({});
+      this.form = this.fb.group(buildDynamicFormGroupConfig(this.fb, sorted));
+      this.patchPreservedValuesByFieldId(preservedValues, sorted);
+      this.imagePreviews.set({});
+      this.subscribeToFormChanges();
+      this.emitNormalizedValue();
+      this.formReady.set(true);
+      this.cdr.markForCheck();
+    });
+  }
+
+  private collectPreservedValuesByFieldId(): Map<string, unknown> {
+    const preserved = new Map<string, unknown>();
+
+    if (!this.form) {
+      return preserved;
+    }
+
+    for (const field of this.sortedFields()) {
+      const control = this.form.get(field.name);
+      if (control) {
+        preserved.set(field.id, control.value);
+      }
+    }
+
+    return preserved;
+  }
+
+  private patchPreservedValuesByFieldId(
+    preserved: Map<string, unknown>,
+    fields: DynamicField[],
+  ): void {
+    if (!preserved.size || !this.form) {
+      return;
+    }
+
+    const patch: DynamicFormValue = {};
+
+    for (const field of fields) {
+      if (preserved.has(field.id)) {
+        patch[field.name] = preserved.get(field.id);
+      }
+    }
+
+    if (Object.keys(patch).length) {
+      this.form.patchValue(patch);
+    }
   }
 
   private getInitialValue(field: DynamicField): unknown {

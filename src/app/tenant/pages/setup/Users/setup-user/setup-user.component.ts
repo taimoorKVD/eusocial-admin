@@ -26,6 +26,7 @@ import {
 import { FormBuilderTab } from '../../../../forms/components/form-builder-workspace/form-builder-workspace.component';
 import { serializeSchemaFields } from '../../../../forms/utils/form-schema-payload.utils';
 import { DynamicFormComponent } from '../../../../../shared/dynamic-form/dynamic-form.component';
+import { remapDynamicFormValuesByFieldId } from '../../../../../shared/dynamic-form/dynamic-form.builder';
 import {
   DynamicField,
   DynamicFormValue,
@@ -400,7 +401,20 @@ export class SetupUserComponent {
       )
       .subscribe({
         next: (fields) => {
+          const previousFields = this.formFields();
+          const preservedValues = this.latestFormValue();
           this.formFields.set(fields);
+
+          const remappedValues = remapDynamicFormValuesByFieldId(
+            preservedValues,
+            previousFields,
+            fields,
+          );
+
+          if (Object.keys(remappedValues).length) {
+            setTimeout(() => this.dynamicForm()?.patchValue(remappedValues));
+          }
+
           if (this.userId()) {
             this.loadUser();
           }

@@ -29,12 +29,11 @@ interface SaveSchemaRequest {
   providedIn: 'root'
 })
 export class FormStorageService {
-  private saveSchemaUrl = `${environment.tenantApiUrl}/forms/1/schema`;
+  private saveSchemaUrl = `${environment.tenantApiUrl}/forms`;
 
   constructor(private http: HttpClient) {}
 
-  saveForm(
-    moduleName: string,
+  saveForm(moduleName: string,
     data: {
       formName: string;
       formId: string | number | null;
@@ -66,7 +65,8 @@ export class FormStorageService {
       updatedAt: new Date().toISOString()
     };
 
-    return this.http.put<any>(this.saveSchemaUrl, requestPayload).pipe(
+    console.log('with payload:', payload);
+    return this.http.put<any>(`${this.saveSchemaUrl}/${data.formId}/schema`, requestPayload).pipe(
       map(response => this.extractSchema(response, payload))
     );
   }
@@ -79,9 +79,9 @@ export class FormStorageService {
     );
   }
 
-  deleteForm(moduleName: string): Observable<void> {
-    return this.http.delete<void>(this.saveSchemaUrl);
-  }
+  // deleteForm(moduleName: string): Observable<void> {
+  //   return this.http.delete<void>(this.saveSchemaUrl);
+  // }
 
   private extractSchema(
     response: any,
@@ -99,8 +99,8 @@ export class FormStorageService {
 
     return {
       moduleName: source.moduleName || moduleName,
-      formName: source.formName || fallback?.formName || 'Users Dynamic Form',
-      formId: source.formId ?? fallback?.formId ?? 1,
+      formName: source.form?.name || fallback?.formName || 'Users Dynamic Form',
+      formId: source.form?.moduleId ?? fallback?.formId ?? 1,
       sections: Array.isArray(source.sections)
         ? source.sections
         : Array.isArray(source.schema?.sections)

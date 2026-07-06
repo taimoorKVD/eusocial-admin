@@ -72,15 +72,18 @@ ngOnInit(): void {
       this.session.setSession(token, slug, user);
       this.toastr.success('Login successful');
       this.router.navigate(['/tenant', slug, 'home']);
-      this.loading = false; // ✅ stop loader
+      this.loading = false;
     },
 
     error: (err) => {
-      console.error(err);
-      const message =
-      err?.error?.message || 'Invalid credentials';
+      let message = 'Something went wrong during login. Please try again.';
+      if (err.status === 0) {
+        message = 'Unable to connect to the server. This may be a CORS or network issue.';
+      } else if (err.error?.message) {
+        message = err.error.message;
+      }
       this.toastr.error(message);
-      this.loading = false; // ✅ stop loader on error
+      this.loading = false;
     }
   });
 }
