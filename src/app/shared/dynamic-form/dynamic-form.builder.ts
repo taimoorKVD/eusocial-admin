@@ -15,6 +15,40 @@ export function sortDynamicFields(fields: DynamicField[]): DynamicField[] {
     .map(({ field }) => field);
 }
 
+export function serializeDynamicFieldsSchema(fields: DynamicField[]): string {
+  if (!fields?.length) {
+    return '';
+  }
+
+  return sortDynamicFields(fields)
+    .map((field) => `${field.id}:${field.name}:${field.type}:${Number(!!field.required)}`)
+    .join('|');
+}
+
+export function remapDynamicFormValuesByFieldId(
+  values: DynamicFormValue,
+  previousFields: DynamicField[],
+  nextFields: DynamicField[],
+): DynamicFormValue {
+  const remapped: DynamicFormValue = {};
+  const previousById = new Map(previousFields.map((field) => [field.id, field]));
+
+  for (const field of nextFields) {
+    const previous = previousById.get(field.id);
+
+    if (previous && Object.prototype.hasOwnProperty.call(values, previous.name)) {
+      remapped[field.name] = values[previous.name];
+      continue;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(values, field.name)) {
+      remapped[field.name] = values[field.name];
+    }
+  }
+
+  return remapped;
+}
+
 export function getOptionValue(
   option: string | DynamicFieldOption,
   index = 0,
