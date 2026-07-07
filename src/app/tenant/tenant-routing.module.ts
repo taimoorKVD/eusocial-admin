@@ -6,7 +6,7 @@ import { UserDashboardComponent } from './pages/user-dashboard/user-dashboard.co
 // import { SetupUserComponent } from './pages/setup/setup-user/setup-user.component';
 import { SetupJobPositionComponent } from './pages/setup/Job-Positions/setup-job-position/setup-job-position.component';
 import { TenantLoginComponent } from './tenant-login/tenant-login.component';
-import { SetupVendorsComponent } from './pages/setup/Vendor/setup-vendors/setup-vendors.component';
+import { SetupVendorComponent } from './pages/setup/Vendor/setup-vendor/setup-vendor.component';
 import { SetupReportingGroup } from './pages/setup/setup-reporting-group/setup-reporting-group';
 import { SetupItemsListing } from './pages/setup/Items/setup-items-listing/setup-items-listing';
 import { SetupItemComponent } from './pages/setup/Items/setup-item/setup-item.component';
@@ -16,7 +16,7 @@ import { SetupJobPositionListingComponent } from './pages/setup/Job-Positions/se
 import { LocationComponent } from './pages/extra-management/location/location.component';
 import { LocationListingComponent } from './pages/extra-management/location-listing/location-listing.component';
 import { tenantAuthGuard } from '../guards/tenant-auth-guard';
-import { SetupVendorsListingComponent } from './pages/setup/Vendor/setup-vendors-listing/setup-vendors-listing.component';
+import { SetupVendorsListing } from './pages/setup/Vendor/setup-vendors-listing/setup-vendors-listing';
 import { TenantForgotPasswordComponent } from './tenant-forgot-password/tenant-forgot-password.component';
 import { TenantResetPasswordComponent } from './tenant-reset-password/tenant-reset-password.component';
 import { RoleComponent } from './pages/setup/Roles/role/role.component';
@@ -55,9 +55,9 @@ const routes: Routes = [
       { path: 'job-position/create', component: SetupJobPositionComponent },
       { path: 'job-position/edit/:id', component: SetupJobPositionComponent },
 
-      { path: 'vendors', component: SetupVendorsListingComponent },
-      { path: 'vendors/create', component: SetupVendorsComponent },
-      { path: 'vendors/edit/:id', component: SetupVendorsComponent },
+      { path: 'vendors', component: SetupVendorsListing },
+      { path: 'vendors/create', component: SetupVendorComponent },
+      { path: 'vendors/edit/:id', component: SetupVendorComponent },
 
       { path: 'items', component: SetupItemsListing },
       { path: 'items/create', component: SetupItemComponent },

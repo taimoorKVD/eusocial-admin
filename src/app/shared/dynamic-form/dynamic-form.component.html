@@ -243,7 +243,7 @@
             }
 
             @case ('checkbox') {
-              @if (field.name === 'availability_days') {
+              <!-- @if (field.name === 'availability_days') { -->
                 <div class="availability-days-group">
                   <div class="availability-days-row">
                     @for (option of field.options; track getOptionValue(option, $index); let i = $index) {
@@ -266,7 +266,8 @@
                     }
                   </div>
                 </div>
-              } @else {
+              <!-- }  -->
+              <!-- @else {
                 <div class="option-group option-group--checkbox">
                   <div formArrayName="{{ field.name }}" class="checkbox-wrapper">
                     @for (option of field.options; track getOptionValue(option, $index); let i = $index) {
@@ -285,7 +286,7 @@
                     }
                   </div>
                 </div>
-              }
+              } -->
             }
 
             @case ('radio') {

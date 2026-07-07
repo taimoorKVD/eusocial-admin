@@ -13,7 +13,7 @@ import { TenantTopbarComponent } from './tenant-topbar/tenant-topbar.component';
 import { UserDashboardComponent } from './pages/user-dashboard/user-dashboard.component';
 import { SetupJobPositionComponent } from './pages/setup/Job-Positions/setup-job-position/setup-job-position.component';
 import { TenantLoginComponent } from './tenant-login/tenant-login.component';
-import { SetupVendorsComponent } from './pages/setup/Vendor/setup-vendors/setup-vendors.component';
+import { SetupVendorComponent } from './pages/setup/Vendor/setup-vendor/setup-vendor.component';
 import { SetupReportingGroup } from './pages/setup/setup-reporting-group/setup-reporting-group';
 import { SetupItemsListing } from './pages/setup/Items/setup-items-listing/setup-items-listing';
 import { SetupItemComponent } from './pages/setup/Items/setup-item/setup-item.component';
@@ -22,7 +22,7 @@ import { SetupUsersListing } from './pages/setup/Users/setup-users-listing/setup
 import { SetupJobPositionListingComponent } from './pages/setup/Job-Positions/setup-job-position-listing/setup-job-position-listing.component';
 import { LocationComponent } from './pages/extra-management/location/location.component';
 import { LocationListingComponent } from './pages/extra-management/location-listing/location-listing.component';
-import { SetupVendorsListingComponent } from './pages/setup/Vendor/setup-vendors-listing/setup-vendors-listing.component';
+import { SetupVendorsListing } from './pages/setup/Vendor/setup-vendors-listing/setup-vendors-listing';
 import { TenantForgotPasswordComponent } from './tenant-forgot-password/tenant-forgot-password.component';
 import { TenantResetPasswordComponent } from './tenant-reset-password/tenant-reset-password.component';
 import { RoleComponent } from './pages/setup/Roles/role/role.component';
@@ -45,8 +45,8 @@ import { FormEditorCoreModule } from './forms/form-editor-core.module';
     TenantLoginComponent,
     TenantForgotPasswordComponent,
     TenantResetPasswordComponent,
-    SetupVendorsComponent,
-    SetupVendorsListingComponent,
+    SetupVendorComponent,
+    SetupVendorsListing,
     SetupItemsListing,
     SetupItemComponent,
     SetupReportingGroup,
@@ -65,10 +65,9 @@ import { FormEditorCoreModule } from './forms/form-editor-core.module';
     RouterModule,
     FormEditorCoreModule,
   ],
-    exports: [   // 👈 ADD THIS BLOCK
+    exports: [
     SetupUserComponent,
     SetupJobPositionComponent,
-    SetupVendorsComponent
   ]
 })
 export class TenantModule { }

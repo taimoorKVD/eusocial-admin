@@ -1,0 +1,79 @@
+<app-confirm-modal
+  [isOpen]="showDeleteConfirmModal()"
+  [title]="deleteConfirmTitle"
+  [description]="deleteConfirmDescription"
+  confirmText="Confirm"
+  cancelText="Close"
+  (confirmed)="onConfirmDeleteVendor()"
+  (closed)="closeDeleteConfirmModal()"
+></app-confirm-modal>
+
+@if (loading()) {
+  <app-eu-loader></app-eu-loader>
+}
+
+<div class="p-4">
+
+  <app-top-header
+    [title]="'Vendors'"
+    [buttonLabel]="'Create Vendor'"
+    (buttonClick)="goToCreate()">
+  </app-top-header>
+
+  @if (hasFilterFields()) {
+    <app-global-filter
+      [fields]="filterFields()"
+      (search)="onFilterSearch($event)"
+      (clear)="onFilterClear()">
+    </app-global-filter>
+  }
+
+  @if (hasFormFields()) {
+    <div class="mt-5">
+      <app-dynamic-listing
+        [fields]="formFields()"
+        [records]="displayVendors()"
+        [storageKey]="columnStorageKey"
+        [defaultVisibleCount]="defaultVisibleCount"
+        [showActions]="true"
+        emptyMessage="No vendors found"
+        (visibleColumnsChange)="onVisibleColumnsChange($event)"
+        (editRecord)="goToEdit($event)"
+        (deleteRecord)="deleteVendor($event)"
+      ></app-dynamic-listing>
+    </div>
+  }
+
+  @if (showEmptyConfigMessage()) {
+    <p class="text-sm text-gray-500 font-ibm mt-5">
+      No form fields configured for vendors listing.
+    </p>
+  }
+
+  @if (showPagination()) {
+    <div class="flex justify-between items-center px-4 py-3 border border-gray-200 border-t-0 rounded-b bg-white">
+      <span class="text-sm text-gray-500 font-ibm">
+        Page {{ page() }} of {{ lastPage() }}
+      </span>
+
+      <div class="flex items-center gap-2">
+        <button
+          class="px-3 py-1.5 rounded-lg text-sm font-medium border border-[#ea580c]/30 bg-[#ea580c]/10 text-[#ea580c] hover:bg-[#ea580c]/20 transition disabled:opacity-40 disabled:cursor-not-allowed font-ibm"
+          [disabled]="page() === 1"
+          (click)="prevPage()"
+        >
+          ← Prev
+        </button>
+
+        <button
+          class="px-3 py-1.5 rounded-lg text-sm font-medium border border-[#ea580c]/30 bg-[#ea580c]/10 text-[#ea580c] hover:bg-[#ea580c]/20 transition disabled:opacity-40 disabled:cursor-not-allowed font-ibm"
+          [disabled]="page() === lastPage()"
+          (click)="nextPage()"
+        >
+          Next →
+        </button>
+      </div>
+    </div>
+  }
+
+</div>
