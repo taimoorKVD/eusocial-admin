@@ -1,0 +1,137 @@
+
+<app-confirm-modal
+  [isOpen]="showConfirmModal()"
+  [title]="confirmModalTitle"
+  [description]="confirmModalDescription"
+  confirmText="Confirm"
+  cancelText="Close"
+  (confirmed)="onConfirmed()"
+  (closed)="onClosed()"
+></app-confirm-modal>
+
+@if (showVendorFormLoader()) {
+  <app-eu-loader></app-eu-loader>
+}
+
+@if (builderLoading()) {
+  <app-eu-loader></app-eu-loader>
+}
+
+<app-confirm-modal
+  [isOpen]="showBuilderExitConfirm()"
+  title="Are you sure you want to exit?"
+  message="Unsaved changes to the form configuration will be lost."
+  confirmText="Confirm"
+  cancelText="Cancel"
+  (confirmed)="onConfirmBuilderExit()"
+  (closed)="onCancelBuilderExit()"
+></app-confirm-modal>
+
+<app-form-preview-modal
+  [isOpen]="showPreviewModal()"
+  [formFields]="builderSchema()"
+  (closed)="closePreviewModal()"
+></app-form-preview-modal>
+
+<div class="tenant-user-page p-6 min-h-screen">
+  <div class="tenant-user-page__header">
+    <h2
+      class="cursor-pointer text-[16px] font-medium font-ibm text-[#ea580c] hover:underline"
+      (click)="goToVendorListing()"
+    >
+      Create / View Vendors
+    </h2>
+
+    @if (!builderVisible() && !vendorId()) {
+      <button
+        type="button"
+        class="btn btn--cancel"
+        (click)="onEditForm()"
+      >
+        Edit Builder Form
+      </button>
+    }
+  </div>
+
+  @if (!builderVisible()) {
+    <div class="tenant-user-view">
+      @if (showEmptyState()) {
+        <p class="text-[13px] text-[#A8A8A8] font-ibm">
+          No form fields configured for vendors. Please set up the form in the Forms Editor.
+        </p>
+      }
+
+      @if (hasFormFields()) {
+        <app-dynamic-form
+          [fields]="formFields()"
+          (valueChange)="onDynamicFormChange($event)"
+        ></app-dynamic-form>
+
+        <div class="tenant-user-actions">
+          @if (vendorId()) {
+            <button type="button" (click)="onFormDelete()" class="btn btn--delete">
+              Delete
+            </button>
+          }
+
+          <button (click)="onFormCancel()" type="button" class="btn btn--cancel">
+            Cancel
+          </button>
+
+          <button
+            type="button"
+            (click)="onFormSubmit()"
+            class="btn btn--save"
+          >
+            Save
+          </button>
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="tenant-user-builder">
+      <div class="tenant-user-builder__toolbar">
+        <p class="text-[13px] text-[#666] font-ibm">
+          Editing form configuration
+        </p>
+        <button
+          type="button"
+          class="btn btn--cancel"
+          (click)="onCloseBuilder()"
+        >
+          Close
+        </button>
+      </div>
+
+      <app-form-builder-workspace
+        moduleName="vendors"
+        [schema]="builderSchema()"
+        [selectedFieldId]="selectedFieldId()"
+        [activeTab]="activeTab()"
+        [showPreviewAction]="true"
+        [paletteListId]="paletteListId"
+        [canvasListId]="canvasListId"
+        (selectField)="onSelectField($event)"
+        (duplicateField)="onDuplicateField($event)"
+        (deleteField)="onDeleteField($event)"
+        (updateField)="updateField($event)"
+        (activeTabChange)="onActiveTabChange($event)"
+        (save)="saveBuilderForm()"
+        (preview)="openPreviewModal()"
+        (restoreVersion)="onRestoreVersion($event)"
+        (versionsLoadingChange)="onVersionsLoadingChange($event)"
+        (dynamicOptionsLoadingChange)="onDynamicOptionsLoading($event)"
+      >
+        <app-form-canvas
+          formBuilderCanvas
+          [dropListId]="canvasListId"
+          [schema]="builderSchema()"
+          [selectedFieldId]="selectedFieldId()"
+          [connectedDropLists]="[paletteListId]"
+          (dropped)="onCanvasDrop($event)"
+          (selectField)="onSelectField($event)"
+        ></app-form-canvas>
+      </app-form-builder-workspace>
+    </div>
+  }
+</div>

@@ -46,7 +46,15 @@
   }
 
   @if (moduleName === 'vendors') {
-    <app-setup-vendors formBuilderCanvas></app-setup-vendors>
+    <app-form-canvas
+      formBuilderCanvas
+      [dropListId]="canvasListId"
+      [schema]="builderSchema"
+      [selectedFieldId]="selectedFieldId"
+      [connectedDropLists]="[paletteListId]"
+      (dropped)="onCanvasDrop($event)"
+      (selectField)="onSelectField($event)"
+    ></app-form-canvas>
   }
 
   @if (moduleName === 'job-position') {
