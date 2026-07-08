@@ -68,4 +68,19 @@ getCities(stateId: number): Observable<any> {
   return this.http.get(`${this.citiesUrl}?state_id=${stateId}`);
 }
 
+// ALL STATES (cached once after login)
+getAllStates(): Observable<any> {
+  return this.http.get(this.statesUrl);
+}
+
+// ALL CITIES (cached once after login)
+getAllCities(): Observable<any> {
+  return this.http.get(this.citiesUrl);
+}
+
+// CITIES (by country) — used when a form has Country + City but no State
+getCitiesByCountry(countryId: number): Observable<any> {
+  return this.http.get(`${this.citiesUrl}?country_id=${countryId}`);
+}
+
 }

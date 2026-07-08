@@ -1,22 +1,25 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { TenantAuthService } from '../../services/tenant-auth.service';
 import { Router } from '@angular/router';
 import { TenantSessionService } from '../../services/tenant-session.service';
 import { ToastrService } from 'ngx-toastr';
+import { LocationCacheService } from '../../services/location-cache.service';
 
 @Component({
   selector: 'app-tenant-login',
   standalone: false,
 
   templateUrl: './tenant-login.component.html',
-  styleUrl: './tenant-login.component.scss'
+  styleUrl: '/tenant-login.component.scss'
 })
 export class TenantLoginComponent {
   loginForm!: FormGroup;
   submitted = false;
   loading = false;
   errorMessage = '';
+
+    private readonly locationCache = inject(LocationCacheService);
 
     constructor( private session: TenantSessionService, private fb: FormBuilder, private tenantAuth: TenantAuthService, private router: Router, private toastr: ToastrService ) {}
 
@@ -32,6 +35,8 @@ ngOnInit(): void {
   const slug = localStorage.getItem('tenant_slug');
 
   if (token && slug) {
+    // Ensure location cache is ready for an already-authenticated session.
+    this.locationCache.warmCache();
     this.router.navigate(['/tenant', slug, 'home']);
   }
 }

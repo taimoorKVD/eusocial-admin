@@ -12,11 +12,16 @@ import {
 } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup } from '@angular/forms';
 import { Subscription, merge } from 'rxjs';
+import { take } from 'rxjs/operators';
 import {
   DynamicField,
   DynamicFieldOption,
   DynamicFormValue,
 } from '../../interfaces/dynamic-field';
+import {
+  LocationCacheService,
+  LocationKind,
+} from '../../services/location-cache.service';
 import {
   getDynamicFieldErrorMessage,
   shouldShowDynamicFieldError,
@@ -42,10 +47,17 @@ export class DynamicFormComponent implements OnDestroy {
   private readonly fb = inject(FormBuilder);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly overlayService = inject(DropdownOverlayService);
+  private readonly locationCache = inject(LocationCacheService);
 
   readonly selectDropdownGroup = 'dynamic-form-select';
 
   readonly fields = input.required<DynamicField[]>();
+  /**
+   * Enables Country → State → City dependency handling. Only Create/Edit pages
+   * opt in; filter screens and the builder preview leave it off so every
+   * location dropdown keeps showing the full cached list.
+   */
+  readonly enableLocationDependencies = input(false);
   readonly valueChange = output<DynamicFormValue>();
 
   form!: FormGroup;
@@ -54,10 +66,19 @@ export class DynamicFormComponent implements OnDestroy {
   readonly imagePreviews = signal<Record<string, string>>({});
   readonly showPasswords = signal<Record<string, boolean>>({});
   readonly selectSearchQueries = signal<Record<string, string>>({});
+  /**
+   * Per-field option lists that override the field's own `options` for the
+   * dependent location dropdowns (State/City). Empty until a parent is chosen.
+   */
+  readonly locationOptionOverrides = signal<Record<string, DynamicFieldOption[]>>({});
   private fieldsSchemaKey = '';
+
+  /** Resolved Country/State/City fields for the current schema. */
+  private locationFields: Partial<Record<LocationKind, DynamicField>> = {};
 
   readonly filteredSelectOptions = computed(() => {
     const queries = this.selectSearchQueries();
+    const overrides = this.locationOptionOverrides();
     const result: Record<string, (string | DynamicFieldOption)[]> = {};
 
     for (const field of this.sortedFields()) {
@@ -65,7 +86,7 @@ export class DynamicFormComponent implements OnDestroy {
         continue;
       }
 
-      const options = field.options ?? [];
+      const options = overrides[field.name] ?? field.options ?? [];
       const query = (queries[field.name] ?? '').trim().toLowerCase();
 
       result[field.name] = query
@@ -118,6 +139,10 @@ export class DynamicFormComponent implements OnDestroy {
   patchValue(values: DynamicFormValue): void {
     if (!this.form || !values) return;
     this.form.patchValue(values);
+    // Rebuild dependent options for the freshly patched Country/State/City so
+    // existing selections resolve to labels (Edit page restore). Selections are
+    // preserved — options are loaded, not cleared.
+    this.refreshLocationOptionsFromValues();
     this.emitNormalizedValue();
     this.cdr.markForCheck();
   }
@@ -154,6 +179,15 @@ export class DynamicFormComponent implements OnDestroy {
 
   getOptionValue(option: string | DynamicFieldOption, index = 0): string | number {
     return getOptionValue(option, index);
+  }
+
+  /**
+   * Effective options for a field: a location dependency override when present,
+   * otherwise the field's own options. Used by the template for empty-state and
+   * label resolution so dependent dropdowns stay in sync with their parent.
+   */
+  getFieldOptions(field: DynamicField): (string | DynamicFieldOption)[] {
+    return this.locationOptionOverrides()[field.name] ?? field.options ?? [];
   }
 
   onImageSelected(event: Event, fieldName: string): void {
@@ -216,7 +250,7 @@ export class DynamicFormComponent implements OnDestroy {
       return `Select ${field.label}`;
     }
 
-    const options = field.options ?? [];
+    const options = this.getFieldOptions(field);
     const match = options.find(
       (option, index) => String(getOptionValue(option, index)) === String(selectedValue),
     );
@@ -251,6 +285,7 @@ export class DynamicFormComponent implements OnDestroy {
     control.markAsDirty();
     control.markAsTouched();
     this.overlayService.close();
+    this.handleLocationSelection(field);
     this.emitNormalizedValue();
     this.cdr.markForCheck();
   }
@@ -267,6 +302,7 @@ export class DynamicFormComponent implements OnDestroy {
     control.markAsDirty();
     control.markAsTouched();
 
+    this.handleLocationSelection(field);
     this.emitNormalizedValue();
     this.cdr.markForCheck();
   }
@@ -353,6 +389,7 @@ export class DynamicFormComponent implements OnDestroy {
       this.patchPreservedValuesByFieldId(preservedValues, sorted);
       this.imagePreviews.set({});
       this.subscribeToFormChanges();
+      this.setupLocationDependencies(sorted);
       this.emitNormalizedValue();
       this.formReady.set(true);
       this.cdr.markForCheck();
@@ -415,6 +452,184 @@ export class DynamicFormComponent implements OnDestroy {
     this.valueChange.emit(
       normalizeCheckboxFormValue(this.form.getRawValue(), this.sortedFields()),
     );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Country / State / City dependency handling (Create & Edit pages only).
+  // Location fields are detected dynamically via `optionSource.endpoint`, so the
+  // behaviour applies to every dynamic module without any hardcoded field names.
+  // ---------------------------------------------------------------------------
+
+  private setupLocationDependencies(fields: DynamicField[]): void {
+    this.locationFields = {};
+    this.locationOptionOverrides.set({});
+
+    if (!this.enableLocationDependencies()) {
+      return;
+    }
+
+    for (const field of fields) {
+      if (field.type !== 'select') {
+        continue;
+      }
+
+      const kind = this.locationCache.resolveKind(field.optionSource?.endpoint);
+      if (kind) {
+        this.locationFields[kind] = field;
+      }
+    }
+
+    this.refreshLocationOptionsFromValues();
+  }
+
+  /**
+   * Loads dependent option lists from the currently selected parent values
+   * without clearing any selection. Used on build (empty values) and after an
+   * Edit patch (existing values) so children resolve their labels correctly.
+   */
+  private refreshLocationOptionsFromValues(): void {
+    if (!this.enableLocationDependencies() || !this.form) {
+      return;
+    }
+
+    const { countries: country, states: state, cities: city } = this.locationFields;
+
+    if (state && country) {
+      this.loadStateOptions(this.controlValue(country));
+    }
+
+    if (city) {
+      if (state) {
+        this.loadCityOptionsForState(this.controlValue(state));
+      } else if (country) {
+        this.loadCityOptionsForCountry(this.controlValue(country));
+      }
+    }
+  }
+
+  private handleLocationSelection(field: DynamicField): void {
+    if (!this.enableLocationDependencies()) {
+      return;
+    }
+
+    const { countries: country, states: state, cities: city } = this.locationFields;
+
+    if (country && field === country) {
+      const countryValue = this.controlValue(country);
+
+      if (state) {
+        this.clearControlValue(state);
+        this.loadStateOptions(countryValue);
+
+        // City depends on State (now reset) — clear it and blank its options.
+        if (city) {
+          this.clearControlValue(city);
+          this.setOverride(city, []);
+        }
+      } else if (city) {
+        // No State field: City depends directly on Country.
+        this.clearControlValue(city);
+        this.loadCityOptionsForCountry(countryValue);
+      }
+      return;
+    }
+
+    if (state && field === state && city) {
+      this.clearControlValue(city);
+      this.loadCityOptionsForState(this.controlValue(state));
+    }
+  }
+
+  private loadStateOptions(countryValue: unknown): void {
+    const stateField = this.locationFields.states;
+    if (!stateField) {
+      return;
+    }
+
+    if (this.isEmptyValue(countryValue)) {
+      this.setOverride(stateField, []);
+      return;
+    }
+
+    this.locationCache
+      .getStatesForCountry(countryValue)
+      .pipe(take(1))
+      .subscribe((records) => {
+        this.setOverride(stateField, this.mapRecordsToOptions(stateField, records));
+        this.cdr.markForCheck();
+      });
+  }
+
+  private loadCityOptionsForState(stateValue: unknown): void {
+    const cityField = this.locationFields.cities;
+    if (!cityField) {
+      return;
+    }
+
+    if (this.isEmptyValue(stateValue)) {
+      this.setOverride(cityField, []);
+      return;
+    }
+
+    this.locationCache
+      .getCitiesForState(stateValue)
+      .pipe(take(1))
+      .subscribe((records) => {
+        this.setOverride(cityField, this.mapRecordsToOptions(cityField, records));
+        this.cdr.markForCheck();
+      });
+  }
+
+  private loadCityOptionsForCountry(countryValue: unknown): void {
+    const cityField = this.locationFields.cities;
+    if (!cityField) {
+      return;
+    }
+
+    if (this.isEmptyValue(countryValue)) {
+      this.setOverride(cityField, []);
+      return;
+    }
+
+    this.locationCache
+      .getCitiesForCountry(countryValue)
+      .pipe(take(1))
+      .subscribe((records) => {
+        this.setOverride(cityField, this.mapRecordsToOptions(cityField, records));
+        this.cdr.markForCheck();
+      });
+  }
+
+  private mapRecordsToOptions(
+    field: DynamicField,
+    records: any[],
+  ): DynamicFieldOption[] {
+    const labelKey = field.optionSource?.response?.labelKey ?? 'name';
+    const valueKey = field.optionSource?.response?.valueKey ?? 'id';
+
+    return (records ?? []).map((record) => ({
+      label: String(record?.[labelKey] ?? ''),
+      value: record?.[valueKey] as string | number,
+    }));
+  }
+
+  private setOverride(field: DynamicField, options: DynamicFieldOption[]): void {
+    this.locationOptionOverrides.update((prev) => ({
+      ...prev,
+      [field.name]: options,
+    }));
+  }
+
+  private controlValue(field: DynamicField): unknown {
+    return this.form?.get(field.name)?.value;
+  }
+
+  private clearControlValue(field: DynamicField): void {
+    this.form?.get(field.name)?.setValue('');
+  }
+
+  private isEmptyValue(value: unknown): boolean {
+    return value === null || value === undefined || value === '';
   }
 
   private createRandomPassword(): string {
