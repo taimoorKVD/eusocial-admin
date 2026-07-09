@@ -10,36 +10,36 @@ import { LocationCacheService } from '../../services/location-cache.service';
   selector: 'app-tenant-login',
   standalone: false,
 
-  templateUrl: './tenant-login.component.html',
-  styleUrl: '/tenant-login.component.scss'
-})
-export class TenantLoginComponent {
-  loginForm!: FormGroup;
-  submitted = false;
-  loading = false;
-  errorMessage = '';
+    templateUrl: './tenant-login.component.html',
+    styleUrl: '/tenant-login.component.scss'
+  })
+  export class TenantLoginComponent {
+    loginForm!: FormGroup;
+    submitted = false;
+    loading = false;
+    errorMessage = '';
 
-    private readonly locationCache = inject(LocationCacheService);
+      private readonly locationCache = inject(LocationCacheService);
 
-    constructor( private session: TenantSessionService, private fb: FormBuilder, private tenantAuth: TenantAuthService, private router: Router, private toastr: ToastrService ) {}
+      constructor( private session: TenantSessionService, private fb: FormBuilder, private tenantAuth: TenantAuthService, private router: Router, private toastr: ToastrService ) {}
 
-ngOnInit(): void {
-  // ✅ 1. build form
-  this.loginForm = this.fb.group({
-    email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required, Validators.minLength(6)]]
-  });
+    ngOnInit(): void {
+      // ✅ 1. build form
+      this.loginForm = this.fb.group({
+        email: ['', [Validators.required, Validators.email]],
+        password: ['', [Validators.required, Validators.minLength(6)]]
+      });
 
-  // ✅ 2. auto redirect if already logged in
-  const token = localStorage.getItem('tenant_token');
-  const slug = localStorage.getItem('tenant_slug');
+      // ✅ 2. auto redirect if already logged in
+      const token = localStorage.getItem('tenant_token');
+      const slug = localStorage.getItem('tenant_slug');
 
-  if (token && slug) {
-    // Ensure location cache is ready for an already-authenticated session.
-    this.locationCache.warmCache();
-    this.router.navigate(['/tenant', slug, 'home']);
-  }
-}
+      if (token && slug) {
+        // Ensure location cache is ready for an already-authenticated session.
+        this.locationCache.warmCache();
+        this.router.navigate(['/tenant', slug, 'home']);
+      }
+    }
 
   // easy access
   get f() {

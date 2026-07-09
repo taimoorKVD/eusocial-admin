@@ -1,9 +1,9 @@
 import { Injectable, Signal, computed, inject, signal } from '@angular/core';
-import { Observable, of } from 'rxjs';
-import { catchError, map, tap } from 'rxjs/operators';
+import { Observable, of, EMPTY } from 'rxjs';
+import { catchError, map, switchMap, tap } from 'rxjs/operators';
 import { TenantLocationService } from './tenant-location.service';
 import { TenantSessionService } from './tenant-session.service';
-
+import { expand, reduce } from 'rxjs/operators';
 /**
  * The three location endpoints that are cached once after tenant login and
  * reused across every dynamic module instead of being re-fetched.
@@ -37,6 +37,8 @@ export class LocationCacheService {
   private readonly session = inject(TenantSessionService);
 
   private readonly STORAGE_PREFIX = 'tenant_location_cache';
+  private readonly CITY_PAGE_SIZE = 10000;
+
 
   private readonly responses: Record<LocationKind, ReturnType<typeof signal<LocationApiResponse | null>>> = {
     countries: signal<LocationApiResponse | null>(null),
@@ -78,7 +80,6 @@ export class LocationCacheService {
     if (normalized === 'countries' || normalized === 'states' || normalized === 'cities') {
       return normalized;
     }
-
     return null;
   }
 
@@ -197,7 +198,6 @@ export class LocationCacheService {
         if (!response || !Array.isArray(response.data)) {
           return;
         }
-
         this.responses[kind].set(response);
         this.persist(kind, response);
       });
@@ -210,8 +210,55 @@ export class LocationCacheService {
       case 'states':
         return this.locationService.getAllStates();
       case 'cities':
-        return this.locationService.getAllCities();
+        // return this.locationService.getAllCities();
+       return this.getAllCitiesChunked();
     }
+  }
+
+  private getAllCitiesChunked(): Observable<LocationApiResponse> {
+  const allCities: any[] = [];
+  const seen = new Set<any>();
+
+  const fetchPage = (page: number): Observable<LocationApiResponse> => {
+    return this.locationService.getCitiesChunk(page, this.CITY_PAGE_SIZE).pipe(
+
+      switchMap((response: any) => {
+        const cities = response?.data ?? [];
+
+        // Stop if no more records
+        if (!cities.length) {
+          return of({
+            data: allCities
+          });
+        }
+
+        // Merge without duplicates
+        for (const city of cities) {
+          const key =
+            city.id ??
+            city.city_id ??
+            city.uuid;
+
+          if (!seen.has(key)) {
+            seen.add(key);
+            allCities.push(city);
+          }
+        }
+
+        // If last page (< limit), stop
+        if (cities.length < this.CITY_PAGE_SIZE) {
+          return of({
+            data: allCities
+          });
+        }
+
+        // Fetch next page only AFTER current completes
+        return fetchPage(page + 1);
+      })
+    );
+  };
+
+  return fetchPage(1);
   }
 
   private filterByParent(records: any[], keys: string[], parentId: unknown): any[] {
@@ -236,7 +283,6 @@ export class LocationCacheService {
         if (!raw) {
           return;
         }
-
         const parsed = JSON.parse(raw) as LocationApiResponse;
         if (parsed && Array.isArray(parsed.data)) {
           this.responses[kind].set(parsed);
@@ -250,9 +296,8 @@ export class LocationCacheService {
   private persist(kind: LocationKind, response: LocationApiResponse): void {
     try {
       localStorage.setItem(this.storageKey(kind), JSON.stringify(response));
-    } catch {
-      // Storage quota exceeded (large city lists) — in-memory Signal still
-      // serves the data for the rest of the session.
+    } catch (e) {
+      console.error(e);
     }
   }
 

@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { FormField } from '../../form-builder/models/form-field.model';
 import { normalizeFieldOrder } from '../../form-builder/utils/form-field.factory';
-import { Observable, map } from 'rxjs';
+import { Observable, map, of } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { LocationCacheService } from '../../../services/location-cache.service';
 
@@ -129,16 +129,19 @@ export class FormStorageService {
     endpoint: string,
     params?: Record<string, any>
   ): Observable<T> {
-    // Countries / States / Cities are cached once after tenant login and served
-    // from storage instead of hitting the API again. Any other endpoint (or a
-    // cold/unavailable cache) gracefully falls back to the existing API call.
+
     const cached = this.locationCache.getCachedResponse<T>(endpoint);
     if (cached) {
       return cached;
     }
 
-    const apiUrl = `${environment.tenantApiUrl}/${endpoint}`;
+    // console.log(endpoint)
+    // const normalizedEndpoint = endpoint.replace(/^\/+/, '').toLowerCase();
+    // if (normalizedEndpoint === 'states' || normalizedEndpoint === 'cities') {
+    //   return of(null as T);
+    // }
 
+    const apiUrl = `${environment.tenantApiUrl}/${endpoint}`;
     return this.http.get<T>(apiUrl);
   }
 }

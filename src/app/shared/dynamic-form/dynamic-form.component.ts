@@ -139,9 +139,6 @@ export class DynamicFormComponent implements OnDestroy {
   patchValue(values: DynamicFormValue): void {
     if (!this.form || !values) return;
     this.form.patchValue(values);
-    // Rebuild dependent options for the freshly patched Country/State/City so
-    // existing selections resolve to labels (Edit page restore). Selections are
-    // preserved — options are loaded, not cleared.
     this.refreshLocationOptionsFromValues();
     this.emitNormalizedValue();
     this.cdr.markForCheck();
