@@ -1,40 +1,45 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { TenantAuthService } from '../../services/tenant-auth.service';
 import { Router } from '@angular/router';
 import { TenantSessionService } from '../../services/tenant-session.service';
 import { ToastrService } from 'ngx-toastr';
+import { LocationCacheService } from '../../services/location-cache.service';
 
 @Component({
   selector: 'app-tenant-login',
   standalone: false,
 
-  templateUrl: './tenant-login.component.html',
-  styleUrl: './tenant-login.component.scss'
-})
-export class TenantLoginComponent {
-  loginForm!: FormGroup;
-  submitted = false;
-  loading = false;
-  errorMessage = '';
+    templateUrl: './tenant-login.component.html',
+    styleUrl: '/tenant-login.component.scss'
+  })
+  export class TenantLoginComponent {
+    loginForm!: FormGroup;
+    submitted = false;
+    loading = false;
+    errorMessage = '';
 
-    constructor( private session: TenantSessionService, private fb: FormBuilder, private tenantAuth: TenantAuthService, private router: Router, private toastr: ToastrService ) {}
+      private readonly locationCache = inject(LocationCacheService);
 
-ngOnInit(): void {
-  // ✅ 1. build form
-  this.loginForm = this.fb.group({
-    email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required, Validators.minLength(6)]]
-  });
+      constructor( private session: TenantSessionService, private fb: FormBuilder, private tenantAuth: TenantAuthService, private router: Router, private toastr: ToastrService ) {}
 
-  // ✅ 2. auto redirect if already logged in
-  const token = localStorage.getItem('tenant_token');
-  const slug = localStorage.getItem('tenant_slug');
+    ngOnInit(): void {
+      // ✅ 1. build form
+      this.loginForm = this.fb.group({
+        email: ['', [Validators.required, Validators.email]],
+        password: ['', [Validators.required, Validators.minLength(6)]]
+      });
 
-  if (token && slug) {
-    this.router.navigate(['/tenant', slug, 'home']);
-  }
-}
+      // ✅ 2. auto redirect if already logged in
+      const token = localStorage.getItem('tenant_token');
+      const slug = localStorage.getItem('tenant_slug');
+
+      if (token && slug) {
+        // Ensure location cache is ready for an already-authenticated session.
+        this.locationCache.warmCache();
+        this.router.navigate(['/tenant', slug, 'home']);
+      }
+    }
 
   // easy access
   get f() {

@@ -60,12 +60,34 @@ getCountries(): Observable<any> {
 
 // STATES (by country)
 getStates(countryId: number): Observable<any> {
+  console.log('getStates called with countryId:', countryId);
   return this.http.get(`${this.statesUrl}?country_id=${countryId}`);
 }
 
 // CITIES (by state)
 getCities(stateId: number): Observable<any> {
   return this.http.get(`${this.citiesUrl}?state_id=${stateId}`);
+}
+
+// ALL STATES (cached once after login)
+getAllStates(): Observable<any> {
+  return this.http.get(this.statesUrl);
+}
+
+// ALL CITIES (cached once after login)
+getAllCities(): Observable<any> {
+  return this.http.get(this.citiesUrl);
+}
+
+// CITIES (by country) — used when a form has Country + City but no State
+getCitiesByCountry(countryId: number): Observable<any> {
+  return this.http.get(`${this.citiesUrl}?country_id=${countryId}`);
+}
+
+getCitiesChunk(page: number, limit: number): Observable<any> {
+  return this.http.get(
+    `${this.citiesUrl}?page=${page}&limit=${limit}`
+  );
 }
 
 }

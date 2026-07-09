@@ -64,6 +64,7 @@
       @if (hasFormFields()) {
         <app-dynamic-form
           [fields]="formFields()"
+          [enableLocationDependencies]="true"
           (valueChange)="onDynamicFormChange($event)"
         ></app-dynamic-form>
 
