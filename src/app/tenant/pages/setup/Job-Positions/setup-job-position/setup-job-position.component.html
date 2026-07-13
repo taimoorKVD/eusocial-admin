@@ -17,18 +17,21 @@
 
       <!-- Dropdown -->
       <div>
-        <label class="text-[16px] font-medium mb-6 font-ibm text-[#0054AC] block">
-          Create/View Job Positions
-        </label>
+        <h2
+          class="cursor-pointer text-[16px] font-medium font-ibm text-[#ea580c] hover:underline"
+          (click)="goToJobListing()"
+        >
+          Create / View Job Positions
+        </h2>
 
-        <select [(ngModel)]="selectedJobId" (change)="onSelectJob()"
+        <!-- <select [(ngModel)]="selectedJobId" (change)="onSelectJob()"
           class="w-full border-b border-gray-400 bg-transparent outline-none text-sm py-1 cursor-pointer">
           <option [ngValue]="null" disabled>Choose an option</option>
 
           <option *ngFor="let job of jobPositions" [ngValue]="job.id">
             {{ job.name }}
           </option>
-        </select>
+        </select> -->
       </div>
 
       <div></div>
@@ -46,7 +49,7 @@
     <div class="grid grid-cols-3 gap-x-12 gap-y-6">
       <div class="mb-6">
         <input type="text" [(ngModel)]="jobTitle" placeholder="Enter Job Title"
-          class="border border-blue-500 px-3 w-full placeholder-[#A8A8A8] text-[#161616] focus:outline-none py-3 text-[14px] bg-transparent" />
+          class="border border-[#FF9015] px-3 w-full placeholder-[#A8A8A8] text-[#161616] focus:outline-none py-3 text-[14px] bg-transparent" />
         <p class="text-xs text-gray-400 mt-1">Job Position Field</p>
       </div>
     </div>
@@ -56,7 +59,7 @@
 
       <!-- MODULE CARD -->
       <div *ngFor="let group of groupedPermissions | keyvalue"
-        class="bg-white border border-gray-200 rounded-3xl p-5 shadow-sm hover:shadow-xl transition-all duration-300">
+        class="bg-white border border-grey-500 rounded-3xl p-5 shadow-sm hover:shadow-xl transition-all duration-300">
 
         <!-- Header -->
         <div class="flex items-start justify-between mb-6">
@@ -67,7 +70,7 @@
               {{ ($any(group.key)).replace('-', ' ') }}
             </h3>
 
-            <p class="text-[12px] text-gray-500 mt-1">
+            <p class="text-[12px] text-[#FF9015] mt-1">
               Manage module permissions
             </p>
           </div>
@@ -77,7 +80,7 @@
         <div class="space-y-4">
 
           <div *ngFor="let perm of $any(group.value)"
-            class="flex items-center justify-between rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3 transition-all duration-200 hover:border-gray-300 hover:bg-white">
+            class="flex items-center justify-between rounded-2xl border border-[#FF9015] bg-gray-50 px-4 py-3 transition-all duration-200 hover:border-gray-300 hover:bg-white">
 
             <!-- Permission Name -->
             <div>
@@ -148,18 +151,32 @@
   <!-- Bottom Buttons -->
   <div class="flex justify-end gap-3 mt-10">
 
-    <button (click)="deleteJob()" class="border border-red-400 text-red-500 px-6 py-2 text-sm">
-      Delete
-    </button>
+    @if (selectedJobId) {
+      <button type="button" (click)="deleteJob()" class="btn btn--delete">
+        Delete
+      </button>
+    }
 
-    <button (click)="resetForm()" class="border border-blue-400 text-blue-500 px-6 py-2 text-sm">
+    <button (click)="resetForm()" type="button" class="btn btn--cancel">
       Cancel
     </button>
 
-    <button (click)="saveJob()" class="bg-blue-600 text-white px-6 py-2 text-sm">
+    <button
+      type="button"
+      (click)="saveJob()"
+      class="btn btn--save"
+    >
       Save
     </button>
-
   </div>
-
 </div>
+
+<app-confirm-modal
+  [isOpen]="showConfirmModal()"
+  [title]="confirmModalTitle"
+  [description]="confirmModalDescription"
+  confirmText="Confirm"
+  cancelText="Close"
+  (confirmed)="onConfirmed()"
+  (closed)="onClosed()"
+></app-confirm-modal>
