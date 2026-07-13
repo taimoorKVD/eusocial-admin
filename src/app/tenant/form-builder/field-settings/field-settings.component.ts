@@ -1,7 +1,21 @@
-import { Component, EventEmitter, Input, Output, signal } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  Output,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+import { ToastrService } from 'ngx-toastr';
 import { FormField, OptionSource } from '../models/form-field.model';
 import { normalizeFieldOption, normalizeStaticSelectFieldOptions } from '../utils/field-options.utils';
 import { buildPlaceholderFromLabel, supportsPlaceholderAutoGeneration } from '../utils/form-field.factory';
+import {
+  getLocationFieldDeleteBlockReason,
+  resolveBuilderLocationKind,
+  schemaHasLocationKind,
+} from '../utils/location-field-dependencies.utils';
 import { DynamicModuleOptionsService } from '../services/dynamic-module-options.service';
 import { FormModuleListItem } from '../../forms/models/form-module.model';
 
@@ -24,12 +38,31 @@ interface LoadModuleDataOptions {
   styleUrl: './field-settings.component.scss',
 })
 export class FieldSettingsComponent {
+  private readonly toastr = inject(ToastrService);
+  private readonly schemaSignal = signal<FormField[]>([]);
+  private readonly selectedFieldIdSignal = signal<string | null>(null);
+
   @Input() activeModuleName = '';
+
+  @Input() set schema(value: FormField[] | null | undefined) {
+    this.schemaSignal.set(value ?? []);
+  }
+
+  /** Country on another field — required before States/Cities can be selected. */
+  readonly hasCountryField = computed(() =>
+    schemaHasLocationKind(
+      this.schemaSignal(),
+      'countries',
+      this.selectedFieldIdSignal() ?? undefined
+    )
+  );
 
   @Input() set field(value: FormField | undefined) {
     if (!value) {
       return;
     }
+
+    this.selectedFieldIdSignal.set(value.id);
 
     const isSameField = this._field?.id === value.id;
 
@@ -182,7 +215,6 @@ export class FieldSettingsComponent {
       return;
     }
 
-    console.log('Module changed to:', moduleSlug);
     if (!moduleSlug) {
       this.selectedModuleSlug = '';
       this.selectedDisplayColumn = '';
@@ -191,6 +223,10 @@ export class FieldSettingsComponent {
       this._field.options = [];
       this._field.optionSource = undefined;
       this.onChange();
+      return;
+    }
+
+    if (this.isModuleSlugDisabled(moduleSlug)) {
       return;
     }
 
@@ -203,6 +239,20 @@ export class FieldSettingsComponent {
       preserveDisplayColumn: false,
       emitUpdate: true,
     });
+  }
+
+  isModuleOptionDisabled(module: FormModuleListItem): boolean {
+    return this.isModuleSlugDisabled(this.getModuleSlug(module));
+  }
+
+  private isModuleSlugDisabled(moduleSlug: string): boolean {
+    const kind = resolveBuilderLocationKind(moduleSlug);
+
+    if (kind !== 'states' && kind !== 'cities') {
+      return false;
+    }
+
+    return !this.hasCountryField();
   }
 
   onDisplayColumnChange(column: string): void {
@@ -287,10 +337,31 @@ export class FieldSettingsComponent {
       return;
     }
 
+    const blockReason = getLocationFieldDeleteBlockReason(
+      this._field,
+      this.schemaSignal()
+    );
+
+    if (blockReason) {
+      this.toastr.warning(blockReason);
+      return;
+    }
+
     this.isDeleteModalOpen = true;
   }
 
   onDeleteConfirm(): void {
+    const blockReason = getLocationFieldDeleteBlockReason(
+      this._field,
+      this.schemaSignal()
+    );
+
+    if (blockReason) {
+      this.isDeleteModalOpen = false;
+      this.toastr.warning(blockReason);
+      return;
+    }
+
     this.isDeleteModalOpen = false;
     this.delete.emit();
   }
@@ -568,7 +639,7 @@ export class FieldSettingsComponent {
   }
 
   selectModule(slug: string): void {
-    if (!this.isFieldEditable) {
+    if (!this.isFieldEditable || this.isModuleSlugDisabled(slug)) {
       return;
     }
 
