@@ -161,6 +161,18 @@ $theme-text: #334155;
   font-weight: 500;
 }
 
+.module-select__option--disabled,
+.module-select__option:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  color: #94a3b8;
+  background: #f8fafc;
+
+  &:hover {
+    background: #f8fafc;
+  }
+}
+
 .dropdown-arrow {
   transition: transform 0.2s ease;
 }

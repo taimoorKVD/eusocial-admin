@@ -71,6 +71,7 @@
         @if (selectedField) {
           <app-field-settings
             [field]="selectedField"
+            [schema]="schema"
             [activeModuleName]="moduleName"
             (update)="updateField.emit($event)"
             (duplicate)="onDuplicateSelectedField()"

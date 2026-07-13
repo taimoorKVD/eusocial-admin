@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { TenantJobPositionService } from '../../../../../services/tenant-job-position.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TenantSessionService } from '../../../../../services/tenant-session.service';
@@ -28,6 +28,11 @@ export class SetupJobPositionComponent {
   isLoading = false;
   allPermissions: any[] = [];
   groupedPermissions: any = {};
+  showConfirmModal = signal(false);
+  confirmModalTitle = '';
+  confirmModalDescription = '';
+  private pendingAction: 'delete' | 'cancel' | null = null;
+
 
   ngOnInit() {
     this.loadJobPositions();
@@ -168,9 +173,8 @@ export class SetupJobPositionComponent {
       this.tenantJobPosition.createJobPosition(payload).subscribe({
         next: () => {
           this.isLoading = false;
-          // alert('Created successfully');
           this.toastr.success('Job Created Successfully');
-          this.redirectToListing(); // ✅ redirect instead of reset
+          this.redirectToListing();
         },
         error: (err) => {
           this.isLoading = false;
@@ -181,17 +185,42 @@ export class SetupJobPositionComponent {
     }
   }
 
-  // 🔹 Reset form
   resetForm() {
-    this.selectedJobId = null;
-    this.jobTitle = '';
-    this.selectedPermissions = [];
-    this.permissionsTouched = false;
+    this.pendingAction = 'cancel';
+
+    this.confirmModalTitle = 'Discard Changes';
+    this.confirmModalDescription =
+      'Are you sure you want to leave this page? Any unsaved changes will be lost.';
+
+    this.showConfirmModal.set(true);
   }
 
   deleteJob() {
+    this.pendingAction = 'delete';
+    this.confirmModalTitle = 'Delete Job';
+    this.confirmModalDescription = 'Are you sure you want to delete this job? This action cannot be undone.';
+    this.showConfirmModal.set(true);
+  }
+
+  onConfirmed(): void {
+
+    this.showConfirmModal.set(false);
+
+    switch (this.pendingAction) {
+      case 'delete':
+        this.confirmDeleteJob();
+        break;
+
+      case 'cancel':
+        this.goToJobListing();
+        break;
+    }
+
+    this.pendingAction = null;
+  }
+
+  confirmDeleteJob(){
     if (!this.selectedJobId) {
-      this.toastr.warning('Please select a job first');
       return;
     }
 
@@ -208,5 +237,14 @@ export class SetupJobPositionComponent {
         this.toastr.error(err?.error?.message || 'Failed to Delete Job');
       },
     });
+  }
+
+  onClosed(): void {
+    this.showConfirmModal.set(false);
+  }
+
+  goToJobListing() {
+    const slug = this.tenantSession.getSlug();
+    this.router.navigate(['/tenant', slug, 'job-position']);
   }
 }

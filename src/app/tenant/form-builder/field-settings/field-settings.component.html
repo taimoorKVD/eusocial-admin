@@ -185,6 +185,10 @@
                   [class.module-select__option--selected]="
                     selectedModuleSlug === getModuleSlug(module)
                   "
+                  [class.module-select__option--disabled]="
+                    isModuleOptionDisabled(module)
+                  "
+                  [disabled]="isModuleOptionDisabled(module)"
                   (click)="selectModule(getModuleSlug(module))"
                 >
                   {{ getModuleLabel(module) }}
