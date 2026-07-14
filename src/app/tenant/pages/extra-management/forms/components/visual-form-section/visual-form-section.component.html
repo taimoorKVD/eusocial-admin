@@ -1,0 +1,68 @@
+<section class="section-card">
+  <div class="section-card__header">
+    <h3 class="section-card__title font-ibm">Visual Form</h3>
+    <button
+      type="button"
+      class="section-card__remove font-ibm"
+      aria-label="Remove section"
+      (click)="removeSection.emit(section.id)"
+    >
+      ×
+    </button>
+  </div>
+
+  <div class="visual-grid">
+    <div class="visual-upload">
+      <h4 class="visual-upload__heading font-ibm">Upload files</h4>
+      <p class="visual-upload__hint font-ibm">
+        Max file size is 500kb. Supported file types are .jpg and .png.
+      </p>
+
+      <label class="dropzone font-ibm">
+        <input
+          type="file"
+          class="sr-only"
+          accept=".jpg,.jpeg,.png"
+          multiple
+          (change)="onFilesSelected($event)"
+        />
+        Drag and drop files here or click to upload
+      </label>
+
+      @if (section.configuration.files.length) {
+        <ul class="file-list">
+          @for (file of section.configuration.files; track file.name + $index; let i = $index) {
+            <li class="file-list__item font-ibm">
+              <span>{{ file.name }}</span>
+              <button type="button" class="file-list__remove" aria-label="Remove file" (click)="removeFile(i)">
+                ×
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+
+    <div class="visual-instructions">
+      <div class="visual-instructions__header">
+        <label class="visual-instructions__label font-ibm" for="visual-instructions-{{ section.id }}">
+          Instructions
+        </label>
+        <span class="visual-instructions__counter font-ibm">
+          {{ section.configuration.instructions.length }}/{{ maxInstructions }}
+        </span>
+      </div>
+
+      <textarea
+        id="visual-instructions-{{ section.id }}"
+        class="visual-instructions__textarea font-ibm"
+        [ngModel]="section.configuration.instructions"
+        (ngModelChange)="onInstructionsChange($event)"
+        [attr.maxlength]="maxInstructions"
+        placeholder="Lorem ipsum"
+        rows="6"
+      ></textarea>
+      <p class="visual-instructions__helper font-ibm">Helper text</p>
+    </div>
+  </div>
+</section>

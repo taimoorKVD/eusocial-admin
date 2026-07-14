@@ -1,0 +1,166 @@
+.create-form {
+  max-width: 72rem;
+}
+
+.create-form__page-title {
+  margin: 0 0 1.5rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #161616;
+}
+
+.create-form__top-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2.5rem;
+  margin-bottom: 1.75rem;
+}
+
+@media (max-width: 768px) {
+  .create-form__top-grid {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+}
+
+.underlined-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.underlined-field__label {
+  font-size: 0.75rem;
+  color: #6f6f6f;
+}
+
+.req {
+  color: #dc2626;
+  margin-right: 0.15rem;
+}
+
+.underlined-field__input {
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid #161616;
+  background: transparent;
+  padding: 0.75rem 0;
+  font-size: 0.875rem;
+  color: #161616;
+  outline: none;
+
+  &::placeholder {
+    color: #a8a8a8;
+  }
+}
+
+.underlined-field__select-wrap {
+  position: relative;
+}
+
+.underlined-field__select {
+  appearance: none;
+  padding-right: 1.5rem;
+  cursor: pointer;
+}
+
+.underlined-field__chevron {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  display: inline-flex;
+}
+
+.create-form__sections {
+  margin-top: 0.5rem;
+}
+
+.create-form__divider {
+  border: none;
+  border-top: 1px solid #e5e7eb;
+  margin: 1.75rem 0 1.5rem;
+}
+
+.meta-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2.5rem;
+  margin-bottom: 2rem;
+}
+
+@media (max-width: 900px) {
+  .meta-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
+.meta-col__heading {
+  margin: 0 0 1rem;
+  font-size: 0.75rem;
+  color: #a8a8a8;
+}
+
+.mt-4 {
+  margin-top: 1rem;
+}
+
+.create-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding-bottom: 1rem;
+}
+
+.action-btn {
+  min-width: 6.5rem;
+  padding: 0.625rem 1.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease, opacity 0.15s ease;
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  &--preview {
+    border: 1px solid #dc2626;
+    background: #fff;
+    color: #dc2626;
+
+    &:hover:not(:disabled) {
+      background: #fef2f2;
+    }
+  }
+
+  &--cancel {
+    border: 1px solid #2563eb;
+    background: #fff;
+    color: #2563eb;
+
+    &:hover:not(:disabled) {
+      background: #eff6ff;
+    }
+  }
+
+  &--save {
+    border: none;
+    background: #9ca3af;
+    color: #fff;
+
+    &:hover:not(:disabled) {
+      background: #6b7280;
+    }
+
+    &:disabled {
+      background: #c4c4c4;
+      color: #fff;
+    }
+  }
+}

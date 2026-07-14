@@ -1,0 +1,40 @@
+<div class="p-6">
+  <app-top-header
+    [title]="'Forms'"
+    [buttonLabel]="'+ Create Form'"
+    (buttonClick)="goToCreate()"
+  />
+
+  <div class="bg-white rounded shadow overflow-hidden mt-5">
+    <table class="w-full text-left text-sm font-ibm">
+      <thead class="bg-gray-200 text-gray-700">
+        <tr>
+          <th class="px-4 py-3">Form Name</th>
+          <th class="px-4 py-3">Sections</th>
+          <th class="px-4 py-3">Section Types</th>
+          <th class="px-4 py-3">Created At</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        @for (form of forms(); track form.id) {
+          <tr class="border-b hover:bg-gray-50">
+            <td class="px-4 py-3">{{ form.formName }}</td>
+            <td class="px-4 py-3">{{ form.sectionCount }}</td>
+            <td class="px-4 py-3">{{ formatSectionTypes(form.sectionTypes) }}</td>
+            <td class="px-4 py-3">{{ form.createdAt | date: 'medium' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+
+    @if (!hasForms()) {
+      <div class="text-center py-10">
+        <p class="text-gray-400 text-sm font-ibm">No forms created yet</p>
+        <button type="button" class="create-link font-ibm" (click)="goToCreate()">
+          Create your first form
+        </button>
+      </div>
+    }
+  </div>
+</div>
