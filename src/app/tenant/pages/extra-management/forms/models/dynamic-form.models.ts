@@ -105,9 +105,9 @@ export interface SavedDynamicForm {
 }
 
 export const SECTION_OPTIONS: { label: string; value: SectionType }[] = [
+  { label: 'Visual Form', value: 'visualForm' },
   { label: 'Data Entry', value: 'dataEntry' },
   { label: 'Checklist Form', value: 'checklistForm' },
-  { label: 'Visual Form', value: 'visualForm' },
 ];
 
 export const FIELD_TYPE_OPTIONS: { label: string; value: FieldType }[] = [

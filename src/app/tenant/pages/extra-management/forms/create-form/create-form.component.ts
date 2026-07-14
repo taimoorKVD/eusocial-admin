@@ -21,6 +21,11 @@ import {
   createSection,
 } from '../models/dynamic-form.models';
 
+interface WizardStep {
+  label: string;
+  number: number;
+}
+
 @Component({
   selector: 'app-create-form',
   standalone: true,
@@ -60,6 +65,24 @@ export class CreateFormComponent {
   readonly hasSections = computed(() => this.sections().length > 0);
   readonly canSave = computed(() => this.formName().trim().length > 0 && this.hasSections());
 
+  // ── Wizard State ──────────────────────────────────────────────
+  readonly currentStep = signal(1);
+  readonly totalSteps = 4;
+
+  readonly steps: WizardStep[] = [
+    { label: 'Form Details', number: 1 },
+    { label: 'Assign', number: 2 },
+    { label: 'Report', number: 3 },
+    { label: 'Frequency', number: 4 },
+  ];
+
+  readonly isFirstStep = computed(() => this.currentStep() === 1);
+  readonly isLastStep = computed(() => this.currentStep() === this.totalSteps);
+
+  readonly step1Valid = computed(
+    () => this.formName().trim().length > 0 && this.sections().length > 0,
+  );
+
   /** Placeholder options until API integration */
   readonly jobPositionOptions = [
     { label: 'Manager', value: 'manager' },
@@ -71,6 +94,41 @@ export class CreateFormComponent {
     { label: 'All Users', value: 'all' },
     { label: 'Assigned Users', value: 'assigned' },
   ];
+
+  /** Step navigation */
+  isStepCompleted(stepNum: number): boolean {
+    if (stepNum === 1) return this.step1Valid();
+    return this.currentStep() > stepNum;
+  }
+
+  isStepActive(stepNum: number): boolean {
+    return this.currentStep() === stepNum;
+  }
+
+  canProceed(): boolean {
+    if (this.currentStep() === 1) return this.step1Valid();
+    return true;
+  }
+
+  nextStep(): void {
+    if (this.currentStep() < this.totalSteps && this.canProceed()) {
+      this.currentStep.update((s) => s + 1);
+    }
+  }
+
+  prevStep(): void {
+    if (this.currentStep() > 1) {
+      this.currentStep.update((s) => s - 1);
+    }
+  }
+
+  goToStep(stepNum: number): void {
+    if (stepNum < this.currentStep()) {
+      this.currentStep.set(stepNum);
+    }
+  }
+
+  // ── Section Management ────────────────────────────────────────
 
   onAddSection(): void {
     const type = this.selectedSectionType();
