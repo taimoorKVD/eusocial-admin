@@ -1,0 +1,330 @@
+<div class="create-form p-6">
+  <h2 class="create-form__page-title font-ibm">Create Form</h2>
+
+  <!-- ═══════════════════ STEP INDICATOR ═══════════════════ -->
+  <div class="wizard-indicator">
+    @for (step of steps; track step.number; let i = $index) {
+      <button
+        type="button"
+        class="wizard-indicator__step"
+        [class.wizard-indicator__step--active]="isStepActive(step.number)"
+        [class.wizard-indicator__step--completed]="isStepCompleted(step.number)"
+        (click)="goToStep(step.number)"
+        [disabled]="step.number > currentStep()"
+      >
+        <span class="wizard-indicator__circle">
+          @if (isStepCompleted(step.number) && !isStepActive(step.number)) {
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          } @else {
+            {{ step.number }}
+          }
+        </span>
+        <span class="wizard-indicator__label font-ibm">{{ step.label }}</span>
+      </button>
+
+      @if (i < steps.length - 1) {
+        <div
+          class="wizard-indicator__connector"
+          [class.wizard-indicator__connector--completed]="isStepCompleted(step.number)"
+        ></div>
+      }
+    }
+  </div>
+
+  <!-- ═══════════════════ STEP 1 — Form Details ═══════════════════ -->
+  @if (currentStep() === 1) {
+    <div class="wizard-content">
+      <div class="wizard-content__card">
+        <h3 class="wizard-content__heading font-ibm">Form Details</h3>
+
+        <div class="create-form__top-grid">
+          <div class="underlined-field">
+            <label class="underlined-field__label font-ibm" for="form-name">Form Name</label>
+            <input
+              id="form-name"
+              type="text"
+              class="underlined-field__input font-ibm"
+              [ngModel]="formName()"
+              (ngModelChange)="formName.set($event)"
+              placeholder="Enter form name"
+            />
+          </div>
+
+          <div class="underlined-field">
+            <label class="underlined-field__label font-ibm" for="add-section">Add Section</label>
+            <div class="underlined-field__select-wrap">
+              <select
+                id="add-section"
+                class="underlined-field__input underlined-field__select font-ibm"
+                [ngModel]="selectedSectionType()"
+                (ngModelChange)="onSectionTypeChange($event)"
+              >
+                <option value="">Select section</option>
+                @for (opt of sectionOptions; track opt.value) {
+                  <option [value]="opt.value">{{ opt.label }}</option>
+                }
+              </select>
+              <span class="underlined-field__chevron" aria-hidden="true">
+                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                  <path d="M1 1.5L6 6.5L11 1.5" stroke="#161616" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        @if (hasSections()) {
+          <div class="create-form__sections">
+            @for (section of sections(); track section.id) {
+              @switch (section.type) {
+                @case ('dataEntry') {
+                  <app-data-entry-section
+                    [section]="asDataEntry(section)"
+                    (addFieldRequested)="openFieldModal($event)"
+                    (sectionChange)="updateSection($event)"
+                    (removeSection)="removeSection($event)"
+                  />
+                }
+                @case ('checklistForm') {
+                  <app-checklist-form-section
+                    [section]="asChecklist(section)"
+                    (addFieldRequested)="openFieldModal($event)"
+                    (sectionChange)="updateSection($event)"
+                    (removeSection)="removeSection($event)"
+                  />
+                }
+                @case ('visualForm') {
+                  <app-visual-form-section
+                    [section]="asVisual(section)"
+                    (sectionChange)="updateSection($event)"
+                    (removeSection)="removeSection($event)"
+                  />
+                }
+              }
+            }
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- ═══════════════════ STEP 2 — Assign ═══════════════════ -->
+  @if (currentStep() === 2) {
+    <div class="wizard-content">
+      <div class="wizard-content__card">
+        <h3 class="wizard-content__heading font-ibm">Assign</h3>
+
+        <div class="wizard-content__fields">
+          <div class="underlined-field">
+            <label class="underlined-field__label font-ibm">
+              <span class="req">*</span>Job Position
+            </label>
+            <div class="underlined-field__select-wrap">
+              <select
+                class="underlined-field__input underlined-field__select font-ibm"
+                [ngModel]="meta().assignJobPosition"
+                (ngModelChange)="updateMeta('assignJobPosition', $event)"
+              >
+                <option [ngValue]="null">Select job position</option>
+                @for (opt of jobPositionOptions; track opt.value) {
+                  <option [ngValue]="opt.value">{{ opt.label }}</option>
+                }
+              </select>
+              <span class="underlined-field__chevron" aria-hidden="true">
+                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                  <path d="M1 1.5L6 6.5L11 1.5" stroke="#161616" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+            </div>
+          </div>
+
+          <div class="underlined-field mt-4">
+            <label class="underlined-field__label font-ibm">
+              <span class="req">*</span>Users
+            </label>
+            <div class="underlined-field__select-wrap">
+              <select
+                class="underlined-field__input underlined-field__select font-ibm"
+                [ngModel]="meta().assignUsers"
+                (ngModelChange)="updateMeta('assignUsers', $event)"
+              >
+                <option [ngValue]="null">Select users</option>
+                @for (opt of userOptions; track opt.value) {
+                  <option [ngValue]="opt.value">{{ opt.label }}</option>
+                }
+              </select>
+              <span class="underlined-field__chevron" aria-hidden="true">
+                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                  <path d="M1 1.5L6 6.5L11 1.5" stroke="#161616" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ═══════════════════ STEP 3 — Report ═══════════════════ -->
+  @if (currentStep() === 3) {
+    <div class="wizard-content">
+      <div class="wizard-content__card">
+        <h3 class="wizard-content__heading font-ibm">Report</h3>
+
+        <div class="wizard-content__fields">
+          <div class="underlined-field">
+            <label class="underlined-field__label font-ibm">
+              <span class="req">*</span>Job Position
+            </label>
+            <div class="underlined-field__select-wrap">
+              <select
+                class="underlined-field__input underlined-field__select font-ibm"
+                [ngModel]="meta().reportJobPosition"
+                (ngModelChange)="updateMeta('reportJobPosition', $event)"
+              >
+                <option [ngValue]="null">Select job position</option>
+                @for (opt of jobPositionOptions; track opt.value) {
+                  <option [ngValue]="opt.value">{{ opt.label }}</option>
+                }
+              </select>
+              <span class="underlined-field__chevron" aria-hidden="true">
+                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                  <path d="M1 1.5L6 6.5L11 1.5" stroke="#161616" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+            </div>
+          </div>
+
+          <div class="underlined-field mt-4">
+            <label class="underlined-field__label font-ibm">
+              <span class="req">*</span>Users
+            </label>
+            <div class="underlined-field__select-wrap">
+              <select
+                class="underlined-field__input underlined-field__select font-ibm"
+                [ngModel]="meta().reportUsers"
+                (ngModelChange)="updateMeta('reportUsers', $event)"
+              >
+                <option [ngValue]="null">Select users</option>
+                @for (opt of userOptions; track opt.value) {
+                  <option [ngValue]="opt.value">{{ opt.label }}</option>
+                }
+              </select>
+              <span class="underlined-field__chevron" aria-hidden="true">
+                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                  <path d="M1 1.5L6 6.5L11 1.5" stroke="#161616" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ═══════════════════ STEP 4 — Frequency ═══════════════════ -->
+  @if (currentStep() === 4) {
+    <div class="wizard-content">
+      <div class="wizard-content__card">
+        <h3 class="wizard-content__heading font-ibm">Frequency</h3>
+
+        <div class="wizard-content__fields">
+          <div class="underlined-field">
+            <label class="underlined-field__label font-ibm">
+              <span class="req">*</span>Job Position
+            </label>
+            <div class="underlined-field__select-wrap">
+              <select
+                class="underlined-field__input underlined-field__select font-ibm"
+                [ngModel]="meta().frequencyJobPosition"
+                (ngModelChange)="updateMeta('frequencyJobPosition', $event)"
+              >
+                <option [ngValue]="null">Select job position</option>
+                @for (opt of jobPositionOptions; track opt.value) {
+                  <option [ngValue]="opt.value">{{ opt.label }}</option>
+                }
+              </select>
+              <span class="underlined-field__chevron" aria-hidden="true">
+                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                  <path d="M1 1.5L6 6.5L11 1.5" stroke="#161616" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+            </div>
+          </div>
+
+          <div class="underlined-field mt-4">
+            <label class="underlined-field__label font-ibm">Date</label>
+            <div class="underlined-field__select-wrap">
+              <input
+                type="date"
+                class="underlined-field__input font-ibm"
+                [ngModel]="meta().frequencyDate"
+                (ngModelChange)="updateMeta('frequencyDate', $event)"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ═══════════════════ WIZARD NAVIGATION ═══════════════════ -->
+  <div class="wizard-nav">
+    <div class="wizard-nav__left">
+      <button
+        type="button"
+        class="action-btn action-btn--cancel font-ibm"
+        (click)="cancel()"
+      >
+        Cancel
+      </button>
+    </div>
+
+    <div class="wizard-nav__right">
+      @if (!isFirstStep()) {
+        <button
+          type="button"
+          class="action-btn action-btn--back font-ibm"
+          (click)="prevStep()"
+        >
+          ← Back
+        </button>
+      }
+
+      @if (!isLastStep()) {
+        <button
+          type="button"
+          class="action-btn action-btn--next font-ibm"
+          [disabled]="!canProceed()"
+          (click)="nextStep()"
+        >
+          Next →
+        </button>
+      } @else {
+        <button
+          type="button"
+          class="action-btn action-btn--preview font-ibm"
+          (click)="preview()"
+        >
+          Preview
+        </button>
+        <button
+          type="button"
+          class="action-btn action-btn--save font-ibm"
+          [disabled]="!canSave()"
+          (click)="save()"
+        >
+          Save
+        </button>
+      }
+    </div>
+  </div>
+
+  <app-field-create-modal
+    [isOpen]="fieldModalOpen()"
+    (saved)="onFieldSaved($event)"
+    (closed)="closeFieldModal()"
+  />
+</div>

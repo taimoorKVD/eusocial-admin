@@ -1,0 +1,95 @@
+<section class="section-card">
+  <div class="section-card__header">
+    <h3 class="section-card__title font-ibm">Data Entry</h3>
+    <button
+      type="button"
+      class="section-card__remove font-ibm"
+      aria-label="Remove section"
+      (click)="removeSection.emit(section.id)"
+    >
+      ×
+    </button>
+  </div>
+
+  <div class="section-card__body">
+    @for (row of section.rows; track trackRow($index, row); let rowIndex = $index) {
+      <div class="field-row" [class.field-row--bordered]="rowIndex > 0">
+        <div class="field-row__fields">
+          @for (field of row.fields; track trackField($index, field)) {
+            <div
+              class="field-chip"
+              [style.flex-basis]="field.width || 'auto'"
+              [style.max-width]="field.width === '100%' ? '100%' : null"
+            >
+              <div class="field-chip__meta">
+                <span class="field-chip__label font-ibm">
+                  {{ field.label }}
+                  @if (field.required) {
+                    <span class="req">*</span>
+                  }
+                </span>
+                <button
+                  type="button"
+                  class="field-chip__remove"
+                  aria-label="Remove field"
+                  (click)="removeField(row, field.id)"
+                >
+                  ×
+                </button>
+              </div>
+              <div class="field-chip__preview font-ibm">
+                @switch (field.type) {
+                  @case ('textarea') {
+                    <textarea
+                      class="preview-input preview-input--area"
+                      [placeholder]="field.placeholder || field.label"
+                      disabled
+                    ></textarea>
+                  }
+                  @case ('checkbox') {
+                    <label class="preview-check">
+                      <input type="checkbox" disabled />
+                      <span>{{ field.label }}</span>
+                    </label>
+                  }
+                  @case ('select') {
+                    <select class="preview-input" disabled>
+                      <option>{{ field.placeholder || 'Select' }}</option>
+                    </select>
+                  }
+                  @default {
+                    <input
+                      class="preview-input"
+                      [type]="field.type === 'date' ? 'date' : field.type === 'number' ? 'number' : 'text'"
+                      [placeholder]="field.placeholder || ''"
+                      disabled
+                    />
+                  }
+                }
+              </div>
+            </div>
+          }
+
+          <button
+            type="button"
+            class="add-field-btn"
+            aria-label="Add field"
+            (click)="requestAddField(row.id)"
+          >
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="1.5" />
+              <path d="M10 6v8M6 10h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    }
+
+    <button type="button" class="add-row-btn font-ibm" (click)="addRow()">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+      </svg>
+      Add Row
+    </button>
+  </div>
+</section>

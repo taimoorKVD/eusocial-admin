@@ -3,6 +3,14 @@ import { GlobalFilterField } from '../global-filter/global-filter';
 
 const DEFAULT_NON_FILTERABLE_TYPES = new Set<DynamicFieldType>(['image']);
 
+export type ListingLocationKind = 'countries' | 'states' | 'cities';
+
+export interface ListingLocationFieldIds {
+  countryId: string | null;
+  stateId: string | null;
+  cityId: string | null;
+}
+
 export interface FilterFieldMappingOptions {
   excludeTypes?: DynamicFieldType[];
   excludeNamePattern?: RegExp;
@@ -65,16 +73,26 @@ export function resolveInitialVisibleFieldIds(
   );
 
   if (validSavedIds?.length) {
+    const sanitizedIds = sanitizeVisibleLocationFieldIds(
+      sortedFields,
+      validSavedIds,
+    );
+
     return {
       sortedFields,
-      visibleFieldIds: validSavedIds,
-      persistDefaults: false,
+      visibleFieldIds: sanitizedIds.length
+        ? sanitizedIds
+        : getDefaultVisibleFieldIds(sortedFields, defaultVisibleCount),
+      persistDefaults: sanitizedIds.length !== validSavedIds.length,
     };
   }
 
   return {
     sortedFields,
-    visibleFieldIds: getDefaultVisibleFieldIds(sortedFields, defaultVisibleCount),
+    visibleFieldIds: sanitizeVisibleLocationFieldIds(
+      sortedFields,
+      getDefaultVisibleFieldIds(sortedFields, defaultVisibleCount),
+    ),
     persistDefaults: true,
   };
 }
@@ -86,6 +104,133 @@ export function getOrderedVisibleFieldIds(
   return sortedFields
     .filter((field) => visibleFieldIds.has(field.id))
     .map((field) => field.id);
+}
+
+export function resolveListingLocationKind(
+  endpoint?: string | null,
+): ListingLocationKind | null {
+  if (!endpoint) {
+    return null;
+  }
+
+  const normalized = endpoint
+    .trim()
+    .toLowerCase()
+    .replace(/^\/+/, '')
+    .split('?')[0]
+    .replace(/\/+$/, '')
+    .replace(/_/g, '-');
+
+  if (
+    normalized === 'countries' ||
+    normalized === 'states' ||
+    normalized === 'cities'
+  ) {
+    return normalized;
+  }
+
+  return null;
+}
+
+export function getListingFieldLocationKind(
+  field: DynamicField,
+): ListingLocationKind | null {
+  const optionSource = field.optionSource;
+
+  if (
+    !optionSource?.endpoint ||
+    (optionSource.type !== 'dynamic' && optionSource.type !== 'api')
+  ) {
+    return null;
+  }
+
+  return resolveListingLocationKind(optionSource.endpoint);
+}
+
+export function getListingLocationFieldIds(
+  fields: DynamicField[],
+): ListingLocationFieldIds {
+  let countryId: string | null = null;
+  let stateId: string | null = null;
+  let cityId: string | null = null;
+
+  for (const field of fields) {
+    const kind = getListingFieldLocationKind(field);
+
+    if (kind === 'countries' && !countryId) {
+      countryId = field.id;
+    } else if (kind === 'states' && !stateId) {
+      stateId = field.id;
+    } else if (kind === 'cities' && !cityId) {
+      cityId = field.id;
+    }
+  }
+
+  return { countryId, stateId, cityId };
+}
+
+export function isListingLocationColumnDisabled(
+  field: DynamicField,
+  visibleFieldIds: ReadonlySet<string>,
+  locationIds: ListingLocationFieldIds,
+): boolean {
+  const kind = getListingFieldLocationKind(field);
+
+  if (kind === 'states') {
+    return !locationIds.countryId || !visibleFieldIds.has(locationIds.countryId);
+  }
+
+  if (kind === 'cities') {
+    return !locationIds.stateId || !visibleFieldIds.has(locationIds.stateId);
+  }
+
+  return false;
+}
+
+/** Drop State/City visibility when their parent location columns are not selected. */
+export function sanitizeVisibleLocationFieldIds(
+  fields: DynamicField[],
+  visibleFieldIds: Iterable<string>,
+): string[] {
+  const locationIds = getListingLocationFieldIds(fields);
+  const next = new Set(visibleFieldIds);
+  const countryVisible =
+    !!locationIds.countryId && next.has(locationIds.countryId);
+  const stateVisible = !!locationIds.stateId && next.has(locationIds.stateId);
+
+  if (!countryVisible) {
+    if (locationIds.stateId) {
+      next.delete(locationIds.stateId);
+    }
+    if (locationIds.cityId) {
+      next.delete(locationIds.cityId);
+    }
+  } else if (!stateVisible && locationIds.cityId) {
+    next.delete(locationIds.cityId);
+  }
+
+  return Array.from(next);
+}
+
+export function getDependentLocationFieldIdsToClear(
+  field: DynamicField,
+  locationIds: ListingLocationFieldIds,
+): string[] {
+  const kind = getListingFieldLocationKind(field);
+  const dependentIds: string[] = [];
+
+  if (kind === 'countries') {
+    if (locationIds.stateId) {
+      dependentIds.push(locationIds.stateId);
+    }
+    if (locationIds.cityId) {
+      dependentIds.push(locationIds.cityId);
+    }
+  } else if (kind === 'states' && locationIds.cityId) {
+    dependentIds.push(locationIds.cityId);
+  }
+
+  return dependentIds;
 }
 
 export function getListingBadgeClass(field: DynamicField): string {
@@ -286,7 +431,10 @@ export function mapVisibleColumnsToFilterFields(
       label: field.label,
       type: mapDynamicFieldToFilterType(field),
       placeholder: field.placeholder || `Search by ${field.label.toLowerCase()}...`,
-       options:
+      endpoint: field.optionSource?.endpoint,
+      labelKey: field.optionSource?.response?.labelKey,
+      valueKey: field.optionSource?.response?.valueKey,
+      options:
         field.type === 'radio'
           ? [
               { value: '', name: 'All' },
@@ -296,7 +444,6 @@ export function mapVisibleColumnsToFilterFields(
               })),
             ]
           : field.options,
-      // options: mapDynamicFieldToFilterOptions(field),
     }));
 }
 

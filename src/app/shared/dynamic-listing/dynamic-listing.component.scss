@@ -8,6 +8,32 @@
   animation: columnBackdropIn 0.15s ease-out;
 }
 
+.column-modal__option {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+
+  span {
+    color: #374151;
+  }
+
+  &:hover:not(.column-modal__option--disabled) {
+    background-color: #f9fafb;
+  }
+}
+
+.column-modal__option--disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+
+  span {
+    color: #9ca3af;
+  }
+
+  input {
+    cursor: not-allowed;
+  }
+}
+
 @keyframes columnModalIn {
   from {
     opacity: 0;

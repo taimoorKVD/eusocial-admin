@@ -69,15 +69,23 @@ const routes: Routes = [
       { path: 'location/create', component: LocationComponent },
       { path: 'location/edit/:id', component: LocationComponent },
 
+      // Extra Management — Dynamic Forms (Create / View)
+      {
+        path: 'dynamic-forms',
+        loadChildren: () =>
+          import('./pages/extra-management/forms/forms.routes').then(
+            (m) => m.DYNAMIC_FORMS_ROUTES,
+          ),
+      },
 
       // { path: 'form-builder', component: BuilderComponent },
       // { path: 'forms', component: FormsListComponent },
       // { path: 'forms/:module', component: FormsEditorComponent },
       {
-  path: 'forms',
-  loadChildren: () =>
-    import('./forms/forms-module').then(m => m.FormsModule)
-},
+        path: 'forms',
+        loadChildren: () =>
+          import('./forms/forms-module').then((m) => m.FormsModule),
+      },
 
     ]
   },

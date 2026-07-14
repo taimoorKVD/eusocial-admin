@@ -42,7 +42,7 @@
               >
                 <button
                   type="button"
-                  (click)="filterDropdown.toggle($event)"
+                  (click)="onSelectDropdownOpen(field, !filterDropdown.isOpen); filterDropdown.toggle($event)"
                   class="global-filter__control w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-sm text-gray-700 font-ibm focus:outline-none focus:ring-2 focus:ring-[#ea580c]/30 focus:border-[#ea580c] focus:bg-white transition-all duration-150 text-left flex items-center justify-between gap-2"
                   [class.border-[#ea580c]]="filterDropdown.isOpen"
                   [attr.aria-expanded]="filterDropdown.isOpen"
@@ -80,6 +80,7 @@
                       />
                     </div>
 
+                    @let visibleOptions = getVisibleOptions(field);
                     @let filteredOptions = getFilteredOptions(field);
 
                     <div class="max-h-52 overflow-y-auto p-1">
@@ -96,7 +97,7 @@
                           All
                         </button>
 
-                        @for (option of filteredOptions; track option.id ?? option.name) {
+                        @for (option of visibleOptions; track option.id ?? option.name) {
                           <button
                             type="button"
                             (click)="selectOption(field, option)"
@@ -105,6 +106,16 @@
                             [class.text-[#000000]]="filters()[field.key] == option.id"
                           >
                             {{ option.name }}
+                          </button>
+                        }
+
+                        @if (hasMoreOptions(field)) {
+                          <button
+                            type="button"
+                            (click)="loadMoreOptions(field, $event)"
+                            class="w-full text-left px-3 py-2 rounded-md text-sm font-ibm text-[#ea580c] hover:bg-[#FFF3E7] transition-colors"
+                          >
+                            Load More
                           </button>
                         }
 

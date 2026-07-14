@@ -83,14 +83,18 @@
             </div>
           } @else {
             @for (field of filteredModalColumns(); track field.id) {
-              <label class="flex items-center gap-3 px-5 py-2.5 hover:bg-gray-50 cursor-pointer">
+              <label
+                class="column-modal__option flex items-center gap-3 px-5 py-2.5"
+                [class.column-modal__option--disabled]="isColumnDisabled(field)"
+              >
                 <input
                   type="checkbox"
                   class="h-4 w-4 rounded accent-[#ea580c]"
                   [checked]="isColumnVisible(field.id)"
+                  [disabled]="isColumnDisabled(field)"
                   (change)="onColumnToggle(field, $any($event.target).checked)"
                 />
-                <span class="text-sm text-gray-700 font-ibm">{{ field.label }}</span>
+                <span class="text-sm font-ibm">{{ field.label }}</span>
               </label>
             }
           }

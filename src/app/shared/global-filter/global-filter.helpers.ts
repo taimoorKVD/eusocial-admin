@@ -1,8 +1,13 @@
 import {
+  FilterLocationFields,
+  FilterLocationKind,
   GlobalFilterField,
   GlobalFilterOption,
   GlobalFilterValue,
 } from './global-filter.types';
+
+/** Initial / incremental page size for State and City filter dropdowns. */
+export const LOCATION_FILTER_OPTION_PAGE_SIZE = 100;
 
 export function hasActiveFilterValue(value: unknown): boolean {
   if (Array.isArray(value)) {
@@ -37,12 +42,129 @@ export function filterOptionsByQuery(
   );
 }
 
+export function resolveFilterLocationEndpoint(
+  endpoint?: string | null,
+): FilterLocationKind | null {
+  if (!endpoint) {
+    return null;
+  }
+
+  const normalized = endpoint
+    .trim()
+    .toLowerCase()
+    .replace(/^\/+/, '')
+    .split('?')[0]
+    .replace(/\/+$/, '')
+    .replace(/_/g, '-');
+
+  if (
+    normalized === 'countries' ||
+    normalized === 'states' ||
+    normalized === 'cities'
+  ) {
+    return normalized;
+  }
+
+  return null;
+}
+
+export function getFilterLocationFields(
+  fields: GlobalFilterField[],
+): FilterLocationFields {
+  let country: GlobalFilterField | null = null;
+  let state: GlobalFilterField | null = null;
+  let city: GlobalFilterField | null = null;
+
+  for (const field of fields) {
+    if (field.type !== 'select') {
+      continue;
+    }
+
+    const kind = resolveFilterLocationEndpoint(field.endpoint);
+
+    if (kind === 'countries' && !country) {
+      country = field;
+    } else if (kind === 'states' && !state) {
+      state = field;
+    } else if (kind === 'cities' && !city) {
+      city = field;
+    }
+  }
+
+  return { country, state, city };
+}
+
+/** Only State and City selects use progressive option loading. */
+export function isPaginatedLocationFilterField(field: GlobalFilterField): boolean {
+  if (field.type !== 'select') {
+    return false;
+  }
+
+  const kind = resolveFilterLocationEndpoint(field.endpoint);
+  return kind === 'states' || kind === 'cities';
+}
+
+export function getVisibleFilterOptions(
+  options: GlobalFilterOption[],
+  field: GlobalFilterField,
+  query: string,
+  visibleLimit: number,
+): GlobalFilterOption[] {
+  const filtered = filterOptionsByQuery(options, query);
+
+  if (!isPaginatedLocationFilterField(field) || query.trim()) {
+    return filtered;
+  }
+
+  return filtered.slice(0, Math.max(visibleLimit, LOCATION_FILTER_OPTION_PAGE_SIZE));
+}
+
+export function hasMoreFilterOptions(
+  options: GlobalFilterOption[],
+  field: GlobalFilterField,
+  query: string,
+  visibleLimit: number,
+): boolean {
+  if (!isPaginatedLocationFilterField(field) || query.trim()) {
+    return false;
+  }
+
+  return filterOptionsByQuery(options, query).length > visibleLimit;
+}
+
+export function mapLocationRecordsToFilterOptions(
+  field: GlobalFilterField,
+  records: any[],
+): GlobalFilterOption[] {
+  const labelKey = field.labelKey ?? 'name';
+  const valueKey = field.valueKey ?? 'id';
+
+  return (records ?? [])
+    .map((record) => {
+      const id = record?.[valueKey];
+      const name = String(record?.[labelKey] ?? '');
+
+      if (id == null || id === '') {
+        return null;
+      }
+
+      return {
+        id,
+        name,
+        label: name,
+        value: id,
+      } as GlobalFilterOption;
+    })
+    .filter((option): option is GlobalFilterOption => option !== null);
+}
+
 export function getSelectedOptionLabel(
   field: GlobalFilterField,
   filters: GlobalFilterValue,
+  options: GlobalFilterOption[] = field.options ?? [],
 ): string {
   const selectedValue = filters[field.key];
-  const option = field.options?.find((item) => String(item.id) === String(selectedValue));
+  const option = options.find((item) => String(item.id) === String(selectedValue));
 
   return option?.name ?? '-';
 }
@@ -50,8 +172,9 @@ export function getSelectedOptionLabel(
 export function getSelectDisplayLabel(
   field: GlobalFilterField,
   filters: GlobalFilterValue,
+  options?: GlobalFilterOption[],
 ): string {
-  const selectedLabel = getSelectedOptionLabel(field, filters);
+  const selectedLabel = getSelectedOptionLabel(field, filters, options);
 
   if (selectedLabel !== '-') {
     return selectedLabel;
@@ -132,4 +255,8 @@ export function isCheckboxOptionSelected(
   const selected = Array.isArray(filters[fieldKey]) ? (filters[fieldKey] as unknown[]) : [];
 
   return selected.includes(value);
+}
+
+export function isEmptyFilterValue(value: unknown): boolean {
+  return value === null || value === undefined || value === '';
 }
