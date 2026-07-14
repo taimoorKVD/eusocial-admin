@@ -10,8 +10,11 @@ import {
 import { DynamicField } from '../../interfaces/dynamic-field';
 import {
   formatListingCellValue,
+  getDependentLocationFieldIdsToClear,
   getListingBadgeClass,
+  getListingFieldLocationKind,
   getListingImageSrc,
+  getListingLocationFieldIds,
   getOrderedVisibleFieldIds,
   getRecordTrackId,
   resolveInitialVisibleFieldIds,
@@ -59,6 +62,20 @@ export class DynamicListingComponent {
   readonly sortedFields = signal<DynamicField[]>([]);
   readonly visibleFieldIds = signal<Set<string>>(new Set());
 
+  readonly locationFieldIds = computed(() =>
+    getListingLocationFieldIds(this.sortedFields()),
+  );
+
+  readonly hasCountryColumnVisible = computed(() => {
+    const countryId = this.locationFieldIds().countryId;
+    return !!countryId && this.visibleFieldIds().has(countryId);
+  });
+
+  readonly hasStateColumnVisible = computed(() => {
+    const stateId = this.locationFieldIds().stateId;
+    return !!stateId && this.visibleFieldIds().has(stateId);
+  });
+
   readonly visibleColumns = computed(() => {
     const visibleIds = this.visibleFieldIds();
     return this.sortedFields().filter((field) => visibleIds.has(field.id));
@@ -76,6 +93,20 @@ export class DynamicListingComponent {
     return this.visibleFieldIds().has(fieldId);
   }
 
+  isColumnDisabled(field: DynamicField): boolean {
+    const kind = getListingFieldLocationKind(field);
+
+    if (kind === 'states') {
+      return !this.hasCountryColumnVisible();
+    }
+
+    if (kind === 'cities') {
+      return !this.hasStateColumnVisible();
+    }
+
+    return false;
+  }
+
   openColumnModal(): void {
     this.columnModalOpen.set(true);
   }
@@ -90,13 +121,40 @@ export class DynamicListingComponent {
   }
 
   onColumnToggle(field: DynamicField, checked: boolean): void {
+    if (checked && this.isColumnDisabled(field)) {
+      return;
+    }
+
     this.visibleFieldIds.update((current) => {
       const next = new Set(current);
+      const locationIds = this.locationFieldIds();
 
       if (checked) {
         next.add(field.id);
-      } else if (next.size > 1) {
-        next.delete(field.id);
+        return next;
+      }
+
+      const idsToRemove = new Set<string>([field.id]);
+      for (const dependentId of getDependentLocationFieldIdsToClear(
+        field,
+        locationIds,
+      )) {
+        idsToRemove.add(dependentId);
+      }
+
+      let remainingCount = 0;
+      for (const id of next) {
+        if (!idsToRemove.has(id)) {
+          remainingCount += 1;
+        }
+      }
+
+      if (remainingCount === 0) {
+        return current;
+      }
+
+      for (const id of idsToRemove) {
+        next.delete(id);
       }
 
       return next;

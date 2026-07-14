@@ -14,4 +14,16 @@ export interface GlobalFilterField {
   placeholder?: string;
   options?: any[];
   loading?: boolean;
+  /** Dynamic module endpoint used to identify location fields (states/cities). */
+  endpoint?: string;
+  labelKey?: string;
+  valueKey?: string;
+}
+
+export type FilterLocationKind = 'countries' | 'states' | 'cities';
+
+export interface FilterLocationFields {
+  country: GlobalFilterField | null;
+  state: GlobalFilterField | null;
+  city: GlobalFilterField | null;
 }
