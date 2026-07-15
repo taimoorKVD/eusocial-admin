@@ -52,27 +52,56 @@
             />
           </div>
 
-          <div class="underlined-field">
-            <label class="underlined-field__label font-ibm" for="add-section">Add Section</label>
-            <div class="underlined-field__select-wrap">
-              <select
-                #addSectionSelect
-                id="add-section"
-                class="underlined-field__input underlined-field__select font-ibm"
-                [ngModel]="selectedSectionType()"
-                (ngModelChange)="onSectionTypeChange($event)"
-              >
-                <option value="">Select section</option>
-                @for (opt of availableSectionOptions(); track opt.value) {
-                  <option [value]="opt.value" [disabled]="opt.disabled">{{ opt.label }}</option>
-                }
-              </select>
-              <span class="underlined-field__chevron" aria-hidden="true">
-                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                  <path d="M1 1.5L6 6.5L11 1.5" stroke="#161616" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
+          <div class="underlined-field relative section-dropdown">
+            <label class="underlined-field__label font-ibm">Add Section</label>
+            <button
+              type="button"
+              class="underlined-field__input font-ibm flex items-center justify-between cursor-pointer"
+              (click)="$event.stopPropagation(); sectionDropdownOpen.set(!sectionDropdownOpen())"
+            >
+              <span [class]="'font-ibm' + (selectedSectionType() ? '' : ' text-[#A0A0A0]')">
+                {{ getSectionDisplayLabel() }}
               </span>
-            </div>
+              <svg width="12" height="8" viewBox="0 0 12 8" fill="none" class="ml-2 shrink-0">
+                <path d="M1 1.5L6 6.5L11 1.5" stroke="#161616" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+            @if (sectionDropdownOpen()) {
+              <div class="absolute left-0 right-0 top-full z-50 mt-1 bg-white border border-[#E0E0E0] rounded-lg shadow-lg" (click)="$event.stopPropagation()">
+                <div class="p-2 border-b border-[#E0E0E0]">
+                  <input
+                    type="text"
+                    class="w-full px-3 py-2 text-sm font-ibm border border-[#E0E0E0] rounded-md focus:outline-none focus:border-[#FF9015]"
+                    placeholder="Search section..."
+                    [value]="sectionSearchQuery()"
+                    (input)="onSectionSearch($event)"
+                    (click)="$event.stopPropagation()"
+                  />
+                </div>
+                <ul class="max-h-48 overflow-y-auto py-1">
+                  @for (opt of filteredSectionOptions(); track opt.value) {
+                    <li>
+                      <button
+                        type="button"
+                        class="w-full text-left px-4 py-2 text-sm font-ibm flex items-center gap-2"
+                        [class]="'font-ibm' + (opt.disabled ? ' text-[#C6C6C6] cursor-not-allowed' : ' hover:bg-[#FF9015] hover:text-white cursor-pointer')"
+                        [disabled]="opt.disabled"
+                        (click)="selectSectionOption(opt)"
+                      >
+                        @if (opt.disabled) {
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="text-[#C6C6C6] shrink-0">
+                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/>
+                          </svg>
+                        }
+                        {{ opt.label }}
+                      </button>
+                    </li>
+                  } @empty {
+                    <li class="px-4 py-2 text-sm text-[#A0A0A0] font-ibm">No sections available</li>
+                  }
+                </ul>
+              </div>
+            }
           </div>
         </div>
 

@@ -4,6 +4,7 @@ import {
   DestroyRef,
   effect,
   ElementRef,
+  HostListener,
   inject,
   OnInit,
   signal,
@@ -67,6 +68,15 @@ interface WizardStep {
   styleUrl: './create-form.component.scss',
 })
 export class CreateFormComponent implements OnInit {
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.section-dropdown')) {
+      this.sectionDropdownOpen.set(false);
+      this.sectionSearchQuery.set('');
+    }
+  }
+
   private readonly router = inject(Router);
   private readonly session = inject(TenantSessionService);
   private readonly store = inject(DynamicFormsStoreService);
@@ -76,7 +86,6 @@ export class CreateFormComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
 
   readonly sectionOptions = SECTION_OPTIONS;
-  private readonly addSectionSelect = viewChild<ElementRef<HTMLSelectElement>>('addSectionSelect');
   private readonly frequencyDateInput = viewChild<ElementRef<HTMLInputElement>>('frequencyDateInput');
   private flatpickrInstance: FlatpickrInstance | null = null;
 
@@ -87,6 +96,17 @@ export class CreateFormComponent implements OnInit {
       ...opt,
       disabled: usedTypes.has(opt.value),
     }));
+  });
+
+  readonly sectionDropdownOpen = signal(false);
+  readonly sectionSearchQuery = signal('');
+
+  readonly filteredSectionOptions = computed(() => {
+    const query = this.sectionSearchQuery().trim().toLowerCase();
+    const options = this.availableSectionOptions();
+    return query
+      ? options.filter((opt) => opt.label.toLowerCase().includes(query))
+      : options;
   });
 
   readonly formName = signal('');
@@ -411,6 +431,26 @@ export class CreateFormComponent implements OnInit {
     }
   }
 
+  onSectionSearch(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.sectionSearchQuery.set(value);
+  }
+
+  selectSectionOption(opt: { value: SectionType; label: string; disabled: boolean }): void {
+    if (opt.disabled) return;
+    this.sectionSearchQuery.set('');
+    this.sectionDropdownOpen.set(false);
+    this.onSectionTypeChange(opt.value);
+  }
+
+  getSectionDisplayLabel(): string {
+    if (!this.selectedSectionType()) {
+      return 'Select section';
+    }
+    const match = this.sectionOptions.find((o) => o.value === this.selectedSectionType());
+    return match?.label ?? 'Select section';
+  }
+
   private isTypeAlreadyUsed(type: SectionType): boolean {
     return this.sections().some((s) => s.type === type);
   }
@@ -426,13 +466,11 @@ export class CreateFormComponent implements OnInit {
     this.resetAddSectionDropdown();
   }
 
-  /** Resets the Add Section control to "Select section" (signal + native select sync). */
+  /** Resets the Add Section control to "Select section". */
   private resetAddSectionDropdown(): void {
     this.selectedSectionType.set('');
-    const selectEl = this.addSectionSelect()?.nativeElement;
-    if (selectEl) {
-      selectEl.value = '';
-    }
+    this.sectionSearchQuery.set('');
+    this.sectionDropdownOpen.set(false);
   }
 
   openFieldModal(target: { sectionId: string; rowId: string }): void {
