@@ -56,13 +56,47 @@ export interface VisualFormSection {
 
 export type FormSection = DataEntrySection | ChecklistFormSection | VisualFormSection;
 
+export type FrequencyType = 'atOnce' | 'recurring';
+export type FrequencyInterval = 'day' | 'week' | 'month' | 'year';
+export type FrequencyMonthMode = 'dayOfMonth' | 'onThe';
+
+export interface FrequencyRecurringConfig {
+  every: number;
+  interval: FrequencyInterval;
+  repeatCount: number;
+  daysOfWeek: string[];
+  monthMode: FrequencyMonthMode;
+  dayOfMonth: number;
+  weekOrder: string;
+  onTheMonth: string;
+  yearMonth: string;
+  yearDay: number;
+}
+
+export function createDefaultFrequencyRecurring(): FrequencyRecurringConfig {
+  return {
+    every: 1,
+    interval: 'month',
+    repeatCount: 1,
+    daysOfWeek: [],
+    monthMode: 'dayOfMonth',
+    dayOfMonth: 1,
+    weekOrder: 'first',
+    onTheMonth: 'january',
+    yearMonth: 'january',
+    yearDay: 1,
+  };
+}
+
 export interface FormMetaConfig {
-  assignJobPosition: string | null;
-  assignUsers: string | null;
-  reportJobPosition: string | null;
-  reportUsers: string | null;
-  frequencyJobPosition: string | null;
+  assignJobPosition: string[];
+  assignUsers: string[];
+  reportJobPosition: string[];
+  reportUsers: string[];
+  frequencyJobPosition: string[];
   frequencyDate: string | null;
+  frequencyType: FrequencyType;
+  frequencyRecurring: FrequencyRecurringConfig;
 }
 
 export interface DynamicFormPayload {
@@ -78,6 +112,8 @@ export interface DynamicFormPayload {
   frequency: {
     jobPosition: string | null;
     date: string | null;
+    type: FrequencyType;
+    recurring: FrequencyRecurringConfig | null;
   };
   sections: Array<
     | {
@@ -188,16 +224,19 @@ export function buildDynamicFormPayload(
   return {
     formName: formName.trim(),
     assign: {
-      jobPosition: meta.assignJobPosition,
-      users: meta.assignUsers,
+      jobPosition: meta.assignJobPosition.length ? meta.assignJobPosition.join(', ') : null,
+      users: meta.assignUsers.length ? meta.assignUsers.join(', ') : null,
     },
     report: {
-      jobPosition: meta.reportJobPosition,
-      users: meta.reportUsers,
+      jobPosition: meta.reportJobPosition.length ? meta.reportJobPosition.join(', ') : null,
+      users: meta.reportUsers.length ? meta.reportUsers.join(', ') : null,
     },
     frequency: {
-      jobPosition: meta.frequencyJobPosition,
-      date: meta.frequencyDate,
+      jobPosition: meta.frequencyJobPosition.length ? meta.frequencyJobPosition.join(', ') : null,
+      date: meta.frequencyType === 'atOnce' ? meta.frequencyDate : null,
+      type: meta.frequencyType,
+      recurring:
+        meta.frequencyType === 'recurring' ? { ...meta.frequencyRecurring } : null,
     },
     sections: sections.map((section) => {
       if (section.type === 'visualForm') {

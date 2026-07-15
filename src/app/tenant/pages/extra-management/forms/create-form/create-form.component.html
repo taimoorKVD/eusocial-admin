@@ -56,14 +56,15 @@
             <label class="underlined-field__label font-ibm" for="add-section">Add Section</label>
             <div class="underlined-field__select-wrap">
               <select
+                #addSectionSelect
                 id="add-section"
                 class="underlined-field__input underlined-field__select font-ibm"
                 [ngModel]="selectedSectionType()"
                 (ngModelChange)="onSectionTypeChange($event)"
               >
                 <option value="">Select section</option>
-                @for (opt of sectionOptions; track opt.value) {
-                  <option [value]="opt.value">{{ opt.label }}</option>
+                @for (opt of availableSectionOptions(); track opt.value) {
+                  <option [value]="opt.value" [disabled]="opt.disabled">{{ opt.label }}</option>
                 }
               </select>
               <span class="underlined-field__chevron" aria-hidden="true">
@@ -110,162 +111,444 @@
     </div>
   }
 
-  <!-- ═══════════════════ STEP 2 — Assign ═══════════════════ -->
+  <!-- ═══════════════════ STEP 2 — Assign & Report ═══════════════════ -->
   @if (currentStep() === 2) {
     <div class="wizard-content">
       <div class="wizard-content__card">
-        <h3 class="wizard-content__heading font-ibm">Assign</h3>
+        <h3 class="wizard-content__heading font-ibm">Assign & Report</h3>
 
-        <div class="wizard-content__fields">
-          <div class="underlined-field">
-            <label class="underlined-field__label font-ibm">
-              <span class="req">*</span>Job Position
-            </label>
-            <div class="underlined-field__select-wrap">
-              <select
-                class="underlined-field__input underlined-field__select font-ibm"
-                [ngModel]="meta().assignJobPosition"
-                (ngModelChange)="updateMeta('assignJobPosition', $event)"
-              >
-                <option [ngValue]="null">Select job position</option>
-                @for (opt of jobPositionOptions; track opt.value) {
-                  <option [ngValue]="opt.value">{{ opt.label }}</option>
-                }
-              </select>
-              <span class="underlined-field__chevron" aria-hidden="true">
-                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                  <path d="M1 1.5L6 6.5L11 1.5" stroke="#161616" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <div class="assign-report-grid">
+          <!-- Assign -->
+          <section class="assign-report-panel">
+            <div class="assign-report-panel__header">
+              <span class="assign-report-panel__badge assign-report-panel__badge--assign" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
                 </svg>
               </span>
+              <h4 class="assign-report-panel__title font-ibm">Assign</h4>
             </div>
-          </div>
+            <p class="assign-report-panel__hint font-ibm">Who should fill out this form?</p>
 
-          <div class="underlined-field mt-4">
-            <label class="underlined-field__label font-ibm">
-              <span class="req">*</span>Users
-            </label>
-            <div class="underlined-field__select-wrap">
-              <select
-                class="underlined-field__input underlined-field__select font-ibm"
-                [ngModel]="meta().assignUsers"
-                (ngModelChange)="updateMeta('assignUsers', $event)"
-              >
-                <option [ngValue]="null">Select users</option>
-                @for (opt of userOptions; track opt.value) {
-                  <option [ngValue]="opt.value">{{ opt.label }}</option>
-                }
-              </select>
-              <span class="underlined-field__chevron" aria-hidden="true">
-                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                  <path d="M1 1.5L6 6.5L11 1.5" stroke="#161616" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <div class="wizard-content__fields wizard-content__fields--full">
+              <div class="underlined-field">
+                <label class="underlined-field__label font-ibm">
+                  <span class="req">*</span>Users
+                </label>
+                <ng-select
+                  class="custom-ng-select font-ibm"
+                  [items]="userOptions()"
+                  [multiple]="true"
+                  [closeOnSelect]="false"
+                  [searchable]="true"
+                  bindLabel="name"
+                  bindValue="name"
+                  placeholder="Search users..."
+                  [ngModel]="meta().assignUsers"
+                  (ngModelChange)="updateMeta('assignUsers', $event)"
+                >
+                </ng-select>
+              </div>
+
+              <div class="underlined-field mt-4">
+                <label class="underlined-field__label font-ibm">
+                  <span class="req">*</span>Job Positions
+                </label>
+                <ng-select
+                  class="custom-ng-select font-ibm"
+                  [items]="jobPositionOptions()"
+                  [multiple]="true"
+                  [closeOnSelect]="false"
+                  [searchable]="true"
+                  bindLabel="name"
+                  bindValue="name"
+                  placeholder="Search job positions..."
+                  [ngModel]="meta().assignJobPosition"
+                  (ngModelChange)="updateMeta('assignJobPosition', $event)"
+                >
+                </ng-select>
+              </div>
+            </div>
+          </section>
+
+          <!-- Report To -->
+          <section class="assign-report-panel">
+            <div class="assign-report-panel__header">
+              <span class="assign-report-panel__badge assign-report-panel__badge--report" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                  <line x1="16" y1="13" x2="8" y2="13"/>
+                  <line x1="16" y1="17" x2="8" y2="17"/>
+                  <polyline points="10 9 9 9 8 9"/>
                 </svg>
               </span>
+              <h4 class="assign-report-panel__title font-ibm">Report To</h4>
             </div>
-          </div>
+            <p class="assign-report-panel__hint font-ibm">Who should receive the results?</p>
+
+            <div class="wizard-content__fields wizard-content__fields--full">
+              <div class="underlined-field">
+                <label class="underlined-field__label font-ibm">
+                  <span class="req">*</span>Users
+                </label>
+                <ng-select
+                  class="custom-ng-select font-ibm"
+                  [items]="userOptions()"
+                  [multiple]="true"
+                  [closeOnSelect]="false"
+                  [searchable]="true"
+                  bindLabel="name"
+                  bindValue="name"
+                  placeholder="Search users..."
+                  [ngModel]="meta().reportUsers"
+                  (ngModelChange)="updateMeta('reportUsers', $event)"
+                >
+                </ng-select>
+              </div>
+
+              <div class="underlined-field mt-4">
+                <label class="underlined-field__label font-ibm">
+                  <span class="req">*</span>Job Positions
+                </label>
+                <ng-select
+                  class="custom-ng-select font-ibm"
+                  [items]="jobPositionOptions()"
+                  [multiple]="true"
+                  [closeOnSelect]="false"
+                  [searchable]="true"
+                  bindLabel="name"
+                  bindValue="name"
+                  placeholder="Search job positions..."
+                  [ngModel]="meta().reportJobPosition"
+                  (ngModelChange)="updateMeta('reportJobPosition', $event)"
+                >
+                </ng-select>
+              </div>
+            </div>
+          </section>
         </div>
+
+        <!-- Relationship flow diagram -->
+        @if (showAssignReportFlow()) {
+          <div class="relation-flow" aria-live="polite">
+            <h4 class="relation-flow__heading font-ibm">Relationship Overview</h4>
+
+            <div class="relation-flow__diagram">
+              <div class="relation-flow__column">
+                <span class="relation-flow__column-label font-ibm">Assigned To</span>
+                <ul class="relation-flow__chips">
+                  @for (item of assignFlowItems(); track item.kind + ':' + item.name) {
+                    <li class="relation-flow__chip relation-flow__chip--assign font-ibm">
+                      <span class="relation-flow__chip-icon" aria-hidden="true">
+                        @if (item.kind === 'user') {
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                            <circle cx="12" cy="7" r="4"/>
+                          </svg>
+                        } @else {
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                          </svg>
+                        }
+                      </span>
+                      <span class="relation-flow__chip-text">{{ item.name }}</span>
+                    </li>
+                  }
+                </ul>
+              </div>
+
+              <div class="relation-flow__connector" aria-hidden="true">
+                <span class="relation-flow__line"></span>
+                <span class="relation-flow__arrow">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                    <polyline points="12 5 19 12 12 19"/>
+                  </svg>
+                </span>
+                <span class="relation-flow__line"></span>
+              </div>
+
+              <div class="relation-flow__form-node font-ibm" [attr.title]="formName() || 'Form'">
+                <span class="relation-flow__form-icon" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                  </svg>
+                </span>
+                <span class="relation-flow__form-label">{{ formName() || 'FORM' }}</span>
+              </div>
+
+              <div class="relation-flow__connector" aria-hidden="true">
+                <span class="relation-flow__line"></span>
+                <span class="relation-flow__arrow">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                    <polyline points="12 5 19 12 12 19"/>
+                  </svg>
+                </span>
+                <span class="relation-flow__line"></span>
+              </div>
+
+              <div class="relation-flow__column">
+                <span class="relation-flow__column-label font-ibm">Reports To</span>
+                <ul class="relation-flow__chips">
+                  @for (item of reportFlowItems(); track item.kind + ':' + item.name) {
+                    <li class="relation-flow__chip relation-flow__chip--report font-ibm">
+                      <span class="relation-flow__chip-icon" aria-hidden="true">
+                        @if (item.kind === 'user') {
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                            <circle cx="12" cy="7" r="4"/>
+                          </svg>
+                        } @else {
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                          </svg>
+                        }
+                      </span>
+                      <span class="relation-flow__chip-text">{{ item.name }}</span>
+                    </li>
+                  }
+                </ul>
+              </div>
+            </div>
+          </div>
+        }
       </div>
     </div>
   }
 
-  <!-- ═══════════════════ STEP 3 — Report ═══════════════════ -->
+  <!-- ═══════════════════ STEP 3 — Frequency ═══════════════════ -->
   @if (currentStep() === 3) {
-    <div class="wizard-content">
-      <div class="wizard-content__card">
-        <h3 class="wizard-content__heading font-ibm">Report</h3>
-
-        <div class="wizard-content__fields">
-          <div class="underlined-field">
-            <label class="underlined-field__label font-ibm">
-              <span class="req">*</span>Job Position
-            </label>
-            <div class="underlined-field__select-wrap">
-              <select
-                class="underlined-field__input underlined-field__select font-ibm"
-                [ngModel]="meta().reportJobPosition"
-                (ngModelChange)="updateMeta('reportJobPosition', $event)"
-              >
-                <option [ngValue]="null">Select job position</option>
-                @for (opt of jobPositionOptions; track opt.value) {
-                  <option [ngValue]="opt.value">{{ opt.label }}</option>
-                }
-              </select>
-              <span class="underlined-field__chevron" aria-hidden="true">
-                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                  <path d="M1 1.5L6 6.5L11 1.5" stroke="#161616" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </span>
-            </div>
-          </div>
-
-          <div class="underlined-field mt-4">
-            <label class="underlined-field__label font-ibm">
-              <span class="req">*</span>Users
-            </label>
-            <div class="underlined-field__select-wrap">
-              <select
-                class="underlined-field__input underlined-field__select font-ibm"
-                [ngModel]="meta().reportUsers"
-                (ngModelChange)="updateMeta('reportUsers', $event)"
-              >
-                <option [ngValue]="null">Select users</option>
-                @for (opt of userOptions; track opt.value) {
-                  <option [ngValue]="opt.value">{{ opt.label }}</option>
-                }
-              </select>
-              <span class="underlined-field__chevron" aria-hidden="true">
-                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                  <path d="M1 1.5L6 6.5L11 1.5" stroke="#161616" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  }
-
-  <!-- ═══════════════════ STEP 4 — Frequency ═══════════════════ -->
-  @if (currentStep() === 4) {
     <div class="wizard-content">
       <div class="wizard-content__card">
         <h3 class="wizard-content__heading font-ibm">Frequency</h3>
 
-        <div class="wizard-content__fields">
-          <div class="underlined-field">
-            <label class="underlined-field__label font-ibm">
-              <span class="req">*</span>Job Position
-            </label>
-            <div class="underlined-field__select-wrap">
-              <select
-                class="underlined-field__input underlined-field__select font-ibm"
-                [ngModel]="meta().frequencyJobPosition"
-                (ngModelChange)="updateMeta('frequencyJobPosition', $event)"
-              >
-                <option [ngValue]="null">Select job position</option>
-                @for (opt of jobPositionOptions; track opt.value) {
-                  <option [ngValue]="opt.value">{{ opt.label }}</option>
-                }
-              </select>
-              <span class="underlined-field__chevron" aria-hidden="true">
-                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                  <path d="M1 1.5L6 6.5L11 1.5" stroke="#161616" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </span>
+        <form [formGroup]="frequencyForm" class="frequency-step font-ibm">
+          <!-- Frequency type -->
+          <div class="frequency-step__type-row">
+            <div class="frequency-field">
+              <label class="frequency-field__label" for="frequency-type">Frequency Type</label>
+              <div class="frequency-field__control-wrap">
+                <select
+                  id="frequency-type"
+                  class="frequency-control frequency-control--select"
+                  formControlName="type"
+                >
+                  @for (opt of frequencyTypeOptions; track opt.value) {
+                    <option [value]="opt.value">{{ opt.label }}</option>
+                  }
+                </select>
+                <span class="frequency-field__chevron" aria-hidden="true">
+                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                    <path d="M1 1.5L6 6.5L11 1.5" stroke="#161616" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </span>
+              </div>
             </div>
           </div>
 
-          <div class="underlined-field mt-4">
-            <label class="underlined-field__label font-ibm">Date</label>
-            <div class="underlined-field__select-wrap">
-              <input
-                type="date"
-                class="underlined-field__input font-ibm"
-                [ngModel]="meta().frequencyDate"
-                (ngModelChange)="updateMeta('frequencyDate', $event)"
-              />
+          <!-- At Once -->
+          @if (frequencyType() === 'atOnce') {
+            <div class="frequency-panel frequency-panel--at-once">
+              <div class="frequency-field">
+                <label class="frequency-field__label" for="frequency-date">Execution Date</label>
+                <input
+                  #frequencyDateInput
+                  id="frequency-date"
+                  type="text"
+                  class="frequency-control"
+                  placeholder="Select a date"
+                  readonly
+                />
+              </div>
             </div>
-          </div>
-        </div>
+          }
+
+          <!-- Recurring -->
+          @if (frequencyType() === 'recurring') {
+            <div class="frequency-panel frequency-panel--recurring">
+              <h4 class="frequency-panel__title">Repeat every</h4>
+
+              <div class="frequency-row frequency-row--repeat">
+                <input
+                  type="number"
+                  class="frequency-control frequency-control--number"
+                  formControlName="every"
+                  min="1"
+                  aria-label="Repeat every count"
+                />
+
+                <div class="frequency-field__control-wrap frequency-field__control-wrap--inline">
+                  <select
+                    class="frequency-control frequency-control--select"
+                    formControlName="interval"
+                    aria-label="Repeat interval"
+                  >
+                    @for (opt of intervalOptions; track opt.value) {
+                      <option [value]="opt.value">{{ opt.label }}</option>
+                    }
+                  </select>
+                  <span class="frequency-field__chevron" aria-hidden="true">
+                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                      <path d="M1 1.5L6 6.5L11 1.5" stroke="#161616" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </span>
+                </div>
+
+                <span class="frequency-inline-label">Repeat</span>
+
+                <input
+                  type="number"
+                  class="frequency-control frequency-control--number"
+                  formControlName="repeatCount"
+                  min="1"
+                  aria-label="Repeat times"
+                />
+
+                <span class="frequency-inline-label">times</span>
+              </div>
+
+              <!-- Daily hint -->
+              @if (frequencyInterval() === 'day') {
+                <p class="frequency-hint">
+                  Runs every {{ frequencyForm.controls.every.value || 1 }}
+                  day{{ frequencyForm.controls.every.value === 1 ? '' : 's' }}.
+                </p>
+              }
+
+              <!-- Weekly -->
+              @if (frequencyInterval() === 'week') {
+                <div class="frequency-schedule">
+                  <span class="frequency-schedule__label">On days</span>
+                  <div class="frequency-weekdays" role="group" aria-label="Days of week">
+                    @for (day of weekdayOptions; track day.value) {
+                      <button
+                        type="button"
+                        class="frequency-weekday"
+                        [class.frequency-weekday--active]="isWeekdaySelected(day.value)"
+                        (click)="toggleWeekday(day.value)"
+                      >
+                        {{ day.label }}
+                      </button>
+                    }
+                  </div>
+                </div>
+              }
+
+              <!-- Monthly -->
+              @if (frequencyInterval() === 'month') {
+                <div class="frequency-schedule frequency-schedule--stack">
+                  <label class="frequency-radio-row">
+                    <input
+                      type="radio"
+                      name="monthMode"
+                      formControlName="monthMode"
+                      value="dayOfMonth"
+                    />
+                    <span class="frequency-inline-label">On day</span>
+                    <input
+                      type="number"
+                      class="frequency-control frequency-control--number"
+                      formControlName="dayOfMonth"
+                      min="-1"
+                      max="31"
+                      aria-label="Day of month"
+                    />
+                    <span class="frequency-hint frequency-hint--inline">Use -1 for last day</span>
+                  </label>
+
+                  <label class="frequency-radio-row">
+                    <input
+                      type="radio"
+                      name="monthMode"
+                      formControlName="monthMode"
+                      value="onThe"
+                    />
+                    <span class="frequency-inline-label">On the</span>
+                    <div class="frequency-field__control-wrap frequency-field__control-wrap--inline">
+                      <select
+                        class="frequency-control frequency-control--select"
+                        formControlName="weekOrder"
+                        aria-label="Week order"
+                      >
+                        @for (opt of weekOrderOptions; track opt.value) {
+                          <option [value]="opt.value">{{ opt.label }}</option>
+                        }
+                      </select>
+                      <span class="frequency-field__chevron" aria-hidden="true">
+                        <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                          <path d="M1 1.5L6 6.5L11 1.5" stroke="#161616" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                      </span>
+                    </div>
+                    <div class="frequency-field__control-wrap frequency-field__control-wrap--inline">
+                      <select
+                        class="frequency-control frequency-control--select"
+                        formControlName="onTheMonth"
+                        aria-label="Month"
+                      >
+                        @for (opt of monthOptions; track opt.value) {
+                          <option [value]="opt.value">{{ opt.label }}</option>
+                        }
+                      </select>
+                      <span class="frequency-field__chevron" aria-hidden="true">
+                        <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                          <path d="M1 1.5L6 6.5L11 1.5" stroke="#161616" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                      </span>
+                    </div>
+                  </label>
+                </div>
+              }
+
+              <!-- Yearly -->
+              @if (frequencyInterval() === 'year') {
+                <div class="frequency-schedule">
+                  <span class="frequency-schedule__label">On</span>
+                  <div class="frequency-row">
+                    <div class="frequency-field__control-wrap frequency-field__control-wrap--inline">
+                      <select
+                        class="frequency-control frequency-control--select"
+                        formControlName="yearMonth"
+                        aria-label="Month"
+                      >
+                        @for (opt of monthOptions; track opt.value) {
+                          <option [value]="opt.value">{{ opt.label }}</option>
+                        }
+                      </select>
+                      <span class="frequency-field__chevron" aria-hidden="true">
+                        <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                          <path d="M1 1.5L6 6.5L11 1.5" stroke="#161616" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                      </span>
+                    </div>
+                    <input
+                      type="number"
+                      class="frequency-control frequency-control--number"
+                      formControlName="yearDay"
+                      min="1"
+                      max="31"
+                      aria-label="Day of month"
+                    />
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </form>
       </div>
     </div>
   }

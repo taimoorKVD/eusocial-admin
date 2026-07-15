@@ -1,8 +1,25 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import {
+  Component,
+  computed,
+  DestroyRef,
+  effect,
+  ElementRef,
+  inject,
+  OnInit,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormBuilder, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { startWith } from 'rxjs';
+import { NgSelectModule } from '@ng-select/ng-select';
+import flatpickr from 'flatpickr';
+import { Instance as FlatpickrInstance } from 'flatpickr/dist/types/instance';
 import { TenantSessionService } from '../../../../../services/tenant-session.service';
+import { TenantUserService } from '../../../../../services/tenant-user.service';
+import { TenantJobPositionService } from '../../../../../services/tenant-job-position.service';
 import { DynamicFormsStoreService } from '../services/dynamic-forms-store.service';
 import { DataEntrySectionComponent } from '../components/data-entry-section/data-entry-section.component';
 import { ChecklistFormSectionComponent } from '../components/checklist-form-section/checklist-form-section.component';
@@ -10,10 +27,14 @@ import { VisualFormSectionComponent } from '../components/visual-form-section/vi
 import { FieldCreateModalComponent } from '../components/field-create-modal/field-create-modal.component';
 import {
   ChecklistFormSection,
+  createDefaultFrequencyRecurring,
   DataEntrySection,
   FormFieldConfig,
   FormMetaConfig,
   FormSection,
+  FrequencyInterval,
+  FrequencyMonthMode,
+  FrequencyType,
   SECTION_OPTIONS,
   SectionType,
   VisualFormSection,
@@ -32,6 +53,8 @@ interface WizardStep {
   imports: [
     CommonModule,
     FormsModule,
+    ReactiveFormsModule,
+    NgSelectModule,
     DataEntrySectionComponent,
     ChecklistFormSectionComponent,
     VisualFormSectionComponent,
@@ -40,23 +63,41 @@ interface WizardStep {
   templateUrl: './create-form.component.html',
   styleUrl: './create-form.component.scss',
 })
-export class CreateFormComponent {
+export class CreateFormComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly session = inject(TenantSessionService);
   private readonly store = inject(DynamicFormsStoreService);
+  private readonly userService = inject(TenantUserService);
+  private readonly jobPositionService = inject(TenantJobPositionService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly fb = inject(FormBuilder);
 
   readonly sectionOptions = SECTION_OPTIONS;
+  private readonly addSectionSelect = viewChild<ElementRef<HTMLSelectElement>>('addSectionSelect');
+  private readonly frequencyDateInput = viewChild<ElementRef<HTMLInputElement>>('frequencyDateInput');
+  private flatpickrInstance: FlatpickrInstance | null = null;
+
+  /** Options with `disabled` flag for types already added to the form. */
+  readonly availableSectionOptions = computed(() => {
+    const usedTypes = new Set(this.sections().map((s) => s.type));
+    return this.sectionOptions.map((opt) => ({
+      ...opt,
+      disabled: usedTypes.has(opt.value),
+    }));
+  });
 
   readonly formName = signal('');
   readonly sections = signal<FormSection[]>([]);
   readonly selectedSectionType = signal<SectionType | ''>('');
   readonly meta = signal<FormMetaConfig>({
-    assignJobPosition: null,
-    assignUsers: null,
-    reportJobPosition: null,
-    reportUsers: null,
-    frequencyJobPosition: null,
+    assignJobPosition: [],
+    assignUsers: [],
+    reportJobPosition: [],
+    reportUsers: [],
+    frequencyJobPosition: [],
     frequencyDate: null,
+    frequencyType: 'atOnce',
+    frequencyRecurring: createDefaultFrequencyRecurring(),
   });
 
   readonly fieldModalOpen = signal(false);
@@ -67,13 +108,12 @@ export class CreateFormComponent {
 
   // ── Wizard State ──────────────────────────────────────────────
   readonly currentStep = signal(1);
-  readonly totalSteps = 4;
+  readonly totalSteps = 3;
 
   readonly steps: WizardStep[] = [
     { label: 'Form Details', number: 1 },
-    { label: 'Assign', number: 2 },
-    { label: 'Report', number: 3 },
-    { label: 'Frequency', number: 4 },
+    { label: 'Assign & Report', number: 2 },
+    { label: 'Frequency', number: 3 },
   ];
 
   readonly isFirstStep = computed(() => this.currentStep() === 1);
@@ -83,19 +123,159 @@ export class CreateFormComponent {
     () => this.formName().trim().length > 0 && this.sections().length > 0,
   );
 
-  /** Placeholder options until API integration */
-  readonly jobPositionOptions = [
-    { label: 'Manager', value: 'manager' },
-    { label: 'Supervisor', value: 'supervisor' },
-    { label: 'Staff', value: 'staff' },
+  /** Assigned people/teams for the relationship diagram. */
+  readonly assignFlowItems = computed(() => {
+    const m = this.meta();
+    return [
+      ...m.assignUsers.map((name) => ({ name, kind: 'user' as const })),
+      ...m.assignJobPosition.map((name) => ({ name, kind: 'team' as const })),
+    ];
+  });
+
+  /** Report-to people/teams for the relationship diagram. */
+  readonly reportFlowItems = computed(() => {
+    const m = this.meta();
+    return [
+      ...m.reportUsers.map((name) => ({ name, kind: 'user' as const })),
+      ...m.reportJobPosition.map((name) => ({ name, kind: 'team' as const })),
+    ];
+  });
+
+  readonly showAssignReportFlow = computed(
+    () => this.assignFlowItems().length > 0 && this.reportFlowItems().length > 0,
+  );
+
+  // ── Frequency (Reactive Form) ─────────────────────────────────
+  readonly frequencyTypeOptions: { label: string; value: FrequencyType }[] = [
+    { label: 'At Once', value: 'atOnce' },
+    { label: 'Recurring', value: 'recurring' },
   ];
 
-  readonly userOptions = [
-    { label: 'All Users', value: 'all' },
-    { label: 'Assigned Users', value: 'assigned' },
+  readonly intervalOptions: { label: string; value: FrequencyInterval }[] = [
+    { label: 'Day', value: 'day' },
+    { label: 'Week', value: 'week' },
+    { label: 'Month', value: 'month' },
+    { label: 'Year', value: 'year' },
   ];
 
-  /** Step navigation */
+  readonly weekOrderOptions = [
+    { label: 'First', value: 'first' },
+    { label: 'Second', value: 'second' },
+    { label: 'Third', value: 'third' },
+    { label: 'Fourth', value: 'fourth' },
+    { label: 'Last', value: 'last' },
+  ];
+
+  readonly monthOptions = [
+    { label: 'January', value: 'january' },
+    { label: 'February', value: 'february' },
+    { label: 'March', value: 'march' },
+    { label: 'April', value: 'april' },
+    { label: 'May', value: 'may' },
+    { label: 'June', value: 'june' },
+    { label: 'July', value: 'july' },
+    { label: 'August', value: 'august' },
+    { label: 'September', value: 'september' },
+    { label: 'October', value: 'october' },
+    { label: 'November', value: 'november' },
+    { label: 'December', value: 'december' },
+  ];
+
+  readonly weekdayOptions = [
+    { label: 'Mon', value: 'monday' },
+    { label: 'Tue', value: 'tuesday' },
+    { label: 'Wed', value: 'wednesday' },
+    { label: 'Thu', value: 'thursday' },
+    { label: 'Fri', value: 'friday' },
+    { label: 'Sat', value: 'saturday' },
+    { label: 'Sun', value: 'sunday' },
+  ];
+
+  readonly frequencyForm = this.fb.nonNullable.group({
+    type: this.fb.nonNullable.control<FrequencyType>('recurring'),
+    date: this.fb.control<string | null>(null),
+    every: this.fb.nonNullable.control(1),
+    interval: this.fb.nonNullable.control<FrequencyInterval>('month'),
+    repeatCount: this.fb.nonNullable.control(1),
+    monthMode: this.fb.nonNullable.control<FrequencyMonthMode>('dayOfMonth'),
+    dayOfMonth: this.fb.nonNullable.control(1),
+    weekOrder: this.fb.nonNullable.control('first'),
+    onTheMonth: this.fb.nonNullable.control('january'),
+    daysOfWeek: this.fb.nonNullable.control<string[]>([]),
+    yearMonth: this.fb.nonNullable.control('january'),
+    yearDay: this.fb.nonNullable.control(1),
+  });
+
+  readonly frequencyType = toSignal(
+    this.frequencyForm.controls.type.valueChanges.pipe(
+      startWith(this.frequencyForm.controls.type.value),
+    ),
+    { initialValue: 'atOnce' as FrequencyType },
+  );
+
+  readonly frequencyInterval = toSignal(
+    this.frequencyForm.controls.interval.valueChanges.pipe(
+      startWith(this.frequencyForm.controls.interval.value),
+    ),
+    { initialValue: 'month' as FrequencyInterval },
+  );
+
+  readonly frequencyMonthMode = toSignal(
+    this.frequencyForm.controls.monthMode.valueChanges.pipe(
+      startWith(this.frequencyForm.controls.monthMode.value),
+    ),
+    { initialValue: 'dayOfMonth' as FrequencyMonthMode },
+  );
+
+  // ── Dynamic Options ──────────────────────────────────────────
+  readonly jobPositionOptions = signal<{ id: string; name: string }[]>([]);
+  readonly userOptions = signal<{ id: string; name: string }[]>([]);
+
+  constructor() {
+    this.frequencyForm.valueChanges
+      .pipe(startWith(this.frequencyForm.getRawValue()), takeUntilDestroyed())
+      .subscribe(() => this.syncFrequencyToMeta());
+
+    effect(() => {
+      const step = this.currentStep();
+      const type = this.frequencyType();
+      const input = this.frequencyDateInput();
+
+      this.destroyFlatpickr();
+
+      if (step !== 3 || type !== 'atOnce' || !input) return;
+
+      this.flatpickrInstance = flatpickr(input.nativeElement, {
+        dateFormat: 'Y-m-d',
+        altInput: true,
+        altFormat: 'F j, Y',
+        allowInput: false,
+        defaultDate: this.frequencyForm.controls.date.value || undefined,
+        onChange: (_selectedDates, dateStr) => {
+          this.frequencyForm.controls.date.setValue(dateStr || null, { emitEvent: true });
+        },
+      });
+    });
+
+    effect(() => {
+      const mode = this.frequencyMonthMode();
+      const { dayOfMonth, weekOrder, onTheMonth } = this.frequencyForm.controls;
+      if (mode === 'dayOfMonth') {
+        dayOfMonth.enable({ emitEvent: false });
+        weekOrder.disable({ emitEvent: false });
+        onTheMonth.disable({ emitEvent: false });
+      } else {
+        dayOfMonth.disable({ emitEvent: false });
+        weekOrder.enable({ emitEvent: false });
+        onTheMonth.enable({ emitEvent: false });
+      }
+    });
+
+    this.destroyRef.onDestroy(() => this.destroyFlatpickr());
+  }
+
+  // ── Step Navigation ──────────────────────────────────────────
+
   isStepCompleted(stepNum: number): boolean {
     if (stepNum === 1) return this.step1Valid();
     return this.currentStep() > stepNum;
@@ -128,6 +308,85 @@ export class CreateFormComponent {
     }
   }
 
+  // ── Lifecycle ────────────────────────────────────────────────
+
+  ngOnInit(): void {
+    this.loadJobPositions();
+    this.loadUsers();
+  }
+
+  private loadJobPositions(): void {
+    this.jobPositionService
+      .getJobPositions(1, 9999)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res: any) => {
+          const data = res?.data || res;
+          if (Array.isArray(data)) {
+            this.jobPositionOptions.set(data.map((jp: any) => ({ id: String(jp.id), name: jp.name })));
+          }
+        },
+        error: () => this.jobPositionOptions.set([]),
+      });
+  }
+
+  private loadUsers(): void {
+    this.userService
+      .getUsers(1, 9999)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res: any) => {
+          const data = res?.data || res;
+          if (Array.isArray(data)) {
+            this.userOptions.set(data.map((u: any) => ({ id: String(u.id), name: u.fld_1784019110336_gor66xq })));
+          }
+        },
+        error: () => this.userOptions.set([]),
+      });
+  }
+
+  // ── Frequency helpers ─────────────────────────────────────────
+
+  isWeekdaySelected(day: string): boolean {
+    return this.frequencyForm.controls.daysOfWeek.value.includes(day);
+  }
+
+  toggleWeekday(day: string): void {
+    const current = this.frequencyForm.controls.daysOfWeek.value;
+    const next = current.includes(day)
+      ? current.filter((d) => d !== day)
+      : [...current, day];
+    this.frequencyForm.controls.daysOfWeek.setValue(next);
+  }
+
+  private syncFrequencyToMeta(): void {
+    const value = this.frequencyForm.getRawValue();
+    this.meta.update((current) => ({
+      ...current,
+      frequencyDate: value.date,
+      frequencyType: value.type,
+      frequencyRecurring: {
+        every: Number(value.every) || 1,
+        interval: value.interval,
+        repeatCount: Number(value.repeatCount) || 1,
+        daysOfWeek: [...value.daysOfWeek],
+        monthMode: value.monthMode,
+        dayOfMonth: Number(value.dayOfMonth),
+        weekOrder: value.weekOrder,
+        onTheMonth: value.onTheMonth,
+        yearMonth: value.yearMonth,
+        yearDay: Number(value.yearDay) || 1,
+      },
+    }));
+  }
+
+  private destroyFlatpickr(): void {
+    if (this.flatpickrInstance) {
+      this.flatpickrInstance.destroy();
+      this.flatpickrInstance = null;
+    }
+  }
+
   // ── Section Management ────────────────────────────────────────
 
   onAddSection(): void {
@@ -139,10 +398,18 @@ export class CreateFormComponent {
   }
 
   onSectionTypeChange(value: string): void {
-    this.selectedSectionType.set((value || '') as SectionType | '');
-    if (value) {
+    console.log('[Dynamic Forms] Section type changed:', value);
+    const type = (value || '') as SectionType | '';
+    this.selectedSectionType.set(type);
+    if (type && !this.isTypeAlreadyUsed(type)) {
       this.onAddSection();
+    } else {
+      this.selectedSectionType.set('');
     }
+  }
+
+  private isTypeAlreadyUsed(type: SectionType): boolean {
+    return this.sections().some((s) => s.type === type);
   }
 
   updateSection(updated: FormSection): void {
@@ -153,6 +420,16 @@ export class CreateFormComponent {
 
   removeSection(sectionId: string): void {
     this.sections.update((list) => list.filter((s) => s.id !== sectionId));
+    this.resetAddSectionDropdown();
+  }
+
+  /** Resets the Add Section control to "Select section" (signal + native select sync). */
+  private resetAddSectionDropdown(): void {
+    this.selectedSectionType.set('');
+    const selectEl = this.addSectionSelect()?.nativeElement;
+    if (selectEl) {
+      selectEl.value = '';
+    }
   }
 
   openFieldModal(target: { sectionId: string; rowId: string }): void {

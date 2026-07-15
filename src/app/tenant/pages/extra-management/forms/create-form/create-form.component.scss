@@ -154,6 +154,250 @@
   max-width: 28rem;
 }
 
+.wizard-content__fields--full {
+  max-width: none;
+}
+
+/* ═══════════════════ ASSIGN & REPORT STEP ═══════════════════ */
+
+.assign-report-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (max-width: 768px) {
+  .assign-report-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.assign-report-panel {
+  padding: 1.25rem 1.35rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+}
+
+.assign-report-panel__header {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 0.35rem;
+}
+
+.assign-report-panel__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.5rem;
+  flex-shrink: 0;
+
+  &--assign {
+    background: #edf5ff;
+    color: #0f62fe;
+  }
+
+  &--report {
+    background: #ecfdf5;
+    color: #059669;
+  }
+}
+
+.assign-report-panel__title {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #161616;
+}
+
+.assign-report-panel__hint {
+  margin: 0 0 1.15rem;
+  font-size: 0.75rem;
+  color: #6f6f6f;
+}
+
+/* ═══════════════════ RELATIONSHIP FLOW ═══════════════════ */
+
+.relation-flow {
+  margin-top: 1.75rem;
+  padding: 1.35rem 1.25rem;
+  background: linear-gradient(180deg, #f8fafc 0%, #fff 100%);
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+}
+
+.relation-flow__heading {
+  margin: 0 0 1.25rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #374151;
+  letter-spacing: 0.01em;
+}
+
+.relation-flow__diagram {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.relation-flow__column {
+  flex: 1 1 10rem;
+  min-width: 9rem;
+  max-width: 16rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.relation-flow__column-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6b7280;
+  text-align: center;
+}
+
+.relation-flow__chips {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.relation-flow__chip {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.3;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+
+  &--assign {
+    background: #edf5ff;
+    border: 1px solid #cce0ff;
+    color: #0f62fe;
+  }
+
+  &--report {
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    color: #047857;
+  }
+}
+
+.relation-flow__chip-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.relation-flow__chip-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.relation-flow__connector {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  flex-shrink: 0;
+  color: #9ca3af;
+  padding: 0 0.15rem;
+}
+
+.relation-flow__line {
+  display: block;
+  width: 1.25rem;
+  height: 2px;
+  background: #d1d5db;
+  border-radius: 1px;
+}
+
+.relation-flow__arrow {
+  display: inline-flex;
+  color: #0f62fe;
+}
+
+.relation-flow__form-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-width: 5.5rem;
+  max-width: 9rem;
+  padding: 0.9rem 1rem;
+  background: #0f62fe;
+  color: #fff;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 12px rgba(15, 98, 254, 0.28);
+  flex-shrink: 0;
+}
+
+.relation-flow__form-icon {
+  display: inline-flex;
+  opacity: 0.95;
+}
+
+.relation-flow__form-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  word-break: break-word;
+}
+
+@media (max-width: 640px) {
+  .relation-flow__diagram {
+    flex-direction: column;
+  }
+
+  .relation-flow__column {
+    max-width: none;
+    width: 100%;
+  }
+
+  .relation-flow__connector {
+    flex-direction: column;
+    padding: 0.35rem 0;
+  }
+
+  .relation-flow__line {
+    width: 2px;
+    height: 0.85rem;
+  }
+
+  .relation-flow__arrow {
+    transform: rotate(90deg);
+  }
+
+  .relation-flow__form-node {
+    max-width: none;
+    width: 100%;
+    flex-direction: row;
+    justify-content: center;
+  }
+}
+
 /* ═══════════════════ WIZARD NAVIGATION ═══════════════════ */
 
 .wizard-nav {
@@ -363,5 +607,441 @@
     flex: 1;
     min-width: 0;
     text-align: center;
+  }
+}
+
+/* ═══════════════════ FREQUENCY STEP ═══════════════════ */
+
+.frequency-step {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.frequency-step__type-row {
+  max-width: 18rem;
+}
+
+.frequency-panel {
+  padding: 1.25rem 1.35rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+}
+
+.frequency-panel__title {
+  margin: 0 0 1rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #161616;
+}
+
+.frequency-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.frequency-field__label {
+  font-size: 0.75rem;
+  color: #6f6f6f;
+  font-weight: 500;
+}
+
+.frequency-field__control-wrap {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+}
+
+.frequency-field__control-wrap--inline {
+  width: auto;
+  min-width: 8.5rem;
+}
+
+.frequency-field__chevron {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  display: inline-flex;
+}
+
+.frequency-control {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  background: #fff;
+  padding: 0.65rem 0.85rem;
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 0.875rem;
+  color: #161616;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+  &:focus {
+    border-color: #0f62fe;
+    box-shadow: 0 0 0 3px rgba(15, 98, 254, 0.12);
+  }
+
+  &::placeholder {
+    color: #a8a8a8;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #f3f4f6;
+  }
+
+  &--select {
+    appearance: none;
+    padding-right: 2rem;
+    cursor: pointer;
+  }
+
+  &--number {
+    width: 4.5rem;
+    text-align: center;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+}
+
+.frequency-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.frequency-row--repeat {
+  margin-bottom: 0.25rem;
+}
+
+.frequency-inline-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  white-space: nowrap;
+}
+
+.frequency-hint {
+  margin: 0.75rem 0 0;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.frequency-hint--inline {
+  margin: 0;
+}
+
+.frequency-schedule {
+  margin-top: 1.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.frequency-schedule--stack {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.85rem;
+}
+
+.frequency-schedule__label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #374151;
+  padding-top: 0.65rem;
+}
+
+.frequency-radio-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+  cursor: pointer;
+
+  input[type='radio'] {
+    width: 1rem;
+    height: 1rem;
+    accent-color: #0f62fe;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+}
+
+.frequency-weekdays {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.frequency-weekday {
+  min-width: 2.75rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid #d1d5db;
+  border-radius: 9999px;
+  background: #fff;
+  color: #4b5563;
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    border-color: #0f62fe;
+    color: #0f62fe;
+  }
+
+  &--active {
+    background: #edf5ff;
+    border-color: #0f62fe;
+    color: #0f62fe;
+  }
+}
+
+/* Flatpickr alt input inherits our control look */
+.frequency-panel--at-once {
+  max-width: 22rem;
+}
+
+:host ::ng-deep {
+  .frequency-panel--at-once .flatpickr-input,
+  .frequency-panel--at-once .flatpickr-input.form-control,
+  .frequency-panel--at-once input.flatpickr-input {
+    width: 100%;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    background: #fff;
+    padding: 0.65rem 0.85rem;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 0.875rem;
+    color: #161616;
+    cursor: pointer;
+    box-sizing: border-box;
+  }
+
+  .flatpickr-day.selected,
+  .flatpickr-day.startRange,
+  .flatpickr-day.endRange {
+    background: #0f62fe !important;
+    border-color: #0f62fe !important;
+  }
+
+  .flatpickr-day:hover {
+    background: #edf5ff;
+    border-color: #edf5ff;
+  }
+}
+
+@media (max-width: 640px) {
+  .frequency-step__type-row {
+    max-width: none;
+  }
+
+  .frequency-panel--at-once {
+    max-width: none;
+  }
+
+  .frequency-field__control-wrap--inline {
+    min-width: 0;
+    flex: 1 1 8rem;
+  }
+
+  .frequency-control--number {
+    width: 4rem;
+  }
+}
+
+/* ═══════════════════ NG-SELECT MULTI-SELECT ═══════════════════ */
+
+:host ::ng-deep {
+  .custom-ng-select {
+    .ng-select-container {
+      background: transparent !important;
+      border: none !important;
+      border-bottom: 1px solid #161616 !important;
+      border-radius: 0 !important;
+      padding: 6px 0 !important;
+      min-height: auto !important;
+      font-family: 'IBM Plex Sans', sans-serif !important;
+      font-size: 14px !important;
+      color: #161616 !important;
+      box-shadow: none !important;
+    }
+
+    &.ng-select-focused .ng-select-container {
+      box-shadow: none !important;
+      border-bottom: 2px solid #0f62fe !important;
+    }
+
+    .ng-placeholder {
+      color: #a8a8a8 !important;
+      font-weight: 400;
+    }
+
+    .ng-value-container {
+      padding-left: 0;
+      gap: 4px;
+      flex-wrap: wrap;
+      padding-top: 2px;
+
+      .ng-placeholder {
+        padding-top: 0;
+      }
+    }
+
+    /* ── Selected Chips ── */
+    .ng-value {
+      background: #edf5ff !important;
+      border: 1px solid #cce0ff !important;
+      border-radius: 4px !important;
+      padding: 2px 6px !important;
+      font-size: 12px !important;
+      font-weight: 500 !important;
+      color: #0f62fe !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 4px !important;
+      line-height: 1.4 !important;
+      max-width: 100%;
+
+      .ng-value-label {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 12px !important;
+      }
+
+      .ng-value-remove {
+        border: none !important;
+        background: none !important;
+        padding: 0 !important;
+        margin-left: 2px !important;
+        cursor: pointer !important;
+        opacity: 0.6;
+        transition: opacity 0.15s ease;
+
+        &:hover {
+          opacity: 1;
+        }
+
+        &::before {
+          content: '\00d7';
+          font-size: 14px;
+          color: #0f62fe;
+          font-weight: 600;
+        }
+      }
+    }
+
+    /* ── Arrow/Clear Buttons ── */
+    .ng-arrow-wrapper {
+      display: none;
+    }
+
+    .ng-clear-wrapper {
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+      width: 20px !important;
+      height: 20px !important;
+      padding: 0 !important;
+      top: 50%;
+      transform: translateY(-50%);
+      right: 0;
+
+      .ng-clear {
+        font-size: 16px !important;
+        color: #9ca3af !important;
+        padding: 0;
+        line-height: 1;
+
+        &:before {
+          content: '\00d7' !important;
+          font-size: 16px;
+        }
+      }
+    }
+
+    /* ── Dropdown Panel ── */
+    .ng-dropdown-panel {
+      border: 1px solid #e5e7eb !important;
+      border-radius: 8px !important;
+      margin-top: 4px !important;
+      background: #fff !important;
+      box-shadow:
+        0 10px 25px rgba(15, 23, 42, 0.08),
+        0 4px 10px rgba(15, 23, 42, 0.04) !important;
+      overflow: hidden !important;
+
+      .ng-dropdown-panel-items-container {
+        max-height: 240px;
+        overflow-y: auto;
+
+        &::-webkit-scrollbar {
+          width: 5px;
+        }
+
+        &::-webkit-scrollbar-thumb {
+          background-color: rgba(0, 0, 0, 0.12);
+          border-radius: 3px;
+        }
+      }
+
+      .ng-option {
+        padding: 10px 14px !important;
+        font-family: 'IBM Plex Sans', sans-serif !important;
+        font-size: 13px !important;
+        color: #525252 !important;
+        transition: background-color 0.12s ease;
+
+        &.ng-option-marked {
+          background: #edf5ff !important;
+          color: #0f62fe !important;
+        }
+
+        &.ng-option-selected {
+          background: #edf5ff !important;
+          color: #0f62fe !important;
+          font-weight: 500;
+
+          &::before {
+            content: '';
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 1.5px solid #0f62fe;
+            border-radius: 3px;
+            margin-right: 8px;
+            vertical-align: middle;
+            background: #0f62fe url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E") center / 10px no-repeat;
+          }
+        }
+
+        &.ng-option-disabled {
+          opacity: 0.4;
+        }
+      }
+
+      .ng-option-label {
+        font-family: 'IBM Plex Sans', sans-serif !important;
+      }
+    }
+
+    /* ── Mark Multiple Selected ── */
+    &.ng-select-multiple {
+      .ng-value-container {
+        .ng-value {
+          background: #edf5ff !important;
+          border: 1px solid #cce0ff !important;
+        }
+      }
+    }
   }
 }
