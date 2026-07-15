@@ -121,46 +121,38 @@
             <label class="underlined-field__label font-ibm">
               <span class="req">*</span>Job Position
             </label>
-            <div class="underlined-field__select-wrap">
-              <select
-                class="underlined-field__input underlined-field__select font-ibm"
-                [ngModel]="meta().assignJobPosition"
-                (ngModelChange)="updateMeta('assignJobPosition', $event)"
-              >
-                <option [ngValue]="null">Select job position</option>
-                @for (opt of jobPositionOptions; track opt.value) {
-                  <option [ngValue]="opt.value">{{ opt.label }}</option>
-                }
-              </select>
-              <span class="underlined-field__chevron" aria-hidden="true">
-                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                  <path d="M1 1.5L6 6.5L11 1.5" stroke="#161616" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </span>
-            </div>
+            <ng-select
+              class="custom-ng-select font-ibm"
+              [items]="jobPositionOptions()"
+              [multiple]="true"
+              [closeOnSelect]="false"
+              [searchable]="true"
+              bindLabel="name"
+              bindValue="name"
+              placeholder="Search job positions..."
+              [ngModel]="meta().assignJobPosition"
+              (ngModelChange)="updateMeta('assignJobPosition', $event)"
+            >
+            </ng-select>
           </div>
 
           <div class="underlined-field mt-4">
             <label class="underlined-field__label font-ibm">
               <span class="req">*</span>Users
             </label>
-            <div class="underlined-field__select-wrap">
-              <select
-                class="underlined-field__input underlined-field__select font-ibm"
-                [ngModel]="meta().assignUsers"
-                (ngModelChange)="updateMeta('assignUsers', $event)"
-              >
-                <option [ngValue]="null">Select users</option>
-                @for (opt of userOptions; track opt.value) {
-                  <option [ngValue]="opt.value">{{ opt.label }}</option>
-                }
-              </select>
-              <span class="underlined-field__chevron" aria-hidden="true">
-                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                  <path d="M1 1.5L6 6.5L11 1.5" stroke="#161616" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </span>
-            </div>
+            <ng-select
+              class="custom-ng-select font-ibm"
+              [items]="userOptions()"
+              [multiple]="true"
+              [closeOnSelect]="false"
+              [searchable]="true"
+              bindLabel="name"
+              bindValue="name"
+              placeholder="Search users..."
+              [ngModel]="meta().assignUsers"
+              (ngModelChange)="updateMeta('assignUsers', $event)"
+            >
+            </ng-select>
           </div>
         </div>
       </div>
@@ -178,46 +170,38 @@
             <label class="underlined-field__label font-ibm">
               <span class="req">*</span>Job Position
             </label>
-            <div class="underlined-field__select-wrap">
-              <select
-                class="underlined-field__input underlined-field__select font-ibm"
-                [ngModel]="meta().reportJobPosition"
-                (ngModelChange)="updateMeta('reportJobPosition', $event)"
-              >
-                <option [ngValue]="null">Select job position</option>
-                @for (opt of jobPositionOptions; track opt.value) {
-                  <option [ngValue]="opt.value">{{ opt.label }}</option>
-                }
-              </select>
-              <span class="underlined-field__chevron" aria-hidden="true">
-                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                  <path d="M1 1.5L6 6.5L11 1.5" stroke="#161616" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </span>
-            </div>
+            <ng-select
+              class="custom-ng-select font-ibm"
+              [items]="jobPositionOptions()"
+              [multiple]="true"
+              [closeOnSelect]="false"
+              [searchable]="true"
+              bindLabel="name"
+              bindValue="name"
+              placeholder="Search job positions..."
+              [ngModel]="meta().reportJobPosition"
+              (ngModelChange)="updateMeta('reportJobPosition', $event)"
+            >
+            </ng-select>
           </div>
 
           <div class="underlined-field mt-4">
             <label class="underlined-field__label font-ibm">
               <span class="req">*</span>Users
             </label>
-            <div class="underlined-field__select-wrap">
-              <select
-                class="underlined-field__input underlined-field__select font-ibm"
-                [ngModel]="meta().reportUsers"
-                (ngModelChange)="updateMeta('reportUsers', $event)"
-              >
-                <option [ngValue]="null">Select users</option>
-                @for (opt of userOptions; track opt.value) {
-                  <option [ngValue]="opt.value">{{ opt.label }}</option>
-                }
-              </select>
-              <span class="underlined-field__chevron" aria-hidden="true">
-                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                  <path d="M1 1.5L6 6.5L11 1.5" stroke="#161616" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </span>
-            </div>
+            <ng-select
+              class="custom-ng-select font-ibm"
+              [items]="userOptions()"
+              [multiple]="true"
+              [closeOnSelect]="false"
+              [searchable]="true"
+              bindLabel="name"
+              bindValue="name"
+              placeholder="Search users..."
+              [ngModel]="meta().reportUsers"
+              (ngModelChange)="updateMeta('reportUsers', $event)"
+            >
+            </ng-select>
           </div>
         </div>
       </div>
@@ -235,23 +219,19 @@
             <label class="underlined-field__label font-ibm">
               <span class="req">*</span>Job Position
             </label>
-            <div class="underlined-field__select-wrap">
-              <select
-                class="underlined-field__input underlined-field__select font-ibm"
-                [ngModel]="meta().frequencyJobPosition"
-                (ngModelChange)="updateMeta('frequencyJobPosition', $event)"
-              >
-                <option [ngValue]="null">Select job position</option>
-                @for (opt of jobPositionOptions; track opt.value) {
-                  <option [ngValue]="opt.value">{{ opt.label }}</option>
-                }
-              </select>
-              <span class="underlined-field__chevron" aria-hidden="true">
-                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                  <path d="M1 1.5L6 6.5L11 1.5" stroke="#161616" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </span>
-            </div>
+            <ng-select
+              class="custom-ng-select font-ibm"
+              [items]="jobPositionOptions()"
+              [multiple]="true"
+              [closeOnSelect]="false"
+              [searchable]="true"
+              bindLabel="name"
+              bindValue="name"
+              placeholder="Search job positions..."
+              [ngModel]="meta().frequencyJobPosition"
+              (ngModelChange)="updateMeta('frequencyJobPosition', $event)"
+            >
+            </ng-select>
           </div>
 
           <div class="underlined-field mt-4">

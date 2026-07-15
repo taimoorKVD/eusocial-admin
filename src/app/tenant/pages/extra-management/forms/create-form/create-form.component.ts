@@ -1,8 +1,12 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { NgSelectModule } from '@ng-select/ng-select';
 import { TenantSessionService } from '../../../../../services/tenant-session.service';
+import { TenantUserService } from '../../../../../services/tenant-user.service';
+import { TenantJobPositionService } from '../../../../../services/tenant-job-position.service';
 import { DynamicFormsStoreService } from '../services/dynamic-forms-store.service';
 import { DataEntrySectionComponent } from '../components/data-entry-section/data-entry-section.component';
 import { ChecklistFormSectionComponent } from '../components/checklist-form-section/checklist-form-section.component';
@@ -32,6 +36,7 @@ interface WizardStep {
   imports: [
     CommonModule,
     FormsModule,
+    NgSelectModule,
     DataEntrySectionComponent,
     ChecklistFormSectionComponent,
     VisualFormSectionComponent,
@@ -40,10 +45,13 @@ interface WizardStep {
   templateUrl: './create-form.component.html',
   styleUrl: './create-form.component.scss',
 })
-export class CreateFormComponent {
+export class CreateFormComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly session = inject(TenantSessionService);
   private readonly store = inject(DynamicFormsStoreService);
+  private readonly userService = inject(TenantUserService);
+  private readonly jobPositionService = inject(TenantJobPositionService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly sectionOptions = SECTION_OPTIONS;
 
@@ -51,11 +59,11 @@ export class CreateFormComponent {
   readonly sections = signal<FormSection[]>([]);
   readonly selectedSectionType = signal<SectionType | ''>('');
   readonly meta = signal<FormMetaConfig>({
-    assignJobPosition: null,
-    assignUsers: null,
-    reportJobPosition: null,
-    reportUsers: null,
-    frequencyJobPosition: null,
+    assignJobPosition: [],
+    assignUsers: [],
+    reportJobPosition: [],
+    reportUsers: [],
+    frequencyJobPosition: [],
     frequencyDate: null,
   });
 
@@ -83,19 +91,12 @@ export class CreateFormComponent {
     () => this.formName().trim().length > 0 && this.sections().length > 0,
   );
 
-  /** Placeholder options until API integration */
-  readonly jobPositionOptions = [
-    { label: 'Manager', value: 'manager' },
-    { label: 'Supervisor', value: 'supervisor' },
-    { label: 'Staff', value: 'staff' },
-  ];
+  // ── Dynamic Options ──────────────────────────────────────────
+  readonly jobPositionOptions = signal<{ id: string; name: string }[]>([]);
+  readonly userOptions = signal<{ id: string; name: string }[]>([]);
 
-  readonly userOptions = [
-    { label: 'All Users', value: 'all' },
-    { label: 'Assigned Users', value: 'assigned' },
-  ];
+  // ── Step Navigation ──────────────────────────────────────────
 
-  /** Step navigation */
   isStepCompleted(stepNum: number): boolean {
     if (stepNum === 1) return this.step1Valid();
     return this.currentStep() > stepNum;
@@ -126,6 +127,43 @@ export class CreateFormComponent {
     if (stepNum < this.currentStep()) {
       this.currentStep.set(stepNum);
     }
+  }
+
+  // ── Lifecycle ────────────────────────────────────────────────
+
+  ngOnInit(): void {
+    this.loadJobPositions();
+    this.loadUsers();
+  }
+
+  private loadJobPositions(): void {
+    this.jobPositionService
+      .getJobPositions(1, 9999)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res: any) => {
+          const data = res?.data || res;
+          if (Array.isArray(data)) {
+            this.jobPositionOptions.set(data.map((jp: any) => ({ id: String(jp.id), name: jp.name })));
+          }
+        },
+        error: () => this.jobPositionOptions.set([]),
+      });
+  }
+
+  private loadUsers(): void {
+    this.userService
+      .getUsers(1, 9999)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res: any) => {
+          const data = res?.data || res;
+          if (Array.isArray(data)) {
+            this.userOptions.set(data.map((u: any) => ({ id: String(u.id), name: u.fld_1784019110336_gor66xq })));
+          }
+        },
+        error: () => this.userOptions.set([]),
+      });
   }
 
   // ── Section Management ────────────────────────────────────────

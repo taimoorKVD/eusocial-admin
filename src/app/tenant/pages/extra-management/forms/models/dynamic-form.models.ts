@@ -57,11 +57,11 @@ export interface VisualFormSection {
 export type FormSection = DataEntrySection | ChecklistFormSection | VisualFormSection;
 
 export interface FormMetaConfig {
-  assignJobPosition: string | null;
-  assignUsers: string | null;
-  reportJobPosition: string | null;
-  reportUsers: string | null;
-  frequencyJobPosition: string | null;
+  assignJobPosition: string[];
+  assignUsers: string[];
+  reportJobPosition: string[];
+  reportUsers: string[];
+  frequencyJobPosition: string[];
   frequencyDate: string | null;
 }
 
@@ -188,15 +188,15 @@ export function buildDynamicFormPayload(
   return {
     formName: formName.trim(),
     assign: {
-      jobPosition: meta.assignJobPosition,
-      users: meta.assignUsers,
+      jobPosition: meta.assignJobPosition.length ? meta.assignJobPosition.join(', ') : null,
+      users: meta.assignUsers.length ? meta.assignUsers.join(', ') : null,
     },
     report: {
-      jobPosition: meta.reportJobPosition,
-      users: meta.reportUsers,
+      jobPosition: meta.reportJobPosition.length ? meta.reportJobPosition.join(', ') : null,
+      users: meta.reportUsers.length ? meta.reportUsers.join(', ') : null,
     },
     frequency: {
-      jobPosition: meta.frequencyJobPosition,
+      jobPosition: meta.frequencyJobPosition.length ? meta.frequencyJobPosition.join(', ') : null,
       date: meta.frequencyDate,
     },
     sections: sections.map((section) => {
