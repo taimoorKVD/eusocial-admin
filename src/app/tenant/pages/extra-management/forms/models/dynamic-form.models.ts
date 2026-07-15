@@ -56,6 +56,38 @@ export interface VisualFormSection {
 
 export type FormSection = DataEntrySection | ChecklistFormSection | VisualFormSection;
 
+export type FrequencyType = 'atOnce' | 'recurring';
+export type FrequencyInterval = 'day' | 'week' | 'month' | 'year';
+export type FrequencyMonthMode = 'dayOfMonth' | 'onThe';
+
+export interface FrequencyRecurringConfig {
+  every: number;
+  interval: FrequencyInterval;
+  repeatCount: number;
+  daysOfWeek: string[];
+  monthMode: FrequencyMonthMode;
+  dayOfMonth: number;
+  weekOrder: string;
+  onTheMonth: string;
+  yearMonth: string;
+  yearDay: number;
+}
+
+export function createDefaultFrequencyRecurring(): FrequencyRecurringConfig {
+  return {
+    every: 1,
+    interval: 'month',
+    repeatCount: 1,
+    daysOfWeek: [],
+    monthMode: 'dayOfMonth',
+    dayOfMonth: 1,
+    weekOrder: 'first',
+    onTheMonth: 'january',
+    yearMonth: 'january',
+    yearDay: 1,
+  };
+}
+
 export interface FormMetaConfig {
   assignJobPosition: string[];
   assignUsers: string[];
@@ -63,6 +95,8 @@ export interface FormMetaConfig {
   reportUsers: string[];
   frequencyJobPosition: string[];
   frequencyDate: string | null;
+  frequencyType: FrequencyType;
+  frequencyRecurring: FrequencyRecurringConfig;
 }
 
 export interface DynamicFormPayload {
@@ -78,6 +112,8 @@ export interface DynamicFormPayload {
   frequency: {
     jobPosition: string | null;
     date: string | null;
+    type: FrequencyType;
+    recurring: FrequencyRecurringConfig | null;
   };
   sections: Array<
     | {
@@ -197,7 +233,10 @@ export function buildDynamicFormPayload(
     },
     frequency: {
       jobPosition: meta.frequencyJobPosition.length ? meta.frequencyJobPosition.join(', ') : null,
-      date: meta.frequencyDate,
+      date: meta.frequencyType === 'atOnce' ? meta.frequencyDate : null,
+      type: meta.frequencyType,
+      recurring:
+        meta.frequencyType === 'recurring' ? { ...meta.frequencyRecurring } : null,
     },
     sections: sections.map((section) => {
       if (section.type === 'visualForm') {
