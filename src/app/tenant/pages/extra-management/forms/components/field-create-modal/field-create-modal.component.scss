@@ -11,11 +11,15 @@
 
 .field-modal-panel {
   width: min(36rem, 100%);
-  max-height: min(90vh, 40rem);
+  max-height: min(90vh, 44rem);
   overflow: auto;
   border-radius: 0.75rem;
   background: #fff;
   box-shadow: 0 20px 40px rgb(15 23 42 / 20%);
+}
+
+.field-modal-panel--builder {
+  width: min(42rem, 100%);
 }
 
 .field-modal-header {
@@ -46,56 +50,39 @@
   padding: 1.25rem;
 }
 
-.field-modal-grid {
-  display: grid;
-  gap: 1rem;
+.field-type-picker {
+  margin-bottom: 1rem;
 }
 
-.field-control {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-.field-label {
+.field-type-picker__label {
+  display: block;
+  margin-bottom: 0.35rem;
   font-size: 0.75rem;
+  font-weight: 500;
   color: #6f6f6f;
 }
 
-.req {
-  color: #dc2626;
-}
-
-.field-input {
+.field-type-picker__select {
   width: 100%;
-  border: none;
-  border-bottom: 1px solid #161616;
-  background: transparent;
-  padding: 0.65rem 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  background: #fff;
+  padding: 0.65rem 0.85rem;
+  font-family: 'IBM Plex Sans', sans-serif;
   font-size: 0.875rem;
   color: #161616;
-  outline: none;
 }
 
-.field-error {
-  font-size: 0.6875rem;
-  color: #dc2626;
+.field-builder-host {
+  border: 1px solid #eef0f2;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  background: #fafbfc;
 }
 
-.field-checks {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1.25rem;
-  padding-top: 0.25rem;
-}
-
-.check-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.875rem;
-  color: #161616;
-  cursor: pointer;
+/* Hide Field Settings duplicate/delete — create-form owns those actions */
+.field-builder-host ::ng-deep .flex.gap-2.border-t.border-slate-100.pt-4 {
+  display: none !important;
 }
 
 .field-modal-actions {
@@ -103,4 +90,30 @@
   justify-content: flex-end;
   gap: 0.75rem;
   margin-top: 1.5rem;
+}
+
+.btn {
+  min-width: 6rem;
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  &--cancel {
+    border: 1px solid #d1d5db;
+    background: #fff;
+    color: #374151;
+  }
+
+  &--save {
+    border: none;
+    background: #0f62fe;
+    color: #fff;
+  }
 }

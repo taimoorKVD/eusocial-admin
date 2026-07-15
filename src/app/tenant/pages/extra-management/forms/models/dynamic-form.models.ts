@@ -1,4 +1,4 @@
-export type SectionType = 'dataEntry' | 'checklistForm' | 'visualForm';
+export type SectionType = 'responseForm' | 'dataEntry' | 'checklistForm' | 'visualForm';
 
 export type FieldType =
   | 'text'
@@ -19,11 +19,21 @@ export interface FormFieldConfig {
   required: boolean;
   readonly?: boolean;
   width?: string;
+  /** System/default field — created with the section and not deletable. */
+  isDefault?: boolean;
+  /** Static select options (preview / payload). */
+  options?: string[];
 }
 
 export interface FormRow {
   id: string;
   fields: FormFieldConfig[];
+}
+
+export interface ResponseFormSection {
+  id: string;
+  type: 'responseForm';
+  rows: FormRow[];
 }
 
 export interface DataEntrySection {
@@ -52,9 +62,15 @@ export interface VisualFormSection {
   id: string;
   type: 'visualForm';
   configuration: VisualFormConfiguration;
+  /** User-added fields beyond the mandatory upload + description defaults. */
+  rows: FormRow[];
 }
 
-export type FormSection = DataEntrySection | ChecklistFormSection | VisualFormSection;
+export type FormSection =
+  | ResponseFormSection
+  | DataEntrySection
+  | ChecklistFormSection
+  | VisualFormSection;
 
 export type FrequencyType = 'atOnce' | 'recurring';
 export type FrequencyInterval = 'day' | 'week' | 'month' | 'year';
@@ -117,6 +133,10 @@ export interface DynamicFormPayload {
   };
   sections: Array<
     | {
+        type: 'responseForm';
+        rows: Array<{ fields: Omit<FormFieldConfig, 'id'>[] }>;
+      }
+    | {
         type: 'dataEntry';
         rows: Array<{ fields: Omit<FormFieldConfig, 'id'>[] }>;
       }
@@ -127,6 +147,7 @@ export interface DynamicFormPayload {
     | {
         type: 'visualForm';
         configuration: VisualFormConfiguration;
+        rows: Array<{ fields: Omit<FormFieldConfig, 'id'>[] }>;
       }
   >;
 }
@@ -141,9 +162,10 @@ export interface SavedDynamicForm {
 }
 
 export const SECTION_OPTIONS: { label: string; value: SectionType }[] = [
-  { label: 'Visual Form', value: 'visualForm' },
+  { label: 'Response Form', value: 'responseForm' },
   { label: 'Data Entry', value: 'dataEntry' },
   { label: 'Checklist Form', value: 'checklistForm' },
+  { label: 'Visual Form', value: 'visualForm' },
 ];
 
 export const FIELD_TYPE_OPTIONS: { label: string; value: FieldType }[] = [
@@ -169,15 +191,131 @@ export function createId(prefix = 'id'): string {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 }
 
+function createDefaultField(
+  partial: Omit<FormFieldConfig, 'id' | 'isDefault'> & { isDefault?: boolean },
+): FormFieldConfig {
+  return {
+    id: createId('field'),
+    isDefault: true,
+    ...partial,
+  };
+}
+
+export function createResponseFormDefaultFields(): FormFieldConfig[] {
+  return [
+    createDefaultField({
+      type: 'text',
+      label: 'Description',
+      name: 'description',
+      placeholder: 'Lorem Ipsum',
+      required: true,
+      width: '100%',
+    }),
+  ];
+}
+
+export function createDataEntryDefaultFields(): FormFieldConfig[] {
+  return [
+    createDefaultField({
+      type: 'select',
+      label: 'Item',
+      name: 'item',
+      placeholder: 'Select item',
+      required: true,
+      width: '22%',
+    }),
+    createDefaultField({
+      type: 'checkbox',
+      label: 'Include Par',
+      name: 'include_par',
+      required: false,
+      width: '18%',
+    }),
+    createDefaultField({
+      type: 'number',
+      label: 'Par Qty',
+      name: 'par_qty',
+      placeholder: '0',
+      required: false,
+      width: '10%',
+    }),
+    createDefaultField({
+      type: 'select',
+      label: 'User Response',
+      name: 'user_response',
+      required: true,
+      width: '22%',
+      options: ['Current Quantity'],
+    }),
+    createDefaultField({
+      type: 'select',
+      label: 'Action',
+      name: 'action',
+      required: true,
+      width: '16%',
+      options: ['Order'],
+    }),
+  ];
+}
+
+export function createChecklistFormDefaultFields(): FormFieldConfig[] {
+  return [
+    createDefaultField({
+      type: 'text',
+      label: 'Description',
+      name: 'description',
+      placeholder: 'Lorem Ipsum',
+      required: true,
+      width: '40%',
+    }),
+    createDefaultField({
+      type: 'text',
+      label: 'Response',
+      name: 'response_yes',
+      placeholder: 'Yes',
+      required: true,
+      width: '25%',
+    }),
+    createDefaultField({
+      type: 'text',
+      label: 'Response',
+      name: 'response_no',
+      placeholder: 'No',
+      required: true,
+      width: '25%',
+    }),
+  ];
+}
+
 export function createEmptyRow(): FormRow {
   return { id: createId('row'), fields: [] };
+}
+
+export function createResponseFormRow(): FormRow {
+  return { id: createId('row'), fields: createResponseFormDefaultFields() };
+}
+
+export function createDataEntryRow(): FormRow {
+  return { id: createId('row'), fields: createDataEntryDefaultFields() };
+}
+
+export function createChecklistFormRow(): FormRow {
+  return { id: createId('row'), fields: createChecklistFormDefaultFields() };
+}
+
+export function createResponseFormSection(): ResponseFormSection {
+  return {
+    id: createId('section'),
+    type: 'responseForm',
+    rows: [createResponseFormRow()],
+  };
 }
 
 export function createDataEntrySection(): DataEntrySection {
   return {
     id: createId('section'),
     type: 'dataEntry',
-    rows: [createEmptyRow()],
+    rows: [createDataEntryRow()],
   };
 }
 
@@ -185,7 +323,7 @@ export function createChecklistFormSection(): ChecklistFormSection {
   return {
     id: createId('section'),
     type: 'checklistForm',
-    rows: [createEmptyRow()],
+    rows: [createChecklistFormRow()],
   };
 }
 
@@ -197,11 +335,14 @@ export function createVisualFormSection(): VisualFormSection {
       files: [],
       instructions: '',
     },
+    rows: [createEmptyRow()],
   };
 }
 
 export function createSection(type: SectionType): FormSection {
   switch (type) {
+    case 'responseForm':
+      return createResponseFormSection();
     case 'dataEntry':
       return createDataEntrySection();
     case 'checklistForm':
@@ -243,6 +384,9 @@ export function buildDynamicFormPayload(
         return {
           type: 'visualForm' as const,
           configuration: { ...section.configuration },
+          rows: section.rows.map((row) => ({
+            fields: row.fields.map(stripFieldId),
+          })),
         };
       }
 

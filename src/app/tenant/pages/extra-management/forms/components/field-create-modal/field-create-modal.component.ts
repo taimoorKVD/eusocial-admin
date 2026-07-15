@@ -5,59 +5,39 @@ import {
   OnChanges,
   Output,
   SimpleChanges,
-  inject,
+  signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { FormBuilderModule } from '../../../../../form-builder/form-builder-module';
+import { FormField } from '../../../../../form-builder/models/form-field.model';
+import { FormFieldConfig } from '../../models/dynamic-form.models';
 import {
-  FormBuilder,
-  ReactiveFormsModule,
-  Validators,
-} from '@angular/forms';
-import {
-  FIELD_TYPE_OPTIONS,
-  FormFieldConfig,
-  WIDTH_OPTIONS,
-  createId,
-} from '../../models/dynamic-form.models';
+  FIELD_BUILDER_TYPE_OPTIONS,
+  createDraftBuilderField,
+  mapBuilderFieldToConfig,
+} from '../../utils/field-builder-adapter.utils';
 
 @Component({
   selector: 'app-field-create-modal',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, FormBuilderModule],
   templateUrl: './field-create-modal.component.html',
   styleUrl: './field-create-modal.component.scss',
 })
 export class FieldCreateModalComponent implements OnChanges {
-  private readonly fb = inject(FormBuilder);
-
   @Input() isOpen = false;
   @Output() saved = new EventEmitter<FormFieldConfig>();
   @Output() closed = new EventEmitter<void>();
 
-  readonly fieldTypeOptions = FIELD_TYPE_OPTIONS;
-  readonly widthOptions = WIDTH_OPTIONS;
-
-  readonly form = this.fb.nonNullable.group({
-    type: ['text' as FormFieldConfig['type'], Validators.required],
-    label: ['', Validators.required],
-    name: ['', [Validators.required, Validators.pattern(/^[a-zA-Z][a-zA-Z0-9_]*$/)]],
-    placeholder: [''],
-    required: [false],
-    readonly: [false],
-    width: ['auto'],
-  });
+  readonly typeOptions = FIELD_BUILDER_TYPE_OPTIONS;
+  readonly draftField = signal<FormField>(createDraftBuilderField('text'));
+  readonly schema = signal<FormField[]>([this.draftField()]);
+  readonly selectedType = signal<FormField['type']>('text');
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['isOpen']?.currentValue === true) {
-      this.form.reset({
-        type: 'text',
-        label: '',
-        name: '',
-        placeholder: '',
-        required: false,
-        readonly: false,
-        width: 'auto',
-      });
+      this.resetDraft('text');
     }
   }
 
@@ -71,24 +51,31 @@ export class FieldCreateModalComponent implements OnChanges {
     this.closed.emit();
   }
 
-  submit(): void {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
+  onTypeChange(type: FormField['type']): void {
+    this.resetDraft(type);
+  }
+
+  onFieldUpdate(field: FormField): void {
+    // FieldSettings mutates the draft in place; avoid rebinding and resetting the panel.
+    if (this.draftField()?.id === field.id) {
       return;
     }
+    this.draftField.set(field);
+    this.schema.set([field]);
+  }
 
-    const value = this.form.getRawValue();
-    const field: FormFieldConfig = {
-      id: createId('field'),
-      type: value.type,
-      label: value.label.trim(),
-      name: value.name.trim(),
-      placeholder: value.placeholder.trim() || undefined,
-      required: value.required,
-      readonly: value.readonly || undefined,
-      width: value.width !== 'auto' ? value.width : undefined,
-    };
+  submit(): void {
+    const field = this.draftField();
+    if (!field.label?.trim()) {
+      return;
+    }
+    this.saved.emit(mapBuilderFieldToConfig(field));
+  }
 
-    this.saved.emit(field);
+  private resetDraft(type: FormField['type']): void {
+    this.selectedType.set(type);
+    const draft = createDraftBuilderField(type);
+    this.draftField.set(draft);
+    this.schema.set([draft]);
   }
 }

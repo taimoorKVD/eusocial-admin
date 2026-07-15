@@ -1,22 +1,22 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
-  ChecklistFormSection,
   FormFieldConfig,
   FormRow,
+  ResponseFormSection,
 } from '../../models/dynamic-form.models';
 
 @Component({
-  selector: 'app-checklist-form-section',
+  selector: 'app-response-form-section',
   standalone: true,
   imports: [CommonModule],
-  templateUrl: './checklist-form-section.component.html',
-  styleUrl: './checklist-form-section.component.scss',
+  templateUrl: './response-form-section.component.html',
+  styleUrl: './response-form-section.component.scss',
 })
-export class ChecklistFormSectionComponent {
-  @Input({ required: true }) section!: ChecklistFormSection;
+export class ResponseFormSectionComponent {
+  @Input({ required: true }) section!: ResponseFormSection;
   @Output() addFieldRequested = new EventEmitter<{ sectionId: string; rowId: string }>();
-  @Output() sectionChange = new EventEmitter<ChecklistFormSection>();
+  @Output() sectionChange = new EventEmitter<ResponseFormSection>();
   @Output() removeSection = new EventEmitter<string>();
 
   removeField(row: FormRow, fieldId: string): void {

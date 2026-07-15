@@ -80,6 +80,14 @@
           <div class="create-form__sections">
             @for (section of sections(); track section.id) {
               @switch (section.type) {
+                @case ('responseForm') {
+                  <app-response-form-section
+                    [section]="asResponseForm(section)"
+                    (addFieldRequested)="openFieldModal($event)"
+                    (sectionChange)="updateSection($event)"
+                    (removeSection)="removeSection($event)"
+                  />
+                }
                 @case ('dataEntry') {
                   <app-data-entry-section
                     [section]="asDataEntry(section)"
@@ -99,6 +107,7 @@
                 @case ('visualForm') {
                   <app-visual-form-section
                     [section]="asVisual(section)"
+                    (addFieldRequested)="openFieldModal($event)"
                     (sectionChange)="updateSection($event)"
                     (removeSection)="removeSection($event)"
                   />
@@ -453,6 +462,7 @@
                 <div class="frequency-schedule frequency-schedule--stack">
                   <label class="frequency-radio-row">
                     <input
+                      class="option-input"
                       type="radio"
                       name="monthMode"
                       formControlName="monthMode"
@@ -558,7 +568,7 @@
     <div class="wizard-nav__left">
       <button
         type="button"
-        class="action-btn action-btn--cancel font-ibm"
+        class="btn btn--delete"
         (click)="cancel()"
       >
         Cancel
@@ -569,7 +579,7 @@
       @if (!isFirstStep()) {
         <button
           type="button"
-          class="action-btn action-btn--back font-ibm"
+          class="btn btn--delete"
           (click)="prevStep()"
         >
           ← Back
@@ -579,23 +589,23 @@
       @if (!isLastStep()) {
         <button
           type="button"
-          class="action-btn action-btn--next font-ibm"
+          class="btn btn--cancel"
           [disabled]="!canProceed()"
           (click)="nextStep()"
         >
           Next →
         </button>
       } @else {
-        <button
+        <!-- <button
           type="button"
           class="action-btn action-btn--preview font-ibm"
           (click)="preview()"
         >
           Preview
-        </button>
+        </button> -->
         <button
           type="button"
-          class="action-btn action-btn--save font-ibm"
+          class="btn btn--save"
           [disabled]="!canSave()"
           (click)="save()"
         >

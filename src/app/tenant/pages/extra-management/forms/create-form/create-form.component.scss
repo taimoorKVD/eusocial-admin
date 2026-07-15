@@ -197,8 +197,8 @@
   flex-shrink: 0;
 
   &--assign {
-    background: #edf5ff;
-    color: #0f62fe;
+    background: #fff5eb;
+    color: #FF9015;
   }
 
   &--report {
@@ -285,9 +285,9 @@
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 
   &--assign {
-    background: #edf5ff;
-    border: 1px solid #cce0ff;
-    color: #0f62fe;
+    background: #fff5eb;
+    border: 1px solid #ffd9b3;
+    color: #c57a10;
   }
 
   &--report {
@@ -329,7 +329,7 @@
 
 .relation-flow__arrow {
   display: inline-flex;
-  color: #0f62fe;
+  color: #FF9015;
 }
 
 .relation-flow__form-node {
@@ -341,10 +341,10 @@
   min-width: 5.5rem;
   max-width: 9rem;
   padding: 0.9rem 1rem;
-  background: #0f62fe;
+  background: #FF9015;
   color: #fff;
   border-radius: 0.75rem;
-  box-shadow: 0 4px 12px rgba(15, 98, 254, 0.28);
+  box-shadow: 0 4px 12px rgba(255, 144, 21, 0.28);
   flex-shrink: 0;
 }
 
@@ -681,8 +681,8 @@
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 
   &:focus {
-    border-color: #0f62fe;
-    box-shadow: 0 0 0 3px rgba(15, 98, 254, 0.12);
+    border-color: #FF9015;
+    box-shadow: 0 0 0 3px rgba(255, 144, 21, 0.12);
   }
 
   &::placeholder {
@@ -768,7 +768,7 @@
   input[type='radio'] {
     width: 1rem;
     height: 1rem;
-    accent-color: #0f62fe;
+    accent-color: #FF9015;
     cursor: pointer;
     flex-shrink: 0;
   }
@@ -794,14 +794,14 @@
   transition: all 0.15s ease;
 
   &:hover {
-    border-color: #0f62fe;
-    color: #0f62fe;
+    border-color: #FF9015;
+    color: #FF9015;
   }
 
   &--active {
-    background: #edf5ff;
-    border-color: #0f62fe;
-    color: #0f62fe;
+    background: #fff5eb;
+    border-color: #FF9015;
+    color: #FF9015;
   }
 }
 
@@ -829,13 +829,13 @@
   .flatpickr-day.selected,
   .flatpickr-day.startRange,
   .flatpickr-day.endRange {
-    background: #0f62fe !important;
-    border-color: #0f62fe !important;
+    background: #FF9015 !important;
+    border-color: #FF9015 !important;
   }
 
   .flatpickr-day:hover {
-    background: #edf5ff;
-    border-color: #edf5ff;
+    background: #fff5eb;
+    border-color: #fff5eb;
   }
 }
 
@@ -877,7 +877,7 @@
 
     &.ng-select-focused .ng-select-container {
       box-shadow: none !important;
-      border-bottom: 2px solid #0f62fe !important;
+      border-bottom: 2px solid #FF9015 !important;
     }
 
     .ng-placeholder {
@@ -898,13 +898,13 @@
 
     /* ── Selected Chips ── */
     .ng-value {
-      background: #edf5ff !important;
-      border: 1px solid #cce0ff !important;
+      background: #fff5eb !important;
+      border: 1px solid #ffd9b3 !important;
       border-radius: 4px !important;
       padding: 2px 6px !important;
       font-size: 12px !important;
       font-weight: 500 !important;
-      color: #0f62fe !important;
+      color: #FF9015 !important;
       display: inline-flex !important;
       align-items: center !important;
       gap: 4px !important;
@@ -934,7 +934,7 @@
         &::before {
           content: '\00d7';
           font-size: 14px;
-          color: #0f62fe;
+          color: #FF9015;
           font-weight: 600;
         }
       }
@@ -1002,13 +1002,13 @@
         transition: background-color 0.12s ease;
 
         &.ng-option-marked {
-          background: #edf5ff !important;
-          color: #0f62fe !important;
+          background: #fff5eb !important;
+          color: #FF9015 !important;
         }
 
         &.ng-option-selected {
-          background: #edf5ff !important;
-          color: #0f62fe !important;
+          background: #fff5eb !important;
+          color: #FF9015 !important;
           font-weight: 500;
 
           &::before {
@@ -1016,11 +1016,11 @@
             display: inline-block;
             width: 14px;
             height: 14px;
-            border: 1.5px solid #0f62fe;
+            border: 1.5px solid #FF9015;
             border-radius: 3px;
             margin-right: 8px;
             vertical-align: middle;
-            background: #0f62fe url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E") center / 10px no-repeat;
+            background: #FF9015 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E") center / 10px no-repeat;
           }
         }
 
@@ -1038,8 +1038,8 @@
     &.ng-select-multiple {
       .ng-value-container {
         .ng-value {
-          background: #edf5ff !important;
-          border: 1px solid #cce0ff !important;
+          background: #fff5eb !important;
+          border: 1px solid #ffd9b3 !important;
         }
       }
     }

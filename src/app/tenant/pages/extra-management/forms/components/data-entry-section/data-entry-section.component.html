@@ -1,86 +1,127 @@
 <section class="section-card">
   <div class="section-card__header">
     <h3 class="section-card__title font-ibm">Data Entry</h3>
-    <button
-      type="button"
-      class="section-card__remove font-ibm"
-      aria-label="Remove section"
-      (click)="removeSection.emit(section.id)"
-    >
-      ×
-    </button>
+    <div class="section-card__actions">
+      <button
+        type="button"
+        class="section-icon-btn section-icon-btn--danger"
+        aria-label="Remove section"
+        (click)="removeSection.emit(section.id)"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+        </svg>
+      </button>
+    </div>
   </div>
 
   <div class="section-card__body">
     @for (row of section.rows; track trackRow($index, row); let rowIndex = $index) {
-      <div class="field-row" [class.field-row--bordered]="rowIndex > 0">
+      <div class="field-row">
         <div class="field-row__fields">
-          @for (field of row.fields; track trackField($index, field)) {
+          @for (field of visibleFields(row); track trackField($index, field)) {
             <div
-              class="field-chip"
-              [style.flex-basis]="field.width || 'auto'"
-              [style.max-width]="field.width === '100%' ? '100%' : null"
+              class="section-field"
+              [class.section-field--item]="isItemField(field)"
+              [class.section-field--par]="isIncludeParField(field)"
+              [style.flex-basis]="field.width || '10rem'"
             >
-              <div class="field-chip__meta">
-                <span class="field-chip__label font-ibm">
-                  {{ field.label }}
-                  @if (field.required) {
-                    <span class="req">*</span>
-                  }
-                </span>
-                <button
-                  type="button"
-                  class="field-chip__remove"
-                  aria-label="Remove field"
-                  (click)="removeField(row, field.id)"
+              <label class="section-field__label font-ibm">
+                {{ field.label }}
+                @if (field.required) {
+                  <span class="req">*</span>
+                }
+              </label>
+
+              @if (isItemField(field)) {
+                <ng-select
+                  class="section-ng-select font-ibm"
+                  [items]="itemOptions()"
+                  [searchable]="true"
+                  [clearable]="true"
+                  bindLabel="name"
+                  bindValue="name"
+                  placeholder="Search items..."
                 >
-                  ×
-                </button>
-              </div>
-              <div class="field-chip__preview font-ibm">
-                @switch (field.type) {
-                  @case ('textarea') {
-                    <textarea
-                      class="preview-input preview-input--area"
-                      [placeholder]="field.placeholder || field.label"
-                      disabled
-                    ></textarea>
-                  }
-                  @case ('checkbox') {
-                    <label class="preview-check">
-                      <input type="checkbox" disabled />
-                      <span>{{ field.label }}</span>
-                    </label>
-                  }
-                  @case ('select') {
-                    <select class="preview-input" disabled>
-                      <option>{{ field.placeholder || 'Select' }}</option>
-                    </select>
-                  }
-                  @default {
+                </ng-select>
+              } @else if (isIncludeParField(field)) {
+                <div class="section-par">
+                  <input type="checkbox" class="section-par__check" disabled />
+                  @if (getParQtyField(row); as qtyField) {
                     <input
-                      class="preview-input"
-                      [type]="field.type === 'date' ? 'date' : field.type === 'number' ? 'number' : 'text'"
-                      [placeholder]="field.placeholder || ''"
+                      type="number"
+                      class="section-par__qty font-ibm"
+                      [placeholder]="qtyField.placeholder || ''"
                       disabled
                     />
                   }
-                }
-              </div>
+                </div>
+              } @else if (field.type === 'select') {
+                <select class="section-input section-input--select font-ibm" disabled>
+                  @if (field.options?.length) {
+                    @for (opt of field.options; track opt) {
+                      <option>{{ opt }}</option>
+                    }
+                  } @else {
+                    <option>{{ field.placeholder || 'Select' }}</option>
+                  }
+                </select>
+              } @else if (field.type === 'checkbox') {
+                <div class="section-par">
+                  <input type="checkbox" class="section-par__check" disabled />
+                </div>
+              } @else {
+                <input
+                  class="section-input font-ibm"
+                  [type]="field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'"
+                  [placeholder]="field.placeholder || ''"
+                  disabled
+                />
+              }
+
+              @if (!field.isDefault) {
+                <button
+                  type="button"
+                  class="section-field__remove section-icon-btn section-icon-btn--danger"
+                  aria-label="Remove field"
+                  (click)="removeField(row, field.id)"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  </svg>
+                </button>
+              }
             </div>
           }
+        </div>
 
+        <div class="field-row__actions">
           <button
             type="button"
-            class="add-field-btn"
+            class="section-icon-btn section-icon-btn--accent"
             aria-label="Add field"
             (click)="requestAddField(row.id)"
           >
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-              <circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="1.5" />
-              <path d="M10 6v8M6 10h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
             </svg>
           </button>
+          @if (section.rows.length > 1) {
+            <button
+              type="button"
+              class="section-icon-btn section-icon-btn--danger"
+              aria-label="Remove row"
+              (click)="removeRow(row.id)"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+            </button>
+          }
         </div>
       </div>
     }

@@ -24,6 +24,7 @@ import { DynamicFormsStoreService } from '../services/dynamic-forms-store.servic
 import { DataEntrySectionComponent } from '../components/data-entry-section/data-entry-section.component';
 import { ChecklistFormSectionComponent } from '../components/checklist-form-section/checklist-form-section.component';
 import { VisualFormSectionComponent } from '../components/visual-form-section/visual-form-section.component';
+import { ResponseFormSectionComponent } from '../components/response-form-section/response-form-section.component';
 import { FieldCreateModalComponent } from '../components/field-create-modal/field-create-modal.component';
 import {
   ChecklistFormSection,
@@ -35,6 +36,7 @@ import {
   FrequencyInterval,
   FrequencyMonthMode,
   FrequencyType,
+  ResponseFormSection,
   SECTION_OPTIONS,
   SectionType,
   VisualFormSection,
@@ -55,6 +57,7 @@ interface WizardStep {
     FormsModule,
     ReactiveFormsModule,
     NgSelectModule,
+    ResponseFormSectionComponent,
     DataEntrySectionComponent,
     ChecklistFormSectionComponent,
     VisualFormSectionComponent,
@@ -449,13 +452,12 @@ export class CreateFormComponent implements OnInit {
     this.sections.update((list) =>
       list.map((section) => {
         if (section.id !== target.sectionId) return section;
-        if (section.type === 'visualForm') return section;
-
+        const rows = 'rows' in section ? section.rows : [];
         return {
           ...section,
-          rows: section.rows.map((row) =>
+          rows: rows.map((row) =>
             row.id === target.rowId
-              ? { ...row, fields: [...row.fields, field] }
+              ? { ...row, fields: [...row.fields, { ...field, isDefault: false }] }
               : row,
           ),
         };
@@ -467,6 +469,10 @@ export class CreateFormComponent implements OnInit {
 
   updateMeta<K extends keyof FormMetaConfig>(key: K, value: FormMetaConfig[K]): void {
     this.meta.update((current) => ({ ...current, [key]: value }));
+  }
+
+  asResponseForm(section: FormSection): ResponseFormSection {
+    return section as ResponseFormSection;
   }
 
   asDataEntry(section: FormSection): DataEntrySection {
