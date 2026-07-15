@@ -56,14 +56,15 @@
             <label class="underlined-field__label font-ibm" for="add-section">Add Section</label>
             <div class="underlined-field__select-wrap">
               <select
+                #addSectionSelect
                 id="add-section"
                 class="underlined-field__input underlined-field__select font-ibm"
                 [ngModel]="selectedSectionType()"
                 (ngModelChange)="onSectionTypeChange($event)"
               >
                 <option value="">Select section</option>
-                @for (opt of sectionOptions; track opt.value) {
-                  <option [value]="opt.value">{{ opt.label }}</option>
+                @for (opt of availableSectionOptions(); track opt.value) {
+                  <option [value]="opt.value" [disabled]="opt.disabled">{{ opt.label }}</option>
                 }
               </select>
               <span class="underlined-field__chevron" aria-hidden="true">

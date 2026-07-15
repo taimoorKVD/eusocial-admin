@@ -1,4 +1,4 @@
-import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, DestroyRef, ElementRef, inject, OnInit, signal, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -54,6 +54,16 @@ export class CreateFormComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly sectionOptions = SECTION_OPTIONS;
+  private readonly addSectionSelect = viewChild<ElementRef<HTMLSelectElement>>('addSectionSelect');
+
+  /** Options with `disabled` flag for types already added to the form. */
+  readonly availableSectionOptions = computed(() => {
+    const usedTypes = new Set(this.sections().map((s) => s.type));
+    return this.sectionOptions.map((opt) => ({
+      ...opt,
+      disabled: usedTypes.has(opt.value),
+    }));
+  });
 
   readonly formName = signal('');
   readonly sections = signal<FormSection[]>([]);
@@ -177,10 +187,18 @@ export class CreateFormComponent implements OnInit {
   }
 
   onSectionTypeChange(value: string): void {
-    this.selectedSectionType.set((value || '') as SectionType | '');
-    if (value) {
+    console.log('[Dynamic Forms] Section type changed:', value);
+    const type = (value || '') as SectionType | '';
+    this.selectedSectionType.set(type);
+    if (type && !this.isTypeAlreadyUsed(type)) {
       this.onAddSection();
+    } else {
+      this.selectedSectionType.set('');
     }
+  }
+
+  private isTypeAlreadyUsed(type: SectionType): boolean {
+    return this.sections().some((s) => s.type === type);
   }
 
   updateSection(updated: FormSection): void {
@@ -191,6 +209,16 @@ export class CreateFormComponent implements OnInit {
 
   removeSection(sectionId: string): void {
     this.sections.update((list) => list.filter((s) => s.id !== sectionId));
+    this.resetAddSectionDropdown();
+  }
+
+  /** Resets the Add Section control to "Select section" (signal + native select sync). */
+  private resetAddSectionDropdown(): void {
+    this.selectedSectionType.set('');
+    const selectEl = this.addSectionSelect()?.nativeElement;
+    if (selectEl) {
+      selectEl.value = '';
+    }
   }
 
   openFieldModal(target: { sectionId: string; rowId: string }): void {
