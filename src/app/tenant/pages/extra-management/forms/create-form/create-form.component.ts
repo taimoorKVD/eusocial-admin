@@ -84,6 +84,18 @@ export class CreateFormComponent implements OnInit {
       this.reportPositionsDropdownOpen.set(false);
       this.reportPositionsSearch.set('');
     }
+    if (!target.closest('.freq-select-dropdown')) {
+      this.freqTypeDropdownOpen.set(false);
+      this.freqTypeSearch.set('');
+      this.freqIntervalDropdownOpen.set(false);
+      this.freqIntervalSearch.set('');
+      this.freqWeekOrderDropdownOpen.set(false);
+      this.freqWeekOrderSearch.set('');
+      this.freqMonthDropdownOpen.set(false);
+      this.freqMonthSearch.set('');
+      this.freqYearMonthDropdownOpen.set(false);
+      this.freqYearMonthSearch.set('');
+    }
   }
 
   private readonly router = inject(Router);
@@ -265,6 +277,53 @@ export class CreateFormComponent implements OnInit {
     { label: 'Sun', value: 'sunday' },
   ];
 
+  // ── Frequency Custom Select State ─────────────────────────────
+  readonly freqTypeDropdownOpen = signal(false);
+  readonly freqTypeSearch = signal('');
+  readonly freqIntervalDropdownOpen = signal(false);
+  readonly freqIntervalSearch = signal('');
+  readonly freqWeekOrderDropdownOpen = signal(false);
+  readonly freqWeekOrderSearch = signal('');
+  readonly freqMonthDropdownOpen = signal(false);
+  readonly freqMonthSearch = signal('');
+  readonly freqYearMonthDropdownOpen = signal(false);
+  readonly freqYearMonthSearch = signal('');
+
+  readonly filteredFrequencyTypeOptions = computed(() => {
+    const q = this.freqTypeSearch().trim().toLowerCase();
+    return q
+      ? this.frequencyTypeOptions.filter((o) => o.label.toLowerCase().includes(q))
+      : this.frequencyTypeOptions;
+  });
+
+  readonly filteredIntervalOptions = computed(() => {
+    const q = this.freqIntervalSearch().trim().toLowerCase();
+    return q
+      ? this.intervalOptions.filter((o) => o.label.toLowerCase().includes(q))
+      : this.intervalOptions;
+  });
+
+  readonly filteredWeekOrderOptions = computed(() => {
+    const q = this.freqWeekOrderSearch().trim().toLowerCase();
+    return q
+      ? this.weekOrderOptions.filter((o) => o.label.toLowerCase().includes(q))
+      : this.weekOrderOptions;
+  });
+
+  readonly filteredMonthOptions = computed(() => {
+    const q = this.freqMonthSearch().trim().toLowerCase();
+    return q
+      ? this.monthOptions.filter((o) => o.label.toLowerCase().includes(q))
+      : this.monthOptions;
+  });
+
+  readonly filteredYearMonthOptions = computed(() => {
+    const q = this.freqYearMonthSearch().trim().toLowerCase();
+    return q
+      ? this.monthOptions.filter((o) => o.label.toLowerCase().includes(q))
+      : this.monthOptions;
+  });
+
   readonly frequencyForm = this.fb.nonNullable.group({
     type: this.fb.nonNullable.control<FrequencyType>('recurring'),
     date: this.fb.control<string | null>(null),
@@ -431,6 +490,34 @@ export class CreateFormComponent implements OnInit {
       ? current.filter((d) => d !== day)
       : [...current, day];
     this.frequencyForm.controls.daysOfWeek.setValue(next);
+  }
+
+  // ── Frequency Custom Select Helpers ───────────────────────────
+
+  getFreqSelectLabel(
+    controlName: 'type' | 'interval' | 'weekOrder' | 'onTheMonth' | 'yearMonth',
+    options: { label: string; value: string }[],
+    placeholder: string,
+  ): string {
+    const val = this.frequencyForm.controls[controlName].value;
+    const match = options.find((o) => o.value === val);
+    return match?.label ?? placeholder;
+  }
+
+  selectFreqOption(
+  controlName: 'type' | 'interval' | 'weekOrder' | 'onTheMonth' | 'yearMonth',
+  value: string,
+  dropdownSignal: WritableSignal<boolean>,
+  searchSignal: WritableSignal<string>,
+): void {
+  this.frequencyForm.get(controlName)?.setValue(value);
+
+  searchSignal.set('');
+  dropdownSignal.set(false);
+}
+
+  onFreqSearch(event: Event, searchSignal: WritableSignal<string>): void {
+    searchSignal.set((event.target as HTMLInputElement).value);
   }
 
   private syncFrequencyToMeta(): void {

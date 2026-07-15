@@ -659,15 +659,6 @@
   min-width: 8.5rem;
 }
 
-.frequency-field__chevron {
-  position: absolute;
-  right: 0.75rem;
-  top: 50%;
-  transform: translateY(-50%);
-  pointer-events: none;
-  display: inline-flex;
-}
-
 .frequency-control {
   width: 100%;
   border: 1px solid #d1d5db;
@@ -693,12 +684,6 @@
     opacity: 0.5;
     cursor: not-allowed;
     background: #f3f4f6;
-  }
-
-  &--select {
-    appearance: none;
-    padding-right: 2rem;
-    cursor: pointer;
   }
 
   &--number {
@@ -758,20 +743,60 @@
   padding-top: 0.65rem;
 }
 
-.frequency-radio-row {
+/* ── Card-Wrapped Radio Buttons (Shared Dynamic Form style) ── */
+
+.option-group {
   display: flex;
-  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.option-group--radio {
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.25rem 0 0;
+}
+
+.option-item {
+  display: flex;
   align-items: center;
   gap: 0.65rem;
-  cursor: pointer;
+  min-height: 2.5rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid #dbe4f0;
+  border-radius: 0.9rem;
+  background: #fff;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background-color 160ms ease,
+    transform 160ms ease;
+}
 
-  input[type='radio'] {
-    width: 1rem;
-    height: 1rem;
-    accent-color: #FF9015;
-    cursor: pointer;
-    flex-shrink: 0;
-  }
+.option-item:hover {
+  border-color: #b8c6d8;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+  transform: translateY(-1px);
+}
+
+.option-input {
+  margin: 0;
+  width: 1rem;
+  height: 1rem;
+  accent-color: #FF9015;
+  flex-shrink: 0;
+}
+
+.option-label {
+  margin: 0;
+  color: #0f172a;
+  font-size: 0.9rem;
+  line-height: 1.3;
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
 }
 
 .frequency-weekdays {
