@@ -9,13 +9,13 @@ import {
   OnInit,
   signal,
   viewChild,
+  WritableSignal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { startWith } from 'rxjs';
-import { NgSelectModule } from '@ng-select/ng-select';
 import flatpickr from 'flatpickr';
 import { Instance as FlatpickrInstance } from 'flatpickr/dist/types/instance';
 import { TenantSessionService } from '../../../../../services/tenant-session.service';
@@ -57,7 +57,6 @@ interface WizardStep {
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
-    NgSelectModule,
     ResponseFormSectionComponent,
     DataEntrySectionComponent,
     ChecklistFormSectionComponent,
@@ -74,6 +73,16 @@ export class CreateFormComponent implements OnInit {
     if (!target.closest('.section-dropdown')) {
       this.sectionDropdownOpen.set(false);
       this.sectionSearchQuery.set('');
+    }
+    if (!target.closest('.multi-select-dropdown')) {
+      this.assignUsersDropdownOpen.set(false);
+      this.assignUsersSearch.set('');
+      this.assignPositionsDropdownOpen.set(false);
+      this.assignPositionsSearch.set('');
+      this.reportUsersDropdownOpen.set(false);
+      this.reportUsersSearch.set('');
+      this.reportPositionsDropdownOpen.set(false);
+      this.reportPositionsSearch.set('');
     }
   }
 
@@ -107,6 +116,48 @@ export class CreateFormComponent implements OnInit {
     return query
       ? options.filter((opt) => opt.label.toLowerCase().includes(query))
       : options;
+  });
+
+  // ── Assign & Report Multi-Select State ────────────────────────
+  readonly assignUsersDropdownOpen = signal(false);
+  readonly assignUsersSearch = signal('');
+  readonly assignPositionsDropdownOpen = signal(false);
+  readonly assignPositionsSearch = signal('');
+  readonly reportUsersDropdownOpen = signal(false);
+  readonly reportUsersSearch = signal('');
+  readonly reportPositionsDropdownOpen = signal(false);
+  readonly reportPositionsSearch = signal('');
+
+  readonly filteredAssignUsers = computed(() => {
+    const q = this.assignUsersSearch().trim().toLowerCase();
+    const selected = new Set(this.meta().assignUsers);
+    const opts = this.userOptions();
+    const filtered = q ? opts.filter((o) => o.name.toLowerCase().includes(q)) : opts;
+    return filtered.map((o) => ({ ...o, selected: selected.has(o.name) }));
+  });
+
+  readonly filteredAssignPositions = computed(() => {
+    const q = this.assignPositionsSearch().trim().toLowerCase();
+    const selected = new Set(this.meta().assignJobPosition);
+    const opts = this.jobPositionOptions();
+    const filtered = q ? opts.filter((o) => o.name.toLowerCase().includes(q)) : opts;
+    return filtered.map((o) => ({ ...o, selected: selected.has(o.name) }));
+  });
+
+  readonly filteredReportUsers = computed(() => {
+    const q = this.reportUsersSearch().trim().toLowerCase();
+    const selected = new Set(this.meta().reportUsers);
+    const opts = this.userOptions();
+    const filtered = q ? opts.filter((o) => o.name.toLowerCase().includes(q)) : opts;
+    return filtered.map((o) => ({ ...o, selected: selected.has(o.name) }));
+  });
+
+  readonly filteredReportPositions = computed(() => {
+    const q = this.reportPositionsSearch().trim().toLowerCase();
+    const selected = new Set(this.meta().reportJobPosition);
+    const opts = this.jobPositionOptions();
+    const filtered = q ? opts.filter((o) => o.name.toLowerCase().includes(q)) : opts;
+    return filtered.map((o) => ({ ...o, selected: selected.has(o.name) }));
   });
 
   readonly formName = signal('');
@@ -507,6 +558,40 @@ export class CreateFormComponent implements OnInit {
 
   updateMeta<K extends keyof FormMetaConfig>(key: K, value: FormMetaConfig[K]): void {
     this.meta.update((current) => ({ ...current, [key]: value }));
+  }
+
+  // ── Multi-Select Helpers ──────────────────────────────────────
+
+  toggleMultiSelect(
+    key: 'assignUsersDropdownOpen' | 'assignPositionsDropdownOpen' | 'reportUsersDropdownOpen' | 'reportPositionsDropdownOpen',
+  ): void {
+    this[key].set(!this[key]());
+  }
+
+  toggleMultiSelectOption(
+    metaKey: 'assignUsers' | 'assignJobPosition' | 'reportUsers' | 'reportJobPosition',
+    value: string,
+  ): void {
+    const current = this.meta()[metaKey] as string[];
+    const updated = current.includes(value)
+      ? current.filter((v) => v !== value)
+      : [...current, value];
+    this.updateMeta(metaKey, updated as any);
+  }
+
+  removeMultiSelectOption(
+    metaKey: 'assignUsers' | 'assignJobPosition' | 'reportUsers' | 'reportJobPosition',
+    value: string,
+  ): void {
+    const current = this.meta()[metaKey] as string[];
+    this.updateMeta(metaKey, current.filter((v) => v !== value) as any);
+  }
+
+  onMultiSelectSearch(
+    event: Event,
+    searchSignal: WritableSignal<string>,
+  ): void {
+    searchSignal.set((event.target as HTMLInputElement).value);
   }
 
   asResponseForm(section: FormSection): ResponseFormSection {

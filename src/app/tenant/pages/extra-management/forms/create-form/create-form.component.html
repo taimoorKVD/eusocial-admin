@@ -172,42 +172,134 @@
             <p class="assign-report-panel__hint font-ibm">Who should fill out this form?</p>
 
             <div class="wizard-content__fields wizard-content__fields--full">
-              <div class="underlined-field">
+              <div class="underlined-field relative multi-select-dropdown">
                 <label class="underlined-field__label font-ibm">
                   <span class="req">*</span>Users
                 </label>
-                <ng-select
-                  class="custom-ng-select font-ibm"
-                  [items]="userOptions()"
-                  [multiple]="true"
-                  [closeOnSelect]="false"
-                  [searchable]="true"
-                  bindLabel="name"
-                  bindValue="name"
-                  placeholder="Search users..."
-                  [ngModel]="meta().assignUsers"
-                  (ngModelChange)="updateMeta('assignUsers', $event)"
+                <button
+                  type="button"
+                  class="underlined-field__input font-ibm flex items-center justify-between cursor-pointer min-h-[40px]"
+                  (click)="$event.stopPropagation(); toggleMultiSelect('assignUsersDropdownOpen')"
                 >
-                </ng-select>
+                  <div class="flex flex-wrap gap-1 flex-1">
+                    @if (meta().assignUsers.length === 0) {
+                      <span class="text-[#A0A0A0]">Search users...</span>
+                    }
+                    @for (user of meta().assignUsers; track user) {
+                      <span class="inline-flex items-center gap-1 bg-[#fff5eb] border border-[#ffd9b3] rounded px-1.5 py-0.5 text-xs font-medium text-[#FF9015]">
+                        {{ user }}
+                        <button
+                          type="button"
+                          class="ml-0.5 text-[#FF9015] hover:text-[#e07800] font-semibold leading-none"
+                          (click)="$event.stopPropagation(); removeMultiSelectOption('assignUsers', user)"
+                        >×</button>
+                      </span>
+                    }
+                  </div>
+                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none" class="ml-2 shrink-0">
+                    <path d="M1 1.5L6 6.5L11 1.5" stroke="#161616" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+                @if (assignUsersDropdownOpen()) {
+                  <div class="absolute left-0 right-0 top-full z-50 mt-1 bg-white border border-[#E0E0E0] rounded-lg shadow-lg" (click)="$event.stopPropagation()">
+                    <div class="p-2 border-b border-[#E0E0E0]">
+                      <input
+                        type="text"
+                        class="w-full px-3 py-2 text-sm font-ibm border border-[#E0E0E0] rounded-md focus:outline-none focus:border-[#FF9015]"
+                        placeholder="Search users..."
+                        [value]="assignUsersSearch()"
+                        (input)="onMultiSelectSearch($event, assignUsersSearch)"
+                        (click)="$event.stopPropagation()"
+                      />
+                    </div>
+                    <ul class="max-h-48 overflow-y-auto py-1">
+                      @for (opt of filteredAssignUsers(); track opt.id) {
+                        <li>
+                          <button
+                            type="button"
+                            class="w-full text-left px-4 py-2 text-sm font-ibm flex items-center gap-2 cursor-pointer"
+                            [class]="opt.selected ? 'bg-[#fff5eb] text-[#FF9015]' : 'hover:bg-[#FF9015] hover:text-white text-[#525252]'"
+                            (click)="toggleMultiSelectOption('assignUsers', opt.name)"
+                          >
+                            @if (opt.selected) {
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="text-[#FF9015] shrink-0">
+                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/>
+                              </svg>
+                            }
+                            {{ opt.name }}
+                          </button>
+                        </li>
+                      } @empty {
+                        <li class="px-4 py-2 text-sm text-[#A0A0A0] font-ibm">No users available</li>
+                      }
+                    </ul>
+                  </div>
+                }
               </div>
 
-              <div class="underlined-field mt-4">
+              <div class="underlined-field mt-4 relative multi-select-dropdown">
                 <label class="underlined-field__label font-ibm">
                   <span class="req">*</span>Job Positions
                 </label>
-                <ng-select
-                  class="custom-ng-select font-ibm"
-                  [items]="jobPositionOptions()"
-                  [multiple]="true"
-                  [closeOnSelect]="false"
-                  [searchable]="true"
-                  bindLabel="name"
-                  bindValue="name"
-                  placeholder="Search job positions..."
-                  [ngModel]="meta().assignJobPosition"
-                  (ngModelChange)="updateMeta('assignJobPosition', $event)"
+                <button
+                  type="button"
+                  class="underlined-field__input font-ibm flex items-center justify-between cursor-pointer min-h-[40px]"
+                  (click)="$event.stopPropagation(); toggleMultiSelect('assignPositionsDropdownOpen')"
                 >
-                </ng-select>
+                  <div class="flex flex-wrap gap-1 flex-1">
+                    @if (meta().assignJobPosition.length === 0) {
+                      <span class="text-[#A0A0A0]">Search job positions...</span>
+                    }
+                    @for (pos of meta().assignJobPosition; track pos) {
+                      <span class="inline-flex items-center gap-1 bg-[#fff5eb] border border-[#ffd9b3] rounded px-1.5 py-0.5 text-xs font-medium text-[#FF9015]">
+                        {{ pos }}
+                        <button
+                          type="button"
+                          class="ml-0.5 text-[#FF9015] hover:text-[#e07800] font-semibold leading-none"
+                          (click)="$event.stopPropagation(); removeMultiSelectOption('assignJobPosition', pos)"
+                        >×</button>
+                      </span>
+                    }
+                  </div>
+                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none" class="ml-2 shrink-0">
+                    <path d="M1 1.5L6 6.5L11 1.5" stroke="#161616" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+                @if (assignPositionsDropdownOpen()) {
+                  <div class="absolute left-0 right-0 top-full z-50 mt-1 bg-white border border-[#E0E0E0] rounded-lg shadow-lg" (click)="$event.stopPropagation()">
+                    <div class="p-2 border-b border-[#E0E0E0]">
+                      <input
+                        type="text"
+                        class="w-full px-3 py-2 text-sm font-ibm border border-[#E0E0E0] rounded-md focus:outline-none focus:border-[#FF9015]"
+                        placeholder="Search job positions..."
+                        [value]="assignPositionsSearch()"
+                        (input)="onMultiSelectSearch($event, assignPositionsSearch)"
+                        (click)="$event.stopPropagation()"
+                      />
+                    </div>
+                    <ul class="max-h-48 overflow-y-auto py-1">
+                      @for (opt of filteredAssignPositions(); track opt.id) {
+                        <li>
+                          <button
+                            type="button"
+                            class="w-full text-left px-4 py-2 text-sm font-ibm flex items-center gap-2 cursor-pointer"
+                            [class]="opt.selected ? 'bg-[#fff5eb] text-[#FF9015]' : 'hover:bg-[#FF9015] hover:text-white text-[#525252]'"
+                            (click)="toggleMultiSelectOption('assignJobPosition', opt.name)"
+                          >
+                            @if (opt.selected) {
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="text-[#FF9015] shrink-0">
+                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/>
+                              </svg>
+                            }
+                            {{ opt.name }}
+                          </button>
+                        </li>
+                      } @empty {
+                        <li class="px-4 py-2 text-sm text-[#A0A0A0] font-ibm">No job positions available</li>
+                      }
+                    </ul>
+                  </div>
+                }
               </div>
             </div>
           </section>
@@ -229,42 +321,134 @@
             <p class="assign-report-panel__hint font-ibm">Who should receive the results?</p>
 
             <div class="wizard-content__fields wizard-content__fields--full">
-              <div class="underlined-field">
+              <div class="underlined-field relative multi-select-dropdown">
                 <label class="underlined-field__label font-ibm">
                   <span class="req">*</span>Users
                 </label>
-                <ng-select
-                  class="custom-ng-select font-ibm"
-                  [items]="userOptions()"
-                  [multiple]="true"
-                  [closeOnSelect]="false"
-                  [searchable]="true"
-                  bindLabel="name"
-                  bindValue="name"
-                  placeholder="Search users..."
-                  [ngModel]="meta().reportUsers"
-                  (ngModelChange)="updateMeta('reportUsers', $event)"
+                <button
+                  type="button"
+                  class="underlined-field__input font-ibm flex items-center justify-between cursor-pointer min-h-[40px]"
+                  (click)="$event.stopPropagation(); toggleMultiSelect('reportUsersDropdownOpen')"
                 >
-                </ng-select>
+                  <div class="flex flex-wrap gap-1 flex-1">
+                    @if (meta().reportUsers.length === 0) {
+                      <span class="text-[#A0A0A0]">Search users...</span>
+                    }
+                    @for (user of meta().reportUsers; track user) {
+                      <span class="inline-flex items-center gap-1 bg-[#fff5eb] border border-[#ffd9b3] rounded px-1.5 py-0.5 text-xs font-medium text-[#FF9015]">
+                        {{ user }}
+                        <button
+                          type="button"
+                          class="ml-0.5 text-[#FF9015] hover:text-[#e07800] font-semibold leading-none"
+                          (click)="$event.stopPropagation(); removeMultiSelectOption('reportUsers', user)"
+                        >×</button>
+                      </span>
+                    }
+                  </div>
+                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none" class="ml-2 shrink-0">
+                    <path d="M1 1.5L6 6.5L11 1.5" stroke="#161616" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+                @if (reportUsersDropdownOpen()) {
+                  <div class="absolute left-0 right-0 top-full z-50 mt-1 bg-white border border-[#E0E0E0] rounded-lg shadow-lg" (click)="$event.stopPropagation()">
+                    <div class="p-2 border-b border-[#E0E0E0]">
+                      <input
+                        type="text"
+                        class="w-full px-3 py-2 text-sm font-ibm border border-[#E0E0E0] rounded-md focus:outline-none focus:border-[#FF9015]"
+                        placeholder="Search users..."
+                        [value]="reportUsersSearch()"
+                        (input)="onMultiSelectSearch($event, reportUsersSearch)"
+                        (click)="$event.stopPropagation()"
+                      />
+                    </div>
+                    <ul class="max-h-48 overflow-y-auto py-1">
+                      @for (opt of filteredReportUsers(); track opt.id) {
+                        <li>
+                          <button
+                            type="button"
+                            class="w-full text-left px-4 py-2 text-sm font-ibm flex items-center gap-2 cursor-pointer"
+                            [class]="opt.selected ? 'bg-[#fff5eb] text-[#FF9015]' : 'hover:bg-[#FF9015] hover:text-white text-[#525252]'"
+                            (click)="toggleMultiSelectOption('reportUsers', opt.name)"
+                          >
+                            @if (opt.selected) {
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="text-[#FF9015] shrink-0">
+                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/>
+                              </svg>
+                            }
+                            {{ opt.name }}
+                          </button>
+                        </li>
+                      } @empty {
+                        <li class="px-4 py-2 text-sm text-[#A0A0A0] font-ibm">No users available</li>
+                      }
+                    </ul>
+                  </div>
+                }
               </div>
 
-              <div class="underlined-field mt-4">
+              <div class="underlined-field mt-4 relative multi-select-dropdown">
                 <label class="underlined-field__label font-ibm">
                   <span class="req">*</span>Job Positions
                 </label>
-                <ng-select
-                  class="custom-ng-select font-ibm"
-                  [items]="jobPositionOptions()"
-                  [multiple]="true"
-                  [closeOnSelect]="false"
-                  [searchable]="true"
-                  bindLabel="name"
-                  bindValue="name"
-                  placeholder="Search job positions..."
-                  [ngModel]="meta().reportJobPosition"
-                  (ngModelChange)="updateMeta('reportJobPosition', $event)"
+                <button
+                  type="button"
+                  class="underlined-field__input font-ibm flex items-center justify-between cursor-pointer min-h-[40px]"
+                  (click)="$event.stopPropagation(); toggleMultiSelect('reportPositionsDropdownOpen')"
                 >
-                </ng-select>
+                  <div class="flex flex-wrap gap-1 flex-1">
+                    @if (meta().reportJobPosition.length === 0) {
+                      <span class="text-[#A0A0A0]">Search job positions...</span>
+                    }
+                    @for (pos of meta().reportJobPosition; track pos) {
+                      <span class="inline-flex items-center gap-1 bg-[#fff5eb] border border-[#ffd9b3] rounded px-1.5 py-0.5 text-xs font-medium text-[#FF9015]">
+                        {{ pos }}
+                        <button
+                          type="button"
+                          class="ml-0.5 text-[#FF9015] hover:text-[#e07800] font-semibold leading-none"
+                          (click)="$event.stopPropagation(); removeMultiSelectOption('reportJobPosition', pos)"
+                        >×</button>
+                      </span>
+                    }
+                  </div>
+                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none" class="ml-2 shrink-0">
+                    <path d="M1 1.5L6 6.5L11 1.5" stroke="#161616" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+                @if (reportPositionsDropdownOpen()) {
+                  <div class="absolute left-0 right-0 top-full z-50 mt-1 bg-white border border-[#E0E0E0] rounded-lg shadow-lg" (click)="$event.stopPropagation()">
+                    <div class="p-2 border-b border-[#E0E0E0]">
+                      <input
+                        type="text"
+                        class="w-full px-3 py-2 text-sm font-ibm border border-[#E0E0E0] rounded-md focus:outline-none focus:border-[#FF9015]"
+                        placeholder="Search job positions..."
+                        [value]="reportPositionsSearch()"
+                        (input)="onMultiSelectSearch($event, reportPositionsSearch)"
+                        (click)="$event.stopPropagation()"
+                      />
+                    </div>
+                    <ul class="max-h-48 overflow-y-auto py-1">
+                      @for (opt of filteredReportPositions(); track opt.id) {
+                        <li>
+                          <button
+                            type="button"
+                            class="w-full text-left px-4 py-2 text-sm font-ibm flex items-center gap-2 cursor-pointer"
+                            [class]="opt.selected ? 'bg-[#fff5eb] text-[#FF9015]' : 'hover:bg-[#FF9015] hover:text-white text-[#525252]'"
+                            (click)="toggleMultiSelectOption('reportJobPosition', opt.name)"
+                          >
+                            @if (opt.selected) {
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="text-[#FF9015] shrink-0">
+                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/>
+                              </svg>
+                            }
+                            {{ opt.name }}
+                          </button>
+                        </li>
+                      } @empty {
+                        <li class="px-4 py-2 text-sm text-[#A0A0A0] font-ibm">No job positions available</li>
+                      }
+                    </ul>
+                  </div>
+                }
               </div>
             </div>
           </section>
