@@ -68,13 +68,13 @@
 /* ── Active Step ── */
 .wizard-indicator__step--active {
   .wizard-indicator__circle {
-    border-color: #0f62fe;
-    background: #0f62fe;
+    border-color: #FF9015;
+    background: #FF9015;
     color: #fff;
   }
 
   .wizard-indicator__label {
-    color: #0f62fe;
+    color: #FF9015;
     font-weight: 600;
   }
 }
@@ -82,23 +82,23 @@
 /* ── Completed Step ── */
 .wizard-indicator__step--completed {
   .wizard-indicator__circle {
-    border-color: #16a34a;
-    background: #16a34a;
+    border-color: #D0DD28;
+    background: #D0DD28;
     color: #fff;
   }
 
   .wizard-indicator__label {
-    color: #16a34a;
+    color: #D0DD28;
   }
 
   &:hover:not(:disabled) {
     .wizard-indicator__circle {
-      border-color: #15803d;
-      background: #15803d;
+      border-color: #D0DD28;
+      background: #D0DD28;
     }
 
     .wizard-indicator__label {
-      color: #15803d;
+      color: #D0DD28;
     }
   }
 }
@@ -115,7 +115,7 @@
 }
 
 .wizard-indicator__connector--completed {
-  background: #16a34a;
+  background: #D0DD28;
 }
 
 /* ═══════════════════ WIZARD CONTENT ═══════════════════ */
