@@ -688,7 +688,7 @@
               <!-- Daily hint -->
               @if (frequencyInterval() === 'day') {
                 <p class="frequency-hint">
-                  Runs every {{ frequencyForm.controls.every.value || 1 }}
+                  Runs after every {{ frequencyForm.controls.every.value || 1 }}
                   day{{ frequencyForm.controls.every.value === 1 ? '' : 's' }}.
                 </p>
               }
