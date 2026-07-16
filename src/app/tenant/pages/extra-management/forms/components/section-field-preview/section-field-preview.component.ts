@@ -1,9 +1,18 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  HostListener,
+  Input,
+  Output,
+  computed,
+  signal,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormFieldConfig } from '../../models/dynamic-form.models';
 
 /**
  * Editable FormFieldConfig control — matches section input styling.
+ * Select fields reuse the same custom dropdown pattern as Add Section / Item.
  */
 @Component({
   selector: 'app-section-field-preview',
@@ -16,16 +25,78 @@ export class SectionFieldPreviewComponent {
   @Input({ required: true }) field!: FormFieldConfig;
   @Output() valueChange = new EventEmitter<string>();
 
+  readonly selectDropdownOpen = signal(false);
+  readonly selectSearchQuery = signal('');
+  readonly dropdownPosition = signal<{ top: number; left: number; width: number } | null>(null);
+
+  readonly filteredSelectOptions = computed(() => {
+    const options = this.field?.options ?? [];
+    const q = this.selectSearchQuery().trim().toLowerCase();
+    return q ? options.filter((opt) => opt.toLowerCase().includes(q)) : options;
+  });
+
   get selectPlaceholder(): string {
     return this.field.placeholder || `Select ${this.field.label || ''}`.trim() || 'Select';
   }
 
-  onInput(event: Event): void {
-    this.valueChange.emit((event.target as HTMLInputElement | HTMLTextAreaElement).value);
+  get selectDisplayLabel(): string {
+    return this.field.value || this.selectPlaceholder;
   }
 
-  onSelect(event: Event): void {
-    this.valueChange.emit((event.target as HTMLSelectElement).value);
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    if (!(event.target as HTMLElement).closest('.field-select-dropdown')) {
+      this.closeSelectDropdown();
+    }
+  }
+
+  @HostListener('window:scroll')
+  @HostListener('window:resize')
+  onViewportChange(): void {
+    if (this.selectDropdownOpen()) {
+      this.closeSelectDropdown();
+    }
+  }
+
+  toggleSelectDropdown(event: MouseEvent): void {
+    if (this.field.readonly) return;
+    event.stopPropagation();
+
+    if (this.selectDropdownOpen()) {
+      this.closeSelectDropdown();
+      return;
+    }
+
+    const host = (event.target as HTMLElement).closest('.field-select-dropdown');
+    if (host) {
+      const rect = host.getBoundingClientRect();
+      this.dropdownPosition.set({
+        top: rect.bottom + 4,
+        left: rect.left,
+        width: rect.width,
+      });
+    }
+
+    this.selectSearchQuery.set('');
+    this.selectDropdownOpen.set(true);
+  }
+
+  selectOption(value: string): void {
+    this.valueChange.emit(value);
+    this.closeSelectDropdown();
+  }
+
+  clearSelection(event: MouseEvent): void {
+    event.stopPropagation();
+    this.valueChange.emit('');
+  }
+
+  onSelectSearch(event: Event): void {
+    this.selectSearchQuery.set((event.target as HTMLInputElement).value);
+  }
+
+  onInput(event: Event): void {
+    this.valueChange.emit((event.target as HTMLInputElement | HTMLTextAreaElement).value);
   }
 
   onCheckboxToggle(checked: boolean): void {
@@ -52,6 +123,12 @@ export class SectionFieldPreviewComponent {
 
   isOptionChecked(option: string): boolean {
     return this.selectedOptions().includes(option);
+  }
+
+  private closeSelectDropdown(): void {
+    this.selectDropdownOpen.set(false);
+    this.selectSearchQuery.set('');
+    this.dropdownPosition.set(null);
   }
 
   private selectedOptions(): string[] {
