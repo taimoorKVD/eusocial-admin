@@ -20,11 +20,12 @@ import {
   createDataEntryRow,
 } from '../../models/dynamic-form.models';
 import { resolveItemDisplayName } from '../../utils/field-builder-adapter.utils';
+import { SectionFieldPreviewComponent } from '../section-field-preview/section-field-preview.component';
 
 @Component({
   selector: 'app-data-entry-section',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, SectionFieldPreviewComponent],
   templateUrl: './data-entry-section.component.html',
   styleUrl: './data-entry-section.component.scss',
 })
@@ -41,6 +42,7 @@ export class DataEntrySectionComponent implements OnInit {
 
   readonly itemDropdownOpen = signal<string | null>(null);
   readonly itemSearchQuery = signal('');
+  readonly dropdownPosition = signal<{ top: number; left: number; width: number } | null>(null);
 
   readonly filteredItemOptions = computed(() => {
     const q = this.itemSearchQuery().trim().toLowerCase();
@@ -48,11 +50,37 @@ export class DataEntrySectionComponent implements OnInit {
     return q ? opts.filter((o) => o.name.toLowerCase().includes(q)) : opts;
   });
 
+  readonly selectDropdownOpen = signal<string | null>(null);
+  readonly selectSearchQuery = signal('');
+  readonly selectDropdownPosition = signal<{ top: number; left: number; width: number } | null>(null);
+
+  readonly filteredSelectOptions = computed(() => {
+    const key = this.selectDropdownOpen();
+    if (!key) return [];
+    const [, fieldId] = key.split(':');
+    const q = this.selectSearchQuery().trim().toLowerCase();
+    let options: string[] = [];
+    for (const row of this.section.rows) {
+      const field = row.fields.find((f) => f.id === fieldId);
+      if (field?.options?.length) {
+        options = field.options;
+        break;
+      }
+    }
+    return q ? options.filter((o) => o.toLowerCase().includes(q)) : options;
+  });
+
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
     if (!(event.target as HTMLElement).closest('.item-select-dropdown')) {
       this.itemDropdownOpen.set(null);
       this.itemSearchQuery.set('');
+      this.dropdownPosition.set(null);
+    }
+    if (!(event.target as HTMLElement).closest('.select-field-dropdown')) {
+      this.selectDropdownOpen.set(null);
+      this.selectSearchQuery.set('');
+      this.selectDropdownPosition.set(null);
     }
   }
 
@@ -100,13 +128,25 @@ export class DataEntrySectionComponent implements OnInit {
     this.updateFieldValue(row, fieldId, value ?? '');
   }
 
-  toggleItemDropdown(rowId: string, fieldId: string): void {
+  toggleItemDropdown(rowId: string, fieldId: string, event?: MouseEvent): void {
     const key = this.itemDropdownKey(rowId, fieldId);
     const current = this.itemDropdownOpen();
     if (current === key) {
       this.itemDropdownOpen.set(null);
       this.itemSearchQuery.set('');
+      this.dropdownPosition.set(null);
     } else {
+      if (event) {
+        const btn = (event.target as HTMLElement).closest('.item-select-dropdown');
+        if (btn) {
+          const rect = btn.getBoundingClientRect();
+          this.dropdownPosition.set({
+            top: rect.bottom + 4,
+            left: rect.left,
+            width: rect.width,
+          });
+        }
+      }
       this.itemDropdownOpen.set(key);
       this.itemSearchQuery.set('');
     }
@@ -139,6 +179,61 @@ export class DataEntrySectionComponent implements OnInit {
     this.itemSearchQuery.set((event.target as HTMLInputElement).value);
   }
 
+  isSelectField(field: FormFieldConfig): boolean {
+    return field.isDefault === true && field.type === 'select' && field.options?.length === 1;
+  }
+
+  selectDropdownKey(rowId: string, fieldId: string): string {
+    return `${rowId}:${fieldId}`;
+  }
+
+  isSelectDropdownOpen(rowId: string, fieldId: string): boolean {
+    return this.selectDropdownOpen() === this.selectDropdownKey(rowId, fieldId);
+  }
+
+  toggleSelectDropdown(rowId: string, fieldId: string, event?: MouseEvent): void {
+    const key = this.selectDropdownKey(rowId, fieldId);
+    if (this.selectDropdownOpen() === key) {
+      this.selectDropdownOpen.set(null);
+      this.selectSearchQuery.set('');
+      this.selectDropdownPosition.set(null);
+    } else {
+      if (event) {
+        const btn = (event.target as HTMLElement).closest('.select-field-dropdown');
+        if (btn) {
+          const rect = btn.getBoundingClientRect();
+          this.selectDropdownPosition.set({
+            top: rect.bottom + 4,
+            left: rect.left,
+            width: rect.width,
+          });
+        }
+      }
+      this.selectDropdownOpen.set(key);
+      this.selectSearchQuery.set('');
+    }
+  }
+
+  selectSelectOption(row: FormRow, fieldId: string, option: string): void {
+    this.updateFieldValue(row, fieldId, option);
+    this.selectDropdownOpen.set(null);
+    this.selectSearchQuery.set('');
+    this.selectDropdownPosition.set(null);
+  }
+
+  clearSelectSelection(row: FormRow, fieldId: string, event: MouseEvent): void {
+    event.stopPropagation();
+    this.updateFieldValue(row, fieldId, '');
+  }
+
+  getSelectDisplayLabel(field: FormFieldConfig): string {
+    return field.value || (field.placeholder ?? 'Select...');
+  }
+
+  onSelectSearch(event: Event): void {
+    this.selectSearchQuery.set((event.target as HTMLInputElement).value);
+  }
+
   onCheckboxChange(row: FormRow, fieldId: string, event: Event): void {
     const checked = (event.target as HTMLInputElement).checked;
     this.updateFieldValue(row, fieldId, checked ? 'true' : 'false');
@@ -149,7 +244,7 @@ export class DataEntrySectionComponent implements OnInit {
     this.updateFieldValue(row, fieldId, value);
   }
 
-  private updateFieldValue(row: FormRow, fieldId: string, value: string): void {
+  updateFieldValue(row: FormRow, fieldId: string, value: string): void {
     this.sectionChange.emit({
       ...this.section,
       rows: this.section.rows.map((r) =>

@@ -8,11 +8,12 @@ import {
   VisualFormSection,
   createEmptyRow,
 } from '../../models/dynamic-form.models';
+import { SectionFieldPreviewComponent } from '../section-field-preview/section-field-preview.component';
 
 @Component({
   selector: 'app-visual-form-section',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, SectionFieldPreviewComponent],
   templateUrl: './visual-form-section.component.html',
   styleUrl: './visual-form-section.component.scss',
 })
@@ -80,6 +81,21 @@ export class VisualFormSectionComponent {
       ...this.section,
       rows: this.section.rows.map((r) =>
         r.id === row.id ? { ...r, fields: r.fields.filter((f) => f.id !== fieldId) } : r,
+      ),
+    });
+  }
+
+  onFieldValueChange(fieldId: string, value: string): void {
+    const row = this.primaryRow;
+    this.sectionChange.emit({
+      ...this.section,
+      rows: this.section.rows.map((r) =>
+        r.id === row.id
+          ? {
+              ...r,
+              fields: r.fields.map((f) => (f.id === fieldId ? { ...f, value } : f)),
+            }
+          : r,
       ),
     });
   }

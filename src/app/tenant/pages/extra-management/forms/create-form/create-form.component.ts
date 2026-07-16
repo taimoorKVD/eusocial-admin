@@ -42,6 +42,7 @@ import {
   SectionType,
   VisualFormSection,
   buildDynamicFormPayload,
+  createId,
   createSection,
 } from '../models/dynamic-form.models';
 
@@ -624,15 +625,33 @@ export class CreateFormComponent implements OnInit {
     const target = this.pendingFieldTarget();
     if (!target) return;
 
+    // Keep consistent sizing with existing section fields; always append to the clicked row.
+    const newField: FormFieldConfig = {
+      ...field,
+      isDefault: false,
+      width: undefined,
+      value: field.value ?? '',
+    };
+
     this.sections.update((list) =>
       list.map((section) => {
         if (section.id !== target.sectionId) return section;
-        const rows = 'rows' in section ? section.rows : [];
+        if (!('rows' in section)) return section;
+
+        const rows = section.rows.length
+          ? section.rows
+          : [{ id: createId('row'), fields: [] as FormFieldConfig[] }];
+
+        const hasTargetRow = rows.some((row) => row.id === target.rowId);
+        const resolvedRows = hasTargetRow
+          ? rows
+          : [...rows, { id: target.rowId, fields: [] as FormFieldConfig[] }];
+
         return {
           ...section,
-          rows: rows.map((row) =>
+          rows: resolvedRows.map((row) =>
             row.id === target.rowId
-              ? { ...row, fields: [...row.fields, { ...field, isDefault: false }] }
+              ? { ...row, fields: [...row.fields, newField] }
               : row,
           ),
         };

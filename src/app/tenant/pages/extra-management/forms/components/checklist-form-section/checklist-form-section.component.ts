@@ -5,11 +5,12 @@ import {
   FormFieldConfig,
   FormRow,
 } from '../../models/dynamic-form.models';
+import { SectionFieldPreviewComponent } from '../section-field-preview/section-field-preview.component';
 
 @Component({
   selector: 'app-checklist-form-section',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, SectionFieldPreviewComponent],
   templateUrl: './checklist-form-section.component.html',
   styleUrl: './checklist-form-section.component.scss',
 })
@@ -37,6 +38,10 @@ export class ChecklistFormSectionComponent {
 
   onFieldInput(row: FormRow, fieldId: string, event: Event): void {
     const value = (event.target as HTMLInputElement).value;
+    this.onFieldValueChange(row, fieldId, value);
+  }
+
+  onFieldValueChange(row: FormRow, fieldId: string, value: string): void {
     this.sectionChange.emit({
       ...this.section,
       rows: this.section.rows.map((r) =>

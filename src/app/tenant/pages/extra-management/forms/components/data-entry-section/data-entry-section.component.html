@@ -25,8 +25,25 @@
               class="section-field"
               [class.section-field--item]="isItemField(field)"
               [class.section-field--par]="isIncludeParField(field)"
-              [style.flex-basis]="field.width || '10rem'"
+              [class.section-field--added]="!field.isDefault"
             >
+              @if (!field.isDefault) {
+                <app-section-field-preview
+                  [field]="field"
+                  (valueChange)="updateFieldValue(row, field.id, $event)"
+                />
+                <button
+                  type="button"
+                  class="section-field__remove section-icon-btn section-icon-btn--danger"
+                  aria-label="Remove field"
+                  (click)="removeField(row, field.id)"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  </svg>
+                </button>
+              } @else {
               <label class="section-field__label font-ibm">
                 {{ field.label }}
                 @if (field.required) {
@@ -40,7 +57,7 @@
                     type="button"
                     class="section-input font-ibm flex items-center justify-between cursor-pointer w-full"
                     [class.text-[#A0A0A0]]="!field.value"
-                    (click)="$event.stopPropagation(); toggleItemDropdown(row.id, field.id)"
+                    (click)="$event.stopPropagation(); toggleItemDropdown(row.id, field.id, $event)"
                   >
                     <span class="truncate">{{ getItemDisplayLabel(field) }}</span>
                     <div class="flex items-center gap-2 shrink-0">
@@ -72,7 +89,14 @@
                     </div>
                   </button>
                   @if (isItemDropdownOpen(row.id, field.id)) {
-                    <div class="absolute left-0 right-0 top-full z-50 mt-1 bg-white border border-[#E0E0E0] rounded-lg shadow-lg overflow-hidden">
+                    <div
+                      class="bg-white border border-[#E0E0E0] rounded-lg shadow-lg overflow-hidden"
+                      [style.position]="'fixed'"
+                      [style.top.px]="dropdownPosition()?.top"
+                      [style.left.px]="dropdownPosition()?.left"
+                      [style.width.px]="dropdownPosition()?.width"
+                      [style.z-index]="1000"
+                    >
                       <div class="p-2 border-b border-[#E0E0E0]">
                         <input
                           type="text"
@@ -126,6 +150,76 @@
                     />
                   }
                 </div>
+              } @else if (isSelectField(field)) {
+                <div class="relative select-field-dropdown" (click)="$event.stopPropagation()">
+                  <button
+                    type="button"
+                    class="section-input font-ibm flex items-center justify-between cursor-pointer w-full"
+                    [class.text-[#A0A0A0]]="!field.value"
+                    (click)="$event.stopPropagation(); toggleSelectDropdown(row.id, field.id, $event)"
+                  >
+                    <span class="truncate">{{ getSelectDisplayLabel(field) }}</span>
+                    <div class="flex items-center gap-2 shrink-0">
+                      @if (field.value) {
+                        <button
+                          type="button"
+                          class="flex items-center justify-center w-5 h-5 rounded-full hover:bg-gray-200 transition-colors"
+                          (click)="clearSelectSelection(row, field.id, $event)"
+                          aria-label="Clear selection"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 19 19" fill="none">
+                            <path d="M14.25 4.75L4.75 14.25M4.75 4.75L14.25 14.25" stroke="#FF9015" stroke-linecap="round" stroke-linejoin="round"/>
+                          </svg>
+                        </button>
+                        <svg width="1" height="14" viewBox="0 0 1 14" fill="none">
+                          <path d="M0.5 0V13.5" stroke="#989898"/>
+                        </svg>
+                      }
+                      <svg
+                        class="w-4 h-4 text-gray-400 transition-transform duration-150"
+                        [class.rotate-180]="isSelectDropdownOpen(row.id, field.id)"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
+                      </svg>
+                    </div>
+                  </button>
+                  @if (isSelectDropdownOpen(row.id, field.id)) {
+                    <div
+                      class="bg-white border border-[#E0E0E0] rounded-lg shadow-lg overflow-hidden"
+                      [style.position]="'fixed'"
+                      [style.top.px]="selectDropdownPosition()?.top"
+                      [style.left.px]="selectDropdownPosition()?.left"
+                      [style.width.px]="selectDropdownPosition()?.width"
+                      [style.z-index]="1000"
+                    >
+                      <ul class="py-1">
+                        @for (opt of filteredSelectOptions(); track opt) {
+                          <li>
+                            <button
+                              type="button"
+                              class="w-full text-left px-4 py-2 text-sm font-ibm flex items-center gap-2 cursor-pointer"
+                              [class]="field.value === opt ? 'bg-[#fff5eb] text-[#FF9015]' : 'hover:bg-[#FF9015] hover:text-white text-[#525252]'"
+                              (click)="selectSelectOption(row, field.id, opt)"
+                            >
+                              @if (field.value === opt) {
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="text-[#FF9015] shrink-0">
+                                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/>
+                                </svg>
+                              }
+                              {{ opt }}
+                            </button>
+                          </li>
+                        } @empty {
+                          <li class="px-4 py-2 text-sm text-[#A0A0A0] font-ibm">No options available</li>
+                        }
+                      </ul>
+                    </div>
+                  }
+                </div>
               } @else if (field.type === 'select') {
                 <select
                   class="section-input section-input--select font-ibm"
@@ -159,19 +253,6 @@
                   (input)="onFieldInput(row, field.id, $event)"
                 />
               }
-
-              @if (!field.isDefault) {
-                <button
-                  type="button"
-                  class="section-field__remove section-icon-btn section-icon-btn--danger"
-                  aria-label="Remove field"
-                  (click)="removeField(row, field.id)"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <polyline points="3 6 5 6 21 6"></polyline>
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                  </svg>
-                </button>
               }
             </div>
           }

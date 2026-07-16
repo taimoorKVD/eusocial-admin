@@ -66,18 +66,10 @@
         </div>
 
         @for (field of primaryRow.fields; track trackField($index, field)) {
-          <div class="section-field" [style.flex-basis]="field.width || '10rem'">
-            <label class="section-field__label font-ibm">
-              {{ field.label }}
-              @if (field.required) {
-                <span class="req">*</span>
-              }
-            </label>
-            <input
-              class="section-input font-ibm"
-              type="text"
-              [placeholder]="field.placeholder || field.label"
-              disabled
+          <div class="section-field section-field--added" [style.flex-basis]="field.width || null">
+            <app-section-field-preview
+              [field]="field"
+              (valueChange)="onFieldValueChange(field.id, $event)"
             />
             @if (!field.isDefault) {
               <button

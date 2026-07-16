@@ -1,35 +1,74 @@
 @if (isOpen) {
   <div
-    class="field-modal-backdrop"
+    class="fm-backdrop"
+    [class.fm-backdrop--closing]="isClosing()"
     role="dialog"
     aria-modal="true"
     aria-labelledby="field-modal-title"
     (click)="onBackdropClick($event)"
   >
-    <div class="field-modal-panel field-modal-panel--builder">
-      <div class="field-modal-header">
-        <h3 id="field-modal-title" class="field-modal-title font-ibm">Add Field</h3>
-        <button type="button" class="field-modal-close" aria-label="Close" (click)="close()">
-          ×
+    <div class="fm-panel" [class.fm-panel--closing]="isClosing()">
+      <div class="fm-header">
+        <div class="fm-header__text">
+          <h3 id="field-modal-title" class="fm-title font-ibm">Add Field</h3>
+          <p class="fm-subtitle font-ibm">Configure your new form field</p>
+        </div>
+        <button
+          type="button"
+          class="fm-close"
+          aria-label="Close dialog"
+          (click)="closeWithAnimation()"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
         </button>
       </div>
 
-      <div class="field-modal-body">
-        <div class="field-type-picker font-ibm">
-          <label class="field-type-picker__label" for="builder-field-type">Field Type</label>
-          <select
-            id="builder-field-type"
-            class="field-type-picker__select"
-            [ngModel]="selectedType()"
-            (ngModelChange)="onTypeChange($event)"
-          >
-            @for (opt of typeOptions; track opt.value) {
-              <option [value]="opt.value">{{ opt.label }}</option>
+      <div class="fm-body">
+        <div class="fm-field">
+          <label class="fm-label font-ibm" for="builder-field-type">Field Type</label>
+          <div class="fm-select">
+            <button
+              type="button"
+              class="fm-select__trigger font-ibm"
+              [class.fm-select__trigger--open]="isTypeDropdownOpen()"
+              (click)="isTypeDropdownOpen.set(!isTypeDropdownOpen())"
+            >
+              <span>{{ getTypeLabel() }}</span>
+              <svg
+                class="fm-select__chevron"
+                [class.fm-select__chevron--open]="isTypeDropdownOpen()"
+                width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+              >
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </button>
+            @if (isTypeDropdownOpen()) {
+              <div class="fm-select__menu">
+                @for (opt of typeOptions; track opt.value) {
+                  <button
+                    type="button"
+                    class="fm-select__option font-ibm"
+                    [class.fm-select__option--selected]="selectedType() === opt.value"
+                    (click)="onTypeSelect(opt.value)"
+                  >
+                    @if (selectedType() === opt.value) {
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="fm-select__check">
+                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/>
+                      </svg>
+                    }
+                    {{ opt.label }}
+                  </button>
+                }
+              </div>
             }
-          </select>
+          </div>
         </div>
 
-        <div class="field-builder-host">
+        <div class="fm-builder-area">
           <app-field-settings
             [field]="draftField()"
             [schema]="schema()"
@@ -37,18 +76,28 @@
             (update)="onFieldUpdate($event)"
           />
         </div>
+      </div>
 
-        <div class="field-modal-actions">
-          <button type="button" class="btn btn--cancel font-ibm" (click)="close()">Cancel</button>
-          <button
-            type="button"
-            class="btn btn--save font-ibm"
-            [disabled]="!draftField().label?.trim()"
-            (click)="submit()"
-          >
-            Add Field
-          </button>
-        </div>
+      <div class="fm-footer">
+        <button
+          type="button"
+          class="fm-btn fm-btn--cancel font-ibm"
+          (click)="closeWithAnimation()"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="fm-btn fm-btn--primary font-ibm"
+          [disabled]="!draftField().label?.trim()"
+          (click)="submit()"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          Add Field
+        </button>
       </div>
     </div>
   </div>

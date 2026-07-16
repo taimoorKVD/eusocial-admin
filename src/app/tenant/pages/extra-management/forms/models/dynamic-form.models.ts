@@ -4,11 +4,14 @@ export type FieldType =
   | 'text'
   | 'number'
   | 'email'
+  | 'password'
   | 'textarea'
   | 'select'
   | 'checkbox'
   | 'date'
-  | 'radio';
+  | 'radio'
+  | 'image'
+  | 'file';
 
 export interface FormFieldConfig {
   id: string;
@@ -174,11 +177,14 @@ export const FIELD_TYPE_OPTIONS: { label: string; value: FieldType }[] = [
   { label: 'Text', value: 'text' },
   { label: 'Number', value: 'number' },
   { label: 'Email', value: 'email' },
+  { label: 'Password', value: 'password' },
   { label: 'Textarea', value: 'textarea' },
   { label: 'Select', value: 'select' },
   { label: 'Checkbox', value: 'checkbox' },
   { label: 'Date', value: 'date' },
   { label: 'Radio', value: 'radio' },
+  { label: 'Image', value: 'image' },
+  { label: 'File', value: 'file' },
 ];
 
 export const WIDTH_OPTIONS = [
@@ -211,7 +217,7 @@ export function createResponseFormDefaultFields(): FormFieldConfig[] {
       name: 'description',
       placeholder: 'Lorem Ipsum',
       required: true,
-      width: '100%',
+      width: '50%',
     }),
   ];
 }
