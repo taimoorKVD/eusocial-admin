@@ -35,6 +35,21 @@ export class ChecklistFormSectionComponent {
     this.addFieldRequested.emit({ sectionId: this.section.id, rowId });
   }
 
+  onFieldInput(row: FormRow, fieldId: string, event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.sectionChange.emit({
+      ...this.section,
+      rows: this.section.rows.map((r) =>
+        r.id === row.id
+          ? {
+              ...r,
+              fields: r.fields.map((f) => (f.id === fieldId ? { ...f, value } : f)),
+            }
+          : r,
+      ),
+    });
+  }
+
   trackField(_: number, field: FormFieldConfig): string {
     return field.id;
   }

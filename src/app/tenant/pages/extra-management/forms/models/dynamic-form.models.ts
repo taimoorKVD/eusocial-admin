@@ -23,6 +23,8 @@ export interface FormFieldConfig {
   isDefault?: boolean;
   /** Static select options (preview / payload). */
   options?: string[];
+  /** User-entered value for this field. */
+  value?: string;
 }
 
 export interface FormRow {
@@ -162,7 +164,7 @@ export interface SavedDynamicForm {
 }
 
 export const SECTION_OPTIONS: { label: string; value: SectionType }[] = [
-  { label: 'Response Form', value: 'responseForm' },
+  // { label: 'Response Form', value: 'responseForm' },
   { label: 'Data Entry', value: 'dataEntry' },
   { label: 'Checklist Form', value: 'checklistForm' },
   { label: 'Visual Form', value: 'visualForm' },

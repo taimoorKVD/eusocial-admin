@@ -36,7 +36,9 @@
                 class="section-input font-ibm"
                 type="text"
                 [placeholder]="field.placeholder || field.label"
-                disabled
+                [value]="field.value || ''"
+                [attr.readonly]="field.readonly || null"
+                (input)="onFieldInput(row, field.id, $event)"
               />
               @if (!field.isDefault) {
                 <button
