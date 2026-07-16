@@ -9,13 +9,13 @@ import { FieldType, FormFieldConfig, createId } from '../models/dynamic-form.mod
 const BUILDER_TYPES: Array<{ label: string; value: FormField['type'] | FieldType }> = [
   { label: 'Text', value: 'text' },
   { label: 'Number', value: 'number' },
-  { label: 'Email', value: 'email' },
-  { label: 'Password', value: 'password' },
+  // { label: 'Email', value: 'email' },
+  // { label: 'Password', value: 'password' },
   { label: 'Textarea', value: 'textarea' },
   { label: 'Select Box', value: 'select' },
   { label: 'Checkbox', value: 'checkbox' },
   { label: 'Radio Button', value: 'radio' },
-  { label: 'Date Picker', value: 'date' },
+  // { label: 'Date Picker', value: 'date' },
   { label: 'Image', value: 'image' },
   { label: 'File Upload', value: 'file' },
 ];
