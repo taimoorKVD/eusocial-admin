@@ -42,6 +42,7 @@ export class DataEntrySectionComponent implements OnInit {
 
   readonly itemDropdownOpen = signal<string | null>(null);
   readonly itemSearchQuery = signal('');
+  readonly dropdownPosition = signal<{ top: number; left: number; width: number } | null>(null);
 
   readonly filteredItemOptions = computed(() => {
     const q = this.itemSearchQuery().trim().toLowerCase();
@@ -54,6 +55,7 @@ export class DataEntrySectionComponent implements OnInit {
     if (!(event.target as HTMLElement).closest('.item-select-dropdown')) {
       this.itemDropdownOpen.set(null);
       this.itemSearchQuery.set('');
+      this.dropdownPosition.set(null);
     }
   }
 
@@ -101,13 +103,25 @@ export class DataEntrySectionComponent implements OnInit {
     this.updateFieldValue(row, fieldId, value ?? '');
   }
 
-  toggleItemDropdown(rowId: string, fieldId: string): void {
+  toggleItemDropdown(rowId: string, fieldId: string, event?: MouseEvent): void {
     const key = this.itemDropdownKey(rowId, fieldId);
     const current = this.itemDropdownOpen();
     if (current === key) {
       this.itemDropdownOpen.set(null);
       this.itemSearchQuery.set('');
+      this.dropdownPosition.set(null);
     } else {
+      if (event) {
+        const btn = (event.target as HTMLElement).closest('.item-select-dropdown');
+        if (btn) {
+          const rect = btn.getBoundingClientRect();
+          this.dropdownPosition.set({
+            top: rect.bottom + 4,
+            left: rect.left,
+            width: rect.width,
+          });
+        }
+      }
       this.itemDropdownOpen.set(key);
       this.itemSearchQuery.set('');
     }
