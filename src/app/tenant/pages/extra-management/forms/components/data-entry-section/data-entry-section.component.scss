@@ -21,37 +21,3 @@
   flex: 0 1 8.5rem;
   min-width: 7.5rem;
 }
-
-:host ::ng-deep {
-  .section-ng-select {
-    .ng-select-container {
-      background: #f8f0e8 !important;
-      border: 1px solid #e8d9c9 !important;
-      border-radius: 0.5rem !important;
-      min-height: 2.55rem !important;
-      padding: 0 0.5rem !important;
-      box-shadow: none !important;
-      font-family: 'IBM Plex Sans', sans-serif !important;
-      font-size: 0.875rem !important;
-    }
-
-    &.ng-select-focused .ng-select-container {
-      border-color: #0f62fe !important;
-      box-shadow: 0 0 0 3px rgba(15, 98, 254, 0.12) !important;
-    }
-
-    .ng-placeholder {
-      color: #a8a8a8 !important;
-    }
-
-    .ng-arrow-wrapper {
-      display: flex !important;
-    }
-
-    .ng-dropdown-panel {
-      border: 1px solid #e5e7eb !important;
-      border-radius: 0.5rem !important;
-      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08) !important;
-    }
-  }
-}

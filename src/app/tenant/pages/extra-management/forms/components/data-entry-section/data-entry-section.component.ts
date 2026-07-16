@@ -1,7 +1,9 @@
 import {
   Component,
+  computed,
   DestroyRef,
   EventEmitter,
+  HostListener,
   Input,
   OnInit,
   Output,
@@ -10,8 +12,6 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { NgSelectModule } from '@ng-select/ng-select';
-import { FormsModule } from '@angular/forms';
 import { TenantItemService } from '../../../../../../services/tenant-item.service';
 import {
   DataEntrySection,
@@ -24,7 +24,7 @@ import { resolveItemDisplayName } from '../../utils/field-builder-adapter.utils'
 @Component({
   selector: 'app-data-entry-section',
   standalone: true,
-  imports: [CommonModule, FormsModule, NgSelectModule],
+  imports: [CommonModule],
   templateUrl: './data-entry-section.component.html',
   styleUrl: './data-entry-section.component.scss',
 })
@@ -38,6 +38,23 @@ export class DataEntrySectionComponent implements OnInit {
   @Output() removeSection = new EventEmitter<string>();
 
   readonly itemOptions = signal<{ id: string; name: string }[]>([]);
+
+  readonly itemDropdownOpen = signal<string | null>(null);
+  readonly itemSearchQuery = signal('');
+
+  readonly filteredItemOptions = computed(() => {
+    const q = this.itemSearchQuery().trim().toLowerCase();
+    const opts = this.itemOptions();
+    return q ? opts.filter((o) => o.name.toLowerCase().includes(q)) : opts;
+  });
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    if (!(event.target as HTMLElement).closest('.item-select-dropdown')) {
+      this.itemDropdownOpen.set(null);
+      this.itemSearchQuery.set('');
+    }
+  }
 
   ngOnInit(): void {
     this.loadItems();
@@ -72,6 +89,78 @@ export class DataEntrySectionComponent implements OnInit {
 
   requestAddField(rowId: string): void {
     this.addFieldRequested.emit({ sectionId: this.section.id, rowId });
+  }
+
+  onFieldInput(row: FormRow, fieldId: string, event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.updateFieldValue(row, fieldId, value);
+  }
+
+  onItemSelect(row: FormRow, fieldId: string, value: string | null): void {
+    this.updateFieldValue(row, fieldId, value ?? '');
+  }
+
+  toggleItemDropdown(rowId: string, fieldId: string): void {
+    const key = this.itemDropdownKey(rowId, fieldId);
+    const current = this.itemDropdownOpen();
+    if (current === key) {
+      this.itemDropdownOpen.set(null);
+      this.itemSearchQuery.set('');
+    } else {
+      this.itemDropdownOpen.set(key);
+      this.itemSearchQuery.set('');
+    }
+  }
+
+  selectItemOption(row: FormRow, fieldId: string, name: string): void {
+    this.onItemSelect(row, fieldId, name);
+    this.itemDropdownOpen.set(null);
+    this.itemSearchQuery.set('');
+  }
+
+  clearItemSelection(row: FormRow, fieldId: string, event: MouseEvent): void {
+    event.stopPropagation();
+    this.onItemSelect(row, fieldId, null);
+  }
+
+  getItemDisplayLabel(field: FormFieldConfig): string {
+    return field.value || 'Select item...';
+  }
+
+  itemDropdownKey(rowId: string, fieldId: string): string {
+    return `${rowId}:${fieldId}`;
+  }
+
+  isItemDropdownOpen(rowId: string, fieldId: string): boolean {
+    return this.itemDropdownOpen() === this.itemDropdownKey(rowId, fieldId);
+  }
+
+  onItemSearch(event: Event): void {
+    this.itemSearchQuery.set((event.target as HTMLInputElement).value);
+  }
+
+  onCheckboxChange(row: FormRow, fieldId: string, event: Event): void {
+    const checked = (event.target as HTMLInputElement).checked;
+    this.updateFieldValue(row, fieldId, checked ? 'true' : 'false');
+  }
+
+  onSelectChange(row: FormRow, fieldId: string, event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    this.updateFieldValue(row, fieldId, value);
+  }
+
+  private updateFieldValue(row: FormRow, fieldId: string, value: string): void {
+    this.sectionChange.emit({
+      ...this.section,
+      rows: this.section.rows.map((r) =>
+        r.id === row.id
+          ? {
+              ...r,
+              fields: r.fields.map((f) => (f.id === fieldId ? { ...f, value } : f)),
+            }
+          : r,
+      ),
+    });
   }
 
   isItemField(field: FormFieldConfig): boolean {
