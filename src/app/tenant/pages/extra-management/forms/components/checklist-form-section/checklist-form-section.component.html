@@ -23,24 +23,28 @@
           @for (field of row.fields; track trackField($index, field)) {
             <div
               class="section-field"
-              [style.flex-basis]="field.width || '10rem'"
-              [style.max-width]="field.width === '100%' ? '100%' : null"
+              [class.section-field--added]="!field.isDefault"
             >
-              <label class="section-field__label font-ibm">
-                {{ field.label }}
-                @if (field.required) {
-                  <span class="req">*</span>
-                }
-              </label>
-              <input
-                class="section-input font-ibm"
-                type="text"
-                [placeholder]="field.placeholder || field.label"
-                [value]="field.value || ''"
-                [attr.readonly]="field.readonly || null"
-                (input)="onFieldInput(row, field.id, $event)"
-              />
-              @if (!field.isDefault) {
+              @if (field.isDefault) {
+                <label class="section-field__label font-ibm">
+                  {{ field.label }}
+                  @if (field.required) {
+                    <span class="req">*</span>
+                  }
+                </label>
+                <input
+                  class="section-input font-ibm"
+                  type="text"
+                  [placeholder]="field.placeholder || field.label"
+                  [value]="field.value || ''"
+                  [attr.readonly]="field.readonly || null"
+                  (input)="onFieldInput(row, field.id, $event)"
+                />
+              } @else {
+                <app-section-field-preview
+                  [field]="field"
+                  (valueChange)="onFieldValueChange(row, field.id, $event)"
+                />
                 <button
                   type="button"
                   class="section-field__remove section-icon-btn section-icon-btn--danger"

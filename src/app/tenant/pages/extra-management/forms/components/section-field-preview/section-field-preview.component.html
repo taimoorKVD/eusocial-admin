@@ -1,0 +1,175 @@
+<div class="section-field-preview">
+  <label class="section-field-preview__label font-ibm">
+    {{ field.label }}
+    @if (field.required) {
+      <span class="req">*</span>
+    }
+  </label>
+
+  @switch (field.type) {
+    @case ('textarea') {
+      <textarea
+        class="section-input section-input--area font-ibm"
+        [placeholder]="field.placeholder || field.label"
+        rows="3"
+        [value]="field.value || ''"
+        [attr.readonly]="field.readonly || null"
+        (input)="onInput($event)"
+      ></textarea>
+    }
+    @case ('select') {
+      <select
+        class="section-input section-input--select font-ibm"
+        [value]="field.value || ''"
+        [disabled]="!!field.readonly"
+        (change)="onSelect($event)"
+      >
+        <option value="">{{ selectPlaceholder }}</option>
+        @for (opt of field.options || []; track opt) {
+          <option [value]="opt">{{ opt }}</option>
+        }
+      </select>
+    }
+    @case ('checkbox') {
+      <div class="section-field-preview__checks">
+        @if (field.options?.length) {
+          @for (opt of field.options; track opt) {
+            <label class="section-field-preview__check font-ibm">
+              <input
+                type="checkbox"
+                [checked]="isOptionChecked(opt)"
+                [disabled]="!!field.readonly"
+                (change)="onOptionCheckboxToggle(opt, $any($event.target).checked)"
+              />
+              <span>{{ opt }}</span>
+            </label>
+          }
+        } @else {
+          <label class="section-field-preview__check font-ibm">
+            <input
+              type="checkbox"
+              [checked]="field.value === 'true'"
+              [disabled]="!!field.readonly"
+              (change)="onCheckboxToggle($any($event.target).checked)"
+            />
+            <span>{{ field.label }}</span>
+          </label>
+        }
+      </div>
+    }
+    @case ('radio') {
+      <div class="section-field-preview__checks">
+        @if (field.options?.length) {
+          @for (opt of field.options; track opt) {
+            <label class="section-field-preview__check font-ibm">
+              <input
+                type="radio"
+                [name]="field.id"
+                [value]="opt"
+                [checked]="field.value === opt"
+                [disabled]="!!field.readonly"
+                (change)="onRadioSelect(opt)"
+              />
+              <span>{{ opt }}</span>
+            </label>
+          }
+        } @else {
+          <label class="section-field-preview__check font-ibm">
+            <input
+              type="radio"
+              [name]="field.id"
+              value="option"
+              [checked]="field.value === 'option'"
+              [disabled]="!!field.readonly"
+              (change)="onRadioSelect('option')"
+            />
+            <span>Option</span>
+          </label>
+        }
+      </div>
+    }
+    @case ('image') {
+      <label class="section-upload-btn font-ibm" [class.section-upload-btn--readonly]="field.readonly">
+        <span>{{ field.value || 'Upload Image' }}</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="17 8 12 3 7 8"></polyline>
+          <line x1="12" y1="3" x2="12" y2="15"></line>
+        </svg>
+        <input
+          type="file"
+          accept="image/*"
+          class="sr-only"
+          [disabled]="!!field.readonly"
+          (change)="onFileSelected($event)"
+        />
+      </label>
+    }
+    @case ('file') {
+      <label class="section-upload-btn font-ibm" [class.section-upload-btn--readonly]="field.readonly">
+        <span>{{ field.value || 'Upload File' }}</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="17 8 12 3 7 8"></polyline>
+          <line x1="12" y1="3" x2="12" y2="15"></line>
+        </svg>
+        <input
+          type="file"
+          class="sr-only"
+          [disabled]="!!field.readonly"
+          (change)="onFileSelected($event)"
+        />
+      </label>
+    }
+    @case ('date') {
+      <input
+        class="section-input font-ibm"
+        type="date"
+        [placeholder]="field.placeholder || field.label"
+        [value]="field.value || ''"
+        [attr.readonly]="field.readonly || null"
+        (input)="onInput($event)"
+      />
+    }
+    @case ('number') {
+      <input
+        class="section-input font-ibm"
+        type="number"
+        [placeholder]="field.placeholder || field.label"
+        [value]="field.value || ''"
+        [attr.readonly]="field.readonly || null"
+        (input)="onInput($event)"
+      />
+    }
+    @case ('email') {
+      <input
+        class="section-input font-ibm"
+        type="email"
+        [placeholder]="field.placeholder || field.label"
+        [value]="field.value || ''"
+        [attr.readonly]="field.readonly || null"
+        (input)="onInput($event)"
+      />
+    }
+    @case ('password') {
+      <input
+        class="section-input font-ibm"
+        type="password"
+        [placeholder]="field.placeholder || field.label"
+        [value]="field.value || ''"
+        [attr.readonly]="field.readonly || null"
+        (input)="onInput($event)"
+      />
+    }
+    @default {
+      <input
+        class="section-input font-ibm"
+        type="text"
+        [placeholder]="field.placeholder || field.label"
+        [value]="field.value || ''"
+        [attr.readonly]="field.readonly || null"
+        (input)="onInput($event)"
+      />
+    }
+  }
+</div>

@@ -20,11 +20,12 @@ import {
   createDataEntryRow,
 } from '../../models/dynamic-form.models';
 import { resolveItemDisplayName } from '../../utils/field-builder-adapter.utils';
+import { SectionFieldPreviewComponent } from '../section-field-preview/section-field-preview.component';
 
 @Component({
   selector: 'app-data-entry-section',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, SectionFieldPreviewComponent],
   templateUrl: './data-entry-section.component.html',
   styleUrl: './data-entry-section.component.scss',
 })
@@ -149,7 +150,7 @@ export class DataEntrySectionComponent implements OnInit {
     this.updateFieldValue(row, fieldId, value);
   }
 
-  private updateFieldValue(row: FormRow, fieldId: string, value: string): void {
+  updateFieldValue(row: FormRow, fieldId: string, value: string): void {
     this.sectionChange.emit({
       ...this.section,
       rows: this.section.rows.map((r) =>

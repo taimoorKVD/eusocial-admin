@@ -78,6 +78,7 @@
   gap: 0.75rem;
   padding-bottom: 1rem;
   border-bottom: 1px solid #eef0f2;
+  min-width: 0;
 
   &:last-of-type {
     border-bottom: none;
@@ -88,10 +89,22 @@
 .field-row__fields {
   display: flex;
   flex: 1;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: flex-end;
   gap: 0.85rem 1rem;
   min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 0.35rem;
+
+  &::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 3px;
+  }
 }
 
 .field-row__actions {
@@ -99,13 +112,21 @@
   align-items: center;
   gap: 0.25rem;
   flex-shrink: 0;
-  padding-bottom: 0.15rem;
+  padding-bottom: 0.5rem;
 }
 
 .section-field {
-  flex: 1 1 10rem;
-  min-width: 8rem;
-  max-width: 100%;
+  flex: 0 0 12rem;
+  width: 12rem;
+  min-width: 12rem;
+  max-width: 12rem;
+}
+
+.section-field--added {
+  flex: 0 0 12rem;
+  width: 12rem;
+  min-width: 12rem;
+  max-width: 12rem;
 }
 
 .section-field__label {
@@ -201,15 +222,10 @@
 
 @media (max-width: 768px) {
   .field-row {
-    flex-direction: column;
-    align-items: stretch;
+    align-items: flex-end;
   }
 
   .field-row__actions {
     justify-content: flex-end;
-  }
-
-  .section-field {
-    flex: 1 1 100%;
   }
 }

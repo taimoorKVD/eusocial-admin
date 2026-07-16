@@ -25,8 +25,25 @@
               class="section-field"
               [class.section-field--item]="isItemField(field)"
               [class.section-field--par]="isIncludeParField(field)"
-              [style.flex-basis]="field.width || '10rem'"
+              [class.section-field--added]="!field.isDefault"
             >
+              @if (!field.isDefault) {
+                <app-section-field-preview
+                  [field]="field"
+                  (valueChange)="updateFieldValue(row, field.id, $event)"
+                />
+                <button
+                  type="button"
+                  class="section-field__remove section-icon-btn section-icon-btn--danger"
+                  aria-label="Remove field"
+                  (click)="removeField(row, field.id)"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  </svg>
+                </button>
+              } @else {
               <label class="section-field__label font-ibm">
                 {{ field.label }}
                 @if (field.required) {
@@ -159,19 +176,6 @@
                   (input)="onFieldInput(row, field.id, $event)"
                 />
               }
-
-              @if (!field.isDefault) {
-                <button
-                  type="button"
-                  class="section-field__remove section-icon-btn section-icon-btn--danger"
-                  aria-label="Remove field"
-                  (click)="removeField(row, field.id)"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <polyline points="3 6 5 6 21 6"></polyline>
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                  </svg>
-                </button>
               }
             </div>
           }

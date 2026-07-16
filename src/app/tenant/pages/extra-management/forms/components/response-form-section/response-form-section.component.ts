@@ -5,11 +5,12 @@ import {
   FormRow,
   ResponseFormSection,
 } from '../../models/dynamic-form.models';
+import { SectionFieldPreviewComponent } from '../section-field-preview/section-field-preview.component';
 
 @Component({
   selector: 'app-response-form-section',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, SectionFieldPreviewComponent],
   templateUrl: './response-form-section.component.html',
   styleUrl: './response-form-section.component.scss',
 })
@@ -27,6 +28,20 @@ export class ResponseFormSectionComponent {
       ...this.section,
       rows: this.section.rows.map((r) =>
         r.id === row.id ? { ...r, fields: r.fields.filter((f) => f.id !== fieldId) } : r,
+      ),
+    });
+  }
+
+  onFieldValueChange(row: FormRow, fieldId: string, value: string): void {
+    this.sectionChange.emit({
+      ...this.section,
+      rows: this.section.rows.map((r) =>
+        r.id === row.id
+          ? {
+              ...r,
+              fields: r.fields.map((f) => (f.id === fieldId ? { ...f, value } : f)),
+            }
+          : r,
       ),
     });
   }

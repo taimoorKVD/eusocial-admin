@@ -13,11 +13,22 @@
 }
 
 .section-field--item {
+  flex: 0 0 12rem;
+  width: 12rem;
   min-width: 12rem;
-  flex: 1.4 1 12rem;
+  max-width: 14rem;
 }
 
 .section-field--par {
-  flex: 0 1 8.5rem;
-  min-width: 7.5rem;
+  flex: 0 0 8.5rem;
+  width: 8.5rem;
+  min-width: 8.5rem;
+  max-width: 8.5rem;
+}
+
+.section-field--added {
+  flex: 0 0 12rem !important;
+  width: 12rem !important;
+  min-width: 12rem !important;
+  max-width: 12rem !important;
 }
