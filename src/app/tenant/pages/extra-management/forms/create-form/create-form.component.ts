@@ -555,7 +555,6 @@ export class CreateFormComponent implements OnInit {
     if (!type) return;
 
     this.sections.update((list) => [...list, createSection(type)]);
-    this.selectedSectionType.set('');
   }
 
   onSectionTypeChange(value: string): void {
