@@ -34,16 +34,19 @@ export class FieldCreateModalComponent implements OnChanges {
   readonly draftField = signal<FormField>(createDraftBuilderField('text'));
   readonly schema = signal<FormField[]>([this.draftField()]);
   readonly selectedType = signal<FormField['type']>('text');
+  readonly isTypeDropdownOpen = signal(false);
+  readonly isClosing = signal(false);
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['isOpen']?.currentValue === true) {
+      this.isClosing.set(false);
       this.resetDraft('text');
     }
   }
 
   onBackdropClick(event: MouseEvent): void {
     if (event.target === event.currentTarget) {
-      this.close();
+      this.closeWithAnimation();
     }
   }
 
@@ -51,12 +54,30 @@ export class FieldCreateModalComponent implements OnChanges {
     this.closed.emit();
   }
 
+  closeWithAnimation(): void {
+    this.isClosing.set(true);
+    setTimeout(() => {
+      this.isTypeDropdownOpen.set(false);
+      this.isClosing.set(false);
+      this.close();
+    }, 240);
+  }
+
+  getTypeLabel(): string {
+    const match = this.typeOptions.find((o) => o.value === this.selectedType());
+    return match?.label ?? 'Select type';
+  }
+
+  onTypeSelect(type: FormField['type']): void {
+    this.isTypeDropdownOpen.set(false);
+    this.onTypeChange(type);
+  }
+
   onTypeChange(type: FormField['type']): void {
     this.resetDraft(type);
   }
 
   onFieldUpdate(field: FormField): void {
-    // FieldSettings mutates the draft in place; avoid rebinding and resetting the panel.
     if (this.draftField()?.id === field.id) {
       return;
     }
