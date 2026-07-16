@@ -68,13 +68,13 @@
 /* ── Active Step ── */
 .wizard-indicator__step--active {
   .wizard-indicator__circle {
-    border-color: #0f62fe;
-    background: #0f62fe;
+    border-color: #FF9015;
+    background: #FF9015;
     color: #fff;
   }
 
   .wizard-indicator__label {
-    color: #0f62fe;
+    color: #FF9015;
     font-weight: 600;
   }
 }
@@ -82,23 +82,23 @@
 /* ── Completed Step ── */
 .wizard-indicator__step--completed {
   .wizard-indicator__circle {
-    border-color: #16a34a;
-    background: #16a34a;
+    border-color: #D0DD28;
+    background: #D0DD28;
     color: #fff;
   }
 
   .wizard-indicator__label {
-    color: #16a34a;
+    color: #D0DD28;
   }
 
   &:hover:not(:disabled) {
     .wizard-indicator__circle {
-      border-color: #15803d;
-      background: #15803d;
+      border-color: #D0DD28;
+      background: #D0DD28;
     }
 
     .wizard-indicator__label {
-      color: #15803d;
+      color: #D0DD28;
     }
   }
 }
@@ -115,7 +115,7 @@
 }
 
 .wizard-indicator__connector--completed {
-  background: #16a34a;
+  background: #D0DD28;
 }
 
 /* ═══════════════════ WIZARD CONTENT ═══════════════════ */
@@ -197,8 +197,8 @@
   flex-shrink: 0;
 
   &--assign {
-    background: #edf5ff;
-    color: #0f62fe;
+    background: #fff5eb;
+    color: #FF9015;
   }
 
   &--report {
@@ -285,9 +285,9 @@
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 
   &--assign {
-    background: #edf5ff;
-    border: 1px solid #cce0ff;
-    color: #0f62fe;
+    background: #fff5eb;
+    border: 1px solid #ffd9b3;
+    color: #c57a10;
   }
 
   &--report {
@@ -329,7 +329,7 @@
 
 .relation-flow__arrow {
   display: inline-flex;
-  color: #0f62fe;
+  color: #FF9015;
 }
 
 .relation-flow__form-node {
@@ -341,10 +341,10 @@
   min-width: 5.5rem;
   max-width: 9rem;
   padding: 0.9rem 1rem;
-  background: #0f62fe;
+  background: #FF9015;
   color: #fff;
   border-radius: 0.75rem;
-  box-shadow: 0 4px 12px rgba(15, 98, 254, 0.28);
+  box-shadow: 0 4px 12px rgba(255, 144, 21, 0.28);
   flex-shrink: 0;
 }
 
@@ -659,15 +659,6 @@
   min-width: 8.5rem;
 }
 
-.frequency-field__chevron {
-  position: absolute;
-  right: 0.75rem;
-  top: 50%;
-  transform: translateY(-50%);
-  pointer-events: none;
-  display: inline-flex;
-}
-
 .frequency-control {
   width: 100%;
   border: 1px solid #d1d5db;
@@ -681,8 +672,8 @@
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 
   &:focus {
-    border-color: #0f62fe;
-    box-shadow: 0 0 0 3px rgba(15, 98, 254, 0.12);
+    border-color: #FF9015;
+    box-shadow: 0 0 0 3px rgba(255, 144, 21, 0.12);
   }
 
   &::placeholder {
@@ -693,12 +684,6 @@
     opacity: 0.5;
     cursor: not-allowed;
     background: #f3f4f6;
-  }
-
-  &--select {
-    appearance: none;
-    padding-right: 2rem;
-    cursor: pointer;
   }
 
   &--number {
@@ -758,20 +743,60 @@
   padding-top: 0.65rem;
 }
 
-.frequency-radio-row {
+/* ── Card-Wrapped Radio Buttons (Shared Dynamic Form style) ── */
+
+.option-group {
   display: flex;
-  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.option-group--radio {
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.25rem 0 0;
+}
+
+.option-item {
+  display: flex;
   align-items: center;
   gap: 0.65rem;
-  cursor: pointer;
+  min-height: 2.5rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid #dbe4f0;
+  border-radius: 0.9rem;
+  background: #fff;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background-color 160ms ease,
+    transform 160ms ease;
+}
 
-  input[type='radio'] {
-    width: 1rem;
-    height: 1rem;
-    accent-color: #0f62fe;
-    cursor: pointer;
-    flex-shrink: 0;
-  }
+.option-item:hover {
+  border-color: #b8c6d8;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+  transform: translateY(-1px);
+}
+
+.option-input {
+  margin: 0;
+  width: 1rem;
+  height: 1rem;
+  accent-color: #FF9015;
+  flex-shrink: 0;
+}
+
+.option-label {
+  margin: 0;
+  color: #0f172a;
+  font-size: 0.9rem;
+  line-height: 1.3;
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
 }
 
 .frequency-weekdays {
@@ -794,14 +819,14 @@
   transition: all 0.15s ease;
 
   &:hover {
-    border-color: #0f62fe;
-    color: #0f62fe;
+    border-color: #FF9015;
+    color: #FF9015;
   }
 
   &--active {
-    background: #edf5ff;
-    border-color: #0f62fe;
-    color: #0f62fe;
+    background: #fff5eb;
+    border-color: #FF9015;
+    color: #FF9015;
   }
 }
 
@@ -829,13 +854,13 @@
   .flatpickr-day.selected,
   .flatpickr-day.startRange,
   .flatpickr-day.endRange {
-    background: #0f62fe !important;
-    border-color: #0f62fe !important;
+    background: #FF9015 !important;
+    border-color: #FF9015 !important;
   }
 
   .flatpickr-day:hover {
-    background: #edf5ff;
-    border-color: #edf5ff;
+    background: #fff5eb;
+    border-color: #fff5eb;
   }
 }
 
@@ -855,193 +880,5 @@
 
   .frequency-control--number {
     width: 4rem;
-  }
-}
-
-/* ═══════════════════ NG-SELECT MULTI-SELECT ═══════════════════ */
-
-:host ::ng-deep {
-  .custom-ng-select {
-    .ng-select-container {
-      background: transparent !important;
-      border: none !important;
-      border-bottom: 1px solid #161616 !important;
-      border-radius: 0 !important;
-      padding: 6px 0 !important;
-      min-height: auto !important;
-      font-family: 'IBM Plex Sans', sans-serif !important;
-      font-size: 14px !important;
-      color: #161616 !important;
-      box-shadow: none !important;
-    }
-
-    &.ng-select-focused .ng-select-container {
-      box-shadow: none !important;
-      border-bottom: 2px solid #0f62fe !important;
-    }
-
-    .ng-placeholder {
-      color: #a8a8a8 !important;
-      font-weight: 400;
-    }
-
-    .ng-value-container {
-      padding-left: 0;
-      gap: 4px;
-      flex-wrap: wrap;
-      padding-top: 2px;
-
-      .ng-placeholder {
-        padding-top: 0;
-      }
-    }
-
-    /* ── Selected Chips ── */
-    .ng-value {
-      background: #edf5ff !important;
-      border: 1px solid #cce0ff !important;
-      border-radius: 4px !important;
-      padding: 2px 6px !important;
-      font-size: 12px !important;
-      font-weight: 500 !important;
-      color: #0f62fe !important;
-      display: inline-flex !important;
-      align-items: center !important;
-      gap: 4px !important;
-      line-height: 1.4 !important;
-      max-width: 100%;
-
-      .ng-value-label {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        font-size: 12px !important;
-      }
-
-      .ng-value-remove {
-        border: none !important;
-        background: none !important;
-        padding: 0 !important;
-        margin-left: 2px !important;
-        cursor: pointer !important;
-        opacity: 0.6;
-        transition: opacity 0.15s ease;
-
-        &:hover {
-          opacity: 1;
-        }
-
-        &::before {
-          content: '\00d7';
-          font-size: 14px;
-          color: #0f62fe;
-          font-weight: 600;
-        }
-      }
-    }
-
-    /* ── Arrow/Clear Buttons ── */
-    .ng-arrow-wrapper {
-      display: none;
-    }
-
-    .ng-clear-wrapper {
-      display: flex !important;
-      align-items: center;
-      justify-content: center;
-      width: 20px !important;
-      height: 20px !important;
-      padding: 0 !important;
-      top: 50%;
-      transform: translateY(-50%);
-      right: 0;
-
-      .ng-clear {
-        font-size: 16px !important;
-        color: #9ca3af !important;
-        padding: 0;
-        line-height: 1;
-
-        &:before {
-          content: '\00d7' !important;
-          font-size: 16px;
-        }
-      }
-    }
-
-    /* ── Dropdown Panel ── */
-    .ng-dropdown-panel {
-      border: 1px solid #e5e7eb !important;
-      border-radius: 8px !important;
-      margin-top: 4px !important;
-      background: #fff !important;
-      box-shadow:
-        0 10px 25px rgba(15, 23, 42, 0.08),
-        0 4px 10px rgba(15, 23, 42, 0.04) !important;
-      overflow: hidden !important;
-
-      .ng-dropdown-panel-items-container {
-        max-height: 240px;
-        overflow-y: auto;
-
-        &::-webkit-scrollbar {
-          width: 5px;
-        }
-
-        &::-webkit-scrollbar-thumb {
-          background-color: rgba(0, 0, 0, 0.12);
-          border-radius: 3px;
-        }
-      }
-
-      .ng-option {
-        padding: 10px 14px !important;
-        font-family: 'IBM Plex Sans', sans-serif !important;
-        font-size: 13px !important;
-        color: #525252 !important;
-        transition: background-color 0.12s ease;
-
-        &.ng-option-marked {
-          background: #edf5ff !important;
-          color: #0f62fe !important;
-        }
-
-        &.ng-option-selected {
-          background: #edf5ff !important;
-          color: #0f62fe !important;
-          font-weight: 500;
-
-          &::before {
-            content: '';
-            display: inline-block;
-            width: 14px;
-            height: 14px;
-            border: 1.5px solid #0f62fe;
-            border-radius: 3px;
-            margin-right: 8px;
-            vertical-align: middle;
-            background: #0f62fe url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E") center / 10px no-repeat;
-          }
-        }
-
-        &.ng-option-disabled {
-          opacity: 0.4;
-        }
-      }
-
-      .ng-option-label {
-        font-family: 'IBM Plex Sans', sans-serif !important;
-      }
-    }
-
-    /* ── Mark Multiple Selected ── */
-    &.ng-select-multiple {
-      .ng-value-container {
-        .ng-value {
-          background: #edf5ff !important;
-          border: 1px solid #cce0ff !important;
-        }
-      }
-    }
   }
 }

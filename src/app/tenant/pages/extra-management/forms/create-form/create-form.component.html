@@ -52,27 +52,56 @@
             />
           </div>
 
-          <div class="underlined-field">
-            <label class="underlined-field__label font-ibm" for="add-section">Add Section</label>
-            <div class="underlined-field__select-wrap">
-              <select
-                #addSectionSelect
-                id="add-section"
-                class="underlined-field__input underlined-field__select font-ibm"
-                [ngModel]="selectedSectionType()"
-                (ngModelChange)="onSectionTypeChange($event)"
-              >
-                <option value="">Select section</option>
-                @for (opt of availableSectionOptions(); track opt.value) {
-                  <option [value]="opt.value" [disabled]="opt.disabled">{{ opt.label }}</option>
-                }
-              </select>
-              <span class="underlined-field__chevron" aria-hidden="true">
-                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                  <path d="M1 1.5L6 6.5L11 1.5" stroke="#161616" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
+          <div class="underlined-field relative section-dropdown">
+            <label class="underlined-field__label font-ibm">Add Section</label>
+            <button
+              type="button"
+              class="underlined-field__input font-ibm flex items-center justify-between cursor-pointer"
+              (click)="$event.stopPropagation(); sectionDropdownOpen.set(!sectionDropdownOpen())"
+            >
+              <span [class]="'font-ibm' + (selectedSectionType() ? '' : ' text-[#A0A0A0]')">
+                {{ getSectionDisplayLabel() }}
               </span>
-            </div>
+              <svg width="12" height="8" viewBox="0 0 12 8" fill="none" class="ml-2 shrink-0">
+                <path d="M1 1.5L6 6.5L11 1.5" stroke="#161616" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+            @if (sectionDropdownOpen()) {
+              <div class="absolute left-0 right-0 top-full z-50 mt-1 bg-white border border-[#E0E0E0] rounded-lg shadow-lg" (click)="$event.stopPropagation()">
+                <div class="p-2 border-b border-[#E0E0E0]">
+                  <input
+                    type="text"
+                    class="w-full px-3 py-2 text-sm font-ibm border border-[#E0E0E0] rounded-md focus:outline-none focus:border-[#FF9015]"
+                    placeholder="Search section..."
+                    [value]="sectionSearchQuery()"
+                    (input)="onSectionSearch($event)"
+                    (click)="$event.stopPropagation()"
+                  />
+                </div>
+                <ul class="max-h-48 overflow-y-auto py-1">
+                  @for (opt of filteredSectionOptions(); track opt.value) {
+                    <li>
+                      <button
+                        type="button"
+                        class="w-full text-left px-4 py-2 text-sm font-ibm flex items-center gap-2"
+                        [class]="'font-ibm' + (opt.disabled ? ' text-[#C6C6C6] cursor-not-allowed' : ' hover:bg-[#FF9015] hover:text-white cursor-pointer')"
+                        [disabled]="opt.disabled"
+                        (click)="selectSectionOption(opt)"
+                      >
+                        @if (opt.disabled) {
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="text-[#C6C6C6] shrink-0">
+                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/>
+                          </svg>
+                        }
+                        {{ opt.label }}
+                      </button>
+                    </li>
+                  } @empty {
+                    <li class="px-4 py-2 text-sm text-[#A0A0A0] font-ibm">No sections available</li>
+                  }
+                </ul>
+              </div>
+            }
           </div>
         </div>
 
@@ -80,6 +109,14 @@
           <div class="create-form__sections">
             @for (section of sections(); track section.id) {
               @switch (section.type) {
+                @case ('responseForm') {
+                  <app-response-form-section
+                    [section]="asResponseForm(section)"
+                    (addFieldRequested)="openFieldModal($event)"
+                    (sectionChange)="updateSection($event)"
+                    (removeSection)="removeSection($event)"
+                  />
+                }
                 @case ('dataEntry') {
                   <app-data-entry-section
                     [section]="asDataEntry(section)"
@@ -99,6 +136,7 @@
                 @case ('visualForm') {
                   <app-visual-form-section
                     [section]="asVisual(section)"
+                    (addFieldRequested)="openFieldModal($event)"
                     (sectionChange)="updateSection($event)"
                     (removeSection)="removeSection($event)"
                   />
@@ -134,42 +172,134 @@
             <p class="assign-report-panel__hint font-ibm">Who should fill out this form?</p>
 
             <div class="wizard-content__fields wizard-content__fields--full">
-              <div class="underlined-field">
+              <div class="underlined-field relative multi-select-dropdown">
                 <label class="underlined-field__label font-ibm">
                   <span class="req">*</span>Users
                 </label>
-                <ng-select
-                  class="custom-ng-select font-ibm"
-                  [items]="userOptions()"
-                  [multiple]="true"
-                  [closeOnSelect]="false"
-                  [searchable]="true"
-                  bindLabel="name"
-                  bindValue="name"
-                  placeholder="Search users..."
-                  [ngModel]="meta().assignUsers"
-                  (ngModelChange)="updateMeta('assignUsers', $event)"
+                <button
+                  type="button"
+                  class="underlined-field__input font-ibm flex items-center justify-between cursor-pointer min-h-[40px]"
+                  (click)="$event.stopPropagation(); toggleMultiSelect('assignUsersDropdownOpen')"
                 >
-                </ng-select>
+                  <div class="flex flex-wrap gap-1 flex-1">
+                    @if (meta().assignUsers.length === 0) {
+                      <span class="text-[#A0A0A0]">Search users...</span>
+                    }
+                    @for (user of meta().assignUsers; track user) {
+                      <span class="inline-flex items-center gap-1 bg-[#fff5eb] border border-[#ffd9b3] rounded px-1.5 py-0.5 text-xs font-medium text-[#FF9015]">
+                        {{ user }}
+                        <button
+                          type="button"
+                          class="ml-0.5 text-[#FF9015] hover:text-[#e07800] font-semibold leading-none"
+                          (click)="$event.stopPropagation(); removeMultiSelectOption('assignUsers', user)"
+                        >×</button>
+                      </span>
+                    }
+                  </div>
+                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none" class="ml-2 shrink-0">
+                    <path d="M1 1.5L6 6.5L11 1.5" stroke="#161616" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+                @if (assignUsersDropdownOpen()) {
+                  <div class="absolute left-0 right-0 top-full z-50 mt-1 bg-white border border-[#E0E0E0] rounded-lg shadow-lg" (click)="$event.stopPropagation()">
+                    <div class="p-2 border-b border-[#E0E0E0]">
+                      <input
+                        type="text"
+                        class="w-full px-3 py-2 text-sm font-ibm border border-[#E0E0E0] rounded-md focus:outline-none focus:border-[#FF9015]"
+                        placeholder="Search users..."
+                        [value]="assignUsersSearch()"
+                        (input)="onMultiSelectSearch($event, assignUsersSearch)"
+                        (click)="$event.stopPropagation()"
+                      />
+                    </div>
+                    <ul class="max-h-48 overflow-y-auto py-1">
+                      @for (opt of filteredAssignUsers(); track opt.id) {
+                        <li>
+                          <button
+                            type="button"
+                            class="w-full text-left px-4 py-2 text-sm font-ibm flex items-center gap-2 cursor-pointer"
+                            [class]="opt.selected ? 'bg-[#fff5eb] text-[#FF9015]' : 'hover:bg-[#FF9015] hover:text-white text-[#525252]'"
+                            (click)="toggleMultiSelectOption('assignUsers', opt.name)"
+                          >
+                            @if (opt.selected) {
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="text-[#FF9015] shrink-0">
+                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/>
+                              </svg>
+                            }
+                            {{ opt.name }}
+                          </button>
+                        </li>
+                      } @empty {
+                        <li class="px-4 py-2 text-sm text-[#A0A0A0] font-ibm">No users available</li>
+                      }
+                    </ul>
+                  </div>
+                }
               </div>
 
-              <div class="underlined-field mt-4">
+              <div class="underlined-field mt-4 relative multi-select-dropdown">
                 <label class="underlined-field__label font-ibm">
                   <span class="req">*</span>Job Positions
                 </label>
-                <ng-select
-                  class="custom-ng-select font-ibm"
-                  [items]="jobPositionOptions()"
-                  [multiple]="true"
-                  [closeOnSelect]="false"
-                  [searchable]="true"
-                  bindLabel="name"
-                  bindValue="name"
-                  placeholder="Search job positions..."
-                  [ngModel]="meta().assignJobPosition"
-                  (ngModelChange)="updateMeta('assignJobPosition', $event)"
+                <button
+                  type="button"
+                  class="underlined-field__input font-ibm flex items-center justify-between cursor-pointer min-h-[40px]"
+                  (click)="$event.stopPropagation(); toggleMultiSelect('assignPositionsDropdownOpen')"
                 >
-                </ng-select>
+                  <div class="flex flex-wrap gap-1 flex-1">
+                    @if (meta().assignJobPosition.length === 0) {
+                      <span class="text-[#A0A0A0]">Search job positions...</span>
+                    }
+                    @for (pos of meta().assignJobPosition; track pos) {
+                      <span class="inline-flex items-center gap-1 bg-[#fff5eb] border border-[#ffd9b3] rounded px-1.5 py-0.5 text-xs font-medium text-[#FF9015]">
+                        {{ pos }}
+                        <button
+                          type="button"
+                          class="ml-0.5 text-[#FF9015] hover:text-[#e07800] font-semibold leading-none"
+                          (click)="$event.stopPropagation(); removeMultiSelectOption('assignJobPosition', pos)"
+                        >×</button>
+                      </span>
+                    }
+                  </div>
+                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none" class="ml-2 shrink-0">
+                    <path d="M1 1.5L6 6.5L11 1.5" stroke="#161616" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+                @if (assignPositionsDropdownOpen()) {
+                  <div class="absolute left-0 right-0 top-full z-50 mt-1 bg-white border border-[#E0E0E0] rounded-lg shadow-lg" (click)="$event.stopPropagation()">
+                    <div class="p-2 border-b border-[#E0E0E0]">
+                      <input
+                        type="text"
+                        class="w-full px-3 py-2 text-sm font-ibm border border-[#E0E0E0] rounded-md focus:outline-none focus:border-[#FF9015]"
+                        placeholder="Search job positions..."
+                        [value]="assignPositionsSearch()"
+                        (input)="onMultiSelectSearch($event, assignPositionsSearch)"
+                        (click)="$event.stopPropagation()"
+                      />
+                    </div>
+                    <ul class="max-h-48 overflow-y-auto py-1">
+                      @for (opt of filteredAssignPositions(); track opt.id) {
+                        <li>
+                          <button
+                            type="button"
+                            class="w-full text-left px-4 py-2 text-sm font-ibm flex items-center gap-2 cursor-pointer"
+                            [class]="opt.selected ? 'bg-[#fff5eb] text-[#FF9015]' : 'hover:bg-[#FF9015] hover:text-white text-[#525252]'"
+                            (click)="toggleMultiSelectOption('assignJobPosition', opt.name)"
+                          >
+                            @if (opt.selected) {
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="text-[#FF9015] shrink-0">
+                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/>
+                              </svg>
+                            }
+                            {{ opt.name }}
+                          </button>
+                        </li>
+                      } @empty {
+                        <li class="px-4 py-2 text-sm text-[#A0A0A0] font-ibm">No job positions available</li>
+                      }
+                    </ul>
+                  </div>
+                }
               </div>
             </div>
           </section>
@@ -191,42 +321,134 @@
             <p class="assign-report-panel__hint font-ibm">Who should receive the results?</p>
 
             <div class="wizard-content__fields wizard-content__fields--full">
-              <div class="underlined-field">
+              <div class="underlined-field relative multi-select-dropdown">
                 <label class="underlined-field__label font-ibm">
                   <span class="req">*</span>Users
                 </label>
-                <ng-select
-                  class="custom-ng-select font-ibm"
-                  [items]="userOptions()"
-                  [multiple]="true"
-                  [closeOnSelect]="false"
-                  [searchable]="true"
-                  bindLabel="name"
-                  bindValue="name"
-                  placeholder="Search users..."
-                  [ngModel]="meta().reportUsers"
-                  (ngModelChange)="updateMeta('reportUsers', $event)"
+                <button
+                  type="button"
+                  class="underlined-field__input font-ibm flex items-center justify-between cursor-pointer min-h-[40px]"
+                  (click)="$event.stopPropagation(); toggleMultiSelect('reportUsersDropdownOpen')"
                 >
-                </ng-select>
+                  <div class="flex flex-wrap gap-1 flex-1">
+                    @if (meta().reportUsers.length === 0) {
+                      <span class="text-[#A0A0A0]">Search users...</span>
+                    }
+                    @for (user of meta().reportUsers; track user) {
+                      <span class="inline-flex items-center gap-1 bg-[#fff5eb] border border-[#ffd9b3] rounded px-1.5 py-0.5 text-xs font-medium text-[#FF9015]">
+                        {{ user }}
+                        <button
+                          type="button"
+                          class="ml-0.5 text-[#FF9015] hover:text-[#e07800] font-semibold leading-none"
+                          (click)="$event.stopPropagation(); removeMultiSelectOption('reportUsers', user)"
+                        >×</button>
+                      </span>
+                    }
+                  </div>
+                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none" class="ml-2 shrink-0">
+                    <path d="M1 1.5L6 6.5L11 1.5" stroke="#161616" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+                @if (reportUsersDropdownOpen()) {
+                  <div class="absolute left-0 right-0 top-full z-50 mt-1 bg-white border border-[#E0E0E0] rounded-lg shadow-lg" (click)="$event.stopPropagation()">
+                    <div class="p-2 border-b border-[#E0E0E0]">
+                      <input
+                        type="text"
+                        class="w-full px-3 py-2 text-sm font-ibm border border-[#E0E0E0] rounded-md focus:outline-none focus:border-[#FF9015]"
+                        placeholder="Search users..."
+                        [value]="reportUsersSearch()"
+                        (input)="onMultiSelectSearch($event, reportUsersSearch)"
+                        (click)="$event.stopPropagation()"
+                      />
+                    </div>
+                    <ul class="max-h-48 overflow-y-auto py-1">
+                      @for (opt of filteredReportUsers(); track opt.id) {
+                        <li>
+                          <button
+                            type="button"
+                            class="w-full text-left px-4 py-2 text-sm font-ibm flex items-center gap-2 cursor-pointer"
+                            [class]="opt.selected ? 'bg-[#fff5eb] text-[#FF9015]' : 'hover:bg-[#FF9015] hover:text-white text-[#525252]'"
+                            (click)="toggleMultiSelectOption('reportUsers', opt.name)"
+                          >
+                            @if (opt.selected) {
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="text-[#FF9015] shrink-0">
+                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/>
+                              </svg>
+                            }
+                            {{ opt.name }}
+                          </button>
+                        </li>
+                      } @empty {
+                        <li class="px-4 py-2 text-sm text-[#A0A0A0] font-ibm">No users available</li>
+                      }
+                    </ul>
+                  </div>
+                }
               </div>
 
-              <div class="underlined-field mt-4">
+              <div class="underlined-field mt-4 relative multi-select-dropdown">
                 <label class="underlined-field__label font-ibm">
                   <span class="req">*</span>Job Positions
                 </label>
-                <ng-select
-                  class="custom-ng-select font-ibm"
-                  [items]="jobPositionOptions()"
-                  [multiple]="true"
-                  [closeOnSelect]="false"
-                  [searchable]="true"
-                  bindLabel="name"
-                  bindValue="name"
-                  placeholder="Search job positions..."
-                  [ngModel]="meta().reportJobPosition"
-                  (ngModelChange)="updateMeta('reportJobPosition', $event)"
+                <button
+                  type="button"
+                  class="underlined-field__input font-ibm flex items-center justify-between cursor-pointer min-h-[40px]"
+                  (click)="$event.stopPropagation(); toggleMultiSelect('reportPositionsDropdownOpen')"
                 >
-                </ng-select>
+                  <div class="flex flex-wrap gap-1 flex-1">
+                    @if (meta().reportJobPosition.length === 0) {
+                      <span class="text-[#A0A0A0]">Search job positions...</span>
+                    }
+                    @for (pos of meta().reportJobPosition; track pos) {
+                      <span class="inline-flex items-center gap-1 bg-[#fff5eb] border border-[#ffd9b3] rounded px-1.5 py-0.5 text-xs font-medium text-[#FF9015]">
+                        {{ pos }}
+                        <button
+                          type="button"
+                          class="ml-0.5 text-[#FF9015] hover:text-[#e07800] font-semibold leading-none"
+                          (click)="$event.stopPropagation(); removeMultiSelectOption('reportJobPosition', pos)"
+                        >×</button>
+                      </span>
+                    }
+                  </div>
+                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none" class="ml-2 shrink-0">
+                    <path d="M1 1.5L6 6.5L11 1.5" stroke="#161616" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+                @if (reportPositionsDropdownOpen()) {
+                  <div class="absolute left-0 right-0 top-full z-50 mt-1 bg-white border border-[#E0E0E0] rounded-lg shadow-lg" (click)="$event.stopPropagation()">
+                    <div class="p-2 border-b border-[#E0E0E0]">
+                      <input
+                        type="text"
+                        class="w-full px-3 py-2 text-sm font-ibm border border-[#E0E0E0] rounded-md focus:outline-none focus:border-[#FF9015]"
+                        placeholder="Search job positions..."
+                        [value]="reportPositionsSearch()"
+                        (input)="onMultiSelectSearch($event, reportPositionsSearch)"
+                        (click)="$event.stopPropagation()"
+                      />
+                    </div>
+                    <ul class="max-h-48 overflow-y-auto py-1">
+                      @for (opt of filteredReportPositions(); track opt.id) {
+                        <li>
+                          <button
+                            type="button"
+                            class="w-full text-left px-4 py-2 text-sm font-ibm flex items-center gap-2 cursor-pointer"
+                            [class]="opt.selected ? 'bg-[#fff5eb] text-[#FF9015]' : 'hover:bg-[#FF9015] hover:text-white text-[#525252]'"
+                            (click)="toggleMultiSelectOption('reportJobPosition', opt.name)"
+                          >
+                            @if (opt.selected) {
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="text-[#FF9015] shrink-0">
+                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/>
+                              </svg>
+                            }
+                            {{ opt.name }}
+                          </button>
+                        </li>
+                      } @empty {
+                        <li class="px-4 py-2 text-sm text-[#A0A0A0] font-ibm">No job positions available</li>
+                      }
+                    </ul>
+                  </div>
+                }
               </div>
             </div>
           </section>
@@ -339,24 +561,44 @@
         <form [formGroup]="frequencyForm" class="frequency-step font-ibm">
           <!-- Frequency type -->
           <div class="frequency-step__type-row">
-            <div class="frequency-field">
-              <label class="frequency-field__label" for="frequency-type">Frequency Type</label>
-              <div class="frequency-field__control-wrap">
-                <select
-                  id="frequency-type"
-                  class="frequency-control frequency-control--select"
-                  formControlName="type"
-                >
-                  @for (opt of frequencyTypeOptions; track opt.value) {
-                    <option [value]="opt.value">{{ opt.label }}</option>
-                  }
-                </select>
-                <span class="frequency-field__chevron" aria-hidden="true">
-                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                    <path d="M1 1.5L6 6.5L11 1.5" stroke="#161616" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                </span>
-              </div>
+            <div class="frequency-field relative freq-select-dropdown">
+              <label class="frequency-field__label font-ibm" for="frequency-type">Frequency Type</label>
+              <button
+                type="button"
+                class="frequency-control frequency-control--select font-ibm flex items-center justify-between"
+                (click)="$event.stopPropagation(); freqTypeDropdownOpen.set(!freqTypeDropdownOpen())"
+              >
+                <span>{{ getFreqSelectLabel('type', frequencyTypeOptions, 'Select type') }}</span>
+                <svg class="w-4 h-4 text-gray-400 transition-transform duration-150 shrink-0 ml-2" [class.rotate-180]="freqTypeDropdownOpen()" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
+                </svg>
+              </button>
+              @if (freqTypeDropdownOpen()) {
+                <div class="z-30 w-full rounded-lg border border-gray-200 bg-white shadow-lg overflow-hidden" (click)="$event.stopPropagation()">
+                  <div class="p-2 border-b border-gray-100">
+                    <input
+                      type="text"
+                      class="w-full px-3 py-2 rounded-md border border-gray-200 text-sm text-gray-700 font-ibm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF9015]/30 focus:border-[#FF9015]"
+                      placeholder="Search type..."
+                      [value]="freqTypeSearch()"
+                      (input)="onFreqSearch($event, freqTypeSearch)"
+                      (click)="$event.stopPropagation()"
+                    />
+                  </div>
+                  <div class="max-h-52 overflow-y-auto p-1">
+                    @for (opt of filteredFrequencyTypeOptions(); track opt.value) {
+                      <button
+                        type="button"
+                        class="w-full text-left px-3 py-2 rounded-md text-sm font-ibm text-[#000000] hover:bg-[#FFF3E7] transition-colors"
+                        [class.bg-[#FFF3E7]]="frequencyForm.controls.type.value === opt.value"
+                        (click)="selectFreqOption('type', opt.value, freqTypeDropdownOpen, freqTypeSearch)"
+                      >{{ opt.label }}</button>
+                    } @empty {
+                      <div class="px-3 py-2 text-sm text-gray-500 font-ibm">No results found</div>
+                    }
+                  </div>
+                </div>
+              }
             </div>
           </div>
 
@@ -391,21 +633,43 @@
                   aria-label="Repeat every count"
                 />
 
-                <div class="frequency-field__control-wrap frequency-field__control-wrap--inline">
-                  <select
-                    class="frequency-control frequency-control--select"
-                    formControlName="interval"
-                    aria-label="Repeat interval"
+                <div class="frequency-field__control-wrap frequency-field__control-wrap--inline relative freq-select-dropdown">
+                  <button
+                    type="button"
+                    class="frequency-control frequency-control--select font-ibm flex items-center justify-between"
+                    (click)="$event.stopPropagation(); freqIntervalDropdownOpen.set(!freqIntervalDropdownOpen())"
                   >
-                    @for (opt of intervalOptions; track opt.value) {
-                      <option [value]="opt.value">{{ opt.label }}</option>
-                    }
-                  </select>
-                  <span class="frequency-field__chevron" aria-hidden="true">
-                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                      <path d="M1 1.5L6 6.5L11 1.5" stroke="#161616" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <span>{{ getFreqSelectLabel('interval', intervalOptions, 'Select') }}</span>
+                    <svg class="w-4 h-4 text-gray-400 transition-transform duration-150 shrink-0 ml-2" [class.rotate-180]="freqIntervalDropdownOpen()" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
                     </svg>
-                  </span>
+                  </button>
+                  @if (freqIntervalDropdownOpen()) {
+                    <div class="absolute z-30 mt-1.5 w-full rounded-lg border border-gray-200 bg-white shadow-lg overflow-hidden" (click)="$event.stopPropagation()">
+                      <div class="p-2 border-b border-gray-100">
+                        <input
+                          type="text"
+                          class="w-full px-3 py-2 rounded-md border border-gray-200 text-sm text-gray-700 font-ibm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF9015]/30 focus:border-[#FF9015]"
+                          placeholder="Search..."
+                          [value]="freqIntervalSearch()"
+                          (input)="onFreqSearch($event, freqIntervalSearch)"
+                          (click)="$event.stopPropagation()"
+                        />
+                      </div>
+                      <div class="max-h-52 overflow-y-auto p-1">
+                        @for (opt of filteredIntervalOptions(); track opt.value) {
+                          <button
+                            type="button"
+                            class="w-full text-left px-3 py-2 rounded-md text-sm font-ibm text-[#000000] hover:bg-[#FFF3E7] transition-colors"
+                            [class.bg-[#FFF3E7]]="frequencyForm.controls.interval.value === opt.value"
+                            (click)="selectFreqOption('interval', opt.value, freqIntervalDropdownOpen, freqIntervalSearch)"
+                          >{{ opt.label }}</button>
+                        } @empty {
+                          <div class="px-3 py-2 text-sm text-gray-500 font-ibm">No results found</div>
+                        }
+                      </div>
+                    </div>
+                  }
                 </div>
 
                 <span class="frequency-inline-label">Repeat</span>
@@ -450,67 +714,119 @@
 
               <!-- Monthly -->
               @if (frequencyInterval() === 'month') {
-                <div class="frequency-schedule frequency-schedule--stack">
-                  <label class="frequency-radio-row">
+                <div class="option-group option-group--radio" role="radiogroup">
+                  <div class="option-item option-item--radio">
                     <input
+                      class="option-input"
                       type="radio"
+                      id="monthMode-dayOfMonth"
                       name="monthMode"
                       formControlName="monthMode"
                       value="dayOfMonth"
                     />
-                    <span class="frequency-inline-label">On day</span>
-                    <input
-                      type="number"
-                      class="frequency-control frequency-control--number"
-                      formControlName="dayOfMonth"
-                      min="-1"
-                      max="31"
-                      aria-label="Day of month"
-                    />
-                    <span class="frequency-hint frequency-hint--inline">Use -1 for last day</span>
-                  </label>
+                    <label class="option-label" for="monthMode-dayOfMonth">
+                      <span class="frequency-inline-label">On day</span>
+                      <input
+                        type="number"
+                        class="frequency-control frequency-control--number"
+                        formControlName="dayOfMonth"
+                        min="-1"
+                        max="31"
+                        aria-label="Day of month"
+                      />
+                      <span class="frequency-hint frequency-hint--inline">Use -1 for last day</span>
+                    </label>
+                  </div>
 
-                  <label class="frequency-radio-row">
+                  <div class="option-item option-item--radio">
                     <input
+                      class="option-input"
                       type="radio"
+                      id="monthMode-onThe"
                       name="monthMode"
                       formControlName="monthMode"
                       value="onThe"
                     />
-                    <span class="frequency-inline-label">On the</span>
-                    <div class="frequency-field__control-wrap frequency-field__control-wrap--inline">
-                      <select
-                        class="frequency-control frequency-control--select"
-                        formControlName="weekOrder"
-                        aria-label="Week order"
-                      >
-                        @for (opt of weekOrderOptions; track opt.value) {
-                          <option [value]="opt.value">{{ opt.label }}</option>
+                    <label class="option-label" for="monthMode-onThe">
+                      <span class="frequency-inline-label">On the</span>
+                      <div class="frequency-field__control-wrap frequency-field__control-wrap--inline relative freq-select-dropdown">
+                        <button
+                          type="button"
+                          class="frequency-control frequency-control--select font-ibm flex items-center justify-between"
+                          (click)="$event.stopPropagation(); freqWeekOrderDropdownOpen.set(!freqWeekOrderDropdownOpen())"
+                        >
+                          <span>{{ getFreqSelectLabel('weekOrder', weekOrderOptions, 'Select') }}</span>
+                          <svg class="w-4 h-4 text-gray-400 transition-transform duration-150 shrink-0 ml-2" [class.rotate-180]="freqWeekOrderDropdownOpen()" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
+                          </svg>
+                        </button>
+                        @if (freqWeekOrderDropdownOpen()) {
+                          <div class="absolute z-30 mt-1.5 w-full rounded-lg border border-gray-200 bg-white shadow-lg overflow-hidden" (click)="$event.stopPropagation()">
+                            <div class="p-2 border-b border-gray-100">
+                              <input
+                                type="text"
+                                class="w-full px-3 py-2 rounded-md border border-gray-200 text-sm text-gray-700 font-ibm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF9015]/30 focus:border-[#FF9015]"
+                                placeholder="Search..."
+                                [value]="freqWeekOrderSearch()"
+                                (input)="onFreqSearch($event, freqWeekOrderSearch)"
+                                (click)="$event.stopPropagation()"
+                              />
+                            </div>
+                            <div class="max-h-52 overflow-y-auto p-1">
+                              @for (opt of filteredWeekOrderOptions(); track opt.value) {
+                                <button
+                                  type="button"
+                                  class="w-full text-left px-3 py-2 rounded-md text-sm font-ibm text-[#000000] hover:bg-[#FFF3E7] transition-colors"
+                                  [class.bg-[#FFF3E7]]="frequencyForm.controls.weekOrder.value === opt.value"
+                                  (click)="selectFreqOption('weekOrder', opt.value, freqWeekOrderDropdownOpen, freqWeekOrderSearch)"
+                                >{{ opt.label }}</button>
+                              } @empty {
+                                <div class="px-3 py-2 text-sm text-gray-500 font-ibm">No results found</div>
+                              }
+                            </div>
+                          </div>
                         }
-                      </select>
-                      <span class="frequency-field__chevron" aria-hidden="true">
-                        <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                          <path d="M1 1.5L6 6.5L11 1.5" stroke="#161616" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                      </span>
-                    </div>
-                    <div class="frequency-field__control-wrap frequency-field__control-wrap--inline">
-                      <select
-                        class="frequency-control frequency-control--select"
-                        formControlName="onTheMonth"
-                        aria-label="Month"
-                      >
-                        @for (opt of monthOptions; track opt.value) {
-                          <option [value]="opt.value">{{ opt.label }}</option>
+                      </div>
+                      <div class="frequency-field__control-wrap frequency-field__control-wrap--inline relative freq-select-dropdown">
+                        <button
+                          type="button"
+                          class="frequency-control frequency-control--select font-ibm flex items-center justify-between"
+                          (click)="$event.stopPropagation(); freqMonthDropdownOpen.set(!freqMonthDropdownOpen())"
+                        >
+                          <span>{{ getFreqSelectLabel('onTheMonth', monthOptions, 'Select') }}</span>
+                          <svg class="w-4 h-4 text-gray-400 transition-transform duration-150 shrink-0 ml-2" [class.rotate-180]="freqMonthDropdownOpen()" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
+                          </svg>
+                        </button>
+                        @if (freqMonthDropdownOpen()) {
+                          <div class="absolute z-30 mt-1.5 w-full rounded-lg border border-gray-200 bg-white shadow-lg overflow-hidden" (click)="$event.stopPropagation()">
+                            <div class="p-2 border-b border-gray-100">
+                              <input
+                                type="text"
+                                class="w-full px-3 py-2 rounded-md border border-gray-200 text-sm text-gray-700 font-ibm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF9015]/30 focus:border-[#FF9015]"
+                                placeholder="Search..."
+                                [value]="freqMonthSearch()"
+                                (input)="onFreqSearch($event, freqMonthSearch)"
+                                (click)="$event.stopPropagation()"
+                              />
+                            </div>
+                            <div class="max-h-52 overflow-y-auto p-1">
+                              @for (opt of filteredMonthOptions(); track opt.value) {
+                                <button
+                                  type="button"
+                                  class="w-full text-left px-3 py-2 rounded-md text-sm font-ibm text-[#000000] hover:bg-[#FFF3E7] transition-colors"
+                                  [class.bg-[#FFF3E7]]="frequencyForm.controls.onTheMonth.value === opt.value"
+                                  (click)="selectFreqOption('onTheMonth', opt.value, freqMonthDropdownOpen, freqMonthSearch)"
+                                >{{ opt.label }}</button>
+                              } @empty {
+                                <div class="px-3 py-2 text-sm text-gray-500 font-ibm">No results found</div>
+                              }
+                            </div>
+                          </div>
                         }
-                      </select>
-                      <span class="frequency-field__chevron" aria-hidden="true">
-                        <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                          <path d="M1 1.5L6 6.5L11 1.5" stroke="#161616" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                      </span>
-                    </div>
-                  </label>
+                      </div>
+                    </label>
+                  </div>
                 </div>
               }
 
@@ -519,21 +835,43 @@
                 <div class="frequency-schedule">
                   <span class="frequency-schedule__label">On</span>
                   <div class="frequency-row">
-                    <div class="frequency-field__control-wrap frequency-field__control-wrap--inline">
-                      <select
-                        class="frequency-control frequency-control--select"
-                        formControlName="yearMonth"
-                        aria-label="Month"
+                    <div class="frequency-field__control-wrap frequency-field__control-wrap--inline relative freq-select-dropdown">
+                      <button
+                        type="button"
+                        class="frequency-control frequency-control--select font-ibm flex items-center justify-between"
+                        (click)="$event.stopPropagation(); freqYearMonthDropdownOpen.set(!freqYearMonthDropdownOpen())"
                       >
-                        @for (opt of monthOptions; track opt.value) {
-                          <option [value]="opt.value">{{ opt.label }}</option>
-                        }
-                      </select>
-                      <span class="frequency-field__chevron" aria-hidden="true">
-                        <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                          <path d="M1 1.5L6 6.5L11 1.5" stroke="#161616" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <span>{{ getFreqSelectLabel('yearMonth', monthOptions, 'Select') }}</span>
+                        <svg class="w-4 h-4 text-gray-400 transition-transform duration-150 shrink-0 ml-2" [class.rotate-180]="freqYearMonthDropdownOpen()" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
                         </svg>
-                      </span>
+                      </button>
+                      @if (freqYearMonthDropdownOpen()) {
+                        <div class="absolute z-30 mt-1.5 w-full rounded-lg border border-gray-200 bg-white shadow-lg overflow-hidden" (click)="$event.stopPropagation()">
+                          <div class="p-2 border-b border-gray-100">
+                            <input
+                              type="text"
+                              class="w-full px-3 py-2 rounded-md border border-gray-200 text-sm text-gray-700 font-ibm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF9015]/30 focus:border-[#FF9015]"
+                              placeholder="Search..."
+                              [value]="freqYearMonthSearch()"
+                              (input)="onFreqSearch($event, freqYearMonthSearch)"
+                              (click)="$event.stopPropagation()"
+                            />
+                          </div>
+                          <div class="max-h-52 overflow-y-auto p-1">
+                            @for (opt of filteredYearMonthOptions(); track opt.value) {
+                              <button
+                                type="button"
+                                class="w-full text-left px-3 py-2 rounded-md text-sm font-ibm text-[#000000] hover:bg-[#FFF3E7] transition-colors"
+                                [class.bg-[#FFF3E7]]="frequencyForm.controls.yearMonth.value === opt.value"
+                                (click)="selectFreqOption('yearMonth', opt.value, freqYearMonthDropdownOpen, freqYearMonthSearch)"
+                              >{{ opt.label }}</button>
+                            } @empty {
+                              <div class="px-3 py-2 text-sm text-gray-500 font-ibm">No results found</div>
+                            }
+                          </div>
+                        </div>
+                      }
                     </div>
                     <input
                       type="number"
@@ -558,7 +896,7 @@
     <div class="wizard-nav__left">
       <button
         type="button"
-        class="action-btn action-btn--cancel font-ibm"
+        class="btn btn--delete"
         (click)="cancel()"
       >
         Cancel
@@ -569,7 +907,7 @@
       @if (!isFirstStep()) {
         <button
           type="button"
-          class="action-btn action-btn--back font-ibm"
+          class="btn btn--delete"
           (click)="prevStep()"
         >
           ← Back
@@ -579,23 +917,23 @@
       @if (!isLastStep()) {
         <button
           type="button"
-          class="action-btn action-btn--next font-ibm"
+          class="btn btn--cancel"
           [disabled]="!canProceed()"
           (click)="nextStep()"
         >
           Next →
         </button>
       } @else {
-        <button
+        <!-- <button
           type="button"
           class="action-btn action-btn--preview font-ibm"
           (click)="preview()"
         >
           Preview
-        </button>
+        </button> -->
         <button
           type="button"
-          class="action-btn action-btn--save font-ibm"
+          class="btn btn--save"
           [disabled]="!canSave()"
           (click)="save()"
         >

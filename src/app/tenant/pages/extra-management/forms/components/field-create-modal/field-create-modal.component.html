@@ -6,7 +6,7 @@
     aria-labelledby="field-modal-title"
     (click)="onBackdropClick($event)"
   >
-    <div class="field-modal-panel">
+    <div class="field-modal-panel field-modal-panel--builder">
       <div class="field-modal-header">
         <h3 id="field-modal-title" class="field-modal-title font-ibm">Add Field</h3>
         <button type="button" class="field-modal-close" aria-label="Close" (click)="close()">
@@ -14,70 +14,42 @@
         </button>
       </div>
 
-      <form [formGroup]="form" (ngSubmit)="submit()" class="field-modal-body">
-        <div class="field-modal-grid">
-          <div class="field-control">
-            <label class="field-label font-ibm">Field Type <span class="req">*</span></label>
-            <select formControlName="type" class="field-input font-ibm">
-              @for (opt of fieldTypeOptions; track opt.value) {
-                <option [value]="opt.value">{{ opt.label }}</option>
-              }
-            </select>
-          </div>
-
-          <div class="field-control">
-            <label class="field-label font-ibm">Label <span class="req">*</span></label>
-            <input type="text" formControlName="label" class="field-input font-ibm" placeholder="Enter label" />
-            @if (form.controls.label.touched && form.controls.label.invalid) {
-              <span class="field-error font-ibm">Label is required</span>
+      <div class="field-modal-body">
+        <div class="field-type-picker font-ibm">
+          <label class="field-type-picker__label" for="builder-field-type">Field Type</label>
+          <select
+            id="builder-field-type"
+            class="field-type-picker__select"
+            [ngModel]="selectedType()"
+            (ngModelChange)="onTypeChange($event)"
+          >
+            @for (opt of typeOptions; track opt.value) {
+              <option [value]="opt.value">{{ opt.label }}</option>
             }
-          </div>
+          </select>
+        </div>
 
-          <div class="field-control">
-            <label class="field-label font-ibm">Name <span class="req">*</span></label>
-            <input type="text" formControlName="name" class="field-input font-ibm" placeholder="e.g. user_response" />
-            @if (form.controls.name.touched && form.controls.name.invalid) {
-              <span class="field-error font-ibm">
-                @if (form.controls.name.errors?.['required']) {
-                  Name is required
-                } @else {
-                  Use letters, numbers, or underscores (start with a letter)
-                }
-              </span>
-            }
-          </div>
-
-          <div class="field-control">
-            <label class="field-label font-ibm">Placeholder</label>
-            <input type="text" formControlName="placeholder" class="field-input font-ibm" placeholder="Enter placeholder" />
-          </div>
-
-          <div class="field-control">
-            <label class="field-label font-ibm">Width</label>
-            <select formControlName="width" class="field-input font-ibm">
-              @for (opt of widthOptions; track opt.value) {
-                <option [value]="opt.value">{{ opt.label }}</option>
-              }
-            </select>
-          </div>
-
-          <div class="field-checks">
-            <label class="check-label font-ibm">
-              <input type="checkbox" formControlName="required" />
-              Required
-            </label>
-            <label class="check-label font-ibm">
-              <input type="checkbox" formControlName="readonly" />
-              Readonly
-            </label>
-          </div>
+        <div class="field-builder-host">
+          <app-field-settings
+            [field]="draftField()"
+            [schema]="schema()"
+            activeModuleName="dynamic-forms"
+            (update)="onFieldUpdate($event)"
+          />
         </div>
 
         <div class="field-modal-actions">
           <button type="button" class="btn btn--cancel font-ibm" (click)="close()">Cancel</button>
-          <button type="submit" class="btn btn--save font-ibm">Save</button>
+          <button
+            type="button"
+            class="btn btn--save font-ibm"
+            [disabled]="!draftField().label?.trim()"
+            (click)="submit()"
+          >
+            Add Field
+          </button>
         </div>
-      </form>
+      </div>
     </div>
   </div>
 }

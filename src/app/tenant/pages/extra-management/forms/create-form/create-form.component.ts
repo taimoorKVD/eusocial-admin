@@ -4,17 +4,18 @@ import {
   DestroyRef,
   effect,
   ElementRef,
+  HostListener,
   inject,
   OnInit,
   signal,
   viewChild,
+  WritableSignal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { startWith } from 'rxjs';
-import { NgSelectModule } from '@ng-select/ng-select';
 import flatpickr from 'flatpickr';
 import { Instance as FlatpickrInstance } from 'flatpickr/dist/types/instance';
 import { TenantSessionService } from '../../../../../services/tenant-session.service';
@@ -24,6 +25,7 @@ import { DynamicFormsStoreService } from '../services/dynamic-forms-store.servic
 import { DataEntrySectionComponent } from '../components/data-entry-section/data-entry-section.component';
 import { ChecklistFormSectionComponent } from '../components/checklist-form-section/checklist-form-section.component';
 import { VisualFormSectionComponent } from '../components/visual-form-section/visual-form-section.component';
+import { ResponseFormSectionComponent } from '../components/response-form-section/response-form-section.component';
 import { FieldCreateModalComponent } from '../components/field-create-modal/field-create-modal.component';
 import {
   ChecklistFormSection,
@@ -35,6 +37,7 @@ import {
   FrequencyInterval,
   FrequencyMonthMode,
   FrequencyType,
+  ResponseFormSection,
   SECTION_OPTIONS,
   SectionType,
   VisualFormSection,
@@ -54,7 +57,7 @@ interface WizardStep {
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
-    NgSelectModule,
+    ResponseFormSectionComponent,
     DataEntrySectionComponent,
     ChecklistFormSectionComponent,
     VisualFormSectionComponent,
@@ -64,6 +67,37 @@ interface WizardStep {
   styleUrl: './create-form.component.scss',
 })
 export class CreateFormComponent implements OnInit {
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.section-dropdown')) {
+      this.sectionDropdownOpen.set(false);
+      this.sectionSearchQuery.set('');
+    }
+    if (!target.closest('.multi-select-dropdown')) {
+      this.assignUsersDropdownOpen.set(false);
+      this.assignUsersSearch.set('');
+      this.assignPositionsDropdownOpen.set(false);
+      this.assignPositionsSearch.set('');
+      this.reportUsersDropdownOpen.set(false);
+      this.reportUsersSearch.set('');
+      this.reportPositionsDropdownOpen.set(false);
+      this.reportPositionsSearch.set('');
+    }
+    if (!target.closest('.freq-select-dropdown')) {
+      this.freqTypeDropdownOpen.set(false);
+      this.freqTypeSearch.set('');
+      this.freqIntervalDropdownOpen.set(false);
+      this.freqIntervalSearch.set('');
+      this.freqWeekOrderDropdownOpen.set(false);
+      this.freqWeekOrderSearch.set('');
+      this.freqMonthDropdownOpen.set(false);
+      this.freqMonthSearch.set('');
+      this.freqYearMonthDropdownOpen.set(false);
+      this.freqYearMonthSearch.set('');
+    }
+  }
+
   private readonly router = inject(Router);
   private readonly session = inject(TenantSessionService);
   private readonly store = inject(DynamicFormsStoreService);
@@ -73,7 +107,6 @@ export class CreateFormComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
 
   readonly sectionOptions = SECTION_OPTIONS;
-  private readonly addSectionSelect = viewChild<ElementRef<HTMLSelectElement>>('addSectionSelect');
   private readonly frequencyDateInput = viewChild<ElementRef<HTMLInputElement>>('frequencyDateInput');
   private flatpickrInstance: FlatpickrInstance | null = null;
 
@@ -84,6 +117,59 @@ export class CreateFormComponent implements OnInit {
       ...opt,
       disabled: usedTypes.has(opt.value),
     }));
+  });
+
+  readonly sectionDropdownOpen = signal(false);
+  readonly sectionSearchQuery = signal('');
+
+  readonly filteredSectionOptions = computed(() => {
+    const query = this.sectionSearchQuery().trim().toLowerCase();
+    const options = this.availableSectionOptions();
+    return query
+      ? options.filter((opt) => opt.label.toLowerCase().includes(query))
+      : options;
+  });
+
+  // ── Assign & Report Multi-Select State ────────────────────────
+  readonly assignUsersDropdownOpen = signal(false);
+  readonly assignUsersSearch = signal('');
+  readonly assignPositionsDropdownOpen = signal(false);
+  readonly assignPositionsSearch = signal('');
+  readonly reportUsersDropdownOpen = signal(false);
+  readonly reportUsersSearch = signal('');
+  readonly reportPositionsDropdownOpen = signal(false);
+  readonly reportPositionsSearch = signal('');
+
+  readonly filteredAssignUsers = computed(() => {
+    const q = this.assignUsersSearch().trim().toLowerCase();
+    const selected = new Set(this.meta().assignUsers);
+    const opts = this.userOptions();
+    const filtered = q ? opts.filter((o) => o.name.toLowerCase().includes(q)) : opts;
+    return filtered.map((o) => ({ ...o, selected: selected.has(o.name) }));
+  });
+
+  readonly filteredAssignPositions = computed(() => {
+    const q = this.assignPositionsSearch().trim().toLowerCase();
+    const selected = new Set(this.meta().assignJobPosition);
+    const opts = this.jobPositionOptions();
+    const filtered = q ? opts.filter((o) => o.name.toLowerCase().includes(q)) : opts;
+    return filtered.map((o) => ({ ...o, selected: selected.has(o.name) }));
+  });
+
+  readonly filteredReportUsers = computed(() => {
+    const q = this.reportUsersSearch().trim().toLowerCase();
+    const selected = new Set(this.meta().reportUsers);
+    const opts = this.userOptions();
+    const filtered = q ? opts.filter((o) => o.name.toLowerCase().includes(q)) : opts;
+    return filtered.map((o) => ({ ...o, selected: selected.has(o.name) }));
+  });
+
+  readonly filteredReportPositions = computed(() => {
+    const q = this.reportPositionsSearch().trim().toLowerCase();
+    const selected = new Set(this.meta().reportJobPosition);
+    const opts = this.jobPositionOptions();
+    const filtered = q ? opts.filter((o) => o.name.toLowerCase().includes(q)) : opts;
+    return filtered.map((o) => ({ ...o, selected: selected.has(o.name) }));
   });
 
   readonly formName = signal('');
@@ -190,6 +276,53 @@ export class CreateFormComponent implements OnInit {
     { label: 'Sat', value: 'saturday' },
     { label: 'Sun', value: 'sunday' },
   ];
+
+  // ── Frequency Custom Select State ─────────────────────────────
+  readonly freqTypeDropdownOpen = signal(false);
+  readonly freqTypeSearch = signal('');
+  readonly freqIntervalDropdownOpen = signal(false);
+  readonly freqIntervalSearch = signal('');
+  readonly freqWeekOrderDropdownOpen = signal(false);
+  readonly freqWeekOrderSearch = signal('');
+  readonly freqMonthDropdownOpen = signal(false);
+  readonly freqMonthSearch = signal('');
+  readonly freqYearMonthDropdownOpen = signal(false);
+  readonly freqYearMonthSearch = signal('');
+
+  readonly filteredFrequencyTypeOptions = computed(() => {
+    const q = this.freqTypeSearch().trim().toLowerCase();
+    return q
+      ? this.frequencyTypeOptions.filter((o) => o.label.toLowerCase().includes(q))
+      : this.frequencyTypeOptions;
+  });
+
+  readonly filteredIntervalOptions = computed(() => {
+    const q = this.freqIntervalSearch().trim().toLowerCase();
+    return q
+      ? this.intervalOptions.filter((o) => o.label.toLowerCase().includes(q))
+      : this.intervalOptions;
+  });
+
+  readonly filteredWeekOrderOptions = computed(() => {
+    const q = this.freqWeekOrderSearch().trim().toLowerCase();
+    return q
+      ? this.weekOrderOptions.filter((o) => o.label.toLowerCase().includes(q))
+      : this.weekOrderOptions;
+  });
+
+  readonly filteredMonthOptions = computed(() => {
+    const q = this.freqMonthSearch().trim().toLowerCase();
+    return q
+      ? this.monthOptions.filter((o) => o.label.toLowerCase().includes(q))
+      : this.monthOptions;
+  });
+
+  readonly filteredYearMonthOptions = computed(() => {
+    const q = this.freqYearMonthSearch().trim().toLowerCase();
+    return q
+      ? this.monthOptions.filter((o) => o.label.toLowerCase().includes(q))
+      : this.monthOptions;
+  });
 
   readonly frequencyForm = this.fb.nonNullable.group({
     type: this.fb.nonNullable.control<FrequencyType>('recurring'),
@@ -359,6 +492,34 @@ export class CreateFormComponent implements OnInit {
     this.frequencyForm.controls.daysOfWeek.setValue(next);
   }
 
+  // ── Frequency Custom Select Helpers ───────────────────────────
+
+  getFreqSelectLabel(
+    controlName: 'type' | 'interval' | 'weekOrder' | 'onTheMonth' | 'yearMonth',
+    options: { label: string; value: string }[],
+    placeholder: string,
+  ): string {
+    const val = this.frequencyForm.controls[controlName].value;
+    const match = options.find((o) => o.value === val);
+    return match?.label ?? placeholder;
+  }
+
+  selectFreqOption(
+  controlName: 'type' | 'interval' | 'weekOrder' | 'onTheMonth' | 'yearMonth',
+  value: string,
+  dropdownSignal: WritableSignal<boolean>,
+  searchSignal: WritableSignal<string>,
+): void {
+  this.frequencyForm.get(controlName)?.setValue(value);
+
+  searchSignal.set('');
+  dropdownSignal.set(false);
+}
+
+  onFreqSearch(event: Event, searchSignal: WritableSignal<string>): void {
+    searchSignal.set((event.target as HTMLInputElement).value);
+  }
+
   private syncFrequencyToMeta(): void {
     const value = this.frequencyForm.getRawValue();
     this.meta.update((current) => ({
@@ -394,7 +555,6 @@ export class CreateFormComponent implements OnInit {
     if (!type) return;
 
     this.sections.update((list) => [...list, createSection(type)]);
-    this.selectedSectionType.set('');
   }
 
   onSectionTypeChange(value: string): void {
@@ -406,6 +566,26 @@ export class CreateFormComponent implements OnInit {
     } else {
       this.selectedSectionType.set('');
     }
+  }
+
+  onSectionSearch(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.sectionSearchQuery.set(value);
+  }
+
+  selectSectionOption(opt: { value: SectionType; label: string; disabled: boolean }): void {
+    if (opt.disabled) return;
+    this.sectionSearchQuery.set('');
+    this.sectionDropdownOpen.set(false);
+    this.onSectionTypeChange(opt.value);
+  }
+
+  getSectionDisplayLabel(): string {
+    if (!this.selectedSectionType()) {
+      return 'Select section';
+    }
+    const match = this.sectionOptions.find((o) => o.value === this.selectedSectionType());
+    return match?.label ?? 'Select section';
   }
 
   private isTypeAlreadyUsed(type: SectionType): boolean {
@@ -423,13 +603,11 @@ export class CreateFormComponent implements OnInit {
     this.resetAddSectionDropdown();
   }
 
-  /** Resets the Add Section control to "Select section" (signal + native select sync). */
+  /** Resets the Add Section control to "Select section". */
   private resetAddSectionDropdown(): void {
     this.selectedSectionType.set('');
-    const selectEl = this.addSectionSelect()?.nativeElement;
-    if (selectEl) {
-      selectEl.value = '';
-    }
+    this.sectionSearchQuery.set('');
+    this.sectionDropdownOpen.set(false);
   }
 
   openFieldModal(target: { sectionId: string; rowId: string }): void {
@@ -449,13 +627,12 @@ export class CreateFormComponent implements OnInit {
     this.sections.update((list) =>
       list.map((section) => {
         if (section.id !== target.sectionId) return section;
-        if (section.type === 'visualForm') return section;
-
+        const rows = 'rows' in section ? section.rows : [];
         return {
           ...section,
-          rows: section.rows.map((row) =>
+          rows: rows.map((row) =>
             row.id === target.rowId
-              ? { ...row, fields: [...row.fields, field] }
+              ? { ...row, fields: [...row.fields, { ...field, isDefault: false }] }
               : row,
           ),
         };
@@ -467,6 +644,44 @@ export class CreateFormComponent implements OnInit {
 
   updateMeta<K extends keyof FormMetaConfig>(key: K, value: FormMetaConfig[K]): void {
     this.meta.update((current) => ({ ...current, [key]: value }));
+  }
+
+  // ── Multi-Select Helpers ──────────────────────────────────────
+
+  toggleMultiSelect(
+    key: 'assignUsersDropdownOpen' | 'assignPositionsDropdownOpen' | 'reportUsersDropdownOpen' | 'reportPositionsDropdownOpen',
+  ): void {
+    this[key].set(!this[key]());
+  }
+
+  toggleMultiSelectOption(
+    metaKey: 'assignUsers' | 'assignJobPosition' | 'reportUsers' | 'reportJobPosition',
+    value: string,
+  ): void {
+    const current = this.meta()[metaKey] as string[];
+    const updated = current.includes(value)
+      ? current.filter((v) => v !== value)
+      : [...current, value];
+    this.updateMeta(metaKey, updated as any);
+  }
+
+  removeMultiSelectOption(
+    metaKey: 'assignUsers' | 'assignJobPosition' | 'reportUsers' | 'reportJobPosition',
+    value: string,
+  ): void {
+    const current = this.meta()[metaKey] as string[];
+    this.updateMeta(metaKey, current.filter((v) => v !== value) as any);
+  }
+
+  onMultiSelectSearch(
+    event: Event,
+    searchSignal: WritableSignal<string>,
+  ): void {
+    searchSignal.set((event.target as HTMLInputElement).value);
+  }
+
+  asResponseForm(section: FormSection): ResponseFormSection {
+    return section as ResponseFormSection;
   }
 
   asDataEntry(section: FormSection): DataEntrySection {

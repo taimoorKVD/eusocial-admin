@@ -1,6 +1,6 @@
 <section class="section-card">
   <div class="section-card__header">
-    <h3 class="section-card__title font-ibm">Checklist Form</h3>
+    <h3 class="section-card__title font-ibm">Response Form</h3>
     <div class="section-card__actions">
       <button
         type="button"
@@ -23,7 +23,7 @@
           @for (field of row.fields; track trackField($index, field)) {
             <div
               class="section-field"
-              [style.flex-basis]="field.width || '10rem'"
+              [style.flex-basis]="field.width || '12rem'"
               [style.max-width]="field.width === '100%' ? '100%' : null"
             >
               <label class="section-field__label font-ibm">
@@ -36,9 +36,7 @@
                 class="section-input font-ibm"
                 type="text"
                 [placeholder]="field.placeholder || field.label"
-                [value]="field.value || ''"
-                [attr.readonly]="field.readonly || null"
-                (input)="onFieldInput(row, field.id, $event)"
+                disabled
               />
               @if (!field.isDefault) {
                 <button

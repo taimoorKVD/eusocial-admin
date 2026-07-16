@@ -1,68 +1,114 @@
 <section class="section-card">
   <div class="section-card__header">
     <h3 class="section-card__title font-ibm">Visual Form</h3>
-    <button
-      type="button"
-      class="section-card__remove font-ibm"
-      aria-label="Remove section"
-      (click)="removeSection.emit(section.id)"
-    >
-      ×
-    </button>
+    <div class="section-card__actions">
+      <button
+        type="button"
+        class="section-icon-btn section-icon-btn--danger"
+        aria-label="Remove section"
+        (click)="removeSection.emit(section.id)"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+        </svg>
+      </button>
+    </div>
   </div>
 
-  <div class="visual-grid">
-    <div class="visual-upload">
-      <h4 class="visual-upload__heading font-ibm">Upload files</h4>
-      <p class="visual-upload__hint font-ibm">
-        Max file size is 500kb. Supported file types are .jpg and .png.
-      </p>
-
-      <label class="dropzone font-ibm">
-        <input
-          type="file"
-          class="sr-only"
-          accept=".jpg,.jpeg,.png"
-          multiple
-          (change)="onFilesSelected($event)"
-        />
-        Drag and drop files here or click to upload
-      </label>
-
-      @if (section.configuration.files.length) {
-        <ul class="file-list">
-          @for (file of section.configuration.files; track file.name + $index; let i = $index) {
-            <li class="file-list__item font-ibm">
-              <span>{{ file.name }}</span>
-              <button type="button" class="file-list__remove" aria-label="Remove file" (click)="removeFile(i)">
-                ×
-              </button>
-            </li>
+  <div class="section-card__body">
+    <div class="field-row">
+      <div class="field-row__fields visual-defaults">
+        <div class="section-field section-field--upload">
+          <label class="section-field__label font-ibm">Images Upload</label>
+          <label class="visual-upload-btn font-ibm">
+            <input
+              type="file"
+              class="sr-only"
+              accept=".jpg,.jpeg,.png"
+              multiple
+              (change)="onFilesSelected($event)"
+            />
+            <span>Images Upload</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+          </label>
+          @if (section.configuration.files.length) {
+            <ul class="visual-file-list">
+              @for (file of section.configuration.files; track file.name + $index; let i = $index) {
+                <li class="visual-file-list__item font-ibm">
+                  <span>{{ file.name }}</span>
+                  <button type="button" class="section-icon-btn section-icon-btn--danger" aria-label="Remove file" (click)="removeFile(i)">
+                    ×
+                  </button>
+                </li>
+              }
+            </ul>
           }
-        </ul>
-      }
-    </div>
+        </div>
 
-    <div class="visual-instructions">
-      <div class="visual-instructions__header">
-        <label class="visual-instructions__label font-ibm" for="visual-instructions-{{ section.id }}">
-          Instructions
-        </label>
-        <span class="visual-instructions__counter font-ibm">
-          {{ section.configuration.instructions.length }}/{{ maxInstructions }}
-        </span>
+        <div class="section-field section-field--description">
+          <label class="section-field__label font-ibm" for="visual-instructions-{{ section.id }}">
+            Description
+          </label>
+          <input
+            id="visual-instructions-{{ section.id }}"
+            type="text"
+            class="section-input font-ibm"
+            [ngModel]="section.configuration.instructions"
+            (ngModelChange)="onInstructionsChange($event)"
+            [attr.maxlength]="maxInstructions"
+            placeholder="Lorem Ipsum"
+          />
+        </div>
+
+        @for (field of primaryRow.fields; track trackField($index, field)) {
+          <div class="section-field" [style.flex-basis]="field.width || '10rem'">
+            <label class="section-field__label font-ibm">
+              {{ field.label }}
+              @if (field.required) {
+                <span class="req">*</span>
+              }
+            </label>
+            <input
+              class="section-input font-ibm"
+              type="text"
+              [placeholder]="field.placeholder || field.label"
+              disabled
+            />
+            @if (!field.isDefault) {
+              <button
+                type="button"
+                class="section-field__remove section-icon-btn section-icon-btn--danger"
+                aria-label="Remove field"
+                (click)="removeField(field.id)"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+              </button>
+            }
+          </div>
+        }
       </div>
 
-      <textarea
-        id="visual-instructions-{{ section.id }}"
-        class="visual-instructions__textarea font-ibm"
-        [ngModel]="section.configuration.instructions"
-        (ngModelChange)="onInstructionsChange($event)"
-        [attr.maxlength]="maxInstructions"
-        placeholder="Lorem ipsum"
-        rows="6"
-      ></textarea>
-      <p class="visual-instructions__helper font-ibm">Helper text</p>
+      <!-- <div class="field-row__actions">
+        <button
+          type="button"
+          class="section-icon-btn section-icon-btn--accent"
+          aria-label="Add field"
+          (click)="requestAddField()"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+        </button>
+      </div> -->
     </div>
   </div>
 </section>
