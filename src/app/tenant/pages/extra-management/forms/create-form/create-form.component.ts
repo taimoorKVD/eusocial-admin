@@ -687,6 +687,7 @@ export class CreateFormComponent implements OnInit {
 
   showBuilderPalette(): void {
     this.selectedFieldId.set(null);
+    this.resetBuilderDraft();
   }
 
   onCanvasDrop(event: Parameters<typeof applyCanvasDrop>[0]): void {
