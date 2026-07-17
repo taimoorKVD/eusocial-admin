@@ -1,4 +1,5 @@
 <div class="create-form p-6">
+  <div class="create-form__main">
   <h2 class="create-form__page-title font-ibm">Create Form</h2>
 
   <!-- ═══════════════════ STEP INDICATOR ═══════════════════ -->
@@ -35,6 +36,103 @@
 
   <!-- ═══════════════════ STEP 1 — Form Details ═══════════════════ -->
   @if (currentStep() === 1) {
+    @if (fieldBuilderOpen()) {
+      <!-- Split-view: selected row canvas + field palette / settings -->
+      <div class="row-field-editor">
+        <div class="row-field-editor__left">
+          <div class="row-field-editor__toolbar">
+            <div>
+              <h3 class="row-field-editor__heading font-ibm">Add Field</h3>
+              <p class="row-field-editor__hint font-ibm">
+                Drag a field type from the right into this row.
+              </p>
+            </div>
+            <button
+              type="button"
+              class="btn btn--cancel"
+              (click)="closeFieldBuilder()"
+            >
+              Close
+            </button>
+          </div>
+
+          @if (builderRowContext(); as ctx) {
+            <section class="section-card row-field-editor__section">
+              <div class="section-card__header">
+                <h3 class="section-card__title font-ibm">{{ ctx.sectionLabel }}</h3>
+              </div>
+              <div class="section-card__body">
+                <p class="row-field-editor__row-label font-ibm">
+                  Row {{ ctx.rowIndex + 1 }}
+                </p>
+                <div class="field-row">
+                  <div class="field-row__fields row-field-editor__fields">
+                    @for (field of ctx.row.fields; track field.id) {
+                      <div class="section-field section-field--added">
+                        <app-section-field-preview [field]="field" />
+                      </div>
+                    }
+
+                    <div class="row-field-editor__drop-zone">
+                      <app-form-canvas
+                        [dropListId]="canvasListId"
+                        [schema]="builderSchema()"
+                        [selectedFieldId]="selectedFieldId()"
+                        [connectedDropLists]="[paletteListId]"
+                        (dropped)="onCanvasDrop($event)"
+                        (selectField)="onSelectField($event)"
+                      ></app-form-canvas>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          }
+        </div>
+
+        <aside class="row-field-editor__right" aria-label="Field palette and settings">
+          @if (showBuilderSettings() && selectedBuilderField(); as draftField) {
+            <div class="row-field-editor__right-header">
+              <button
+                type="button"
+                class="row-field-editor__back font-ibm"
+                (click)="showBuilderPalette()"
+              >
+                ← Input Fields
+              </button>
+              <button
+                type="button"
+                class="btn btn--save"
+                [disabled]="!canSaveDraftField()"
+                (click)="onBuilderSave()"
+              >
+                Save
+              </button>
+            </div>
+            <div class="row-field-editor__settings">
+              <app-field-settings
+                [field]="draftField"
+                [schema]="builderSchema()"
+                [activeModuleName]="builderModuleName"
+                (update)="onUpdateField($event)"
+                (duplicate)="onDuplicateSelectedDraft()"
+                (delete)="onDeleteSelectedDraft()"
+              ></app-field-settings>
+            </div>
+          } @else {
+            <div class="row-field-editor__right-header">
+              <h4 class="row-field-editor__panel-title font-ibm">Input Fields</h4>
+            </div>
+            <div class="row-field-editor__palette">
+              <app-builder
+                [dropListId]="paletteListId"
+                [connectedDropLists]="[canvasListId]"
+              ></app-builder>
+            </div>
+          }
+        </aside>
+      </div>
+    } @else {
     <div class="wizard-content">
       <div class="wizard-content__card">
         <h3 class="wizard-content__heading font-ibm">Form Details</h3>
@@ -147,6 +245,7 @@
         }
       </div>
     </div>
+    }
   }
 
   <!-- ═══════════════════ STEP 2 — Assign & Report ═══════════════════ -->
@@ -892,6 +991,7 @@
   }
 
   <!-- ═══════════════════ WIZARD NAVIGATION ═══════════════════ -->
+  @if (!fieldBuilderOpen()) {
   <div class="wizard-nav">
     <div class="wizard-nav__left">
       <button
@@ -942,10 +1042,7 @@
       }
     </div>
   </div>
+  }
 
-  <app-field-create-modal
-    [isOpen]="fieldModalOpen()"
-    (saved)="onFieldSaved($event)"
-    (closed)="closeFieldModal()"
-  />
+  </div>
 </div>

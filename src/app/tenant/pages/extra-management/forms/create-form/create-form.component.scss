@@ -1,5 +1,13 @@
 .create-form {
   max-width: 72rem;
+
+  &:has(.row-field-editor) {
+    max-width: 90rem;
+  }
+}
+
+.create-form__main {
+  min-width: 0;
 }
 
 .create-form__page-title {
@@ -7,6 +15,214 @@
   font-size: 1.25rem;
   font-weight: 600;
   color: #161616;
+}
+
+/* ═══ Add Field split-view editor ═══ */
+
+.row-field-editor {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  min-height: 28rem;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.row-field-editor__left {
+  flex: 1 1 58%;
+  min-width: 0;
+  padding: 1.25rem 1.5rem 1.5rem;
+  background: #fff;
+}
+
+.row-field-editor__right {
+  flex: 0 0 min(22rem, 42%);
+  width: min(22rem, 42%);
+  background: #f4f4f4;
+  border-left: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  max-height: min(85vh, 52rem);
+  overflow: hidden;
+}
+
+.row-field-editor__toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.row-field-editor__heading {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #161616;
+}
+
+.row-field-editor__hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.8125rem;
+  color: #6b7280;
+}
+
+.row-field-editor__section {
+  margin: 0;
+}
+
+.row-field-editor__row-label {
+  margin: 0 0 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.row-field-editor__fields {
+  align-items: stretch;
+}
+
+.row-field-editor__drop-zone {
+  flex: 1 1 14rem;
+  min-width: 12rem;
+  min-height: 5.5rem;
+}
+
+.row-field-editor__drop-zone ::ng-deep .form-canvas-drop-list {
+  min-height: 5.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: 0.75rem;
+}
+
+.row-field-editor__drop-zone ::ng-deep .form-canvas-empty {
+  min-height: 5.5rem;
+  padding: 0.75rem 1rem;
+  border: 1px dashed #ffd9b3;
+  background: #fffaf5;
+  border-radius: 0.5rem;
+}
+
+.row-field-editor__drop-zone ::ng-deep .form-canvas-empty p {
+  margin: 0;
+}
+
+.row-field-editor__drop-zone ::ng-deep .form-canvas-empty p + p {
+  display: none;
+}
+
+.row-field-editor__drop-zone ::ng-deep .form-canvas-field {
+  min-height: 4rem;
+  padding: 0.5rem;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+}
+
+.row-field-editor__right-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
+}
+
+.row-field-editor__panel-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ff9015;
+}
+
+.row-field-editor__back {
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #ff9015;
+}
+
+.row-field-editor__back:hover {
+  text-decoration: underline;
+}
+
+.row-field-editor__palette,
+.row-field-editor__settings {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem 1.25rem 1.25rem;
+}
+
+/* Reuse section-card / field-row look inside the editor */
+.row-field-editor .section-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  background: #fff;
+}
+
+.row-field-editor .section-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem 0.5rem;
+}
+
+.row-field-editor .section-card__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #161616;
+}
+
+.row-field-editor .section-card__body {
+  padding: 0.5rem 1.25rem 1.25rem;
+}
+
+.row-field-editor .field-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  padding-bottom: 0;
+  border-bottom: none;
+  min-width: 0;
+}
+
+.row-field-editor .field-row__fields {
+  display: flex;
+  flex: 1;
+  flex-wrap: nowrap;
+  align-items: flex-end;
+  gap: 0.85rem 1rem;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 0.35rem;
+}
+
+.row-field-editor .section-field {
+  flex: 0 0 12rem;
+  min-width: 12rem;
+  position: relative;
+}
+
+@media (max-width: 1024px) {
+  .row-field-editor {
+    flex-direction: column;
+  }
+
+  .row-field-editor__right {
+    flex: none;
+    width: 100%;
+    max-height: none;
+    border-left: none;
+    border-top: 1px solid #e5e7eb;
+  }
 }
 
 /* ═══════════════════ STEP INDICATOR ═══════════════════ */

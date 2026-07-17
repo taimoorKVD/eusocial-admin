@@ -26,13 +26,23 @@ import { DataEntrySectionComponent } from '../components/data-entry-section/data
 import { ChecklistFormSectionComponent } from '../components/checklist-form-section/checklist-form-section.component';
 import { VisualFormSectionComponent } from '../components/visual-form-section/visual-form-section.component';
 import { ResponseFormSectionComponent } from '../components/response-form-section/response-form-section.component';
-import { FieldCreateModalComponent } from '../components/field-create-modal/field-create-modal.component';
+import { FormField } from '../../../../form-builder/models/form-field.model';
+import {
+  applyCanvasDrop,
+  duplicateFormField,
+  removeFormField,
+  updateFormField,
+} from '../../../../form-builder/utils/form-field-operations';
+import { FormEditorCoreModule } from '../../../../forms/form-editor-core.module';
+import { SectionFieldPreviewComponent } from '../components/section-field-preview/section-field-preview.component';
+import { mapBuilderFieldToConfig } from '../utils/field-builder-adapter.utils';
 import {
   ChecklistFormSection,
   createDefaultFrequencyRecurring,
   DataEntrySection,
   FormFieldConfig,
   FormMetaConfig,
+  FormRow,
   FormSection,
   FrequencyInterval,
   FrequencyMonthMode,
@@ -58,11 +68,12 @@ interface WizardStep {
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
+    FormEditorCoreModule,
+    SectionFieldPreviewComponent,
     ResponseFormSectionComponent,
     DataEntrySectionComponent,
     ChecklistFormSectionComponent,
     VisualFormSectionComponent,
-    FieldCreateModalComponent,
   ],
   templateUrl: './create-form.component.html',
   styleUrl: './create-form.component.scss',
@@ -187,8 +198,56 @@ export class CreateFormComponent implements OnInit {
     frequencyRecurring: createDefaultFrequencyRecurring(),
   });
 
-  readonly fieldModalOpen = signal(false);
+  /** Split-view row editor: palette + selected-row drop canvas. */
+  readonly fieldBuilderOpen = signal(false);
   private readonly pendingFieldTarget = signal<{ sectionId: string; rowId: string } | null>(null);
+
+  readonly builderSchema = signal<FormField[]>([]);
+  readonly selectedFieldId = signal<string | null>(null);
+  readonly paletteListId = 'createFormPaletteList';
+  readonly canvasListId = 'createFormCanvasList';
+  readonly builderModuleName = 'dynamic-forms';
+
+  /** Section + row context for the open Add Field editor. */
+  readonly builderRowContext = computed(() => {
+    const target = this.pendingFieldTarget();
+    if (!target) return null;
+
+    const section = this.sections().find((item) => item.id === target.sectionId);
+    if (!section || !('rows' in section)) return null;
+
+    const rowIndex = section.rows.findIndex((row) => row.id === target.rowId);
+    const row: FormRow =
+      rowIndex >= 0
+        ? section.rows[rowIndex]
+        : { id: target.rowId, fields: [] };
+
+    const sectionLabel =
+      SECTION_OPTIONS.find((opt) => opt.value === section.type)?.label ??
+      (section.type === 'responseForm' ? 'Response Form' : String(section.type));
+
+    return {
+      sectionId: section.id,
+      sectionType: section.type,
+      sectionLabel,
+      row,
+      rowIndex: rowIndex >= 0 ? rowIndex : 0,
+    };
+  });
+
+  readonly selectedBuilderField = computed(() => {
+    const id = this.selectedFieldId();
+    if (!id) return null;
+    return this.builderSchema().find((field) => field.id === id) ?? null;
+  });
+
+  readonly showBuilderSettings = computed(() => !!this.selectedBuilderField());
+
+  readonly canSaveDraftField = computed(() => {
+    const selected = this.selectedBuilderField();
+    if (selected) return !!selected.label?.trim();
+    return this.builderSchema().some((field) => !!field.label?.trim());
+  });
 
   readonly hasSections = computed(() => this.sections().length > 0);
   readonly canSave = computed(() => this.formName().trim().length > 0 && this.hasSections());
@@ -426,18 +485,21 @@ export class CreateFormComponent implements OnInit {
 
   nextStep(): void {
     if (this.currentStep() < this.totalSteps && this.canProceed()) {
+      this.closeFieldBuilder();
       this.currentStep.update((s) => s + 1);
     }
   }
 
   prevStep(): void {
     if (this.currentStep() > 1) {
+      this.closeFieldBuilder();
       this.currentStep.update((s) => s - 1);
     }
   }
 
   goToStep(stepNum: number): void {
     if (stepNum < this.currentStep()) {
+      this.closeFieldBuilder();
       this.currentStep.set(stepNum);
     }
   }
@@ -613,15 +675,92 @@ export class CreateFormComponent implements OnInit {
 
   openFieldModal(target: { sectionId: string; rowId: string }): void {
     this.pendingFieldTarget.set(target);
-    this.fieldModalOpen.set(true);
+    this.resetBuilderDraft();
+    this.fieldBuilderOpen.set(true);
   }
 
-  closeFieldModal(): void {
-    this.fieldModalOpen.set(false);
+  closeFieldBuilder(): void {
+    this.fieldBuilderOpen.set(false);
     this.pendingFieldTarget.set(null);
+    this.resetBuilderDraft();
   }
 
-  onFieldSaved(field: FormFieldConfig): void {
+  showBuilderPalette(): void {
+    this.selectedFieldId.set(null);
+    this.resetBuilderDraft();
+  }
+
+  onCanvasDrop(event: Parameters<typeof applyCanvasDrop>[0]): void {
+    const result = applyCanvasDrop(event, this.builderSchema());
+    this.builderSchema.set(result.schema);
+    if (result.insertedField) {
+      this.onSelectField(result.insertedField);
+    }
+  }
+
+  onSelectField(field: FormField): void {
+    this.selectedFieldId.set(field.id);
+  }
+
+  onDuplicateField(field: FormField): void {
+    const result = duplicateFormField(field, this.builderSchema());
+    this.builderSchema.set(result.schema);
+    if (result.duplicate) {
+      this.onSelectField(result.duplicate);
+    }
+  }
+
+  onDuplicateSelectedDraft(): void {
+    const field = this.selectedBuilderField();
+    if (field) {
+      this.onDuplicateField(field);
+    }
+  }
+
+  onDeleteField(field: FormField): void {
+    const nextSchema = removeFormField(field, this.builderSchema());
+    this.builderSchema.set(nextSchema);
+    const selectedId = this.selectedFieldId();
+    if (selectedId && !nextSchema.some((item) => item.id === selectedId)) {
+      this.selectedFieldId.set(null);
+    }
+  }
+
+  onDeleteSelectedDraft(): void {
+    const field = this.selectedBuilderField();
+    if (field) {
+      this.onDeleteField(field);
+    }
+  }
+
+  onUpdateField(updated: FormField): void {
+    this.builderSchema.set(updateFormField(updated, this.builderSchema()));
+  }
+
+  /** Persist draft field(s) into the section/row that opened Add Field. */
+  onBuilderSave(): void {
+    if (!this.canSaveDraftField()) return;
+
+    const schema = this.builderSchema();
+    const selectedId = this.selectedFieldId();
+    const candidates = selectedId
+      ? schema.filter((field) => field.id === selectedId)
+      : schema;
+    const fieldsToAdd = candidates.filter((field) => !!field.label?.trim());
+    if (!fieldsToAdd.length) return;
+
+    for (const field of fieldsToAdd) {
+      this.appendFieldToPendingTarget(mapBuilderFieldToConfig(field));
+    }
+    this.closeFieldBuilder();
+  }
+
+  private resetBuilderDraft(): void {
+    this.builderSchema.set([]);
+    this.selectedFieldId.set(null);
+  }
+
+  private appendFieldToPendingTarget(field: FormFieldConfig): void {
     const target = this.pendingFieldTarget();
     if (!target) return;
 
@@ -657,8 +796,6 @@ export class CreateFormComponent implements OnInit {
         };
       }),
     );
-
-    this.closeFieldModal();
   }
 
   updateMeta<K extends keyof FormMetaConfig>(key: K, value: FormMetaConfig[K]): void {
