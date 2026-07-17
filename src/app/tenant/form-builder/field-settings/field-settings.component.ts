@@ -16,6 +16,7 @@ import {
   resolveBuilderLocationKind,
   schemaHasLocationKind,
 } from '../utils/location-field-dependencies.utils';
+import { isUniqueDynamicModuleOptionDisabled } from '../utils/unique-dynamic-modules.utils';
 import { DynamicModuleOptionsService } from '../services/dynamic-module-options.service';
 import { FormModuleListItem } from '../../forms/models/form-module.model';
 
@@ -43,6 +44,12 @@ export class FieldSettingsComponent {
   private readonly selectedFieldIdSignal = signal<string | null>(null);
 
   @Input() activeModuleName = '';
+
+  /**
+   * When true (Edit Form Builder on user/item/vendor setup), each Dynamic Module
+   * may only be assigned to one Select field in the current form.
+   */
+  @Input() enforceUniqueDynamicModules = false;
 
   @Input() set schema(value: FormField[] | null | undefined) {
     this.schemaSignal.set(value ?? []);
@@ -246,6 +253,17 @@ export class FieldSettingsComponent {
   }
 
   private isModuleSlugDisabled(moduleSlug: string): boolean {
+    if (
+      this.enforceUniqueDynamicModules &&
+      isUniqueDynamicModuleOptionDisabled(
+        moduleSlug,
+        this.schemaSignal(),
+        this.selectedFieldIdSignal() ?? undefined
+      )
+    ) {
+      return true;
+    }
+
     const kind = resolveBuilderLocationKind(moduleSlug);
 
     if (kind !== 'states' && kind !== 'cities') {

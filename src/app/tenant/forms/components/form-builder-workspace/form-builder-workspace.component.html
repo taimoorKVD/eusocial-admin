@@ -73,6 +73,7 @@
             [field]="selectedField"
             [schema]="schema"
             [activeModuleName]="moduleName"
+            [enforceUniqueDynamicModules]="enforceUniqueDynamicModules"
             (update)="updateField.emit($event)"
             (duplicate)="onDuplicateSelectedField()"
             (delete)="onDeleteSelectedField()"

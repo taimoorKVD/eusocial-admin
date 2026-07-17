@@ -28,6 +28,8 @@ export class FormBuilderWorkspaceComponent {
   @Input() showPreviewAction = false;
   @Input() paletteListId = 'sidebarList';
   @Input() canvasListId = 'canvasList';
+  /** Scoped to user/item/vendor setup Edit Form Builder. */
+  @Input() enforceUniqueDynamicModules = false;
 
   @Output() selectField = new EventEmitter<FormField>();
   @Output() duplicateField = new EventEmitter<FormField>();
