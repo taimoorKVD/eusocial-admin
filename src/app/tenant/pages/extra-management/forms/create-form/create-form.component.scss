@@ -196,12 +196,10 @@
 .row-field-editor .field-row__fields {
   display: flex;
   flex: 1;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: flex-end;
   gap: 0.85rem 1rem;
   min-width: 0;
-  overflow-x: auto;
-  overflow-y: hidden;
   padding-bottom: 0.35rem;
 }
 

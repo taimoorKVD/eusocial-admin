@@ -240,14 +240,6 @@ export function createDataEntryDefaultFields(): FormFieldConfig[] {
       width: '18%',
     }),
     createDefaultField({
-      type: 'number',
-      label: 'Par Qty',
-      name: 'par_qty',
-      placeholder: '0',
-      required: false,
-      width: '10%',
-    }),
-    createDefaultField({
       type: 'select',
       label: 'User Response',
       name: 'user_response',
