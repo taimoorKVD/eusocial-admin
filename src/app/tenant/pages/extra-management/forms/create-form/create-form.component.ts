@@ -263,7 +263,7 @@ export class CreateFormComponent implements OnInit {
     if (selected && this.isExistingRowField(selected.id)) {
       return true;
     }
-    if (selected) return !!selected.label?.trim();
+    // Enable Save when any newly added draft field is ready (not only the selected one).
     return this.builderSchema().some((field) => !!field.label?.trim());
   });
 
@@ -793,10 +793,11 @@ export class CreateFormComponent implements OnInit {
     this.builderSchema.set(updateFormField(updated, this.builderSchema()));
   }
 
-  /** Persist draft field(s) into the section/row that opened Add Field. */
+  /** Persist all newly added draft fields into the section/row that opened Add Field. */
   onBuilderSave(): void {
     const selected = this.selectedBuilderField();
 
+    // Existing row-field edits are applied live; Save just returns to the palette.
     if (selected && this.isExistingRowField(selected.id)) {
       this.selectedFieldId.set(null);
       return;
@@ -804,12 +805,8 @@ export class CreateFormComponent implements OnInit {
 
     if (!this.canSaveDraftField()) return;
 
-    const schema = this.builderSchema();
-    const selectedId = this.selectedFieldId();
-    const candidates = selectedId
-      ? schema.filter((field) => field.id === selectedId)
-      : schema;
-    const fieldsToAdd = candidates.filter((field) => !!field.label?.trim());
+    // Keep every newly dragged field from this builder session (order preserved).
+    const fieldsToAdd = this.builderSchema().filter((field) => !!field.label?.trim());
     if (!fieldsToAdd.length) return;
 
     for (const field of fieldsToAdd) {
