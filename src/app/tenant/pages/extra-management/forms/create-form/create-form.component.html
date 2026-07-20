@@ -68,8 +68,19 @@
                 <div class="field-row">
                   <div class="field-row__fields row-field-editor__fields">
                     @for (field of ctx.row.fields; track field.id) {
-                      <div class="section-field section-field--added">
-                        <app-section-field-preview [field]="field" />
+                      <div
+                        class="section-field section-field--added cursor-pointer rounded-md transition-shadow"
+                        [class.ring-2]="selectedFieldId() === field.id"
+                        [class.ring-[#FF9015]]="selectedFieldId() === field.id"
+                        [attr.role]="'button'"
+                        [attr.tabindex]="0"
+                        (click)="onSelectExistingRowField(field)"
+                        (keydown.enter)="onSelectExistingRowField(field)"
+                        (keydown.space)="$event.preventDefault(); onSelectExistingRowField(field)"
+                      >
+                        <div class="pointer-events-none">
+                          <app-section-field-preview [field]="field" />
+                        </div>
                       </div>
                     }
 
@@ -112,7 +123,7 @@
             <div class="row-field-editor__settings">
               <app-field-settings
                 [field]="draftField"
-                [schema]="builderSchema()"
+                [schema]="builderCombinedSchema()"
                 [activeModuleName]="builderModuleName"
                 (update)="onUpdateField($event)"
                 (duplicate)="onDuplicateSelectedDraft()"

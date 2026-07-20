@@ -1,5 +1,7 @@
 export type SectionType = 'responseForm' | 'dataEntry' | 'checklistForm' | 'visualForm';
 
+import { OptionSource } from '../../../../form-builder/models/form-field.model';
+
 export type FieldType =
   | 'text'
   | 'number'
@@ -28,6 +30,14 @@ export interface FormFieldConfig {
   options?: string[];
   /** User-entered value for this field. */
   value?: string;
+  /** Preserved from Form Builder — enables dynamic option editing on reload. */
+  optionSource?: OptionSource;
+  fieldTypeName?: string;
+  isEditable?: boolean;
+  isShow?: boolean;
+  validations?: Record<string, unknown>;
+  condition?: { fieldId: string; value: unknown };
+  defaultValue?: unknown;
 }
 
 export interface FormRow {
@@ -353,7 +363,17 @@ export function createSection(type: SectionType): FormSection {
 }
 
 export function stripFieldId(field: FormFieldConfig): Omit<FormFieldConfig, 'id'> {
-  const { id: _id, ...rest } = field;
+  const {
+    id: _id,
+    optionSource: _optionSource,
+    fieldTypeName: _fieldTypeName,
+    isEditable: _isEditable,
+    isShow: _isShow,
+    validations: _validations,
+    condition: _condition,
+    defaultValue: _defaultValue,
+    ...rest
+  } = field;
   return rest;
 }
 

@@ -35,7 +35,10 @@ import {
 } from '../../../../form-builder/utils/form-field-operations';
 import { FormEditorCoreModule } from '../../../../forms/form-editor-core.module';
 import { SectionFieldPreviewComponent } from '../components/section-field-preview/section-field-preview.component';
-import { mapBuilderFieldToConfig } from '../utils/field-builder-adapter.utils';
+import {
+  mapBuilderFieldToConfig,
+  mapConfigFieldToBuilder,
+} from '../utils/field-builder-adapter.utils';
 import {
   ChecklistFormSection,
   createDefaultFrequencyRecurring,
@@ -202,11 +205,18 @@ export class CreateFormComponent implements OnInit {
   readonly fieldBuilderOpen = signal(false);
   private readonly pendingFieldTarget = signal<{ sectionId: string; rowId: string } | null>(null);
 
+  /** Existing row fields converted for Form Builder editing. */
+  readonly rowBuilderFields = signal<FormField[]>([]);
   readonly builderSchema = signal<FormField[]>([]);
   readonly selectedFieldId = signal<string | null>(null);
   readonly paletteListId = 'createFormPaletteList';
   readonly canvasListId = 'createFormCanvasList';
   readonly builderModuleName = 'dynamic-forms';
+
+  readonly builderCombinedSchema = computed(() => [
+    ...this.rowBuilderFields(),
+    ...this.builderSchema(),
+  ]);
 
   /** Section + row context for the open Add Field editor. */
   readonly builderRowContext = computed(() => {
@@ -238,13 +248,21 @@ export class CreateFormComponent implements OnInit {
   readonly selectedBuilderField = computed(() => {
     const id = this.selectedFieldId();
     if (!id) return null;
-    return this.builderSchema().find((field) => field.id === id) ?? null;
+
+    return (
+      this.builderSchema().find((field) => field.id === id) ??
+      this.rowBuilderFields().find((field) => field.id === id) ??
+      null
+    );
   });
 
   readonly showBuilderSettings = computed(() => !!this.selectedBuilderField());
 
   readonly canSaveDraftField = computed(() => {
     const selected = this.selectedBuilderField();
+    if (selected && this.isExistingRowField(selected.id)) {
+      return true;
+    }
     if (selected) return !!selected.label?.trim();
     return this.builderSchema().some((field) => !!field.label?.trim());
   });
@@ -675,7 +693,9 @@ export class CreateFormComponent implements OnInit {
 
   openFieldModal(target: { sectionId: string; rowId: string }): void {
     this.pendingFieldTarget.set(target);
-    this.resetBuilderDraft();
+    this.initializeRowBuilderFields();
+    this.builderSchema.set([]);
+    this.selectedFieldId.set(null);
     this.fieldBuilderOpen.set(true);
   }
 
@@ -687,7 +707,13 @@ export class CreateFormComponent implements OnInit {
 
   showBuilderPalette(): void {
     this.selectedFieldId.set(null);
-    this.resetBuilderDraft();
+  }
+
+  onSelectExistingRowField(field: FormFieldConfig): void {
+    const builderField = this.rowBuilderFields().find((item) => item.id === field.id);
+    if (builderField) {
+      this.selectedFieldId.set(builderField.id);
+    }
   }
 
   onCanvasDrop(event: Parameters<typeof applyCanvasDrop>[0]): void {
@@ -703,6 +729,18 @@ export class CreateFormComponent implements OnInit {
   }
 
   onDuplicateField(field: FormField): void {
+    if (this.isExistingRowField(field.id)) {
+      const result = duplicateFormField(field, this.rowBuilderFields());
+      this.rowBuilderFields.set(result.schema);
+      if (result.duplicate) {
+        this.appendRowFieldToSections(
+          mapBuilderFieldToConfig(result.duplicate, { preserveId: true }),
+        );
+        this.onSelectField(result.duplicate);
+      }
+      return;
+    }
+
     const result = duplicateFormField(field, this.builderSchema());
     this.builderSchema.set(result.schema);
     if (result.duplicate) {
@@ -718,6 +756,16 @@ export class CreateFormComponent implements OnInit {
   }
 
   onDeleteField(field: FormField): void {
+    if (this.isExistingRowField(field.id)) {
+      this.rowBuilderFields.update((fields) => removeFormField(field, fields));
+      this.removeRowFieldFromSections(field.id);
+      const selectedId = this.selectedFieldId();
+      if (selectedId === field.id) {
+        this.selectedFieldId.set(null);
+      }
+      return;
+    }
+
     const nextSchema = removeFormField(field, this.builderSchema());
     this.builderSchema.set(nextSchema);
     const selectedId = this.selectedFieldId();
@@ -734,11 +782,26 @@ export class CreateFormComponent implements OnInit {
   }
 
   onUpdateField(updated: FormField): void {
+    if (this.isExistingRowField(updated.id)) {
+      this.rowBuilderFields.update((fields) => updateFormField(updated, fields));
+      this.updateRowFieldInSections(
+        mapBuilderFieldToConfig(updated, { preserveId: true }),
+      );
+      return;
+    }
+
     this.builderSchema.set(updateFormField(updated, this.builderSchema()));
   }
 
   /** Persist draft field(s) into the section/row that opened Add Field. */
   onBuilderSave(): void {
+    const selected = this.selectedBuilderField();
+
+    if (selected && this.isExistingRowField(selected.id)) {
+      this.selectedFieldId.set(null);
+      return;
+    }
+
     if (!this.canSaveDraftField()) return;
 
     const schema = this.builderSchema();
@@ -750,12 +813,112 @@ export class CreateFormComponent implements OnInit {
     if (!fieldsToAdd.length) return;
 
     for (const field of fieldsToAdd) {
-      this.appendFieldToPendingTarget(mapBuilderFieldToConfig(field));
+      this.appendFieldToPendingTarget(
+        mapBuilderFieldToConfig(field, { preserveId: true }),
+      );
     }
     this.closeFieldBuilder();
   }
 
+  private isExistingRowField(fieldId: string): boolean {
+    return this.rowBuilderFields().some((field) => field.id === fieldId);
+  }
+
+  private initializeRowBuilderFields(): void {
+    const target = this.pendingFieldTarget();
+    if (!target) {
+      this.rowBuilderFields.set([]);
+      return;
+    }
+
+    const section = this.sections().find((item) => item.id === target.sectionId);
+    if (!section || !('rows' in section)) {
+      this.rowBuilderFields.set([]);
+      return;
+    }
+
+    const row = section.rows.find((item) => item.id === target.rowId);
+    this.rowBuilderFields.set((row?.fields ?? []).map(mapConfigFieldToBuilder));
+  }
+
+  private updateRowFieldInSections(field: FormFieldConfig): void {
+    const target = this.pendingFieldTarget();
+    if (!target) return;
+
+    this.sections.update((list) =>
+      list.map((section) => {
+        if (section.id !== target.sectionId || !('rows' in section)) {
+          return section;
+        }
+
+        return {
+          ...section,
+          rows: section.rows.map((row) =>
+            row.id === target.rowId
+              ? {
+                  ...row,
+                  fields: row.fields.map((item) =>
+                    item.id === field.id
+                      ? { ...item, ...field, isDefault: item.isDefault }
+                      : item,
+                  ),
+                }
+              : row,
+          ),
+        };
+      }),
+    );
+  }
+
+  private appendRowFieldToSections(field: FormFieldConfig): void {
+    const target = this.pendingFieldTarget();
+    if (!target) return;
+
+    this.sections.update((list) =>
+      list.map((section) => {
+        if (section.id !== target.sectionId || !('rows' in section)) {
+          return section;
+        }
+
+        return {
+          ...section,
+          rows: section.rows.map((row) =>
+            row.id === target.rowId
+              ? { ...row, fields: [...row.fields, field] }
+              : row,
+          ),
+        };
+      }),
+    );
+  }
+
+  private removeRowFieldFromSections(fieldId: string): void {
+    const target = this.pendingFieldTarget();
+    if (!target) return;
+
+    this.sections.update((list) =>
+      list.map((section) => {
+        if (section.id !== target.sectionId || !('rows' in section)) {
+          return section;
+        }
+
+        return {
+          ...section,
+          rows: section.rows.map((row) =>
+            row.id === target.rowId
+              ? {
+                  ...row,
+                  fields: row.fields.filter((field) => field.id !== fieldId),
+                }
+              : row,
+          ),
+        };
+      }),
+    );
+  }
+
   private resetBuilderDraft(): void {
+    this.rowBuilderFields.set([]);
     this.builderSchema.set([]);
     this.selectedFieldId.set(null);
   }

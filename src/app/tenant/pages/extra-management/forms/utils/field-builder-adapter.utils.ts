@@ -1,5 +1,6 @@
-import { FormField } from '../../../../form-builder/models/form-field.model';
+import { FormField, FieldOption } from '../../../../form-builder/models/form-field.model';
 import {
+  cloneOptionSource,
   createFieldFromTemplate,
   toFieldName,
 } from '../../../../form-builder/utils/form-field.factory';
@@ -21,6 +22,11 @@ const BUILDER_TYPES: Array<{ label: string; value: FormField['type'] | FieldType
 ];
 
 export const FIELD_BUILDER_TYPE_OPTIONS = BUILDER_TYPES;
+
+export interface MapBuilderFieldToConfigOptions {
+  preserveId?: boolean;
+  selectedType?: string;
+}
 
 /** Types that FieldSettings / FormField understand natively. */
 function toFormFieldType(type: string): FormField['type'] {
@@ -61,27 +67,76 @@ export function createDraftBuilderField(
   });
 }
 
+export function mapConfigFieldToBuilder(field: FormFieldConfig): FormField {
+  const formFieldType = toFormFieldType(field.fieldTypeName ?? field.type);
+  const builderOptions = mapConfigOptionsToBuilder(field);
+
+  return {
+    id: field.id,
+    type: formFieldType,
+    fieldTypeName: field.fieldTypeName ?? field.type,
+    label: field.label,
+    name: field.name,
+    placeholder: field.placeholder ?? '',
+    required: field.required,
+    isReadonly: field.readonly === true,
+    isEditable: field.isDefault ? false : field.isEditable !== false,
+    isShow: field.isShow !== false,
+    options: builderOptions,
+    optionSource: cloneOptionSource(field.optionSource),
+    width: widthToGridUnits(field.width),
+    value: field.value,
+    defaultValue: field.defaultValue ?? field.value ?? '',
+    validations: field.validations ? { ...field.validations } : {},
+    condition: field.condition ? { ...field.condition } : { fieldId: '', value: '' },
+  };
+}
+
 export function mapBuilderFieldToConfig(
   field: FormField,
-  selectedType?: string,
+  options: MapBuilderFieldToConfigOptions = {},
 ): FormFieldConfig {
-  const type = resolveConfigType(field, selectedType);
-  const options = (field.options ?? [])
+  const type = resolveConfigType(field, options.selectedType);
+  const optionLabels = (field.options ?? [])
     .map((opt) => (typeof opt === 'string' ? opt : String(opt.label ?? opt.value)))
     .filter((opt) => opt.trim().length > 0);
 
   return {
-    id: createId('field'),
+    id: options.preserveId !== false && field.id ? field.id : createId('field'),
     type,
     label: (field.label || 'Untitled Field').trim(),
     name: toFieldName(field.label || field.name || 'field'),
     placeholder: field.placeholder?.trim() || undefined,
     required: !!field.required,
     readonly: field.isReadonly || undefined,
-    options: options.length ? options : undefined,
+    options: optionLabels.length ? optionLabels : undefined,
     width: mapBuilderWidthToPercent(field.width),
     isDefault: false,
+    value: field.value != null ? String(field.value) : undefined,
+    optionSource: cloneOptionSource(field.optionSource),
+    fieldTypeName: field.fieldTypeName ?? type,
+    isEditable: field.isEditable,
+    isShow: field.isShow,
+    validations: field.validations ? { ...field.validations } : undefined,
+    condition: field.condition ? { ...field.condition } : undefined,
+    defaultValue: field.defaultValue,
   };
+}
+
+function mapConfigOptionsToBuilder(
+  field: FormFieldConfig,
+): Array<string | FieldOption> {
+  const rawOptions = field.options ?? [];
+
+  if (field.optionSource?.type === 'dynamic') {
+    return rawOptions.map((opt) =>
+      typeof opt === 'string' ? { label: opt, value: opt } : opt,
+    );
+  }
+
+  return rawOptions.map((opt) =>
+    typeof opt === 'string' ? { label: opt, value: opt } : opt,
+  );
 }
 
 function resolveConfigType(field: FormField, selectedType?: string): FieldType {
