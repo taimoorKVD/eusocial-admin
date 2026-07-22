@@ -24,6 +24,7 @@ import { TenantUserService } from '../../../../../services/tenant-user.service';
 import { TenantJobPositionService } from '../../../../../services/tenant-job-position.service';
 import { LocationCacheService } from '../../../../../services/location-cache.service';
 import { DynamicFormsStoreService } from '../services/dynamic-forms-store.service';
+import { FormStorageService } from '../../../../forms/services/form-storage.service';
 import { FormField } from '../../../../form-builder/models/form-field.model';
 import {
   applyCanvasDrop,
@@ -114,6 +115,7 @@ export class CreateFormComponent implements OnInit {
   private readonly userService = inject(TenantUserService);
   private readonly jobPositionService = inject(TenantJobPositionService);
   private readonly locationCache = inject(LocationCacheService);
+  private readonly formStorageService = inject(FormStorageService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly fb = inject(FormBuilder);
 
@@ -525,17 +527,48 @@ export class CreateFormComponent implements OnInit {
   }
 
   private loadUsers(): void {
-    this.userService
-      .getUsers(1, 9999)
+    this.formStorageService
+      .loadForm('users')
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (res: any) => {
-          const data = res?.data || res;
-          if (Array.isArray(data)) {
-            this.userOptions.set(data.map((u: any) => ({ id: String(u.id), name: u.fld_1784206421607_5byrqvw })));
-          }
+        next: (schema) => {
+          const fields = schema?.fields || [];
+          const nameField = fields.find((f: any) => f.name === 'name') || fields.find((f: any) => (f.label || '').toLowerCase() === 'name');
+          const nameFieldId = nameField?.id || null;
+
+          this.userService
+            .getUsers(1, 9999)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+              next: (res: any) => {
+                const data = res?.data || res;
+                if (Array.isArray(data)) {
+                  this.userOptions.set(data.map((u: any) => ({
+                    id: String(u.id),
+                    name: nameFieldId ? String(u[nameFieldId] ?? '') : '',
+                  })));
+                }
+              },
+              error: () => this.userOptions.set([]),
+            });
         },
-        error: () => this.userOptions.set([]),
+        error: () => {
+          this.userService
+            .getUsers(1, 9999)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+              next: (res: any) => {
+                const data = res?.data || res;
+                if (Array.isArray(data)) {
+                  this.userOptions.set(data.map((u: any) => ({
+                    id: String(u.id),
+                    name: '',
+                  })));
+                }
+              },
+              error: () => this.userOptions.set([]),
+            });
+        },
       });
   }
 
