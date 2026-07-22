@@ -1,4 +1,9 @@
-export type SectionType = 'responseForm' | 'dataEntry' | 'checklistForm' | 'visualForm';
+export type SectionType =
+  | 'custom'
+  | 'responseForm'
+  | 'dataEntry'
+  | 'checklistForm'
+  | 'visualForm';
 
 import { OptionSource } from '../../../../form-builder/models/form-field.model';
 
@@ -45,6 +50,13 @@ export interface FormRow {
   fields: FormFieldConfig[];
 }
 
+export interface CustomFormSection {
+  id: string;
+  name: string;
+  type: 'custom';
+  rows: FormRow[];
+}
+
 export interface ResponseFormSection {
   id: string;
   type: 'responseForm';
@@ -82,6 +94,7 @@ export interface VisualFormSection {
 }
 
 export type FormSection =
+  | CustomFormSection
   | ResponseFormSection
   | DataEntrySection
   | ChecklistFormSection
@@ -147,6 +160,12 @@ export interface DynamicFormPayload {
     recurring: FrequencyRecurringConfig | null;
   };
   sections: Array<
+    | {
+        id: string;
+        name: string;
+        type: 'custom';
+        rows: Array<{ fields: Omit<FormFieldConfig, 'id'>[] }>;
+      }
     | {
         type: 'responseForm';
         rows: Array<{ fields: Omit<FormFieldConfig, 'id'>[] }>;
@@ -301,6 +320,15 @@ export function createEmptyRow(): FormRow {
   return { id: createId('row'), fields: [] };
 }
 
+export function createCustomSection(name: string): CustomFormSection {
+  return {
+    id: createId('section'),
+    name: name.trim(),
+    type: 'custom',
+    rows: [],
+  };
+}
+
 export function createResponseFormRow(): FormRow {
   return { id: createId('row'), fields: createResponseFormDefaultFields() };
 }
@@ -351,6 +379,8 @@ export function createVisualFormSection(): VisualFormSection {
 
 export function createSection(type: SectionType): FormSection {
   switch (type) {
+    case 'custom':
+      return createCustomSection('Untitled Section');
     case 'responseForm':
       return createResponseFormSection();
     case 'dataEntry':
@@ -400,6 +430,17 @@ export function buildDynamicFormPayload(
         meta.frequencyType === 'recurring' ? { ...meta.frequencyRecurring } : null,
     },
     sections: sections.map((section) => {
+      if (section.type === 'custom') {
+        return {
+          id: section.id,
+          name: section.name,
+          type: 'custom' as const,
+          rows: section.rows.map((row) => ({
+            fields: row.fields.map(stripFieldId),
+          })),
+        };
+      }
+
       if (section.type === 'visualForm') {
         return {
           type: 'visualForm' as const,

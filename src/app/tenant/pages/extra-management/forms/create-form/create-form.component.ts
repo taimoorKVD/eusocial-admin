@@ -15,17 +15,15 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
-import { startWith } from 'rxjs';
+import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
+import { startWith, take } from 'rxjs';
 import flatpickr from 'flatpickr';
 import { Instance as FlatpickrInstance } from 'flatpickr/dist/types/instance';
 import { TenantSessionService } from '../../../../../services/tenant-session.service';
 import { TenantUserService } from '../../../../../services/tenant-user.service';
 import { TenantJobPositionService } from '../../../../../services/tenant-job-position.service';
+import { LocationCacheService } from '../../../../../services/location-cache.service';
 import { DynamicFormsStoreService } from '../services/dynamic-forms-store.service';
-import { DataEntrySectionComponent } from '../components/data-entry-section/data-entry-section.component';
-import { ChecklistFormSectionComponent } from '../components/checklist-form-section/checklist-form-section.component';
-import { VisualFormSectionComponent } from '../components/visual-form-section/visual-form-section.component';
-import { ResponseFormSectionComponent } from '../components/response-form-section/response-form-section.component';
 import { FormField } from '../../../../form-builder/models/form-field.model';
 import {
   applyCanvasDrop,
@@ -33,16 +31,26 @@ import {
   removeFormField,
   updateFormField,
 } from '../../../../form-builder/utils/form-field-operations';
+import { getLocationFieldDeleteBlockReason } from '../../../../form-builder/utils/location-field-dependencies.utils';
 import { FormEditorCoreModule } from '../../../../forms/form-editor-core.module';
+import { FormBuilderTab } from '../../../../forms/components/form-builder-workspace/form-builder-workspace.component';
 import { SectionFieldPreviewComponent } from '../components/section-field-preview/section-field-preview.component';
 import {
   mapBuilderFieldToConfig,
   mapConfigFieldToBuilder,
 } from '../utils/field-builder-adapter.utils';
 import {
-  ChecklistFormSection,
+  getConfigFieldLocationKind,
+  getFieldOptionLabelKey,
+  getRowLocationFields,
+  mapLocationRecordsToOptionLabels,
+  resolveLocationRecordId,
+} from '../utils/row-location-dependencies.utils';
+import {
   createDefaultFrequencyRecurring,
-  DataEntrySection,
+  createCustomSection,
+  createEmptyRow,
+  CustomFormSection,
   FormFieldConfig,
   FormMetaConfig,
   FormRow,
@@ -50,13 +58,8 @@ import {
   FrequencyInterval,
   FrequencyMonthMode,
   FrequencyType,
-  ResponseFormSection,
-  SECTION_OPTIONS,
-  SectionType,
-  VisualFormSection,
   buildDynamicFormPayload,
   createId,
-  createSection,
 } from '../models/dynamic-form.models';
 
 interface WizardStep {
@@ -73,10 +76,6 @@ interface WizardStep {
     ReactiveFormsModule,
     FormEditorCoreModule,
     SectionFieldPreviewComponent,
-    ResponseFormSectionComponent,
-    DataEntrySectionComponent,
-    ChecklistFormSectionComponent,
-    VisualFormSectionComponent,
   ],
   templateUrl: './create-form.component.html',
   styleUrl: './create-form.component.scss',
@@ -85,10 +84,6 @@ export class CreateFormComponent implements OnInit {
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
     const target = event.target as HTMLElement;
-    if (!target.closest('.section-dropdown')) {
-      this.sectionDropdownOpen.set(false);
-      this.sectionSearchQuery.set('');
-    }
     if (!target.closest('.multi-select-dropdown')) {
       this.assignUsersDropdownOpen.set(false);
       this.assignUsersSearch.set('');
@@ -118,32 +113,12 @@ export class CreateFormComponent implements OnInit {
   private readonly store = inject(DynamicFormsStoreService);
   private readonly userService = inject(TenantUserService);
   private readonly jobPositionService = inject(TenantJobPositionService);
+  private readonly locationCache = inject(LocationCacheService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly fb = inject(FormBuilder);
 
-  readonly sectionOptions = SECTION_OPTIONS;
   private readonly frequencyDateInput = viewChild<ElementRef<HTMLInputElement>>('frequencyDateInput');
   private flatpickrInstance: FlatpickrInstance | null = null;
-
-  /** Options with `disabled` flag for types already added to the form. */
-  readonly availableSectionOptions = computed(() => {
-    const usedTypes = new Set(this.sections().map((s) => s.type));
-    return this.sectionOptions.map((opt) => ({
-      ...opt,
-      disabled: usedTypes.has(opt.value),
-    }));
-  });
-
-  readonly sectionDropdownOpen = signal(false);
-  readonly sectionSearchQuery = signal('');
-
-  readonly filteredSectionOptions = computed(() => {
-    const query = this.sectionSearchQuery().trim().toLowerCase();
-    const options = this.availableSectionOptions();
-    return query
-      ? options.filter((opt) => opt.label.toLowerCase().includes(query))
-      : options;
-  });
 
   // ── Assign & Report Multi-Select State ────────────────────────
   readonly assignUsersDropdownOpen = signal(false);
@@ -189,7 +164,12 @@ export class CreateFormComponent implements OnInit {
 
   readonly formName = signal('');
   readonly sections = signal<FormSection[]>([]);
-  readonly selectedSectionType = signal<SectionType | ''>('');
+  readonly sectionDialogOpen = signal(false);
+  readonly sectionDialogMode = signal<'create' | 'rename'>('create');
+  readonly editingSectionId = signal<string | null>(null);
+  readonly sectionNameInput = signal('');
+  readonly sectionNameError = signal('');
+  readonly sectionPendingRemoval = signal<CustomFormSection | null>(null);
   readonly meta = signal<FormMetaConfig>({
     assignJobPosition: [],
     assignUsers: [],
@@ -209,9 +189,13 @@ export class CreateFormComponent implements OnInit {
   readonly rowBuilderFields = signal<FormField[]>([]);
   readonly builderSchema = signal<FormField[]>([]);
   readonly selectedFieldId = signal<string | null>(null);
+  readonly builderActiveTab = signal<FormBuilderTab>('fields');
   readonly paletteListId = 'createFormPaletteList';
   readonly canvasListId = 'createFormCanvasList';
+  readonly existingRowListId = 'createFormExistingRowList';
   readonly builderModuleName = 'dynamic-forms';
+  /** Prevents click-to-edit while a row field is being dragged. */
+  private isReorderingExistingFields = false;
 
   readonly builderCombinedSchema = computed(() => [
     ...this.rowBuilderFields(),
@@ -232,9 +216,7 @@ export class CreateFormComponent implements OnInit {
         ? section.rows[rowIndex]
         : { id: target.rowId, fields: [] };
 
-    const sectionLabel =
-      SECTION_OPTIONS.find((opt) => opt.value === section.type)?.label ??
-      (section.type === 'responseForm' ? 'Response Form' : String(section.type));
+    const sectionLabel = section.type === 'custom' ? section.name : String(section.type);
 
     return {
       sectionId: section.id,
@@ -255,8 +237,6 @@ export class CreateFormComponent implements OnInit {
       null
     );
   });
-
-  readonly showBuilderSettings = computed(() => !!this.selectedBuilderField());
 
   readonly canSaveDraftField = computed(() => {
     const selected = this.selectedBuilderField();
@@ -631,46 +611,68 @@ export class CreateFormComponent implements OnInit {
 
   // ── Section Management ────────────────────────────────────────
 
-  onAddSection(): void {
-    const type = this.selectedSectionType();
-    if (!type) return;
-
-    this.sections.update((list) => [...list, createSection(type)]);
+  openAddSectionDialog(): void {
+    this.sectionDialogMode.set('create');
+    this.editingSectionId.set(null);
+    this.sectionNameInput.set('');
+    this.sectionNameError.set('');
+    this.sectionDialogOpen.set(true);
   }
 
-  onSectionTypeChange(value: string): void {
-    console.log('[Dynamic Forms] Section type changed:', value);
-    const type = (value || '') as SectionType | '';
-    this.selectedSectionType.set(type);
-    if (type && !this.isTypeAlreadyUsed(type)) {
-      this.onAddSection();
+  openRenameSectionDialog(section: CustomFormSection): void {
+    this.sectionDialogMode.set('rename');
+    this.editingSectionId.set(section.id);
+    this.sectionNameInput.set(section.name);
+    this.sectionNameError.set('');
+    this.sectionDialogOpen.set(true);
+  }
+
+  closeSectionDialog(): void {
+    this.sectionDialogOpen.set(false);
+    this.editingSectionId.set(null);
+    this.sectionNameInput.set('');
+    this.sectionNameError.set('');
+  }
+
+  onSectionNameInput(value: string): void {
+    this.sectionNameInput.set(value);
+    if (this.sectionNameError()) {
+      this.sectionNameError.set('');
+    }
+  }
+
+  saveSection(): void {
+    const name = this.sectionNameInput().trim();
+    if (!name) {
+      this.sectionNameError.set('Section name is required.');
+      return;
+    }
+
+    const editingId = this.editingSectionId();
+    const duplicate = this.sections().some(
+      (section) =>
+        section.id !== editingId &&
+        section.type === 'custom' &&
+        section.name.trim().toLocaleLowerCase() === name.toLocaleLowerCase(),
+    );
+    if (duplicate) {
+      this.sectionNameError.set('A section with this name already exists.');
+      return;
+    }
+
+    if (this.sectionDialogMode() === 'rename' && editingId) {
+      this.sections.update((list) =>
+        list.map((section) =>
+          section.id === editingId && section.type === 'custom'
+            ? { ...section, name }
+            : section,
+        ),
+      );
     } else {
-      this.selectedSectionType.set('');
+      this.sections.update((list) => [...list, createCustomSection(name)]);
     }
-  }
 
-  onSectionSearch(event: Event): void {
-    const value = (event.target as HTMLInputElement).value;
-    this.sectionSearchQuery.set(value);
-  }
-
-  selectSectionOption(opt: { value: SectionType; label: string; disabled: boolean }): void {
-    if (opt.disabled) return;
-    this.sectionSearchQuery.set('');
-    this.sectionDropdownOpen.set(false);
-    this.onSectionTypeChange(opt.value);
-  }
-
-  getSectionDisplayLabel(): string {
-    if (!this.selectedSectionType()) {
-      return 'Select section';
-    }
-    const match = this.sectionOptions.find((o) => o.value === this.selectedSectionType());
-    return match?.label ?? 'Select section';
-  }
-
-  private isTypeAlreadyUsed(type: SectionType): boolean {
-    return this.sections().some((s) => s.type === type);
+    this.closeSectionDialog();
   }
 
   updateSection(updated: FormSection): void {
@@ -679,16 +681,131 @@ export class CreateFormComponent implements OnInit {
     );
   }
 
-  removeSection(sectionId: string): void {
-    this.sections.update((list) => list.filter((s) => s.id !== sectionId));
-    this.resetAddSectionDropdown();
+  requestRemoveSection(section: CustomFormSection): void {
+    this.sectionPendingRemoval.set(section);
   }
 
-  /** Resets the Add Section control to "Select section". */
-  private resetAddSectionDropdown(): void {
-    this.selectedSectionType.set('');
-    this.sectionSearchQuery.set('');
-    this.sectionDropdownOpen.set(false);
+  cancelRemoveSection(): void {
+    this.sectionPendingRemoval.set(null);
+  }
+
+  confirmRemoveSection(): void {
+    const section = this.sectionPendingRemoval();
+    if (!section) return;
+    this.sections.update((list) => list.filter((item) => item.id !== section.id));
+    this.sectionPendingRemoval.set(null);
+  }
+
+  addSectionRow(section: CustomFormSection): void {
+    this.updateSection({
+      ...section,
+      rows: [...section.rows, createEmptyRow()],
+    });
+  }
+
+  removeSectionRow(section: CustomFormSection, rowId: string): void {
+    this.updateSection({
+      ...section,
+      rows: section.rows.filter((row) => row.id !== rowId),
+    });
+  }
+
+  removeSectionField(section: CustomFormSection, rowId: string, fieldId: string): void {
+    const row = section.rows.find((item) => item.id === rowId);
+    const field = row?.fields.find((item) => item.id === fieldId);
+    if (!row || !field) return;
+
+    const blockReason = getLocationFieldDeleteBlockReason(
+      mapConfigFieldToBuilder(field),
+      row.fields.map(mapConfigFieldToBuilder),
+    );
+    if (blockReason) {
+      return;
+    }
+
+    this.updateSection({
+      ...section,
+      rows: section.rows.map((item) =>
+        item.id === rowId
+          ? { ...item, fields: item.fields.filter((f) => f.id !== fieldId) }
+          : item,
+      ),
+    });
+  }
+
+  updateSectionFieldValue(
+    section: CustomFormSection,
+    rowId: string,
+    fieldId: string,
+    value: string,
+  ): void {
+    const row = section.rows.find((item) => item.id === rowId);
+    if (!row) return;
+
+    const nextFields = row.fields.map((field) =>
+      field.id === fieldId ? { ...field, value } : field,
+    );
+
+    this.updateSection({
+      ...section,
+      rows: section.rows.map((item) =>
+        item.id === rowId ? { ...item, fields: nextFields } : item,
+      ),
+    });
+
+    this.applyRowLocationDependencies(section.id, rowId, fieldId, value, nextFields);
+  }
+
+  sectionHasFields(section: CustomFormSection): boolean {
+    return section.rows.some((row) => row.fields.length > 0);
+  }
+
+  onExistingRowFieldsDrop(event: CdkDragDrop<FormFieldConfig[]>): void {
+    if (
+      event.previousContainer !== event.container ||
+      event.previousIndex === event.currentIndex
+    ) {
+      return;
+    }
+
+    const target = this.pendingFieldTarget();
+    if (!target) return;
+
+    this.sections.update((list) =>
+      list.map((section) => {
+        if (section.id !== target.sectionId || !('rows' in section)) {
+          return section;
+        }
+
+        return {
+          ...section,
+          rows: section.rows.map((row) => {
+            if (row.id !== target.rowId) return row;
+            const fields = [...row.fields];
+            moveItemInArray(fields, event.previousIndex, event.currentIndex);
+            return { ...row, fields };
+          }),
+        };
+      }),
+    );
+
+    this.initializeRowBuilderFields();
+  }
+
+  onExistingRowFieldDragStarted(): void {
+    this.isReorderingExistingFields = true;
+  }
+
+  onExistingRowFieldDragEnded(): void {
+    setTimeout(() => {
+      this.isReorderingExistingFields = false;
+    });
+  }
+
+  openFieldBuilderForSection(section: CustomFormSection): void {
+    // Ensure the first field targets an existing first row (or a stable new row id).
+    const rowId = section.rows[0]?.id ?? createId('row');
+    this.openFieldModal({ sectionId: section.id, rowId });
   }
 
   openFieldModal(target: { sectionId: string; rowId: string }): void {
@@ -696,23 +813,36 @@ export class CreateFormComponent implements OnInit {
     this.initializeRowBuilderFields();
     this.builderSchema.set([]);
     this.selectedFieldId.set(null);
+    this.builderActiveTab.set('fields');
     this.fieldBuilderOpen.set(true);
   }
 
   closeFieldBuilder(): void {
     this.fieldBuilderOpen.set(false);
     this.pendingFieldTarget.set(null);
+    this.builderActiveTab.set('fields');
     this.resetBuilderDraft();
+  }
+
+  onBuilderActiveTabChange(tab: FormBuilderTab): void {
+    if (tab === 'settings' && !this.selectedFieldId()) {
+      return;
+    }
+    this.builderActiveTab.set(tab);
   }
 
   showBuilderPalette(): void {
     this.selectedFieldId.set(null);
+    this.builderActiveTab.set('fields');
   }
 
   onSelectExistingRowField(field: FormFieldConfig): void {
+    if (this.isReorderingExistingFields) return;
+
     const builderField = this.rowBuilderFields().find((item) => item.id === field.id);
     if (builderField) {
       this.selectedFieldId.set(builderField.id);
+      this.builderActiveTab.set('settings');
     }
   }
 
@@ -726,6 +856,7 @@ export class CreateFormComponent implements OnInit {
 
   onSelectField(field: FormField): void {
     this.selectedFieldId.set(field.id);
+    this.builderActiveTab.set('settings');
   }
 
   onDuplicateField(field: FormField): void {
@@ -756,12 +887,21 @@ export class CreateFormComponent implements OnInit {
   }
 
   onDeleteField(field: FormField): void {
+    const blockReason = getLocationFieldDeleteBlockReason(
+      field,
+      this.builderCombinedSchema(),
+    );
+    if (blockReason) {
+      return;
+    }
+
     if (this.isExistingRowField(field.id)) {
       this.rowBuilderFields.update((fields) => removeFormField(field, fields));
       this.removeRowFieldFromSections(field.id);
       const selectedId = this.selectedFieldId();
       if (selectedId === field.id) {
         this.selectedFieldId.set(null);
+        this.builderActiveTab.set('fields');
       }
       return;
     }
@@ -771,6 +911,7 @@ export class CreateFormComponent implements OnInit {
     const selectedId = this.selectedFieldId();
     if (selectedId && !nextSchema.some((item) => item.id === selectedId)) {
       this.selectedFieldId.set(null);
+      this.builderActiveTab.set('fields');
     }
   }
 
@@ -800,6 +941,7 @@ export class CreateFormComponent implements OnInit {
     // Existing row-field edits are applied live; Save just returns to the palette.
     if (selected && this.isExistingRowField(selected.id)) {
       this.selectedFieldId.set(null);
+      this.builderActiveTab.set('fields');
       return;
     }
 
@@ -920,6 +1062,169 @@ export class CreateFormComponent implements OnInit {
     this.selectedFieldId.set(null);
   }
 
+  /**
+   * Country → State → City cascading for a Form Details row.
+   * Reuses LocationCacheService (same source as User/Item/Vendor filters).
+   */
+  private applyRowLocationDependencies(
+    sectionId: string,
+    rowId: string,
+    changedFieldId: string,
+    value: string,
+    fields: FormFieldConfig[],
+  ): void {
+    const { country, state, city } = getRowLocationFields(fields);
+    const changed = fields.find((field) => field.id === changedFieldId);
+    if (!changed) return;
+
+    const kind = getConfigFieldLocationKind(changed);
+
+    if (kind === 'countries') {
+      this.patchRowFields(
+        sectionId,
+        rowId,
+        (rowFields) =>
+          rowFields.map((field) => {
+            if (state && field.id === state.id) {
+              return { ...field, value: '', options: [] };
+            }
+            if (city && field.id === city.id) {
+              return { ...field, value: '', options: [] };
+            }
+            return field;
+          }),
+      );
+
+      if (!value.trim()) return;
+
+      const countryId = resolveLocationRecordId(
+        value,
+        this.locationCache.countries(),
+        getFieldOptionLabelKey(changed),
+      );
+      if (countryId == null) return;
+
+      if (state) {
+        this.locationCache
+          .getStatesForCountry(countryId)
+          .pipe(take(1), takeUntilDestroyed(this.destroyRef))
+          .subscribe((records) => {
+            const options = mapLocationRecordsToOptionLabels(
+              records,
+              getFieldOptionLabelKey(state),
+            );
+            this.patchRowFieldOptions(sectionId, rowId, state.id, options, true);
+          });
+      } else if (city) {
+        this.locationCache
+          .getCitiesForCountry(countryId)
+          .pipe(take(1), takeUntilDestroyed(this.destroyRef))
+          .subscribe((records) => {
+            const options = mapLocationRecordsToOptionLabels(
+              records,
+              getFieldOptionLabelKey(city),
+            );
+            this.patchRowFieldOptions(sectionId, rowId, city.id, options, true);
+          });
+      }
+      return;
+    }
+
+    if (kind === 'states') {
+      this.patchRowFields(
+        sectionId,
+        rowId,
+        (rowFields) =>
+          rowFields.map((field) =>
+            city && field.id === city.id ? { ...field, value: '', options: [] } : field,
+          ),
+      );
+
+      if (!value.trim() || !city) return;
+
+      const loadCitiesForState = (stateId: unknown): void => {
+        if (stateId == null) return;
+        this.locationCache
+          .getCitiesForState(stateId)
+          .pipe(take(1), takeUntilDestroyed(this.destroyRef))
+          .subscribe((records) => {
+            const options = mapLocationRecordsToOptionLabels(
+              records,
+              getFieldOptionLabelKey(city),
+            );
+            this.patchRowFieldOptions(sectionId, rowId, city.id, options, true);
+          });
+      };
+
+      if (country?.value) {
+        const countryId = resolveLocationRecordId(
+          country.value,
+          this.locationCache.countries(),
+          getFieldOptionLabelKey(country),
+        );
+        if (countryId == null) return;
+
+        this.locationCache
+          .getStatesForCountry(countryId)
+          .pipe(take(1), takeUntilDestroyed(this.destroyRef))
+          .subscribe((states) => {
+            loadCitiesForState(
+              resolveLocationRecordId(value, states, getFieldOptionLabelKey(changed)),
+            );
+          });
+      } else {
+        loadCitiesForState(
+          resolveLocationRecordId(
+            value,
+            this.locationCache.states(),
+            getFieldOptionLabelKey(changed),
+          ),
+        );
+      }
+    }
+  }
+
+  private patchRowFieldOptions(
+    sectionId: string,
+    rowId: string,
+    fieldId: string,
+    options: string[],
+    clearValue: boolean,
+  ): void {
+    this.patchRowFields(sectionId, rowId, (rowFields) =>
+      rowFields.map((field) =>
+        field.id === fieldId
+          ? {
+              ...field,
+              options,
+              value: clearValue ? '' : field.value,
+            }
+          : field,
+      ),
+    );
+  }
+
+  private patchRowFields(
+    sectionId: string,
+    rowId: string,
+    updater: (fields: FormFieldConfig[]) => FormFieldConfig[],
+  ): void {
+    this.sections.update((list) =>
+      list.map((section) => {
+        if (section.id !== sectionId || !('rows' in section)) {
+          return section;
+        }
+
+        return {
+          ...section,
+          rows: section.rows.map((row) =>
+            row.id === rowId ? { ...row, fields: updater(row.fields) } : row,
+          ),
+        };
+      }),
+    );
+  }
+
   private appendFieldToPendingTarget(field: FormFieldConfig): void {
     const target = this.pendingFieldTarget();
     if (!target) return;
@@ -937,9 +1242,11 @@ export class CreateFormComponent implements OnInit {
         if (section.id !== target.sectionId) return section;
         if (!('rows' in section)) return section;
 
+        // When the section has no rows yet, create the first row using the same
+        // rowId the builder was opened with — never introduce a different empty row.
         const rows = section.rows.length
           ? section.rows
-          : [{ id: createId('row'), fields: [] as FormFieldConfig[] }];
+          : [{ id: target.rowId, fields: [] as FormFieldConfig[] }];
 
         const hasTargetRow = rows.some((row) => row.id === target.rowId);
         const resolvedRows = hasTargetRow
@@ -996,20 +1303,8 @@ export class CreateFormComponent implements OnInit {
     searchSignal.set((event.target as HTMLInputElement).value);
   }
 
-  asResponseForm(section: FormSection): ResponseFormSection {
-    return section as ResponseFormSection;
-  }
-
-  asDataEntry(section: FormSection): DataEntrySection {
-    return section as DataEntrySection;
-  }
-
-  asChecklist(section: FormSection): ChecklistFormSection {
-    return section as ChecklistFormSection;
-  }
-
-  asVisual(section: FormSection): VisualFormSection {
-    return section as VisualFormSection;
+  asCustomSection(section: FormSection): CustomFormSection {
+    return section as CustomFormSection;
   }
 
   preview(): void {
