@@ -23,12 +23,14 @@
           type="button"
           class="section-input font-ibm flex items-center justify-between cursor-pointer w-full"
           [class.text-[#A0A0A0]]="!field.value"
-          [disabled]="!!field.readonly"
+          [disabled]="isSelectDisabled"
+          [class.cursor-not-allowed]="isSelectDisabled"
+          [class.opacity-60]="isSelectDisabled"
           (click)="toggleSelectDropdown($event)"
         >
           <span class="truncate">{{ selectDisplayLabel }}</span>
           <div class="flex items-center gap-2 shrink-0">
-            @if (field.value && !field.readonly) {
+            @if (field.value && !isSelectDisabled) {
               <button
                 type="button"
                 class="flex items-center justify-center w-5 h-5 rounded-full hover:bg-gray-200 transition-colors"
@@ -55,14 +57,14 @@
             </svg>
           </div>
         </button>
-
-        @if (selectDropdownOpen()) {
-          <div
-            class="bg-white border border-[#E0E0E0] rounded-lg shadow-lg overflow-hidden"
-            [style.position]="'fixed'"
+   <!-- /* [style.position]="'fixed'"
             [style.top.px]="dropdownPosition()?.top"
             [style.left.px]="dropdownPosition()?.left"
-            [style.width.px]="dropdownPosition()?.width"
+            [style.width.px]="dropdownPosition()?.width" */ -->
+        @if (selectDropdownOpen()) {
+          <div
+            class="bg-white border border-[#E0E0E0] rounded-lg shadow-lg overflow-hidden mt-2"
+
             [style.z-index]="1000"
             (click)="$event.stopPropagation()"
           >
@@ -77,20 +79,20 @@
               />
             </div>
             <ul class="max-h-48 overflow-y-auto py-1">
-              @for (opt of filteredSelectOptions(); track opt) {
+              @for (opt of filteredSelectOptions; track optionValue(opt)) {
                 <li>
                   <button
                     type="button"
                     class="w-full text-left px-4 py-2 text-sm font-ibm flex items-center gap-2 cursor-pointer"
-                    [class]="field.value === opt ? 'bg-[#fff5eb] text-[#FF9015]' : 'hover:bg-[#FF9015] hover:text-white text-[#525252]'"
+                    [class]="isOptionSelected(opt) ? 'bg-[#fff5eb] text-[#FF9015]' : 'hover:bg-[#FF9015] hover:text-white text-[#525252]'"
                     (click)="selectOption(opt)"
                   >
-                    @if (field.value === opt) {
+                    @if (isOptionSelected(opt)) {
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="text-[#FF9015] shrink-0">
                         <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/>
                       </svg>
                     }
-                    {{ opt }}
+                    {{ optionLabel(opt) }}
                   </button>
                 </li>
               } @empty {
@@ -104,15 +106,15 @@
     @case ('checkbox') {
       <div class="section-field-preview__checks">
         @if (field.options?.length) {
-          @for (opt of field.options; track opt) {
+          @for (opt of field.options; track optionValue(opt)) {
             <label class="section-field-preview__check font-ibm">
               <input
                 type="checkbox"
-                [checked]="isOptionChecked(opt)"
+                [checked]="isOptionChecked(optionValue(opt))"
                 [disabled]="!!field.readonly"
-                (change)="onOptionCheckboxToggle(opt, $any($event.target).checked)"
+                (change)="onOptionCheckboxToggle(optionValue(opt), $any($event.target).checked)"
               />
-              <span>{{ opt }}</span>
+              <span>{{ optionLabel(opt) }}</span>
             </label>
           }
         } @else {
@@ -131,17 +133,17 @@
     @case ('radio') {
       <div class="section-field-preview__checks">
         @if (field.options?.length) {
-          @for (opt of field.options; track opt) {
+          @for (opt of field.options; track optionValue(opt)) {
             <label class="section-field-preview__check font-ibm">
               <input
                 type="radio"
                 [name]="field.id"
-                [value]="opt"
-                [checked]="field.value === opt"
+                [value]="optionValue(opt)"
+                [checked]="isOptionSelected(opt)"
                 [disabled]="!!field.readonly"
-                (change)="onRadioSelect(opt)"
+                (change)="onRadioSelect(optionValue(opt))"
               />
-              <span>{{ opt }}</span>
+              <span>{{ optionLabel(opt) }}</span>
             </label>
           }
         } @else {

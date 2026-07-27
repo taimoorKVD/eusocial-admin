@@ -4,11 +4,15 @@ import {
   HostListener,
   Input,
   Output,
-  computed,
   signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormFieldConfig } from '../../models/dynamic-form.models';
+import { FormFieldConfig, FormSelectOption } from '../../models/dynamic-form.models';
+import {
+  getSelectOptionLabel,
+  getSelectOptionValue,
+  isDependentLocationSelectLocked,
+} from '../../utils/row-location-dependencies.utils';
 
 /**
  * Editable FormFieldConfig control — matches section input styling.
@@ -29,18 +33,47 @@ export class SectionFieldPreviewComponent {
   readonly selectSearchQuery = signal('');
   readonly dropdownPosition = signal<{ top: number; left: number; width: number } | null>(null);
 
-  readonly filteredSelectOptions = computed(() => {
+  get filteredSelectOptions(): FormSelectOption[] {
     const options = this.field?.options ?? [];
     const q = this.selectSearchQuery().trim().toLowerCase();
-    return q ? options.filter((opt) => opt.toLowerCase().includes(q)) : options;
-  });
+    return q
+      ? options.filter((opt) => this.optionLabel(opt).toLowerCase().includes(q))
+      : options;
+  }
 
   get selectPlaceholder(): string {
+    if (this.isSelectDisabled && !(this.field.options?.length)) {
+      return 'Select parent first';
+    }
     return this.field.placeholder || `Select ${this.field.label || ''}`.trim() || 'Select';
   }
 
   get selectDisplayLabel(): string {
-    return this.field.value || this.selectPlaceholder;
+    if (!this.field.value) {
+      return this.selectPlaceholder;
+    }
+
+    const match = (this.field.options ?? []).find(
+      (opt) => this.optionValue(opt) === String(this.field.value),
+    );
+    return match ? this.optionLabel(match) : String(this.field.value);
+  }
+
+  /** Dependent State/City with no loaded options stay disabled until parent is selected. */
+  get isSelectDisabled(): boolean {
+    return !!this.field.readonly || isDependentLocationSelectLocked(this.field);
+  }
+
+  optionLabel(option: FormSelectOption): string {
+    return getSelectOptionLabel(option);
+  }
+
+  optionValue(option: FormSelectOption): string {
+    return getSelectOptionValue(option);
+  }
+
+  isOptionSelected(option: FormSelectOption): boolean {
+    return String(this.field.value ?? '') === this.optionValue(option);
   }
 
   @HostListener('document:click', ['$event'])
@@ -59,7 +92,7 @@ export class SectionFieldPreviewComponent {
   }
 
   toggleSelectDropdown(event: MouseEvent): void {
-    if (this.field.readonly) return;
+    if (this.isSelectDisabled) return;
     event.stopPropagation();
 
     if (this.selectDropdownOpen()) {
@@ -81,8 +114,8 @@ export class SectionFieldPreviewComponent {
     this.selectDropdownOpen.set(true);
   }
 
-  selectOption(value: string): void {
-    this.valueChange.emit(value);
+  selectOption(option: FormSelectOption): void {
+    this.valueChange.emit(this.optionValue(option));
     this.closeSelectDropdown();
   }
 

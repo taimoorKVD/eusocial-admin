@@ -20,6 +20,14 @@ export type FieldType =
   | 'image'
   | 'file';
 
+/** Select option — string label, or label+value (id) for location dependencies. */
+export type FormSelectOption =
+  | string
+  | {
+      label: string;
+      value: string | number;
+    };
+
 export interface FormFieldConfig {
   id: string;
   type: FieldType;
@@ -31,8 +39,8 @@ export interface FormFieldConfig {
   width?: string;
   /** System/default field — created with the section and not deletable. */
   isDefault?: boolean;
-  /** Static select options (preview / payload). */
-  options?: string[];
+  /** Static / dynamic select options (preview / payload). */
+  options?: FormSelectOption[];
   /** User-entered value for this field. */
   value?: string;
   /** Preserved from Form Builder — enables dynamic option editing on reload. */
@@ -402,9 +410,18 @@ export function stripFieldId(field: FormFieldConfig): Omit<FormFieldConfig, 'id'
     validations: _validations,
     condition: _condition,
     defaultValue: _defaultValue,
+    options,
     ...rest
   } = field;
-  return rest;
+
+  const normalizedOptions = options?.map((opt) =>
+    typeof opt === 'string' ? opt : String(opt.label ?? opt.value),
+  );
+
+  return {
+    ...rest,
+    ...(normalizedOptions ? { options: normalizedOptions } : {}),
+  };
 }
 
 export function buildDynamicFormPayload(

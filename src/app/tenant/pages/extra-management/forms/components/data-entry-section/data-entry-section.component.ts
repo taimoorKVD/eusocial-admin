@@ -63,7 +63,9 @@ export class DataEntrySectionComponent implements OnInit {
     for (const row of this.section.rows) {
       const field = row.fields.find((f) => f.id === fieldId);
       if (field?.options?.length) {
-        options = field.options;
+        options = field.options.map((opt) =>
+          typeof opt === 'string' ? opt : String(opt.label ?? opt.value),
+        );
         break;
       }
     }
@@ -276,6 +278,14 @@ export class DataEntrySectionComponent implements OnInit {
 
   getParQtyField(row: FormRow): FormFieldConfig | undefined {
     return row.fields.find((f) => this.isParQtyField(f));
+  }
+
+  getOptionLabel(opt: string | { label: string; value: string | number }): string {
+    return typeof opt === 'string' ? opt : String(opt.label ?? opt.value);
+  }
+
+  getOptionValue(opt: string | { label: string; value: string | number }): string {
+    return typeof opt === 'string' ? opt : String(opt.value ?? opt.label);
   }
 
   trackField(_: number, field: FormFieldConfig): string {

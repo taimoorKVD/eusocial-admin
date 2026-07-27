@@ -227,8 +227,8 @@
                   (change)="onSelectChange(row, field.id, $event)"
                 >
                   @if (field.options?.length) {
-                    @for (opt of field.options; track opt) {
-                      <option [value]="opt">{{ opt }}</option>
+                    @for (opt of field.options; track getOptionValue(opt)) {
+                      <option [value]="getOptionValue(opt)">{{ getOptionLabel(opt) }}</option>
                     }
                   } @else {
                     <option value="">{{ field.placeholder || 'Select' }}</option>
