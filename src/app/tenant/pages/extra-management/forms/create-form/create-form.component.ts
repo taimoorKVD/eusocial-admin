@@ -41,10 +41,13 @@ import {
   mapConfigFieldToBuilder,
 } from '../utils/field-builder-adapter.utils';
 import {
+  clearDependentLocationOptions,
   getConfigFieldLocationKind,
   getFieldOptionLabelKey,
+  getFieldOptionValueKey,
   getRowLocationFields,
-  mapLocationRecordsToOptionLabels,
+  isEmptyLocationValue,
+  mapLocationRecordsToSelectOptions,
   resolveLocationRecordId,
 } from '../utils/row-location-dependencies.utils';
 import {
@@ -56,6 +59,7 @@ import {
   FormMetaConfig,
   FormRow,
   FormSection,
+  FormSelectOption,
   FrequencyInterval,
   FrequencyMonthMode,
   FrequencyType,
@@ -851,10 +855,16 @@ export class CreateFormComponent implements OnInit {
   }
 
   closeFieldBuilder(): void {
+    const target = this.pendingFieldTarget();
     this.fieldBuilderOpen.set(false);
     this.pendingFieldTarget.set(null);
     this.builderActiveTab.set('fields');
     this.resetBuilderDraft();
+
+    // Strip any all-States/all-Cities options that live field edits may have written.
+    if (target) {
+      this.initializeRowLocationDependencies(target.sectionId, target.rowId);
+    }
   }
 
   onBuilderActiveTabChange(tab: FormBuilderTab): void {
@@ -975,6 +985,10 @@ export class CreateFormComponent implements OnInit {
     if (selected && this.isExistingRowField(selected.id)) {
       this.selectedFieldId.set(null);
       this.builderActiveTab.set('fields');
+      const target = this.pendingFieldTarget();
+      if (target) {
+        this.initializeRowLocationDependencies(target.sectionId, target.rowId);
+      }
       return;
     }
 
@@ -984,10 +998,15 @@ export class CreateFormComponent implements OnInit {
     const fieldsToAdd = this.builderSchema().filter((field) => !!field.label?.trim());
     if (!fieldsToAdd.length) return;
 
+    const target = this.pendingFieldTarget();
     for (const field of fieldsToAdd) {
       this.appendFieldToPendingTarget(
         mapBuilderFieldToConfig(field, { preserveId: true }),
       );
+    }
+
+    if (target) {
+      this.initializeRowLocationDependencies(target.sectionId, target.rowId);
     }
     this.closeFieldBuilder();
   }
@@ -1062,6 +1081,8 @@ export class CreateFormComponent implements OnInit {
         };
       }),
     );
+
+    this.initializeRowLocationDependencies(target.sectionId, target.rowId);
   }
 
   private removeRowFieldFromSections(fieldId: string): void {
@@ -1096,8 +1117,85 @@ export class CreateFormComponent implements OnInit {
   }
 
   /**
+   * After fields are saved into Form Details, strip baked-in all-States/all-Cities
+   * options and wire Country → State → City like `app-dynamic-form`.
+   */
+  private initializeRowLocationDependencies(sectionId: string, rowId: string): void {
+    const section = this.sections().find((item) => item.id === sectionId);
+    if (!section || !('rows' in section)) return;
+
+    const row = section.rows.find((item) => item.id === rowId);
+    if (!row) return;
+
+    const cleared = clearDependentLocationOptions(row.fields);
+    const enriched = this.enrichRootLocationOptions(cleared);
+    this.patchRowFields(sectionId, rowId, () => enriched);
+    this.refreshRowLocationOptionsFromValues(sectionId, rowId, enriched);
+  }
+
+  /**
+   * Enrich root location selects (Country, or State when no Country) with
+   * id-based options from LocationCacheService — same shape as app-dynamic-form.
+   */
+  private enrichRootLocationOptions(fields: FormFieldConfig[]): FormFieldConfig[] {
+    const { country, state } = getRowLocationFields(fields);
+
+    return fields.map((field) => {
+      if (country && field.id === country.id) {
+        const records = this.locationCache.countries();
+        if (!records.length) return field;
+        return {
+          ...field,
+          options: mapLocationRecordsToSelectOptions(
+            records,
+            getFieldOptionLabelKey(field),
+            getFieldOptionValueKey(field),
+          ),
+        };
+      }
+
+      // State is root when Country is absent — show all States from cache.
+      if (state && !country && field.id === state.id) {
+        const records = this.locationCache.states();
+        if (!records.length) return field;
+        return {
+          ...field,
+          options: mapLocationRecordsToSelectOptions(
+            records,
+            getFieldOptionLabelKey(field),
+            getFieldOptionValueKey(field),
+          ),
+        };
+      }
+
+      return field;
+    });
+  }
+
+  /** Reload dependent options from currently selected parent values (no clears). */
+  private refreshRowLocationOptionsFromValues(
+    sectionId: string,
+    rowId: string,
+    fields: FormFieldConfig[],
+  ): void {
+    const { country, state, city } = getRowLocationFields(fields);
+
+    if (state && country) {
+      this.loadStateOptionsForRow(sectionId, rowId, state, country.value);
+    }
+
+    if (!city) return;
+
+    if (state) {
+      this.loadCityOptionsForStateRow(sectionId, rowId, city, state.value);
+    } else if (country) {
+      this.loadCityOptionsForCountryRow(sectionId, rowId, city, country.value);
+    }
+  }
+
+  /**
    * Country → State → City cascading for a Form Details row.
-   * Reuses LocationCacheService (same source as User/Item/Vendor filters).
+   * Mirrors `app-dynamic-form` handleLocationSelection + LocationCacheService.
    */
   private applyRowLocationDependencies(
     sectionId: string,
@@ -1113,12 +1211,10 @@ export class CreateFormComponent implements OnInit {
     const kind = getConfigFieldLocationKind(changed);
 
     if (kind === 'countries') {
-      this.patchRowFields(
-        sectionId,
-        rowId,
-        (rowFields) =>
+      if (state) {
+        this.patchRowFields(sectionId, rowId, (rowFields) =>
           rowFields.map((field) => {
-            if (state && field.id === state.id) {
+            if (field.id === state.id) {
               return { ...field, value: '', options: [] };
             }
             if (city && field.id === city.id) {
@@ -1126,102 +1222,125 @@ export class CreateFormComponent implements OnInit {
             }
             return field;
           }),
-      );
+        );
+        this.loadStateOptionsForRow(sectionId, rowId, state, value);
+        return;
+      }
 
-      if (!value.trim()) return;
-
-      const countryId = resolveLocationRecordId(
-        value,
-        this.locationCache.countries(),
-        getFieldOptionLabelKey(changed),
-      );
-      if (countryId == null) return;
-
-      if (state) {
-        this.locationCache
-          .getStatesForCountry(countryId)
-          .pipe(take(1), takeUntilDestroyed(this.destroyRef))
-          .subscribe((records) => {
-            const options = mapLocationRecordsToOptionLabels(
-              records,
-              getFieldOptionLabelKey(state),
-            );
-            this.patchRowFieldOptions(sectionId, rowId, state.id, options, true);
-          });
-      } else if (city) {
-        this.locationCache
-          .getCitiesForCountry(countryId)
-          .pipe(take(1), takeUntilDestroyed(this.destroyRef))
-          .subscribe((records) => {
-            const options = mapLocationRecordsToOptionLabels(
-              records,
-              getFieldOptionLabelKey(city),
-            );
-            this.patchRowFieldOptions(sectionId, rowId, city.id, options, true);
-          });
+      if (city) {
+        this.patchRowFields(sectionId, rowId, (rowFields) =>
+          rowFields.map((field) =>
+            field.id === city.id ? { ...field, value: '', options: [] } : field,
+          ),
+        );
+        this.loadCityOptionsForCountryRow(sectionId, rowId, city, value);
       }
       return;
     }
 
-    if (kind === 'states') {
-      this.patchRowFields(
-        sectionId,
-        rowId,
-        (rowFields) =>
-          rowFields.map((field) =>
-            city && field.id === city.id ? { ...field, value: '', options: [] } : field,
-          ),
+    if (kind === 'states' && city) {
+      this.patchRowFields(sectionId, rowId, (rowFields) =>
+        rowFields.map((field) =>
+          field.id === city.id ? { ...field, value: '', options: [] } : field,
+        ),
       );
-
-      if (!value.trim() || !city) return;
-
-      const loadCitiesForState = (stateId: unknown): void => {
-        if (stateId == null) return;
-        this.locationCache
-          .getCitiesForState(stateId)
-          .pipe(take(1), takeUntilDestroyed(this.destroyRef))
-          .subscribe((records) => {
-            const options = mapLocationRecordsToOptionLabels(
-              records,
-              getFieldOptionLabelKey(city),
-            );
-            this.patchRowFieldOptions(sectionId, rowId, city.id, options, true);
-          });
-      };
-
-      if (country?.value) {
-        const countryId = resolveLocationRecordId(
-          country.value,
-          this.locationCache.countries(),
-          getFieldOptionLabelKey(country),
-        );
-        if (countryId == null) return;
-
-        this.locationCache
-          .getStatesForCountry(countryId)
-          .pipe(take(1), takeUntilDestroyed(this.destroyRef))
-          .subscribe((states) => {
-            loadCitiesForState(
-              resolveLocationRecordId(value, states, getFieldOptionLabelKey(changed)),
-            );
-          });
-      } else {
-        loadCitiesForState(
-          resolveLocationRecordId(
-            value,
-            this.locationCache.states(),
-            getFieldOptionLabelKey(changed),
-          ),
-        );
-      }
+      this.loadCityOptionsForStateRow(sectionId, rowId, city, value);
     }
+  }
+
+  private loadStateOptionsForRow(
+    sectionId: string,
+    rowId: string,
+    stateField: FormFieldConfig,
+    countryValue: unknown,
+  ): void {
+    if (isEmptyLocationValue(countryValue)) {
+      this.patchRowFieldOptions(sectionId, rowId, stateField.id, [], true);
+      return;
+    }
+
+    const countryId = resolveLocationRecordId(
+      String(countryValue),
+      this.locationCache.countries(),
+    );
+    // Prefer raw value when it already is an id (dynamic-form style).
+    const resolvedId = countryId ?? countryValue;
+
+    this.locationCache
+      .getStatesForCountry(resolvedId)
+      .pipe(take(1), takeUntilDestroyed(this.destroyRef))
+      .subscribe((records) => {
+        const options = mapLocationRecordsToSelectOptions(
+          records,
+          getFieldOptionLabelKey(stateField),
+          getFieldOptionValueKey(stateField),
+        );
+        this.patchRowFieldOptions(sectionId, rowId, stateField.id, options, false);
+      });
+  }
+
+  private loadCityOptionsForStateRow(
+    sectionId: string,
+    rowId: string,
+    cityField: FormFieldConfig,
+    stateValue: unknown,
+  ): void {
+    if (isEmptyLocationValue(stateValue)) {
+      this.patchRowFieldOptions(sectionId, rowId, cityField.id, [], true);
+      return;
+    }
+
+    const stateId = resolveLocationRecordId(String(stateValue), this.locationCache.states());
+    const resolvedId = stateId ?? stateValue;
+
+    this.locationCache
+      .getCitiesForState(resolvedId)
+      .pipe(take(1), takeUntilDestroyed(this.destroyRef))
+      .subscribe((records) => {
+        const options = mapLocationRecordsToSelectOptions(
+          records,
+          getFieldOptionLabelKey(cityField),
+          getFieldOptionValueKey(cityField),
+        );
+        this.patchRowFieldOptions(sectionId, rowId, cityField.id, options, false);
+      });
+  }
+
+  private loadCityOptionsForCountryRow(
+    sectionId: string,
+    rowId: string,
+    cityField: FormFieldConfig,
+    countryValue: unknown,
+  ): void {
+    if (isEmptyLocationValue(countryValue)) {
+      this.patchRowFieldOptions(sectionId, rowId, cityField.id, [], true);
+      return;
+    }
+
+    const countryId = resolveLocationRecordId(
+      String(countryValue),
+      this.locationCache.countries(),
+    );
+    const resolvedId = countryId ?? countryValue;
+
+    this.locationCache
+      .getCitiesForCountry(resolvedId)
+      .pipe(take(1), takeUntilDestroyed(this.destroyRef))
+      .subscribe((records) => {
+        const options = mapLocationRecordsToSelectOptions(
+          records,
+          getFieldOptionLabelKey(cityField),
+          getFieldOptionValueKey(cityField),
+        );
+        this.patchRowFieldOptions(sectionId, rowId, cityField.id, options, false);
+      });
   }
 
   private patchRowFieldOptions(
     sectionId: string,
     rowId: string,
     fieldId: string,
-    options: string[],
+    options: FormSelectOption[],
     clearValue: boolean,
   ): void {
     this.patchRowFields(sectionId, rowId, (rowFields) =>

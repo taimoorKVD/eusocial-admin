@@ -130,12 +130,16 @@ function mapConfigOptionsToBuilder(
 
   if (field.optionSource?.type === 'dynamic') {
     return rawOptions.map((opt) =>
-      typeof opt === 'string' ? { label: opt, value: opt } : opt,
+      typeof opt === 'string'
+        ? { label: opt, value: opt }
+        : { label: String(opt.label), value: opt.value },
     );
   }
 
   return rawOptions.map((opt) =>
-    typeof opt === 'string' ? { label: opt, value: opt } : opt,
+    typeof opt === 'string'
+      ? { label: opt, value: opt }
+      : { label: String(opt.label), value: opt.value },
   );
 }
 
