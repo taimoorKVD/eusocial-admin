@@ -26,6 +26,8 @@ import {
   styleUrl: './section-field-preview.component.scss',
 })
 export class SectionFieldPreviewComponent {
+  private static readonly CLOSE_DROPDOWN_EVENT = 'section-field-dropdown-close';
+
   @Input({ required: true }) field!: FormFieldConfig;
   @Output() valueChange = new EventEmitter<string>();
 
@@ -83,6 +85,11 @@ export class SectionFieldPreviewComponent {
     }
   }
 
+  @HostListener('document:section-field-dropdown-close')
+  onCloseDropdownEvent(): void {
+    this.closeSelectDropdown();
+  }
+
   @HostListener('window:scroll')
   @HostListener('window:resize')
   onViewportChange(): void {
@@ -99,6 +106,10 @@ export class SectionFieldPreviewComponent {
       this.closeSelectDropdown();
       return;
     }
+
+    document.dispatchEvent(
+      new CustomEvent(SectionFieldPreviewComponent.CLOSE_DROPDOWN_EVENT),
+    );
 
     const host = (event.target as HTMLElement).closest('.field-select-dropdown');
     if (host) {
