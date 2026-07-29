@@ -26,6 +26,8 @@ import {
   styleUrl: './section-field-preview.component.scss',
 })
 export class SectionFieldPreviewComponent {
+  private static readonly CLOSE_DROPDOWN_EVENT = 'section-field-dropdown-close';
+
   @Input({ required: true }) field!: FormFieldConfig;
   @Output() valueChange = new EventEmitter<string>();
 
@@ -83,6 +85,11 @@ export class SectionFieldPreviewComponent {
     }
   }
 
+  @HostListener('document:section-field-dropdown-close')
+  onCloseDropdownEvent(): void {
+    this.closeSelectDropdown();
+  }
+
   @HostListener('window:scroll')
   @HostListener('window:resize')
   onViewportChange(): void {
@@ -99,6 +106,10 @@ export class SectionFieldPreviewComponent {
       this.closeSelectDropdown();
       return;
     }
+
+    document.dispatchEvent(
+      new CustomEvent(SectionFieldPreviewComponent.CLOSE_DROPDOWN_EVENT),
+    );
 
     const host = (event.target as HTMLElement).closest('.field-select-dropdown');
     if (host) {
@@ -130,6 +141,114 @@ export class SectionFieldPreviewComponent {
 
   onInput(event: Event): void {
     this.valueChange.emit((event.target as HTMLInputElement | HTMLTextAreaElement).value);
+  }
+
+  onParameterValueChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.valueChange.emit(input.value);
+  }
+
+  onParameterCategoryChange(category: string): void {
+    this.field.parameterCategory = category;
+    this.field.parameterUnit = '';
+  }
+
+  onParameterUnitChange(unit: string): void {
+    this.field.parameterUnit = unit;
+  }
+
+  onRatingChange(value: number): void {
+    this.valueChange.emit(String(value));
+  }
+
+  onRangeFromChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const current = this.field.value?.toString().split('-') || ['', ''];
+    this.valueChange.emit(`${input.value}-${current[1] || ''}`);
+  }
+
+  onRangeToChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const current = this.field.value?.toString().split('-') || ['', ''];
+    this.valueChange.emit(`${current[0] || ''}-${input.value}`);
+  }
+
+  readonly parameterCategories = [
+    { label: 'Currency', value: 'currency' },
+    { label: 'Length / Distance', value: 'length' },
+    { label: 'Weight / Mass', value: 'weight' },
+    { label: 'Volume / Capacity', value: 'volume' },
+  ];
+
+  get parameterUnits(): { label: string; value: string }[] {
+    switch (this.field.parameterCategory) {
+      case 'currency':
+        return [
+          { label: 'USD', value: 'USD' },
+          { label: 'EUR', value: 'EUR' },
+          { label: 'GBP', value: 'GBP' },
+          { label: 'PKR', value: 'PKR' },
+          { label: 'INR', value: 'INR' },
+          { label: 'JPY', value: 'JPY' },
+          { label: 'CNY', value: 'CNY' },
+          { label: 'CAD', value: 'CAD' },
+          { label: 'AUD', value: 'AUD' },
+        ];
+      case 'length':
+        return [
+          { label: 'Meter (m)', value: 'm' },
+          { label: 'Centimeter (cm)', value: 'cm' },
+          { label: 'Millimeter (mm)', value: 'mm' },
+          { label: 'Kilometer (km)', value: 'km' },
+          { label: 'Inch (in)', value: 'in' },
+          { label: 'Foot (ft)', value: 'ft' },
+          { label: 'Yard (yd)', value: 'yd' },
+          { label: 'Mile (mi)', value: 'mi' },
+        ];
+      case 'weight':
+        return [
+          { label: 'Kilogram (kg)', value: 'kg' },
+          { label: 'Gram (g)', value: 'g' },
+          { label: 'Milligram (mg)', value: 'mg' },
+          { label: 'Pound (lb)', value: 'lb' },
+          { label: 'Ounce (oz)', value: 'oz' },
+          { label: 'Ton', value: 'ton' },
+        ];
+      case 'volume':
+        return [
+          { label: 'Liter (L)', value: 'L' },
+          { label: 'Milliliter (mL)', value: 'mL' },
+          { label: 'Gallon (gal)', value: 'gal' },
+          { label: 'Quart (qt)', value: 'qt' },
+          { label: 'Pint (pt)', value: 'pt' },
+          { label: 'Cup', value: 'cup' },
+          { label: 'Cubic Meter (m³)', value: 'm3' },
+        ];
+      default:
+        return [];
+    }
+  }
+
+  get ratingMaxValue(): number {
+    return this.field.maxRating || 5;
+  }
+
+  get ratingValue(): number {
+    return Number(this.field.value || 0);
+  }
+
+  get rangeFromValue(): string {
+    return this.field.value?.toString().split('-')[0] || '';
+  }
+
+  get rangeToValue(): string {
+    return this.field.value?.toString().split('-')[1] || '';
+  }
+
+  get displayTimestamp(): string {
+    if (this.field.value) return this.field.value;
+    const now = new Date();
+    return now.toLocaleString();
   }
 
   onCheckboxToggle(checked: boolean): void {

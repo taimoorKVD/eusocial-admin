@@ -63,5 +63,61 @@ export const FIELD_TEMPLATES: Omit<FormField, 'id'>[] = [
     placeholder: '',
     required: false,
     options: []
+  },
+
+  {
+    type: 'parameter',
+    label: 'Parameter',
+    placeholder: 'Enter value',
+    required: false,
+    options: []
+  },
+
+  {
+    type: 'signature',
+    label: 'Signature',
+    placeholder: '',
+    required: false,
+    options: []
+  },
+
+  {
+    type: 'user-timestamp',
+    label: 'User Timestamp',
+    placeholder: '',
+    required: false,
+    options: []
+  },
+
+  {
+    type: 'rating',
+    label: 'Rating',
+    placeholder: '',
+    required: false,
+    options: []
+  },
+
+  {
+    type: 'range',
+    label: 'Range',
+    placeholder: '',
+    required: false,
+    options: []
+  },
+
+  {
+    type: 'barcode',
+    label: 'Barcode',
+    placeholder: '',
+    required: false,
+    options: []
+  },
+
+  {
+    type: 'qr-code',
+    label: 'QR Code / Scan',
+    placeholder: '',
+    required: false,
+    options: []
   }
 ];

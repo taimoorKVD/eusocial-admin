@@ -77,6 +77,48 @@
     </div> -->
   </div>
 
+  <div *ngIf="isParameterField" class="space-y-3">
+    <div>
+      <label class="mb-1.5 block text-xs font-medium text-slate-600">Parameter Category</label>
+      <select
+        [ngModel]="field.parameterCategory || ''"
+        (ngModelChange)="onParameterCategoryChange($event)"
+        [disabled]="!isFieldEditable"
+        class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+      >
+        <option value="" disabled>Select category</option>
+        <option *ngFor="let cat of parameterCategories" [value]="cat.value">{{ cat.label }}</option>
+      </select>
+    </div>
+    <div>
+      <label class="mb-1.5 block text-xs font-medium text-slate-600">Unit</label>
+      <select
+        [ngModel]="field.parameterUnit || ''"
+        (ngModelChange)="onParameterUnitChange($event)"
+        [disabled]="!isFieldEditable || !field.parameterCategory"
+        class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+      >
+        <option value="" disabled>Select unit</option>
+        <option *ngFor="let unit of parameterUnits" [value]="unit.value">{{ unit.label }}</option>
+      </select>
+    </div>
+  </div>
+
+  <div *ngIf="isRatingField">
+    <label class="mb-1.5 block text-xs font-medium text-slate-600">Maximum Rating</label>
+    <select
+      [ngModel]="field.maxRating || 5"
+      (ngModelChange)="onMaxRatingChange($event)"
+      [disabled]="!isFieldEditable"
+      class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+    >
+      <option [value]="3">3 Stars</option>
+      <option [value]="5">5 Stars</option>
+      <option [value]="7">7 Stars</option>
+      <option [value]="10">10 Stars</option>
+    </select>
+  </div>
+
   <div *ngIf="isSelectField" class="space-y-3">
     <div>
       <label class="mb-1.5 block text-xs font-medium text-slate-600">Options source</label>

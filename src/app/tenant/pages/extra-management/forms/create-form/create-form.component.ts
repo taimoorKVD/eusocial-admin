@@ -1426,7 +1426,22 @@ export class CreateFormComponent implements OnInit {
   toggleMultiSelect(
     key: 'assignUsersDropdownOpen' | 'assignPositionsDropdownOpen' | 'reportUsersDropdownOpen' | 'reportPositionsDropdownOpen',
   ): void {
-    this[key].set(!this[key]());
+    const wasOpen = this[key]();
+    this.closeAllMultiSelectDropdowns();
+    if (!wasOpen) {
+      this[key].set(true);
+    }
+  }
+
+  private closeAllMultiSelectDropdowns(): void {
+    this.assignUsersDropdownOpen.set(false);
+    this.assignUsersSearch.set('');
+    this.assignPositionsDropdownOpen.set(false);
+    this.assignPositionsSearch.set('');
+    this.reportUsersDropdownOpen.set(false);
+    this.reportUsersSearch.set('');
+    this.reportPositionsDropdownOpen.set(false);
+    this.reportPositionsSearch.set('');
   }
 
   toggleMultiSelectOption(

@@ -234,6 +234,147 @@
         (input)="onInput($event)"
       />
     }
+    @case ('parameter') {
+      <div class="flex flex-col gap-2">
+        <div class="flex gap-2">
+          <select
+            class="section-input font-ibm flex-1"
+            [value]="field.parameterCategory || ''"
+            [disabled]="!!field.readonly"
+            (change)="onParameterCategoryChange(($any($event.target).value))"
+          >
+            <option value="" disabled>Select category</option>
+            @for (cat of parameterCategories; track cat.value) {
+              <option [value]="cat.value">{{ cat.label }}</option>
+            }
+          </select>
+          <select
+            class="section-input font-ibm flex-1"
+            [value]="field.parameterUnit || ''"
+            [disabled]="!!field.readonly || !field.parameterCategory"
+            (change)="onParameterUnitChange(($any($event.target).value))"
+          >
+            <option value="" disabled>Select unit</option>
+            @for (unit of parameterUnits; track unit.value) {
+              <option [value]="unit.value">{{ unit.label }}</option>
+            }
+          </select>
+        </div>
+        <input
+          class="section-input font-ibm"
+          type="number"
+          placeholder="Enter value"
+          [value]="field.value || ''"
+          [attr.readonly]="field.readonly || null"
+          (input)="onParameterValueChange($event)"
+        />
+      </div>
+    }
+    @case ('signature') {
+      <div class="flex items-center justify-center rounded-md border border-dashed border-[#d4c5b6] bg-[#faf5f0] py-8">
+        @if (field.value) {
+          <div class="flex flex-col items-center gap-2">
+            <img [src]="field.value" alt="Signature" class="max-h-20" />
+            <button
+              type="button"
+              class="text-xs text-[#FF9015] hover:underline"
+              (click)="clearSelection($event)"
+            >
+              Clear
+            </button>
+          </div>
+        } @else {
+          <div class="flex flex-col items-center gap-2">
+            <svg class="h-8 w-8 text-[#d4c5b6]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m17.469 4.485-9.9 10.164a1.5 1.5 0 0 0-.34.563l-.992 3.47 3.469-.992a1.5 1.5 0 0 0 .563-.34l10.164-9.9a2.121 2.121 0 0 0-2.964-2.965Z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6.75 17.25 8.25" />
+            </svg>
+            <span class="text-sm text-[#d4c5b6]">Tap to sign</span>
+          </div>
+        }
+      </div>
+    }
+    @case ('user-timestamp') {
+      <div class="flex items-center gap-2 text-sm text-[#525252]">
+        <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+        </svg>
+        <span class="italic">{{ displayTimestamp }}</span>
+      </div>
+    }
+    @case ('rating') {
+      <div class="flex items-center gap-1">
+        @for (star of [].constructor(ratingMaxValue); track $index) {
+          <button
+            type="button"
+            class="h-6 w-6 flex items-center justify-center transition-colors"
+            [disabled]="!!field.readonly"
+            (click)="onRatingChange($index + 1)"
+          >
+            @if ($index < ratingValue) {
+              <svg class="h-5 w-5 text-amber-400" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+              </svg>
+            } @else {
+              <svg class="h-5 w-5 text-gray-300" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+              </svg>
+            }
+          </button>
+        }
+      </div>
+    }
+    @case ('range') {
+      <div class="flex items-center gap-2">
+        <input
+          class="section-input font-ibm w-full"
+          type="number"
+          placeholder="From"
+          [value]="rangeFromValue"
+          [attr.readonly]="field.readonly || null"
+          (input)="onRangeFromChange($event)"
+        />
+        <span class="text-[#A0A0A0]">–</span>
+        <input
+          class="section-input font-ibm w-full"
+          type="number"
+          placeholder="To"
+          [value]="rangeToValue"
+          [attr.readonly]="field.readonly || null"
+          (input)="onRangeToChange($event)"
+        />
+      </div>
+    }
+    @case ('barcode') {
+      <div class="relative">
+        <input
+          class="section-input font-ibm w-full pl-9"
+          type="text"
+          placeholder="Scan or enter barcode"
+          [value]="field.value || ''"
+          [attr.readonly]="field.readonly || null"
+          (input)="onInput($event)"
+        />
+        <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#A0A0A0]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.5h1.5v15h-1.5V4.5ZM7.5 4.5h.75v15H7.5V4.5ZM12 4.5h.75v15H12V4.5ZM16.5 4.5h.75v15h-.75V4.5ZM20.25 4.5h.75v15h-.75V4.5Z" />
+        </svg>
+      </div>
+    }
+    @case ('qr-code') {
+      <div class="relative">
+        <input
+          class="section-input font-ibm w-full pl-9"
+          type="text"
+          placeholder="Scan or enter QR code"
+          [value]="field.value || ''"
+          [attr.readonly]="field.readonly || null"
+          (input)="onInput($event)"
+        />
+        <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#A0A0A0]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.5h4.5v4.5h-4.5V4.5ZM15.75 4.5h4.5v4.5h-4.5V4.5ZM3.75 15.75h4.5v4.5h-4.5v-4.5ZM15.75 15.75h1.5v1.5h-1.5v-1.5ZM20.25 15.75h1.5v1.5h-1.5v-1.5ZM20.25 20.25h1.5v1.5h-1.5v-1.5ZM15.75 20.25h1.5v1.5h-1.5v-1.5ZM19.5 13.5h-3v-3h3v3Z" />
+        </svg>
+      </div>
+    }
     @default {
       <input
         class="section-input font-ibm"

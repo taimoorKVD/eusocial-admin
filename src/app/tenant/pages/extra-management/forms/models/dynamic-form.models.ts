@@ -18,7 +18,14 @@ export type FieldType =
   | 'date'
   | 'radio'
   | 'image'
-  | 'file';
+  | 'file'
+  | 'parameter'
+  | 'signature'
+  | 'user-timestamp'
+  | 'rating'
+  | 'range'
+  | 'barcode'
+  | 'qr-code';
 
 /** Select option — string label, or label+value (id) for location dependencies. */
 export type FormSelectOption =
@@ -51,6 +58,16 @@ export interface FormFieldConfig {
   validations?: Record<string, unknown>;
   condition?: { fieldId: string; value: unknown };
   defaultValue?: unknown;
+  /** Parameter field category: currency, length, weight, volume. */
+  parameterCategory?: string;
+  /** Parameter field unit (e.g. USD, m, kg). */
+  parameterUnit?: string;
+  /** Maximum rating value (default 5). */
+  maxRating?: number;
+  /** Range field minimum / from value. */
+  rangeMin?: number;
+  /** Range field maximum / to value. */
+  rangeMax?: number;
 }
 
 export interface FormRow {
@@ -222,6 +239,13 @@ export const FIELD_TYPE_OPTIONS: { label: string; value: FieldType }[] = [
   { label: 'Radio', value: 'radio' },
   { label: 'Image', value: 'image' },
   { label: 'File', value: 'file' },
+  { label: 'Parameter', value: 'parameter' },
+  { label: 'Signature', value: 'signature' },
+  { label: 'User Timestamp', value: 'user-timestamp' },
+  { label: 'Rating', value: 'rating' },
+  { label: 'Range', value: 'range' },
+  { label: 'Barcode', value: 'barcode' },
+  { label: 'QR Code', value: 'qr-code' },
 ];
 
 export const WIDTH_OPTIONS = [
