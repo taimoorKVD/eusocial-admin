@@ -6,7 +6,14 @@ export type FieldType =
   | 'textarea'
   | 'checkbox'
   | 'radio'
-  | 'image';
+  | 'image'
+  | 'parameter'
+  | 'signature'
+  | 'user-timestamp'
+  | 'rating'
+  | 'range'
+  | 'barcode'
+  | 'qr-code';
 
 export interface FieldOption {
   id?: number;
@@ -53,4 +60,15 @@ export interface FormField {
     fieldId: string;
     value: unknown;
   };
+
+  /** Parameter field category: currency, length, weight, volume. */
+  parameterCategory?: string;
+  /** Parameter field unit (e.g. USD, m, kg). */
+  parameterUnit?: string;
+  /** Maximum rating value (default 5). */
+  maxRating?: number;
+  /** Range field minimum / from value. */
+  rangeMin?: number;
+  /** Range field maximum / to value. */
+  rangeMax?: number;
 }

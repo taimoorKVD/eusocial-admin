@@ -126,3 +126,72 @@
   aria-disabled="true"
   class="w-full border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 focus:outline-none disabled:cursor-default disabled:text-slate-500"
 />
+
+<div *ngIf="fieldType === 'parameter'" class="flex items-center gap-2">
+  <input
+    type="number"
+    [placeholder]="field.placeholder"
+    disabled
+    tabindex="-1"
+    aria-disabled="true"
+    class="w-full border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none disabled:cursor-default disabled:text-slate-500"
+  />
+  <span class="shrink-0 text-xs font-medium text-slate-500">
+    {{ field.parameterUnit || (field.parameterCategory === 'currency' ? 'USD' : 'unit') }}
+  </span>
+</div>
+
+<div *ngIf="fieldType === 'signature'" class="flex items-center justify-center rounded-md border border-dashed border-slate-300 bg-slate-50 py-8">
+  <svg class="h-8 w-8 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+  </svg>
+  <span class="ml-2 text-sm text-slate-400">Signature</span>
+</div>
+
+<div *ngIf="fieldType === 'user-timestamp'" class="flex items-center gap-2 text-sm text-slate-500">
+  <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+  </svg>
+  <span class="italic">Auto-filled on submission</span>
+</div>
+
+<div *ngIf="fieldType === 'rating'" class="flex items-center gap-0.5">
+  <svg *ngFor="let star of [].constructor(field.maxRating || 5); let i = index"
+    class="h-5 w-5 text-amber-400" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+  </svg>
+</div>
+
+<div *ngIf="fieldType === 'range'" class="flex items-center gap-2">
+  <input
+    type="number"
+    placeholder="From"
+    disabled
+    tabindex="-1"
+    aria-disabled="true"
+    class="w-full border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none disabled:cursor-default disabled:text-slate-500"
+  />
+  <span class="text-slate-400">–</span>
+  <input
+    type="number"
+    placeholder="To"
+    disabled
+    tabindex="-1"
+    aria-disabled="true"
+    class="w-full border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none disabled:cursor-default disabled:text-slate-500"
+  />
+</div>
+
+<div *ngIf="fieldType === 'barcode'" class="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
+  <svg class="h-6 w-6 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.5h1.5v15h-1.5V4.5ZM7.5 4.5h.75v15H7.5V4.5ZM12 4.5h.75v15H12V4.5ZM16.5 4.5h.75v15h-.75V4.5ZM20.25 4.5h.75v15h-.75V4.5Z" />
+  </svg>
+  <span class="text-sm text-slate-400">{{ field.placeholder || 'Barcode value' }}</span>
+</div>
+
+<div *ngIf="fieldType === 'qr-code'" class="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
+  <svg class="h-6 w-6 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.5h4.5v4.5h-4.5V4.5ZM15.75 4.5h4.5v4.5h-4.5V4.5ZM3.75 15.75h4.5v4.5h-4.5v-4.5ZM15.75 15.75h1.5v1.5h-1.5v-1.5ZM20.25 15.75h1.5v1.5h-1.5v-1.5ZM20.25 20.25h1.5v1.5h-1.5v-1.5ZM15.75 20.25h1.5v1.5h-1.5v-1.5ZM19.5 13.5h-3v-3h3v3Z" />
+  </svg>
+  <span class="text-sm text-slate-400">{{ field.placeholder || 'Scan QR code' }}</span>
+</div>

@@ -11,6 +11,13 @@ const FIELD_TYPE_MAP: Record<string, FieldType> = {
   checkbox: 'checkbox',
   image: 'image',
   file: 'image',
+  parameter: 'parameter',
+  signature: 'signature',
+  'user-timestamp': 'user-timestamp',
+  rating: 'rating',
+  range: 'range',
+  barcode: 'barcode',
+  'qr-code': 'qr-code',
 };
 
 export function normalizeFieldTypeName(

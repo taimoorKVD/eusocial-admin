@@ -184,6 +184,11 @@ export function sanitizeField(
     condition: field.condition
       ? { ...field.condition }
       : { fieldId: '', value: '' },
+    parameterCategory: field.parameterCategory,
+    parameterUnit: field.parameterUnit,
+    maxRating: field.maxRating,
+    rangeMin: field.rangeMin,
+    rangeMax: field.rangeMax,
   };
 }
 

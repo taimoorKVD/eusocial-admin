@@ -17,6 +17,13 @@ const SUPPORTED_TYPES = new Set<DynamicFieldType>([
   'radio',
   'date',
   'image',
+  'parameter',
+  'signature',
+  'user-timestamp',
+  'rating',
+  'range',
+  'barcode',
+  'qr-code',
 ]);
 
 @Injectable({

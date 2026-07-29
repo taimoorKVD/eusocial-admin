@@ -37,6 +37,13 @@ function toFormFieldType(type: string): FormField['type'] {
       return 'text';
     case 'image':
       return 'image';
+    case 'parameter':
+    case 'signature':
+    case 'user-timestamp':
+    case 'rating':
+    case 'range':
+    case 'barcode':
+    case 'qr-code':
     case 'number':
     case 'email':
     case 'textarea':
@@ -89,6 +96,11 @@ export function mapConfigFieldToBuilder(field: FormFieldConfig): FormField {
     defaultValue: field.defaultValue ?? field.value ?? '',
     validations: field.validations ? { ...field.validations } : {},
     condition: field.condition ? { ...field.condition } : { fieldId: '', value: '' },
+    parameterCategory: field.parameterCategory,
+    parameterUnit: field.parameterUnit,
+    maxRating: field.maxRating,
+    rangeMin: field.rangeMin,
+    rangeMax: field.rangeMax,
   };
 }
 
@@ -120,6 +132,11 @@ export function mapBuilderFieldToConfig(
     validations: field.validations ? { ...field.validations } : undefined,
     condition: field.condition ? { ...field.condition } : undefined,
     defaultValue: field.defaultValue,
+    parameterCategory: field.parameterCategory,
+    parameterUnit: field.parameterUnit,
+    maxRating: field.maxRating,
+    rangeMin: field.rangeMin,
+    rangeMax: field.rangeMax,
   };
 }
 
@@ -158,6 +175,13 @@ function resolveConfigType(field: FormField, selectedType?: string): FieldType {
     'radio',
     'image',
     'file',
+    'parameter',
+    'signature',
+    'user-timestamp',
+    'rating',
+    'range',
+    'barcode',
+    'qr-code',
   ];
 
   if (allowed.includes(candidate as FieldType)) {

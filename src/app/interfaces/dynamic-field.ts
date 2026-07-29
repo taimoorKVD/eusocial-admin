@@ -7,7 +7,14 @@ export type DynamicFieldType =
   | 'checkbox'
   | 'radio'
   | 'date'
-  | 'image';
+  | 'image'
+  | 'parameter'
+  | 'signature'
+  | 'user-timestamp'
+  | 'rating'
+  | 'range'
+  | 'barcode'
+  | 'qr-code';
 
 export interface DynamicFieldOption {
   label: string;
