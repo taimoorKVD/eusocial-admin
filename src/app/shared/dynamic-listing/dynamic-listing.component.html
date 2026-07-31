@@ -160,6 +160,22 @@
                       }
                     }
 
+                    @case ('select') {
+                      @let selectItems = splitCommaSeparatedValue(getCellValue(record, field));
+                      @if (!selectItems.length || (selectItems.length === 1 && selectItems[0] === '—')) {
+                        <span class="text-gray-400">—</span>
+                      } @else {
+                        @for (item of selectItems; track item) {
+                          <span
+                            class="inline-flex items-center gap-1 mr-1 mb-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all duration-150 hover:scale-[1.03]"
+                            [class]="getListingBadgeClass(field)"
+                          >
+                            {{ item }}
+                          </span>
+                        }
+                      }
+                    }
+
                     @default {
                       <span>{{ getCellValue(record, field) }}</span>
                     }

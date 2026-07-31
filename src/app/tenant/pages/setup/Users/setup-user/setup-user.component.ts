@@ -467,17 +467,15 @@ export class SetupUserComponent {
       }
 
       if (field.type === 'select') {
-        if (field.selectionType === 'multi') {
-          patchData[field.name] = this.normalizeMultiSelectPatchValue(value);
-          continue;
-        }
+        const normalized = this.normalizeMultiSelectPatchValue(value);
 
+        // Single-select UI still uses a scalar control value.
         patchData[field.name] =
-          value == null
-            ? ''
-            : typeof value === 'object'
-              ? (value as { id: unknown }).id
-              : value;
+          field.selectionType === 'multi'
+            ? normalized
+            : normalized.length
+              ? normalized[0]
+              : '';
         continue;
       }
 
@@ -525,17 +523,46 @@ export class SetupUserComponent {
 
     for (const field of this.formFields()) {
       const key = this.getFieldKey(field);
+      const hasNameValue = Object.prototype.hasOwnProperty.call(values, field.name);
+      const rawValue = hasNameValue ? values[field.name] : payload[key];
+
+      if (field.type === 'select') {
+        const arrayValue = this.normalizeSelectPayloadValue(rawValue);
+        payload[key] = arrayValue;
+        if (key !== field.name) {
+          delete payload[field.name];
+        }
+        continue;
+      }
+
       if (key === field.name) {
         continue;
       }
 
-      if (Object.prototype.hasOwnProperty.call(values, field.name)) {
+      if (hasNameValue) {
         payload[key] = values[field.name];
         delete payload[field.name];
       }
     }
 
     return payload;
+  }
+
+  /** Always persist select values as arrays for single and multi selection. */
+  private normalizeSelectPayloadValue(value: unknown): unknown[] {
+    if (Array.isArray(value)) {
+      return value.filter((item) => item !== '' && item != null);
+    }
+
+    if (value == null || value === '') {
+      return [];
+    }
+
+    if (typeof value === 'object') {
+      return [(value as { id: unknown }).id];
+    }
+
+    return [value];
   }
 
   private applyApiOptionsToField(
