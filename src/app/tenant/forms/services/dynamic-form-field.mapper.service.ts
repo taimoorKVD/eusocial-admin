@@ -77,6 +77,18 @@ export class DynamicFormFieldMapperService {
       width: field.width ?? 12,
       order: field.order,
       options: normalizedOptions,
+      optionSource: field.optionSource
+        ? {
+            type: (field.optionSource.type as 'api' | 'static' | 'dynamic') || 'static',
+            endpoint: field.optionSource.endpoint,
+            response: {
+              labelKey: field.optionSource.response?.labelKey || 'label',
+              valueKey: field.optionSource.response?.valueKey || 'value',
+              dataPath: field.optionSource.response?.dataPath || 'data',
+            },
+          }
+        : undefined,
+      selectionType: type === 'select' ? field.selectionType || 'single' : undefined,
     };
   }
 

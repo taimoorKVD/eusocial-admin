@@ -458,6 +458,11 @@ export class SetupItemComponent {
       }
 
       if (field.type === 'select') {
+        if (field.selectionType === 'multi') {
+          patchData[field.name] = this.normalizeMultiSelectPatchValue(value);
+          continue;
+        }
+
         patchData[field.name] =
           value == null
             ? ''
@@ -475,6 +480,26 @@ export class SetupItemComponent {
 
   private getFieldKey(field: DynamicField): string {
     return field.id || field.name;
+  }
+
+  private normalizeMultiSelectPatchValue(value: unknown): unknown[] {
+    if (Array.isArray(value)) {
+      return value.map((item) =>
+        item != null && typeof item === 'object'
+          ? (item as { id: unknown }).id
+          : item,
+      );
+    }
+
+    if (value == null || value === '') {
+      return [];
+    }
+
+    if (typeof value === 'object') {
+      return [(value as { id: unknown }).id];
+    }
+
+    return [value];
   }
 
   private resolveFieldValue(

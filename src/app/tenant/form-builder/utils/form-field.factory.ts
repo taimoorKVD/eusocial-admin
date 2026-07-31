@@ -1,4 +1,10 @@
-import { FieldOption, FieldType, FormField, OptionSource } from '../models/form-field.model';
+import {
+  FieldOption,
+  FieldType,
+  FormField,
+  OptionSource,
+  SelectSelectionType,
+} from '../models/form-field.model';
 import {
   normalizeCheckboxFieldOptions,
   normalizeStaticSelectFieldOptions,
@@ -176,6 +182,7 @@ export function sanitizeField(
     isEditable: readBooleanFlag(field, 'isEditable', 'is_editable', true),
     options: resolveFieldOptions(type, optionSource, field.options),
     optionSource: cloneOptionSource(optionSource),
+    selectionType: type === 'select' ? readSelectionType(field) : undefined,
     value: field.value ?? field.defaultValue ?? null,
     defaultValue: field.defaultValue ?? null,
     validations: field.validations ? { ...field.validations } : {},
@@ -190,6 +197,21 @@ export function sanitizeField(
     rangeMin: field.rangeMin,
     rangeMax: field.rangeMax,
   };
+}
+
+function readSelectionType(
+  field: Partial<FormField> & Record<string, unknown>
+): SelectSelectionType {
+  const raw = field.selectionType ?? field['selection_type'];
+  const normalized = String(raw ?? '')
+    .trim()
+    .toLowerCase();
+
+  if (normalized === 'multi' || normalized === 'multiple') {
+    return 'multi';
+  }
+
+  return 'single';
 }
 
 export function normalizeFieldOrder(schema: Array<Partial<FormField>>): FormField[] {

@@ -21,6 +21,7 @@ export function buildFormSchemaPayload(fields: FormField[]) {
         isRequired: field.required,
         isShow: field.isShow !== false,
         optionSource: field.optionSource,
+        selectionType: field.type === 'select' ? field.selectionType || 'single' : undefined,
         isReadonly: field.isReadonly === true,
         isSystemField: true,
         isEditable: field.isEditable !== false,

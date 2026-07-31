@@ -141,17 +141,46 @@
                   (click)="selectDropdown.toggle($event)"
                   class="global-filter__control w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-sm text-gray-700 font-ibm focus:outline-none focus:ring-2 focus:ring-[#ea580c]/30 focus:border-[#ea580c] focus:bg-white transition-all duration-150 text-left flex items-center justify-between gap-2"
                   [class.border-[#ea580c]]="selectDropdown.isOpen"
+                  [class.min-h-[42px]]="isMultiSelect(field)"
                   [attr.aria-expanded]="selectDropdown.isOpen"
                   [id]="field.id"
                 >
-                  <span
-                    class="truncate"
-                    [class.text-[#000000]]="!form.get(field.name)?.value"
-                  >
-                    {{ getSelectDisplayLabel(field) }}
-                  </span>
+                  @if (isMultiSelect(field)) {
+                    <div class="flex flex-wrap gap-1 flex-1 min-w-0">
+                      @if (getMultiSelectSelectedOptions(field).length === 0) {
+                        <span class="truncate text-[#000000]">
+                          {{ 'Select ' + field.label }}
+                        </span>
+                      } @else {
+                        @for (selected of getMultiSelectSelectedOptions(field); track selected.value) {
+                          <span
+                            class="inline-flex items-center gap-1 bg-[#fff5eb] border border-[#ffd9b3] rounded px-1.5 py-0.5 text-xs font-medium text-[#FF9015] max-w-full"
+                          >
+                            <span class="truncate">{{ selected.label }}</span>
+                            <button
+                              type="button"
+                              class="ml-0.5 text-[#FF9015] hover:text-[#e07800] font-semibold leading-none shrink-0"
+                              (click)="removeMultiSelectOption(field, selected.value, $event)"
+                              aria-label="Remove selected option"
+                            >×</button>
+                          </span>
+                        }
+                      }
+                    </div>
+                  } @else {
+                    <span
+                      class="truncate"
+                      [class.text-[#000000]]="!form.get(field.name)?.value"
+                    >
+                      {{ getSelectDisplayLabel(field) }}
+                    </span>
+                  }
                   <div class="flex items-center gap-2 shrink-0">
-                      @if (form.get(field.name)?.value) {
+                      @if (
+                        isMultiSelect(field)
+                          ? getMultiSelectSelectedOptions(field).length
+                          : form.get(field.name)?.value
+                      ) {
                         <button
                           type="button"
                           (click)="clearSelectedOption(field, $event)"
@@ -167,9 +196,6 @@
                           <path d="M0.5 0V13.5" stroke="#989898"/>
                         </svg>
                       }
-
-
-
 
                       <svg
                         class="w-4 h-4 text-gray-400 transition-transform duration-150"
@@ -210,22 +236,29 @@
                           No records found
                         </div>
                       } @else {
-                        <button
-                          type="button"
-                          (click)="selectOption(field)"
-                          class="w-full text-left px-3 py-2 rounded-md text-sm font-ibm text-[#000000] hover:bg-[#FFF3E7] transition-colors"
-                        >
-                          {{ 'Select ' + field.label }}
-                        </button>
+                        @if (!isMultiSelect(field)) {
+                          <button
+                            type="button"
+                            (click)="selectOption(field)"
+                            class="w-full text-left px-3 py-2 rounded-md text-sm font-ibm text-[#000000] hover:bg-[#FFF3E7] transition-colors"
+                          >
+                            {{ 'Select ' + field.label }}
+                          </button>
+                        }
 
                         @for (option of filteredOptions; track getOptionValue(option, $index)) {
                           <button
                             type="button"
                             (click)="selectOption(field, option, $index)"
-                            class="w-full text-left px-3 py-2 rounded-md text-sm font-ibm text-[#000000] hover:bg-[#FFF3E7] transition-colors"
+                            class="w-full text-left px-3 py-2 rounded-md text-sm font-ibm text-[#000000] hover:bg-[#FFF3E7] transition-colors flex items-center gap-2"
                             [class.bg-[#FFF3E7]]="isSelectOptionSelected(field, option, $index)"
                             [class.text-[#000000]]="isSelectOptionSelected(field, option, $index)"
                           >
+                            @if (isMultiSelect(field) && isSelectOptionSelected(field, option, $index)) {
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="text-[#FF9015] shrink-0">
+                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/>
+                              </svg>
+                            }
                             {{ getOptionLabel(option) }}
                           </button>
                         }

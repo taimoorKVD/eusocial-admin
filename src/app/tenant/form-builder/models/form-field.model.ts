@@ -15,6 +15,8 @@ export type FieldType =
   | 'barcode'
   | 'qr-code';
 
+export type SelectSelectionType = 'single' | 'multi';
+
 export interface FieldOption {
   id?: number;
   label: string;
@@ -49,6 +51,8 @@ export interface FormField {
   isEditable?: boolean;
   options: Array<string | FieldOption>;
   optionSource?: OptionSource;
+  /** Select field only. Defaults to `single` for backward compatibility. */
+  selectionType?: SelectSelectionType;
 
   value?: unknown;
   defaultValue?: unknown;
