@@ -30,6 +30,11 @@ export class FormBuilderWorkspaceComponent {
   @Input() canvasListId = 'canvasList';
   /** Scoped to user/item/vendor setup Edit Form Builder. */
   @Input() enforceUniqueDynamicModules = false;
+  /**
+   * Locks palette drag, field customization, and tab switches to settings.
+   * Used by setup-user / setup-item / setup-vendor Bulk Delete mode.
+   */
+  @Input() interactionLocked = false;
 
   @Output() selectField = new EventEmitter<FormField>();
   @Output() duplicateField = new EventEmitter<FormField>();
@@ -55,6 +60,10 @@ export class FormBuilderWorkspaceComponent {
   }
 
   setActiveTab(tab: FormBuilderTab): void {
+    if (this.interactionLocked && tab === 'settings') {
+      return;
+    }
+
     if (tab === 'settings' && !this.selectedFieldId) {
       return;
     }
@@ -63,6 +72,10 @@ export class FormBuilderWorkspaceComponent {
   }
 
   onDuplicateSelectedField(): void {
+    if (this.interactionLocked) {
+      return;
+    }
+
     const field = this.selectedField;
     if (field) {
       this.duplicateField.emit(field);
@@ -70,6 +83,10 @@ export class FormBuilderWorkspaceComponent {
   }
 
   onDeleteSelectedField(): void {
+    if (this.interactionLocked) {
+      return;
+    }
+
     const field = this.selectedField;
     if (field) {
       this.deleteField.emit(field);

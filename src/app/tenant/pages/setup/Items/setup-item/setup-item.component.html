@@ -27,6 +27,16 @@
   (closed)="onCancelBuilderExit()"
 ></app-confirm-modal>
 
+<app-confirm-modal
+  [isOpen]="showBulkDeleteConfirm()"
+  title="Delete selected fields"
+  [message]="bulkDeleteConfirmMessage()"
+  confirmText="Delete"
+  cancelText="Cancel"
+  (confirmed)="onConfirmBulkDelete()"
+  (closed)="onCancelBulkDeleteConfirm()"
+></app-confirm-modal>
+
 <app-form-preview-modal
   [isOpen]="showPreviewModal()"
   [formFields]="builderSchema()"
@@ -92,16 +102,48 @@
   } @else {
     <div class="tenant-user-builder">
       <div class="tenant-user-builder__toolbar">
-        <p class="text-[13px] text-[#666] font-ibm">
-          Editing form configuration
-        </p>
-        <button
-          type="button"
-          class="btn btn--cancel"
-          (click)="onCloseBuilder()"
-        >
-          Close
-        </button>
+        @if (!bulkDeleteMode()) {
+          <p class="text-[13px] text-[#666] font-ibm">
+            Editing form configuration
+          </p>
+          <div class="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              class="btn btn--cancel"
+              (click)="enterBulkDeleteMode()"
+            >
+              Bulk Delete
+            </button>
+            <button
+              type="button"
+              class="btn btn--cancel"
+              (click)="onCloseBuilder()"
+            >
+              Close
+            </button>
+          </div>
+        } @else {
+          <p class="text-[13px] text-[#666] font-ibm">
+            Selected: {{ bulkSelectedCount() }}
+          </p>
+          <div class="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              class="btn btn--cancel"
+              (click)="cancelBulkDeleteMode()"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="btn btn--delete disabled:cursor-not-allowed disabled:opacity-40"
+              [disabled]="bulkSelectedCount() === 0"
+              (click)="requestBulkDelete()"
+            >
+              Delete Selected
+            </button>
+          </div>
+        }
       </div>
 
       <app-form-builder-workspace
@@ -113,6 +155,7 @@
         [paletteListId]="paletteListId"
         [canvasListId]="canvasListId"
         [enforceUniqueDynamicModules]="true"
+        [interactionLocked]="bulkDeleteMode()"
         (selectField)="onSelectField($event)"
         (duplicateField)="onDuplicateField($event)"
         (deleteField)="onDeleteField($event)"
@@ -130,8 +173,12 @@
           [schema]="builderSchema()"
           [selectedFieldId]="selectedFieldId()"
           [connectedDropLists]="[paletteListId]"
+          [selectionMode]="bulkDeleteMode()"
+          [selectedFieldIds]="bulkSelectedFieldIds()"
+          [interactionsDisabled]="bulkDeleteMode()"
           (dropped)="onCanvasDrop($event)"
           (selectField)="onSelectField($event)"
+          (toggleFieldSelection)="onToggleBulkFieldSelection($event)"
         ></app-form-canvas>
       </app-form-builder-workspace>
     </div>

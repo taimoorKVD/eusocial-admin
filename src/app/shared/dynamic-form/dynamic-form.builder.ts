@@ -21,7 +21,10 @@ export function serializeDynamicFieldsSchema(fields: DynamicField[]): string {
   }
 
   return sortDynamicFields(fields)
-    .map((field) => `${field.id}:${field.name}:${field.type}:${Number(!!field.required)}`)
+    .map(
+      (field) =>
+        `${field.id}:${field.name}:${field.type}:${Number(!!field.required)}:${field.selectionType || 'single'}`,
+    )
     .join('|');
 }
 
@@ -76,6 +79,18 @@ export function getInitialFieldValue(field: DynamicField): unknown {
     }
     case 'checkbox':
       return false;
+    case 'select': {
+      if (isMultiSelectField(field)) {
+        if (Array.isArray(field.defaultValue)) {
+          return [...field.defaultValue];
+        }
+        if (Array.isArray(field.value)) {
+          return [...field.value];
+        }
+        return [];
+      }
+      return field.defaultValue ?? field.value ?? '';
+    }
     case 'number':
       return field.defaultValue ?? field.value ?? null;
     case 'image':
@@ -83,6 +98,10 @@ export function getInitialFieldValue(field: DynamicField): unknown {
     default:
       return field.defaultValue ?? field.value ?? '';
   }
+}
+
+export function isMultiSelectField(field: DynamicField): boolean {
+  return field.type === 'select' && field.selectionType === 'multi';
 }
 
 export function getFieldValidators(field: DynamicField) {
@@ -105,6 +124,14 @@ export function buildDynamicFormGroupConfig(
       continue;
     }
 
+    if (isMultiSelectField(field)) {
+      groupConfig[field.name] = [
+        getInitialFieldValue(field),
+        getFieldValidators(field),
+      ];
+      continue;
+    }
+
     groupConfig[field.name] = [
       getInitialFieldValue(field),
       getFieldValidators(field),
@@ -121,16 +148,22 @@ export function normalizeCheckboxFormValue(
   const result: DynamicFormValue = { ...raw };
 
   for (const field of sortedFields) {
-    if (field.type !== 'checkbox') continue;
+    if (field.type === 'checkbox') {
+      const value = raw[field.name];
 
-    const value = raw[field.name];
+      if ((field.options?.length ?? 0) <= 1) {
+        result[field.name] = !!value;
+        continue;
+      }
 
-    if ((field.options?.length ?? 0) <= 1) {
-      result[field.name] = !!value;
+      result[field.name] = Array.isArray(value) ? value.filter(Boolean) : [];
       continue;
     }
 
-    result[field.name] = Array.isArray(value) ? value.filter(Boolean) : [];
+    if (isMultiSelectField(field)) {
+      const value = raw[field.name];
+      result[field.name] = Array.isArray(value) ? value.filter((item) => item !== '' && item != null) : [];
+    }
   }
 
   return result;

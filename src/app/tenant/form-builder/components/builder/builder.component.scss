@@ -4,6 +4,10 @@
   gap: 1rem;
 }
 
+.palette-grid--disabled {
+  pointer-events: none;
+}
+
 .palette-item {
   position: relative;
   display: flex;
@@ -29,6 +33,15 @@
 
   &:active {
     cursor: grabbing;
+  }
+
+  &--disabled {
+    cursor: not-allowed;
+    opacity: 0.65;
+
+    &:active {
+      cursor: not-allowed;
+    }
   }
 
   &__icon {

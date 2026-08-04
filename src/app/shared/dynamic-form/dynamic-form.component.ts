@@ -30,6 +30,7 @@ import {
   buildDynamicFormGroupConfig,
   getInitialFieldValue,
   getOptionValue,
+  isMultiSelectField,
   normalizeCheckboxFormValue,
   serializeDynamicFieldsSchema,
   sortDynamicFields,
@@ -255,6 +256,36 @@ export class DynamicFormComponent implements OnDestroy {
     return match ? this.getOptionLabel(match) : String(selectedValue);
   }
 
+  isMultiSelect(field: DynamicField): boolean {
+    return isMultiSelectField(field);
+  }
+
+  getMultiSelectSelectedOptions(
+    field: DynamicField,
+  ): Array<{ label: string; value: string | number }> {
+    const control = this.form?.get(field.name);
+    const selectedValues = Array.isArray(control?.value) ? control.value : [];
+    const options = this.getFieldOptions(field);
+
+    return selectedValues.map((selectedValue: unknown) => {
+      const matchIndex = options.findIndex(
+        (option, index) => String(getOptionValue(option, index)) === String(selectedValue),
+      );
+
+      if (matchIndex >= 0) {
+        return {
+          label: this.getOptionLabel(options[matchIndex]),
+          value: getOptionValue(options[matchIndex], matchIndex),
+        };
+      }
+
+      return {
+        label: String(selectedValue),
+        value: selectedValue as string | number,
+      };
+    });
+  }
+
   isSelectOptionSelected(
     field: DynamicField,
     option: string | DynamicFieldOption,
@@ -265,7 +296,14 @@ export class DynamicFormComponent implements OnDestroy {
       return false;
     }
 
-    return String(control.value) === String(getOptionValue(option, index));
+    const optionValue = getOptionValue(option, index);
+
+    if (isMultiSelectField(field)) {
+      const selectedValues = Array.isArray(control.value) ? control.value : [];
+      return selectedValues.some((value) => String(value) === String(optionValue));
+    }
+
+    return String(control.value) === String(optionValue);
   }
 
   selectOption(
@@ -278,10 +316,64 @@ export class DynamicFormComponent implements OnDestroy {
       return;
     }
 
+    if (isMultiSelectField(field)) {
+      this.toggleMultiSelectOption(field, option, index);
+      return;
+    }
+
     control.setValue(option === undefined ? '' : getOptionValue(option, index));
     control.markAsDirty();
     control.markAsTouched();
     this.overlayService.close();
+    this.handleLocationSelection(field);
+    this.emitNormalizedValue();
+    this.cdr.markForCheck();
+  }
+
+  toggleMultiSelectOption(
+    field: DynamicField,
+    option?: string | DynamicFieldOption,
+    index = 0,
+  ): void {
+    const control = this.form.get(field.name);
+    if (!control || option === undefined) {
+      return;
+    }
+
+    const optionValue = getOptionValue(option, index);
+    const current: unknown[] = Array.isArray(control.value) ? [...control.value] : [];
+    const existingIndex = current.findIndex((value) => String(value) === String(optionValue));
+
+    if (existingIndex >= 0) {
+      current.splice(existingIndex, 1);
+    } else {
+      current.push(optionValue);
+    }
+
+    control.setValue(current);
+    control.markAsDirty();
+    control.markAsTouched();
+    this.handleLocationSelection(field);
+    this.emitNormalizedValue();
+    this.cdr.markForCheck();
+  }
+
+  removeMultiSelectOption(
+    field: DynamicField,
+    value: string | number,
+    event: MouseEvent,
+  ): void {
+    event.stopPropagation();
+
+    const control = this.form.get(field.name);
+    if (!control) {
+      return;
+    }
+
+    const current: unknown[] = Array.isArray(control.value) ? [...control.value] : [];
+    control.setValue(current.filter((item) => String(item) !== String(value)));
+    control.markAsDirty();
+    control.markAsTouched();
     this.handleLocationSelection(field);
     this.emitNormalizedValue();
     this.cdr.markForCheck();
@@ -295,7 +387,7 @@ export class DynamicFormComponent implements OnDestroy {
       return;
     }
 
-    control.setValue('');
+    control.setValue(isMultiSelectField(field) ? [] : '');
     control.markAsDirty();
     control.markAsTouched();
 
@@ -622,11 +714,16 @@ export class DynamicFormComponent implements OnDestroy {
   }
 
   private clearControlValue(field: DynamicField): void {
-    this.form?.get(field.name)?.setValue('');
+    this.form?.get(field.name)?.setValue(isMultiSelectField(field) ? [] : '');
   }
 
   private isEmptyValue(value: unknown): boolean {
-    return value === null || value === undefined || value === '';
+    return (
+      value === null ||
+      value === undefined ||
+      value === '' ||
+      (Array.isArray(value) && value.length === 0)
+    );
   }
 
   private createRandomPassword(): string {

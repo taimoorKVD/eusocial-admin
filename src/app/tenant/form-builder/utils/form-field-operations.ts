@@ -122,6 +122,34 @@ export function removeFormField(
   ]);
 }
 
+/** Whether a field may be selected/removed during bulk delete. */
+export function isFormFieldBulkDeletable(field: FormField): boolean {
+  return field?.isEditable !== false;
+}
+
+/**
+ * Remove multiple fields by id in one pass. Preserves remaining field
+ * identities and relative order; only normalizes `order` indexes.
+ */
+export function removeFormFields(
+  fieldIds: Iterable<string>,
+  schema: FormField[]
+): FormField[] {
+  const ids = fieldIds instanceof Set ? fieldIds : new Set(fieldIds);
+
+  if (ids.size === 0) {
+    return schema;
+  }
+
+  const next = schema.filter(field => !ids.has(field.id));
+
+  if (next.length === schema.length) {
+    return schema;
+  }
+
+  return normalizeFieldOrder(next);
+}
+
 export function updateFormField(
   updated: FormField,
   schema: FormField[]

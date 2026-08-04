@@ -1,20 +1,30 @@
-<div class="font-ibm">
-  <p class="mb-3 text-xs text-slate-500">Drag a field onto the canvas to add it.</p>
+<div class="font-ibm" [class.opacity-50]="disabled">
+  <p class="mb-3 text-xs text-slate-500">
+    @if (disabled) {
+      Finish or cancel Bulk Delete to add fields.
+    } @else {
+      Drag a field onto the canvas to add it.
+    }
+  </p>
 
   <div
     cdkDropList
     #paletteList="cdkDropList"
     [id]="dropListId"
     class="palette-grid"
+    [class.palette-grid--disabled]="disabled"
     [cdkDropListData]="fieldTemplates"
     [cdkDropListConnectedTo]="connectedDropLists"
+    [cdkDropListDisabled]="disabled"
     cdkDropListSortingDisabled
   >
     <div
       *ngFor="let field of fieldTemplates; trackBy: trackByTemplate"
       cdkDrag
       [cdkDragData]="field"
+      [cdkDragDisabled]="disabled"
       class="palette-item"
+      [class.palette-item--disabled]="disabled"
     >
       <span
         class="palette-tooltip-trigger app-tooltip-trigger"

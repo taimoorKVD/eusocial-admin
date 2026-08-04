@@ -237,6 +237,7 @@ export function getListingBadgeClass(field: DynamicField): string {
   switch (field.type) {
     case 'checkbox':
     case 'radio':
+    case 'select':
       return 'border border-[#ea580c] hover:bg-orange-100';
     default:
       return 'bg-gray-50 text-gray-700 border border-gray-200';
@@ -356,16 +357,27 @@ export function formatListingCellValue(record: Record<string, unknown>, field: D
 
     case 'select':
     {
-      if (typeof rawValue === 'object' && rawValue !== null) {
-        const obj = rawValue as Record<string, unknown>;
-        return String(obj['name'] ?? obj['label'] ?? obj['id'] ?? '—');
+      const values = normalizeSelectListingValues(rawValue);
+
+      if (!values.length) {
+        return '—';
       }
 
-      const match = field.options?.find(
-        option => String(getOptionValue(option)) === String(rawValue)
-      );
+      return values
+        .map((item) => {
+          if (typeof item === 'object' && item !== null) {
+            const obj = item as Record<string, unknown>;
+            return String(obj['name'] ?? obj['label'] ?? obj['id'] ?? '');
+          }
 
-      return match ? getOptionLabel(match) : String(rawValue);
+          const match = field.options?.find(
+            (option) => String(getOptionValue(option)) === String(item),
+          );
+
+          return match ? getOptionLabel(match) : String(item);
+        })
+        .filter((label) => label.trim().length > 0)
+        .join(', ') || '—';
     }
 
     case 'radio': {
@@ -496,6 +508,19 @@ function mapDynamicFieldToFilterType(field: DynamicField): string {
     default:
       return 'text';
   }
+}
+
+/** Supports legacy string values and the new array payload for select fields. */
+function normalizeSelectListingValues(rawValue: unknown): unknown[] {
+  if (rawValue === undefined || rawValue === null || rawValue === '') {
+    return [];
+  }
+
+  if (Array.isArray(rawValue)) {
+    return rawValue.filter((item) => item !== undefined && item !== null && item !== '');
+  }
+
+  return [rawValue];
 }
 
 function mapDynamicFieldToFilterOptions(

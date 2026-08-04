@@ -20,9 +20,11 @@ import { normalizeFieldOrder } from '../../../../form-builder/utils/form-field.f
 import {
   applyCanvasDrop,
   duplicateFormField,
+  isFormFieldBulkDeletable,
   removeFormField,
   updateFormField,
 } from '../../../../form-builder/utils/form-field-operations';
+import { applyBulkFieldDelete } from '../../../../form-builder/utils/bulk-field-delete.utils';
 import { FormBuilderTab } from '../../../../forms/components/form-builder-workspace/form-builder-workspace.component';
 import { serializeSchemaFields } from '../../../../forms/utils/form-schema-payload.utils';
 import { DynamicFormComponent } from '../../../../../shared/dynamic-form/dynamic-form.component';
@@ -64,6 +66,9 @@ export class SetupUserComponent {
   readonly showPreviewModal = signal(false);
   readonly showBuilderExitConfirm = signal(false);
   readonly builderVersionsLoading = signal(false);
+  readonly bulkDeleteMode = signal(false);
+  readonly bulkSelectedFieldIds = signal<string[]>([]);
+  readonly showBulkDeleteConfirm = signal(false);
 
   readonly paletteListId = 'userSetupPaletteList';
   readonly canvasListId = 'userSetupCanvasList';
@@ -80,6 +85,12 @@ export class SetupUserComponent {
   readonly showUserFormLoader = computed(
     () => this.loading() && !this.builderVisible()
   );
+  readonly bulkSelectedCount = computed(() => this.bulkSelectedFieldIds().length);
+  readonly bulkDeleteConfirmMessage = computed(() => {
+    const count = this.bulkSelectedCount();
+    const noun = count === 1 ? 'field' : 'fields';
+    return `Delete ${count} selected ${noun}? This action cannot be undone.`;
+  });
 
   ngOnInit(): void {
     this.userId.set(this.route.snapshot.paramMap.get('id') || '');
@@ -200,6 +211,10 @@ export class SetupUserComponent {
   }
 
   onCanvasDrop(event: Parameters<typeof applyCanvasDrop>[0]): void {
+    if (this.bulkDeleteMode()) {
+      return;
+    }
+
     const result = applyCanvasDrop(event, this.builderSchema());
     this.builderSchema.set(result.schema);
 
@@ -209,11 +224,88 @@ export class SetupUserComponent {
   }
 
   onSelectField(field: FormField): void {
+    if (this.bulkDeleteMode()) {
+      return;
+    }
+
     this.selectedFieldId.set(field.id);
     this.activeTab.set('settings');
   }
 
+  enterBulkDeleteMode(): void {
+    this.bulkDeleteMode.set(true);
+    this.bulkSelectedFieldIds.set([]);
+    this.showBulkDeleteConfirm.set(false);
+    this.selectedFieldId.set(null);
+    this.activeTab.set('fields');
+  }
+
+  cancelBulkDeleteMode(): void {
+    this.bulkDeleteMode.set(false);
+    this.bulkSelectedFieldIds.set([]);
+    this.showBulkDeleteConfirm.set(false);
+  }
+
+  onToggleBulkFieldSelection(field: FormField): void {
+    if (!this.bulkDeleteMode() || !isFormFieldBulkDeletable(field)) {
+      return;
+    }
+
+    const current = this.bulkSelectedFieldIds();
+    if (current.includes(field.id)) {
+      this.bulkSelectedFieldIds.set(current.filter(id => id !== field.id));
+      return;
+    }
+
+    this.bulkSelectedFieldIds.set([...current, field.id]);
+  }
+
+  requestBulkDelete(): void {
+    if (!this.bulkDeleteMode() || this.bulkSelectedCount() === 0) {
+      return;
+    }
+
+    this.showBulkDeleteConfirm.set(true);
+  }
+
+  onConfirmBulkDelete(): void {
+    const selectedIds = this.bulkSelectedFieldIds();
+    if (selectedIds.length === 0) {
+      this.showBulkDeleteConfirm.set(false);
+      return;
+    }
+
+    const result = applyBulkFieldDelete(selectedIds, this.builderSchema());
+    this.showBulkDeleteConfirm.set(false);
+
+    if (result.blockReason) {
+      this.toastr.warning(result.blockReason);
+      return;
+    }
+
+    if (result.deletedCount === 0) {
+      return;
+    }
+
+    this.builderSchema.set(result.schema);
+
+    const selectedId = this.selectedFieldId();
+    if (selectedId && !result.schema.some(item => item.id === selectedId)) {
+      this.selectedFieldId.set(null);
+    }
+
+    this.cancelBulkDeleteMode();
+  }
+
+  onCancelBulkDeleteConfirm(): void {
+    this.showBulkDeleteConfirm.set(false);
+  }
+
   onDuplicateField(field: FormField): void {
+    if (this.bulkDeleteMode()) {
+      return;
+    }
+
     const result = duplicateFormField(field, this.builderSchema());
     this.builderSchema.set(result.schema);
 
@@ -223,6 +315,10 @@ export class SetupUserComponent {
   }
 
   onDeleteField(field: FormField): void {
+    if (this.bulkDeleteMode()) {
+      return;
+    }
+
     const nextSchema = removeFormField(field, this.builderSchema());
     this.builderSchema.set(nextSchema);
 
@@ -234,6 +330,10 @@ export class SetupUserComponent {
   }
 
   onActiveTabChange(tab: FormBuilderTab): void {
+    if (this.bulkDeleteMode() && tab === 'settings') {
+      return;
+    }
+
     this.activeTab.set(tab);
   }
 
@@ -272,6 +372,10 @@ export class SetupUserComponent {
   }
 
   updateField(updated: FormField): void {
+    if (this.bulkDeleteMode()) {
+      return;
+    }
+
     const nextSchema = updateFormField(updated, this.builderSchema());
     this.builderSchema.set(nextSchema);
 
@@ -283,6 +387,10 @@ export class SetupUserComponent {
   }
 
   saveBuilderForm(): void {
+    if (this.bulkDeleteMode()) {
+      return;
+    }
+
     const orderedSchema = normalizeFieldOrder([...this.builderSchema()]);
     this.builderSchema.set(orderedSchema);
     const hasRequiredField = orderedSchema.some(field => field.required);
@@ -335,6 +443,7 @@ export class SetupUserComponent {
     this.showPreviewModal.set(false);
     this.savedSnapshot = '';
     this.schemaReady = false;
+    this.cancelBulkDeleteMode();
   }
 
   private hasBuilderUnsavedChanges(): boolean {
@@ -467,12 +576,15 @@ export class SetupUserComponent {
       }
 
       if (field.type === 'select') {
+        const normalized = this.normalizeMultiSelectPatchValue(value);
+
+        // Single-select UI still uses a scalar control value.
         patchData[field.name] =
-          value == null
-            ? ''
-            : typeof value === 'object'
-              ? (value as { id: unknown }).id
-              : value;
+          field.selectionType === 'multi'
+            ? normalized
+            : normalized.length
+              ? normalized[0]
+              : '';
         continue;
       }
 
@@ -484,6 +596,26 @@ export class SetupUserComponent {
 
   private getFieldKey(field: DynamicField): string {
     return field.id || field.name;
+  }
+
+  private normalizeMultiSelectPatchValue(value: unknown): unknown[] {
+    if (Array.isArray(value)) {
+      return value.map((item) =>
+        item != null && typeof item === 'object'
+          ? (item as { id: unknown }).id
+          : item,
+      );
+    }
+
+    if (value == null || value === '') {
+      return [];
+    }
+
+    if (typeof value === 'object') {
+      return [(value as { id: unknown }).id];
+    }
+
+    return [value];
   }
 
   private resolveFieldValue(
@@ -500,17 +632,46 @@ export class SetupUserComponent {
 
     for (const field of this.formFields()) {
       const key = this.getFieldKey(field);
+      const hasNameValue = Object.prototype.hasOwnProperty.call(values, field.name);
+      const rawValue = hasNameValue ? values[field.name] : payload[key];
+
+      if (field.type === 'select') {
+        const arrayValue = this.normalizeSelectPayloadValue(rawValue);
+        payload[key] = arrayValue;
+        if (key !== field.name) {
+          delete payload[field.name];
+        }
+        continue;
+      }
+
       if (key === field.name) {
         continue;
       }
 
-      if (Object.prototype.hasOwnProperty.call(values, field.name)) {
+      if (hasNameValue) {
         payload[key] = values[field.name];
         delete payload[field.name];
       }
     }
 
     return payload;
+  }
+
+  /** Always persist select values as arrays for single and multi selection. */
+  private normalizeSelectPayloadValue(value: unknown): unknown[] {
+    if (Array.isArray(value)) {
+      return value.filter((item) => item !== '' && item != null);
+    }
+
+    if (value == null || value === '') {
+      return [];
+    }
+
+    if (typeof value === 'object') {
+      return [(value as { id: unknown }).id];
+    }
+
+    return [value];
   }
 
   private applyApiOptionsToField(

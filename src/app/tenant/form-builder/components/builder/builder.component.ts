@@ -14,6 +14,8 @@ import { FIELD_TEMPLATES } from '../../data/field-templates';
 export class BuilderComponent {
   @Input() connectedDropLists: Array<CdkDropList<FormField[]> | string> = [];
   @Input() dropListId = 'sidebarList';
+  /** Disables palette drag when form interactions are locked (e.g. bulk delete). */
+  @Input() disabled = false;
 
   @ViewChild('paletteList', { static: true })
   paletteListRef!: CdkDropList<FormField[]>;

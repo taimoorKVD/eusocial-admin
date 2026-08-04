@@ -133,6 +133,12 @@ export class FieldSettingsComponent {
       isReadonly: this._field.isReadonly === true,
       options: [...(this._field.options || [])],
       optionSource: this.resolveEmittedOptionSource(),
+      selectionType:
+        this._field.type === 'select'
+          ? this._field.selectionType === 'multi'
+            ? 'multi'
+            : 'single'
+          : undefined,
       condition: this._field.condition
         ? { ...this._field.condition }
         : { fieldId: '', value: '' },
@@ -191,6 +197,29 @@ export class FieldSettingsComponent {
 
   get isSelectField(): boolean {
     return this._field?.type === 'select';
+  }
+
+  /** Selection Type (Single/Multi) — only for user/item/vendor setup Form Builders. */
+  get supportsSelectSelectionType(): boolean {
+    if (!this.isSelectField) {
+      return false;
+    }
+
+    const moduleName = (this.activeModuleName || '').trim().toLowerCase();
+    return moduleName === 'users' || moduleName === 'items' || moduleName === 'vendors';
+  }
+
+  get selectionType(): 'single' | 'multi' {
+    return this._field?.selectionType === 'multi' ? 'multi' : 'single';
+  }
+
+  setSelectionType(type: 'single' | 'multi'): void {
+    if (!this._field || !this.isFieldEditable || !this.supportsSelectSelectionType) {
+      return;
+    }
+
+    this._field.selectionType = type;
+    this.onChange();
   }
 
   get isParameterField(): boolean {
@@ -470,6 +499,12 @@ export class FieldSettingsComponent {
       condition: value.condition || { fieldId: '', value: '' },
       options: [...(value.options || [])],
       optionSource: value.optionSource ? { ...value.optionSource } : undefined,
+      selectionType:
+        value.type === 'select'
+          ? value.selectionType === 'multi'
+            ? 'multi'
+            : 'single'
+          : undefined,
       isShow: value.isShow !== false,
       isReadonly: value.isReadonly === true,
     };

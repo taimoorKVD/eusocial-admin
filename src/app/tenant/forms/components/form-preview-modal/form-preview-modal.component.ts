@@ -194,7 +194,7 @@ export class FormPreviewModalComponent implements OnDestroy {
     return this.buildPreviewFields(formFields)
       .map(
         (field) =>
-          `${field.id}|${field.label}|${field.type}|${field.required}|${field.placeholder}|${JSON.stringify(field.options)}|${JSON.stringify(field.optionSource)}`,
+          `${field.id}|${field.label}|${field.type}|${field.required}|${field.placeholder}|${field.selectionType || 'single'}|${JSON.stringify(field.options)}|${JSON.stringify(field.optionSource)}`,
       )
       .join('::');
   }

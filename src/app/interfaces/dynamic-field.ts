@@ -31,6 +31,8 @@ export interface DynamicFieldOptionSource {
   };
 }
 
+export type DynamicSelectSelectionType = 'single' | 'multi';
+
 export interface DynamicField {
   id: string;
   name: string;
@@ -46,6 +48,8 @@ export interface DynamicField {
   isShow?: boolean;
   options?: (string | DynamicFieldOption)[];
   optionSource?: DynamicFieldOptionSource;
+  /** Select field only. Defaults to `single` when missing. */
+  selectionType?: DynamicSelectSelectionType;
 }
 
 export type DynamicFormValue = Record<string, unknown>;

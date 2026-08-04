@@ -17,6 +17,10 @@
   text-align: center;
 }
 
+.form-canvas-drop-list--locked {
+  cursor: default;
+}
+
 .form-canvas-field {
   cursor: pointer;
   border-radius: 0.5rem;
@@ -25,7 +29,8 @@
   align-self: stretch;
   transition:
     background-color 0.15s ease,
-    box-shadow 0.15s ease;
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
 
   &:hover {
     background: rgb(248 250 252 / 70%);
@@ -36,6 +41,31 @@
     box-shadow:
       0 0 0 2px #FF9015,
       0 0 0 4px #fff;
+  }
+
+  &--selection-mode {
+    cursor: default;
+  }
+
+  &--bulk-selected {
+    background: #fff7ed;
+    box-shadow:
+      0 0 0 2px #FF9015,
+      0 0 0 4px #fff;
+  }
+
+  &--protected {
+    cursor: not-allowed;
+    opacity: 0.85;
+    background: rgb(248 250 252 / 80%);
+
+    &:hover {
+      background: rgb(248 250 252 / 80%);
+    }
+  }
+
+  &__checkbox {
+    accent-color: #ff9015;
   }
 
   // UI-only visibility — never remove from DOM/schema/CDK list
