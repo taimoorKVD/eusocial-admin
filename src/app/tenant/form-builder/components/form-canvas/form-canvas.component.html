@@ -3,8 +3,10 @@
   #canvasList="cdkDropList"
   [id]="dropListId"
   class="form-canvas-drop-list grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-x-6 md:gap-y-4"
+  [class.form-canvas-drop-list--locked]="isDragDropDisabled"
   [cdkDropListData]="schema"
   [cdkDropListConnectedTo]="connectedDropLists"
+  [cdkDropListDisabled]="isDragDropDisabled"
   cdkDropListOrientation="mixed"
   (cdkDropListDropped)="onDrop($event)"
 >
@@ -20,15 +22,48 @@
     *ngFor="let field of schema; trackBy: trackByFieldId"
     cdkDrag
     [cdkDragData]="field"
+    [cdkDragDisabled]="isDragDropDisabled"
     [attr.data-field-id]="field.id"
     [attr.aria-hidden]="isFieldHidden(field)"
     class="form-canvas-field h-full"
     [class.form-canvas-field--hidden]="isFieldHidden(field)"
-    [class.form-canvas-field--selected]="field.id === selectedFieldId"
+    [class.form-canvas-field--selected]="!selectionMode && field.id === selectedFieldId"
+    [class.form-canvas-field--bulk-selected]="selectionMode && isFieldSelected(field)"
+    [class.form-canvas-field--protected]="selectionMode && !isFieldDeletable(field)"
+    [class.form-canvas-field--selection-mode]="selectionMode"
     (click)="onFieldClick(field)"
     (cdkDragStarted)="onFieldDragStarted()"
     (cdkDragEnded)="onFieldDragEnded()"
   >
-    <app-form-field-preview [field]="field"></app-form-field-preview>
+    <div class="flex h-full items-start gap-3">
+      @if (selectionMode) {
+        <div
+          class="form-canvas-field__select flex shrink-0 flex-col items-center gap-1 pt-1"
+          (click)="onCheckboxClick($event)"
+        >
+          <input
+            type="checkbox"
+            class="form-canvas-field__checkbox h-4 w-4 rounded border-slate-300 text-[#FF9015] focus:ring-[#FF9015] disabled:cursor-not-allowed disabled:opacity-40"
+            [checked]="isFieldSelected(field)"
+            [disabled]="!isFieldDeletable(field)"
+            [attr.aria-label]="
+              isFieldDeletable(field)
+                ? 'Select ' + field.label
+                : field.label + ' (Protected)'
+            "
+            (change)="onCheckboxChange(field, $event)"
+          />
+          @if (!isFieldDeletable(field)) {
+            <span class="max-w-[4.5rem] text-center text-[10px] font-medium leading-tight text-slate-400">
+              Protected
+            </span>
+          }
+        </div>
+      }
+
+      <div class="min-w-0 flex-1">
+        <app-form-field-preview [field]="field"></app-form-field-preview>
+      </div>
+    </div>
   </div>
 </div>

@@ -10,13 +10,19 @@
           <button
             type="button"
             class="btn btn--cancel"
+            [disabled]="interactionLocked"
             (click)="preview.emit()"
           >
             Preview Form
           </button>
         }
 
-        <button type="button" class="btn btn--save" (click)="save.emit()">
+        <button
+          type="button"
+          class="btn btn--save"
+          [disabled]="interactionLocked"
+          (click)="save.emit()"
+        >
           Save Form
         </button>
       </div>
@@ -34,7 +40,8 @@
         </button>
         <button
           type="button"
-          class="px-3 py-4 text-sm font-medium transition focus:outline-none"
+          class="px-3 py-4 text-sm font-medium transition focus:outline-none disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
+          [disabled]="interactionLocked"
           [ngClass]="activeTab === 'settings' ? ' border-[#FF9015] border-b text-[#FF9015] text-[16px] tracking-[0.32px] font-medium' : 'text-slate-500 hover:bg-slate-100'"
           (click)="setActiveTab('settings')"
         >
@@ -42,7 +49,8 @@
         </button>
         <button
           type="button"
-          class="px-3 py-4 text-sm font-medium transition focus:outline-none"
+          class="px-3 py-4 text-sm font-medium transition focus:outline-none disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
+          [disabled]="interactionLocked"
           [ngClass]="activeTab === 'versions' ? ' border-[#FF9015] border-b text-[#FF9015] text-[16px] tracking-[0.32px] font-medium' : 'text-slate-500 hover:bg-slate-100'"
           (click)="setActiveTab('versions')"
         >
@@ -56,10 +64,11 @@
         <app-builder
           [dropListId]="paletteListId"
           [connectedDropLists]="[canvasListId]"
+          [disabled]="interactionLocked"
         ></app-builder>
       </div>
 
-      @if (activeTab === 'versions') {
+      @if (activeTab === 'versions' && !interactionLocked) {
         <app-form-versions-panel
           [moduleName]="moduleName"
           (restore)="restoreVersion.emit($event)"
@@ -67,7 +76,7 @@
         ></app-form-versions-panel>
       }
 
-      <div [class.hidden]="activeTab !== 'settings'" class="space-y-4">
+      <div [class.hidden]="activeTab !== 'settings' || interactionLocked" class="space-y-4">
         @if (selectedField) {
           <app-field-settings
             [field]="selectedField"
