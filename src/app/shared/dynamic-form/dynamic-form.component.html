@@ -5,6 +5,7 @@
 <form [formGroup]="form" class="dynamic-form" novalidate>
   <div class="grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-6">
     @for (field of sortedFields(); track field.id + ':' + field.name) {
+      @if (isFieldVisible(field)) {
       <div
         [class.col-span-2]="isFullWidthField(field)"
         class="field-shell"
@@ -13,7 +14,7 @@
           @if (field.type !== 'image') {
             <label class="field-label" [attr.for]="field.id">
               {{ field.label }}
-              @if (field.required) {
+              @if (isFieldRequired(field)) {
                 <span class="field-required" aria-hidden="true">*</span>
               }
             </label>
@@ -423,6 +424,7 @@
           }
         </div>
       </div>
+      }
     }
   </div>
 </form>

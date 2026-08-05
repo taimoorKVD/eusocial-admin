@@ -373,6 +373,98 @@
     </ng-container>
   </div>
 
+  <div class="space-y-3 rounded-md border border-slate-100 bg-slate-50 px-3 py-3">
+    <div class="flex items-center justify-between gap-3">
+      <div>
+        <p class="text-sm font-medium text-slate-800">Conditional Logic</p>
+        <p class="text-xs text-slate-500">Show, hide, or change this field based on another field.</p>
+      </div>
+      <label class="inline-flex items-center gap-2 text-xs font-medium text-slate-600">
+        <input
+          type="checkbox"
+          class="field-settings-checkbox"
+          [ngModel]="conditionEnabled"
+          (ngModelChange)="onConditionEnabledChange($event)"
+          [disabled]="!isFieldEditable"
+        />
+        Enabled
+      </label>
+    </div>
+
+    @if (conditionEnabled) {
+      <div>
+        <label class="mb-1.5 block text-xs font-medium text-slate-600">Source Field</label>
+        <select
+          class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+          [ngModel]="conditionSourceFieldId"
+          (ngModelChange)="onConditionSourceChange($event)"
+          [disabled]="!isFieldEditable"
+        >
+          <option value="">Select a field</option>
+          @for (source of validConditionSourceFields; track source.id) {
+            <option [value]="source.id">{{ source.label }}</option>
+          }
+        </select>
+      </div>
+
+      <div>
+        <label class="mb-1.5 block text-xs font-medium text-slate-600">Operator</label>
+        <select
+          class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+          [ngModel]="conditionOperator"
+          (ngModelChange)="onConditionOperatorChange($event)"
+          [disabled]="!isFieldEditable"
+        >
+          @for (operator of conditionOperators; track operator.value) {
+            <option [value]="operator.value">{{ operator.label }}</option>
+          }
+        </select>
+      </div>
+
+      @if (conditionNeedsValue) {
+        <div>
+          <label class="mb-1.5 block text-xs font-medium text-slate-600">Compare Value</label>
+          @if (conditionSourceHasOptions) {
+            <select
+              class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+              [ngModel]="conditionCompareValue"
+              (ngModelChange)="onConditionValueChange($event)"
+              [disabled]="!isFieldEditable"
+            >
+              <option value="">Select a value</option>
+              @for (option of conditionSourceOptions; track option.value) {
+                <option [ngValue]="option.value">{{ option.label }}</option>
+              }
+            </select>
+          } @else {
+            <input
+              type="text"
+              class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+              [ngModel]="conditionCompareValue"
+              (ngModelChange)="onConditionValueChange($event)"
+              [disabled]="!isFieldEditable"
+              placeholder="Enter a value"
+            />
+          }
+        </div>
+      }
+
+      <div>
+        <label class="mb-1.5 block text-xs font-medium text-slate-600">Action</label>
+        <select
+          class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+          [ngModel]="conditionAction"
+          (ngModelChange)="onConditionActionChange($event)"
+          [disabled]="!isFieldEditable"
+        >
+          @for (action of conditionActions; track action.value) {
+            <option [value]="action.value">{{ action.label }}</option>
+          }
+        </select>
+      </div>
+    }
+  </div>
+
   <div class="flex gap-2 border-t border-slate-100 pt-4">
     <button
       type="button"
