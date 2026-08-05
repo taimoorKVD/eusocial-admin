@@ -5,6 +5,7 @@ import {
   OptionSource,
   SelectSelectionType,
 } from '../models/form-field.model';
+import { serializeConditionalLogic } from '../../../shared/conditional-logic';
 import {
   normalizeCheckboxFieldOptions,
   normalizeStaticSelectFieldOptions,
@@ -188,9 +189,7 @@ export function sanitizeField(
     validations: field.validations ? { ...field.validations } : {},
     width: field.width ?? 12,
     order: order ?? field.order,
-    condition: field.condition
-      ? { ...field.condition }
-      : { fieldId: '', value: '' },
+    condition: serializeConditionalLogic(field.condition),
     parameterCategory: field.parameterCategory,
     parameterUnit: field.parameterUnit,
     maxRating: field.maxRating,

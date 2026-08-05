@@ -1,3 +1,4 @@
+import { cloneConditionalLogic, serializeConditionalLogic } from '../../../../../shared/conditional-logic';
 import { FormField, FieldOption } from '../../../../form-builder/models/form-field.model';
 import {
   cloneOptionSource,
@@ -95,7 +96,7 @@ export function mapConfigFieldToBuilder(field: FormFieldConfig): FormField {
     value: field.value,
     defaultValue: field.defaultValue ?? field.value ?? '',
     validations: field.validations ? { ...field.validations } : {},
-    condition: field.condition ? { ...field.condition } : { fieldId: '', value: '' },
+    condition: cloneConditionalLogic(field.condition),
     parameterCategory: field.parameterCategory,
     parameterUnit: field.parameterUnit,
     maxRating: field.maxRating,
@@ -130,7 +131,7 @@ export function mapBuilderFieldToConfig(
     isEditable: field.isEditable,
     isShow: field.isShow,
     validations: field.validations ? { ...field.validations } : undefined,
-    condition: field.condition ? { ...field.condition } : undefined,
+    condition: serializeConditionalLogic(field.condition),
     defaultValue: field.defaultValue,
     parameterCategory: field.parameterCategory,
     parameterUnit: field.parameterUnit,

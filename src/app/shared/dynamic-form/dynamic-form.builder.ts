@@ -104,10 +104,22 @@ export function isMultiSelectField(field: DynamicField): boolean {
   return field.type === 'select' && field.selectionType === 'multi';
 }
 
-export function getFieldValidators(field: DynamicField) {
+export function getFieldValidators(
+  field: DynamicField,
+  options?: { required?: boolean; visible?: boolean }
+) {
   const validators = [];
-  if (field.required) validators.push(Validators.required);
-  if (field.type === 'email') validators.push(Validators.email);
+  const required = options?.required ?? !!field.required;
+  const visible = options?.visible ?? true;
+
+  if (visible && required && field.type !== 'checkbox') {
+    validators.push(Validators.required);
+  }
+
+  if (field.type === 'email') {
+    validators.push(Validators.email);
+  }
+
   return validators;
 }
 

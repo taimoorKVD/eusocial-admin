@@ -8,6 +8,25 @@ import {
   signal,
 } from '@angular/core';
 import { ToastrService } from 'ngx-toastr';
+import {
+  CONDITION_ACTION_LABELS,
+  CONDITION_ACTIONS,
+  CONDITION_OPERATOR_LABELS,
+  CONDITION_OPERATORS,
+  ConditionActionType,
+  ConditionOperator,
+  FieldConditionalLogic,
+  cloneConditionalLogic,
+  createEmptyConditionalLogic,
+  getPrimaryActionType,
+  getPrimaryPredicate,
+  getValidConditionalSourceFields,
+  operatorRequiresValue,
+  serializeConditionalLogic,
+  setPrimaryActionType,
+  setPrimaryPredicate,
+  wouldCreateCircularDependency,
+} from '../../../shared/conditional-logic';
 import { FormField, OptionSource } from '../models/form-field.model';
 import { normalizeFieldOption, normalizeStaticSelectFieldOptions } from '../utils/field-options.utils';
 import { buildPlaceholderFromLabel, supportsPlaceholderAutoGeneration } from '../utils/form-field.factory';
@@ -53,6 +72,7 @@ export class FieldSettingsComponent {
 
   @Input() set schema(value: FormField[] | null | undefined) {
     this.schemaSignal.set(value ?? []);
+    this.ensureConditionSourceIsValid(false);
   }
 
   /** Country on another field — required before States/Cities can be selected. */
@@ -95,6 +115,7 @@ export class FieldSettingsComponent {
   }
 
   private _field!: FormField;
+  conditionEditor: FieldConditionalLogic = createEmptyConditionalLogic();
   private placeholderManuallyEdited = false;
   private skipFieldReinitialize = false;
   private modulesLoaded = false;
@@ -139,9 +160,7 @@ export class FieldSettingsComponent {
             ? 'multi'
             : 'single'
           : undefined,
-      condition: this._field.condition
-        ? { ...this._field.condition }
-        : { fieldId: '', value: '' },
+      condition: serializeConditionalLogic(this.conditionEditor),
     });
   }
 
@@ -232,6 +251,163 @@ export class FieldSettingsComponent {
 
   get isRangeField(): boolean {
     return this._field?.type === 'range';
+  }
+
+  readonly conditionOperators = CONDITION_OPERATORS.map(value => ({
+    value,
+    label: CONDITION_OPERATOR_LABELS[value],
+  }));
+
+  readonly conditionActions = CONDITION_ACTIONS.map(value => ({
+    value,
+    label: CONDITION_ACTION_LABELS[value],
+  }));
+
+  get conditionEnabled(): boolean {
+    return this.conditionEditor.enabled;
+  }
+
+  get conditionSourceFieldId(): string {
+    return getPrimaryPredicate(this.conditionEditor).fieldId;
+  }
+
+  get conditionOperator(): ConditionOperator {
+    return getPrimaryPredicate(this.conditionEditor).operator;
+  }
+
+  get conditionCompareValue(): unknown {
+    return getPrimaryPredicate(this.conditionEditor).value ?? '';
+  }
+
+  get conditionAction(): ConditionActionType {
+    return getPrimaryActionType(this.conditionEditor);
+  }
+
+  get conditionNeedsValue(): boolean {
+    return operatorRequiresValue(this.conditionOperator);
+  }
+
+  get validConditionSourceFields(): FormField[] {
+    if (!this._field) {
+      return [];
+    }
+
+    return getValidConditionalSourceFields(this.schemaSignal(), this._field.id);
+  }
+
+  get conditionSourceField(): FormField | null {
+    const sourceId = this.conditionSourceFieldId;
+    if (!sourceId) {
+      return null;
+    }
+
+    return this.schemaSignal().find(field => field.id === sourceId) ?? null;
+  }
+
+  get conditionSourceOptions(): Array<{ label: string; value: string | number }> {
+    const source = this.conditionSourceField;
+    if (!source?.options?.length) {
+      return [];
+    }
+
+    return source.options
+      .map((option, index) => {
+        if (typeof option === 'string') {
+          return { label: option, value: option };
+        }
+
+        const normalized = normalizeFieldOption(option);
+        if (!normalized) {
+          return null;
+        }
+
+        return {
+          label: normalized.label,
+          value: normalized.value ?? index,
+        };
+      })
+      .filter((option): option is { label: string; value: string | number } => !!option);
+  }
+
+  get conditionSourceHasOptions(): boolean {
+    const type = this.conditionSourceField?.type;
+    return (
+      (type === 'select' || type === 'radio' || type === 'checkbox') &&
+      this.conditionSourceOptions.length > 0
+    );
+  }
+
+  onConditionEnabledChange(enabled: boolean): void {
+    if (!this._field || !this.isFieldEditable) {
+      return;
+    }
+
+    this.conditionEditor = {
+      ...this.conditionEditor,
+      enabled,
+      when: this.conditionEditor.when ?? createEmptyConditionalLogic().when,
+      actions: this.conditionEditor.actions?.length
+        ? this.conditionEditor.actions
+        : [{ type: 'show' }],
+    };
+    this._field.condition = this.conditionEditor;
+    this.onChange();
+  }
+
+  onConditionSourceChange(fieldId: string): void {
+    if (!this._field || !this.isFieldEditable) {
+      return;
+    }
+
+    if (
+      fieldId &&
+      wouldCreateCircularDependency(this._field.id, fieldId, this.schemaSignal())
+    ) {
+      this.toastr.warning('This source field would create a circular dependency.');
+      return;
+    }
+
+    this.conditionEditor = setPrimaryPredicate(this.conditionEditor, {
+      fieldId,
+      value: '',
+    });
+    this._field.condition = this.conditionEditor;
+    this.onChange();
+  }
+
+  onConditionOperatorChange(operator: ConditionOperator): void {
+    if (!this._field || !this.isFieldEditable) {
+      return;
+    }
+
+    this.conditionEditor = setPrimaryPredicate(this.conditionEditor, {
+      operator,
+      value: operatorRequiresValue(operator)
+        ? getPrimaryPredicate(this.conditionEditor).value ?? ''
+        : '',
+    });
+    this._field.condition = this.conditionEditor;
+    this.onChange();
+  }
+
+  onConditionValueChange(value: unknown): void {
+    if (!this._field || !this.isFieldEditable) {
+      return;
+    }
+
+    this.conditionEditor = setPrimaryPredicate(this.conditionEditor, { value });
+    this._field.condition = this.conditionEditor;
+    this.onChange();
+  }
+
+  onConditionActionChange(type: ConditionActionType): void {
+    if (!this._field || !this.isFieldEditable) {
+      return;
+    }
+
+    this.conditionEditor = setPrimaryActionType(this.conditionEditor, type);
+    this._field.condition = this.conditionEditor;
+    this.onChange();
   }
 
   readonly parameterCategories = [
@@ -496,7 +672,7 @@ export class FieldSettingsComponent {
       defaultValue: value.defaultValue ?? value.value ?? '',
       width: value.width ?? 12,
       validations: value.validations || {},
-      condition: value.condition || { fieldId: '', value: '' },
+      condition: serializeConditionalLogic(value.condition),
       options: [...(value.options || [])],
       optionSource: value.optionSource ? { ...value.optionSource } : undefined,
       selectionType:
@@ -510,6 +686,35 @@ export class FieldSettingsComponent {
     };
 
     this.placeholderManuallyEdited = !this.isAutoGeneratedPlaceholder(this._field);
+    this.conditionEditor =
+      cloneConditionalLogic(value.condition) ?? createEmptyConditionalLogic();
+    this.ensureConditionSourceIsValid(false);
+  }
+
+  private ensureConditionSourceIsValid(emit: boolean): void {
+    if (!this._field) {
+      return;
+    }
+
+    const sourceId = getPrimaryPredicate(this.conditionEditor).fieldId;
+    if (!sourceId) {
+      return;
+    }
+
+    const isValidSource = this.validConditionSourceFields.some(field => field.id === sourceId);
+    if (isValidSource) {
+      return;
+    }
+
+    this.conditionEditor = {
+      ...setPrimaryPredicate(this.conditionEditor, { fieldId: '', value: '' }),
+      enabled: false,
+    };
+    this._field.condition = serializeConditionalLogic(this.conditionEditor);
+
+    if (emit) {
+      this.onChange();
+    }
   }
 
   private initializeSelectOptionsState(

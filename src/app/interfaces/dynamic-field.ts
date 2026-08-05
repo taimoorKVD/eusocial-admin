@@ -1,3 +1,5 @@
+import { FieldCondition } from '../shared/conditional-logic';
+
 export type DynamicFieldType =
   | 'text'
   | 'email'
@@ -46,10 +48,12 @@ export interface DynamicField {
   order?: number;
   radio?: any;
   isShow?: boolean;
+  isReadonly?: boolean;
   options?: (string | DynamicFieldOption)[];
   optionSource?: DynamicFieldOptionSource;
   /** Select field only. Defaults to `single` when missing. */
   selectionType?: DynamicSelectSelectionType;
+  condition?: FieldCondition;
 }
 
 export type DynamicFormValue = Record<string, unknown>;

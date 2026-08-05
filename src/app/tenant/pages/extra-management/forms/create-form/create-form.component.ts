@@ -28,10 +28,12 @@ import { FormStorageService } from '../../../../forms/services/form-storage.serv
 import { FormField } from '../../../../form-builder/models/form-field.model';
 import {
   applyCanvasDrop,
+  clearStaleConditionalLogic,
   duplicateFormField,
   removeFormField,
   updateFormField,
 } from '../../../../form-builder/utils/form-field-operations';
+import { pruneConditionalLogicForDeletedFields } from '../../../../../shared/conditional-logic';
 import { getLocationFieldDeleteBlockReason } from '../../../../form-builder/utils/location-field-dependencies.utils';
 import { FormEditorCoreModule } from '../../../../forms/form-editor-core.module';
 import { FormBuilderTab } from '../../../../forms/components/form-builder-workspace/form-builder-workspace.component';
@@ -940,7 +942,9 @@ export class CreateFormComponent implements OnInit {
 
     if (this.isExistingRowField(field.id)) {
       this.rowBuilderFields.update((fields) => removeFormField(field, fields));
+      this.builderSchema.update((fields) => clearStaleConditionalLogic(fields, [field.id]));
       this.removeRowFieldFromSections(field.id);
+      this.pruneSectionConditions([field.id]);
       const selectedId = this.selectedFieldId();
       if (selectedId === field.id) {
         this.selectedFieldId.set(null);
@@ -951,6 +955,8 @@ export class CreateFormComponent implements OnInit {
 
     const nextSchema = removeFormField(field, this.builderSchema());
     this.builderSchema.set(nextSchema);
+    this.rowBuilderFields.update((fields) => clearStaleConditionalLogic(fields, [field.id]));
+    this.pruneSectionConditions([field.id]);
     const selectedId = this.selectedFieldId();
     if (selectedId && !nextSchema.some((item) => item.id === selectedId)) {
       this.selectedFieldId.set(null);
@@ -1105,6 +1111,31 @@ export class CreateFormComponent implements OnInit {
                 }
               : row,
           ),
+        };
+      }),
+    );
+  }
+
+  private pruneSectionConditions(deletedIds: string[]): void {
+    if (!deletedIds.length) {
+      return;
+    }
+
+    this.sections.update((list) =>
+      list.map((section) => {
+        if (!('rows' in section)) {
+          return section;
+        }
+
+        return {
+          ...section,
+          rows: section.rows.map((row) => ({
+            ...row,
+            fields: row.fields.map((field) => ({
+              ...field,
+              condition: pruneConditionalLogicForDeletedFields(field.condition, deletedIds),
+            })),
+          })),
         };
       }),
     );

@@ -23,11 +23,17 @@ import {
   LocationKind,
 } from '../../services/location-cache.service';
 import {
+  ConditionalFieldEffects,
+  buildValuesByFieldId,
+  resolveAllConditionalEffects,
+} from '../conditional-logic';
+import {
   getDynamicFieldErrorMessage,
   shouldShowDynamicFieldError,
 } from './dynamic-form.validation';
 import {
   buildDynamicFormGroupConfig,
+  getFieldValidators,
   getInitialFieldValue,
   getOptionValue,
   isMultiSelectField,
@@ -72,7 +78,9 @@ export class DynamicFormComponent implements OnDestroy {
    * dependent location dropdowns (State/City). Empty until a parent is chosen.
    */
   readonly locationOptionOverrides = signal<Record<string, DynamicFieldOption[]>>({});
+  readonly conditionalEffects = signal<Record<string, ConditionalFieldEffects>>({});
   private fieldsSchemaKey = '';
+  private applyingConditionalState = false;
 
   /** Resolved Country/State/City fields for the current schema. */
   private locationFields: Partial<Record<LocationKind, DynamicField>> = {};
@@ -141,6 +149,7 @@ export class DynamicFormComponent implements OnDestroy {
     if (!this.form || !values) return;
     this.form.patchValue(values);
     this.refreshLocationOptionsFromValues();
+    this.refreshConditionalEffects();
     this.emitNormalizedValue();
     this.cdr.markForCheck();
   }
@@ -153,6 +162,7 @@ export class DynamicFormComponent implements OnDestroy {
     }
 
     this.imagePreviews.set({});
+    this.refreshConditionalEffects();
     this.emitNormalizedValue();
     this.cdr.markForCheck();
   }
@@ -160,6 +170,18 @@ export class DynamicFormComponent implements OnDestroy {
   getColClass(field: DynamicField): string {
     const width = field.width ?? 6;
     return `col-md-${width}`;
+  }
+
+  isFieldVisible(field: DynamicField): boolean {
+    return this.conditionalEffects()[field.id]?.visible !== false;
+  }
+
+  isFieldRequired(field: DynamicField): boolean {
+    return this.conditionalEffects()[field.id]?.required ?? !!field.required;
+  }
+
+  isFieldDisabled(field: DynamicField): boolean {
+    return this.conditionalEffects()[field.id]?.disabled === true;
   }
 
   getErrorMessage(field: DynamicField): string | null {
@@ -479,6 +501,7 @@ export class DynamicFormComponent implements OnDestroy {
       this.imagePreviews.set({});
       this.subscribeToFormChanges();
       this.setupLocationDependencies(sorted);
+      this.refreshConditionalEffects();
       this.emitNormalizedValue();
       this.formReady.set(true);
       this.cdr.markForCheck();
@@ -530,10 +553,69 @@ export class DynamicFormComponent implements OnDestroy {
   private subscribeToFormChanges(): void {
     this.formChangesSub = merge(this.form.valueChanges, this.form.statusChanges).subscribe(
       () => {
+        if (this.applyingConditionalState) {
+          return;
+        }
+
+        this.refreshConditionalEffects();
         this.emitNormalizedValue();
         this.cdr.markForCheck();
       },
     );
+  }
+
+  private refreshConditionalEffects(): void {
+    if (!this.form) {
+      this.conditionalEffects.set({});
+      return;
+    }
+
+    const fields = this.sortedFields();
+    const valuesByFieldId = buildValuesByFieldId(fields, this.form.getRawValue());
+    this.conditionalEffects.set(resolveAllConditionalEffects(fields, valuesByFieldId));
+    this.applyConditionalControlState();
+  }
+
+  private applyConditionalControlState(): void {
+    if (!this.form) {
+      return;
+    }
+
+    this.applyingConditionalState = true;
+
+    try {
+      const effects = this.conditionalEffects();
+
+      for (const field of this.sortedFields()) {
+        const control = this.form.get(field.name);
+        if (!control) {
+          continue;
+        }
+
+        const effect = effects[field.id] ?? {
+          visible: field.isShow !== false,
+          required: !!field.required,
+          disabled: field.isReadonly === true,
+        };
+
+        control.setValidators(
+          getFieldValidators(field, {
+            required: effect.required,
+            visible: effect.visible,
+          }),
+        );
+        control.updateValueAndValidity({ emitEvent: false });
+
+        const shouldDisable = effect.disabled || !effect.visible;
+        if (shouldDisable && control.enabled) {
+          control.disable({ emitEvent: false });
+        } else if (!shouldDisable && control.disabled) {
+          control.enable({ emitEvent: false });
+        }
+      }
+    } finally {
+      this.applyingConditionalState = false;
+    }
   }
 
   private emitNormalizedValue(): void {

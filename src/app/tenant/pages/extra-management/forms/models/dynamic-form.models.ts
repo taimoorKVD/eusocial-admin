@@ -5,6 +5,7 @@ export type SectionType =
   | 'checklistForm'
   | 'visualForm';
 
+import { FieldCondition } from '../../../../../shared/conditional-logic';
 import { OptionSource } from '../../../../form-builder/models/form-field.model';
 
 export type FieldType =
@@ -56,7 +57,7 @@ export interface FormFieldConfig {
   isEditable?: boolean;
   isShow?: boolean;
   validations?: Record<string, unknown>;
-  condition?: { fieldId: string; value: unknown };
+  condition?: FieldCondition;
   defaultValue?: unknown;
   /** Parameter field category: currency, length, weight, volume. */
   parameterCategory?: string;
@@ -424,17 +425,20 @@ export function createSection(type: SectionType): FormSection {
   }
 }
 
-export function stripFieldId(field: FormFieldConfig): Omit<FormFieldConfig, 'id'> {
+export function stripFieldId(field: FormFieldConfig): Omit<FormFieldConfig, 'id'> & {
+  id?: string;
+  condition?: FieldCondition;
+} {
   const {
-    id: _id,
     optionSource: _optionSource,
     fieldTypeName: _fieldTypeName,
     isEditable: _isEditable,
     isShow: _isShow,
     validations: _validations,
-    condition: _condition,
     defaultValue: _defaultValue,
     options,
+    condition,
+    id,
     ...rest
   } = field;
 
@@ -444,6 +448,8 @@ export function stripFieldId(field: FormFieldConfig): Omit<FormFieldConfig, 'id'
 
   return {
     ...rest,
+    ...(id ? { id } : {}),
+    ...(condition ? { condition } : {}),
     ...(normalizedOptions ? { options: normalizedOptions } : {}),
   };
 }

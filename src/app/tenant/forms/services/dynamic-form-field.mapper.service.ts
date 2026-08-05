@@ -89,6 +89,9 @@ export class DynamicFormFieldMapperService {
           }
         : undefined,
       selectionType: type === 'select' ? field.selectionType || 'single' : undefined,
+      isShow: field.isShow,
+      isReadonly: field.isReadonly,
+      condition: field.condition,
     };
   }
 

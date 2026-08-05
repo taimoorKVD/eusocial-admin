@@ -1,3 +1,5 @@
+import { FieldCondition } from '../../../shared/conditional-logic';
+
 export type FieldType =
   | 'text'
   | 'email'
@@ -60,10 +62,7 @@ export interface FormField {
   width?: number;
   order?: number;
 
-  condition?: {
-    fieldId: string;
-    value: unknown;
-  };
+  condition?: FieldCondition;
 
   /** Parameter field category: currency, length, weight, volume. */
   parameterCategory?: string;

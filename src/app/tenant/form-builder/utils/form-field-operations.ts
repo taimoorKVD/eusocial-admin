@@ -1,6 +1,12 @@
 import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { FormField } from '../models/form-field.model';
 import {
+  collectSourceFieldIds,
+  normalizeConditionalLogic,
+  pruneConditionalLogicForDeletedFields,
+  serializeConditionalLogic,
+} from '../../../shared/conditional-logic';
+import {
   buildPlaceholderFromLabel,
   cloneOptionSource,
   createFieldFromTemplate,
@@ -88,9 +94,7 @@ export function duplicateFormField(
       typeof option === 'string' ? option : { ...option }
     ),
     optionSource: cloneOptionSource(field.optionSource),
-    condition: field.condition
-      ? { ...field.condition }
-      : { fieldId: '', value: '' },
+    condition: serializeConditionalLogic(field.condition),
     validations: field.validations ? { ...field.validations } : {},
   });
 
@@ -116,10 +120,13 @@ export function removeFormField(
     return schema;
   }
 
-  return normalizeFieldOrder([
-    ...schema.slice(0, targetIndex),
-    ...schema.slice(targetIndex + 1),
-  ]);
+  return clearStaleConditionalLogic(
+    normalizeFieldOrder([
+      ...schema.slice(0, targetIndex),
+      ...schema.slice(targetIndex + 1),
+    ]),
+    [field.id]
+  );
 }
 
 /** Whether a field may be selected/removed during bulk delete. */
@@ -147,7 +154,33 @@ export function removeFormFields(
     return schema;
   }
 
-  return normalizeFieldOrder(next);
+  return clearStaleConditionalLogic(normalizeFieldOrder(next), ids);
+}
+
+export function clearStaleConditionalLogic(
+  schema: FormField[],
+  deletedIds: Iterable<string>
+): FormField[] {
+  const ids = deletedIds instanceof Set ? deletedIds : new Set(deletedIds);
+  if (!ids.size) {
+    return schema;
+  }
+
+  let changed = false;
+  const next = schema.map(field => {
+    const referenced = collectSourceFieldIds(normalizeConditionalLogic(field.condition));
+    if (!referenced.some(id => ids.has(id))) {
+      return field;
+    }
+
+    changed = true;
+    return {
+      ...field,
+      condition: pruneConditionalLogicForDeletedFields(field.condition, ids),
+    };
+  });
+
+  return changed ? next : schema;
 }
 
 export function updateFormField(
@@ -168,9 +201,7 @@ export function updateFormField(
     optionSource: updated.optionSource
       ? { ...updated.optionSource }
       : undefined,
-    condition: updated.condition
-      ? { ...updated.condition }
-      : { fieldId: '', value: '' },
+    condition: serializeConditionalLogic(updated.condition),
   });
 
   return normalizeFieldOrder(
