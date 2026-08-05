@@ -25,6 +25,7 @@ import {
 import {
   ConditionalFieldEffects,
   buildValuesByFieldId,
+  conditionalEffectsEqual,
   resolveAllConditionalEffects,
 } from '../conditional-logic';
 import {
@@ -173,7 +174,8 @@ export class DynamicFormComponent implements OnDestroy {
   }
 
   isFieldVisible(field: DynamicField): boolean {
-    return this.conditionalEffects()[field.id]?.visible !== false;
+    const effect = this.conditionalEffects()[field.id];
+    return effect ? effect.visible : field.isShow !== false;
   }
 
   isFieldRequired(field: DynamicField): boolean {
@@ -182,6 +184,10 @@ export class DynamicFormComponent implements OnDestroy {
 
   isFieldDisabled(field: DynamicField): boolean {
     return this.conditionalEffects()[field.id]?.disabled === true;
+  }
+
+  getConditionalEffects(): Record<string, ConditionalFieldEffects> {
+    return this.conditionalEffects();
   }
 
   getErrorMessage(field: DynamicField): string | null {
@@ -211,6 +217,11 @@ export class DynamicFormComponent implements OnDestroy {
   }
 
   onImageSelected(event: Event, fieldName: string): void {
+    const control = this.form.get(fieldName);
+    if (control?.disabled) {
+      return;
+    }
+
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
 
@@ -334,7 +345,7 @@ export class DynamicFormComponent implements OnDestroy {
     index = 0,
   ): void {
     const control = this.form.get(field.name);
-    if (!control) {
+    if (!control || control.disabled) {
       return;
     }
 
@@ -437,19 +448,21 @@ export class DynamicFormComponent implements OnDestroy {
     if (!control || !Array.isArray(control.value)) {
       return false;
     }
-    return control.value.includes(value);
+    return control.value.some((item: unknown) => String(item) === String(value));
   }
 
   onMultiCheckboxChange(fieldName: string, value: unknown, event: Event): void {
     const control = this.form.get(fieldName);
-    if (!control) return;
+    if (!control || control.disabled) return;
 
-    let current: unknown[] = control.value ?? [];
+    let current: unknown[] = Array.isArray(control.value) ? [...control.value] : [];
 
     if ((event.target as HTMLInputElement).checked) {
-      current = [...current, value];
+      if (!current.some(item => String(item) === String(value))) {
+        current = [...current, value];
+      }
     } else {
-      current = current.filter((v) => v !== value);
+      current = current.filter((item) => String(item) !== String(value));
     }
 
     control.setValue(current);
@@ -572,7 +585,12 @@ export class DynamicFormComponent implements OnDestroy {
 
     const fields = this.sortedFields();
     const valuesByFieldId = buildValuesByFieldId(fields, this.form.getRawValue());
-    this.conditionalEffects.set(resolveAllConditionalEffects(fields, valuesByFieldId));
+    const nextEffects = resolveAllConditionalEffects(fields, valuesByFieldId);
+
+    if (!conditionalEffectsEqual(this.conditionalEffects(), nextEffects)) {
+      this.conditionalEffects.set(nextEffects);
+    }
+
     this.applyConditionalControlState();
   }
 

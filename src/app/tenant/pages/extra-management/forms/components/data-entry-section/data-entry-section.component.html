@@ -20,6 +20,7 @@
     @for (row of section.rows; track trackRow($index, row); let rowIndex = $index) {
       <div class="field-row">
         <div class="field-row__fields">
+          @let rowEffects = getRowConditionalEffects(row);
           @for (field of visibleFields(row); track trackField($index, field)) {
             <div
               class="section-field"
@@ -30,6 +31,8 @@
               @if (!field.isDefault) {
                 <app-section-field-preview
                   [field]="field"
+                  [forceRequired]="rowEffects[field.id]?.required ?? null"
+                  [forceDisabled]="!!rowEffects[field.id]?.disabled"
                   (valueChange)="updateFieldValue(row, field.id, $event)"
                 />
                 <button

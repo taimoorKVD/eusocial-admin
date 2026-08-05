@@ -273,10 +273,14 @@
 
                         @if (row.fields.length) {
                           <div class="flex flex-nowrap gap-4 overflow-x-auto pb-2">
+                            @let rowEffects = getRowConditionalEffects(row);
                             @for (field of row.fields; track field.id) {
+                              @if (rowEffects[field.id]?.visible !== false) {
                               <div class="relative w-56 shrink-0 rounded-lg border border-gray-200 p-3">
                                 <app-section-field-preview
                                   [field]="field"
+                                  [forceRequired]="rowEffects[field.id]?.required ?? null"
+                                  [forceDisabled]="!!rowEffects[field.id]?.disabled"
                                   (valueChange)="updateSectionFieldValue(customSection, row.id, field.id, $event)"
                                 />
                                 <button
@@ -288,6 +292,7 @@
                                   <span aria-hidden="true">×</span>
                                 </button>
                               </div>
+                              }
                             }
                           </div>
                         }

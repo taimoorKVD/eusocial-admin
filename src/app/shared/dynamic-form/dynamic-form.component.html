@@ -139,10 +139,13 @@
 
                 <button
                   type="button"
-                  (click)="selectDropdown.toggle($event)"
+                  (click)="!isFieldDisabled(field) && selectDropdown.toggle($event)"
                   class="global-filter__control w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-sm text-gray-700 font-ibm focus:outline-none focus:ring-2 focus:ring-[#ea580c]/30 focus:border-[#ea580c] focus:bg-white transition-all duration-150 text-left flex items-center justify-between gap-2"
                   [class.border-[#ea580c]]="selectDropdown.isOpen"
                   [class.min-h-[42px]]="isMultiSelect(field)"
+                  [class.opacity-60]="isFieldDisabled(field)"
+                  [class.cursor-not-allowed]="isFieldDisabled(field)"
+                  [disabled]="isFieldDisabled(field)"
                   [attr.aria-expanded]="selectDropdown.isOpen"
                   [id]="field.id"
                 >
@@ -291,6 +294,7 @@
                           class="availability-days-option__input"
                           [id]="field.name + '_' + i"
                           [checked]="isChecked(field.name, getOptionValue(option, i))"
+                          [disabled]="isFieldDisabled(field)"
                           (change)="onMultiCheckboxChange(field.name, getOptionValue(option, i), $event)"
                         />
                         <span class="availability-days-option__label">
@@ -349,6 +353,7 @@
                 [id]="field.id"
                 accept=".jpg,.jpeg,.png,.webp"
                 class="sr-only"
+                [disabled]="isFieldDisabled(field)"
                 (change)="onImageSelected($event, field.name)"
               />
 

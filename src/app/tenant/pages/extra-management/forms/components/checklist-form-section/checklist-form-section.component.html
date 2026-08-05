@@ -20,7 +20,9 @@
     @for (row of section.rows; track trackRow($index, row)) {
       <div class="field-row">
         <div class="field-row__fields">
+          @let rowEffects = getRowConditionalEffects(row);
           @for (field of row.fields; track trackField($index, field)) {
+            @if (rowEffects[field.id]?.visible !== false) {
             <div
               class="section-field"
               [class.section-field--added]="!field.isDefault"
@@ -43,6 +45,8 @@
               } @else {
                 <app-section-field-preview
                   [field]="field"
+                  [forceRequired]="rowEffects[field.id]?.required ?? null"
+                  [forceDisabled]="!!rowEffects[field.id]?.disabled"
                   (valueChange)="onFieldValueChange(row, field.id, $event)"
                 />
                 <button
@@ -58,6 +62,7 @@
                 </button>
               }
             </div>
+            }
           }
         </div>
 
