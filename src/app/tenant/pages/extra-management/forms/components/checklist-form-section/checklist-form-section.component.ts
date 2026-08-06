@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { resolveCollectionConditionalEffects } from '../../../../../../shared/conditional-logic';
 import {
   ChecklistFormSection,
   FormFieldConfig,
@@ -30,6 +31,10 @@ export class ChecklistFormSectionComponent {
         r.id === row.id ? { ...r, fields: r.fields.filter((f) => f.id !== fieldId) } : r,
       ),
     });
+  }
+
+  getRowConditionalEffects(row: FormRow) {
+    return resolveCollectionConditionalEffects(row.fields);
   }
 
   requestAddField(rowId: string): void {

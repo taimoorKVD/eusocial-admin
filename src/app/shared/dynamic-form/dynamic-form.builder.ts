@@ -23,7 +23,7 @@ export function serializeDynamicFieldsSchema(fields: DynamicField[]): string {
   return sortDynamicFields(fields)
     .map(
       (field) =>
-        `${field.id}:${field.name}:${field.type}:${Number(!!field.required)}:${field.selectionType || 'single'}`,
+        `${field.id}:${field.name}:${field.type}:${Number(!!field.required)}:${field.selectionType || 'single'}:${Number(field.isShow !== false)}:${Number(!!field.isReadonly)}:${JSON.stringify(field.condition ?? null)}`,
     )
     .join('|');
 }
@@ -78,7 +78,13 @@ export function getInitialFieldValue(field: DynamicField): unknown {
       return firstOption !== undefined ? getOptionValue(firstOption, 0) : '';
     }
     case 'checkbox':
-      return false;
+      if (Array.isArray(field.defaultValue)) {
+        return [...field.defaultValue];
+      }
+      if (Array.isArray(field.value)) {
+        return [...field.value];
+      }
+      return [];
     case 'select': {
       if (isMultiSelectField(field)) {
         if (Array.isArray(field.defaultValue)) {
@@ -131,8 +137,7 @@ export function buildDynamicFormGroupConfig(
 
   for (const field of sortedFields) {
     if (field.type === 'checkbox') {
-      const selectedValues = Array.isArray(field.value) ? field.value : [];
-      groupConfig[field.name] = new FormControl(selectedValues);
+      groupConfig[field.name] = new FormControl(getInitialFieldValue(field));
       continue;
     }
 
@@ -164,7 +169,9 @@ export function normalizeCheckboxFormValue(
       const value = raw[field.name];
 
       if ((field.options?.length ?? 0) <= 1) {
-        result[field.name] = !!value;
+        result[field.name] = Array.isArray(value)
+          ? value.some(item => item !== false && item != null && item !== '')
+          : !!value;
         continue;
       }
 

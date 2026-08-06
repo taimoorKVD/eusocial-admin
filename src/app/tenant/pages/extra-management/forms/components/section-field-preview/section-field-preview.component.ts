@@ -29,6 +29,8 @@ export class SectionFieldPreviewComponent {
   private static readonly CLOSE_DROPDOWN_EVENT = 'section-field-dropdown-close';
 
   @Input({ required: true }) field!: FormFieldConfig;
+  @Input() forceRequired: boolean | null = null;
+  @Input() forceDisabled = false;
   @Output() valueChange = new EventEmitter<string>();
 
   readonly selectDropdownOpen = signal(false);
@@ -61,9 +63,17 @@ export class SectionFieldPreviewComponent {
     return match ? this.optionLabel(match) : String(this.field.value);
   }
 
+  get isFieldRequired(): boolean {
+    return this.forceRequired ?? !!this.field.required;
+  }
+
+  get isInteractionDisabled(): boolean {
+    return this.forceDisabled || !!this.field.readonly;
+  }
+
   /** Dependent State/City with no loaded options stay disabled until parent is selected. */
   get isSelectDisabled(): boolean {
-    return !!this.field.readonly || isDependentLocationSelectLocked(this.field);
+    return this.isInteractionDisabled || isDependentLocationSelectLocked(this.field);
   }
 
   optionLabel(option: FormSelectOption): string {
@@ -140,6 +150,10 @@ export class SectionFieldPreviewComponent {
   }
 
   onInput(event: Event): void {
+    if (this.isInteractionDisabled) {
+      return;
+    }
+
     this.valueChange.emit((event.target as HTMLInputElement | HTMLTextAreaElement).value);
   }
 

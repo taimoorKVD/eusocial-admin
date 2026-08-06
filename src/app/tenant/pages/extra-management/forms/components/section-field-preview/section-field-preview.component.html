@@ -1,7 +1,7 @@
 <div class="section-field-preview">
   <label class="section-field-preview__label font-ibm">
     {{ field.label }}
-    @if (field.required) {
+    @if (isFieldRequired) {
       <span class="req">*</span>
     }
   </label>
@@ -13,7 +13,7 @@
         [placeholder]="field.placeholder || field.label"
         rows="3"
         [value]="field.value || ''"
-        [attr.readonly]="field.readonly || null"
+        [attr.readonly]="isInteractionDisabled || null"
         (input)="onInput($event)"
       ></textarea>
     }
@@ -111,7 +111,7 @@
               <input
                 type="checkbox"
                 [checked]="isOptionChecked(optionValue(opt))"
-                [disabled]="!!field.readonly"
+                [disabled]="!!isInteractionDisabled"
                 (change)="onOptionCheckboxToggle(optionValue(opt), $any($event.target).checked)"
               />
               <span>{{ optionLabel(opt) }}</span>
@@ -122,7 +122,7 @@
             <input
               type="checkbox"
               [checked]="field.value === 'true'"
-              [disabled]="!!field.readonly"
+              [disabled]="!!isInteractionDisabled"
               (change)="onCheckboxToggle($any($event.target).checked)"
             />
             <span>{{ field.label }}</span>
@@ -140,7 +140,7 @@
                 [name]="field.id"
                 [value]="optionValue(opt)"
                 [checked]="isOptionSelected(opt)"
-                [disabled]="!!field.readonly"
+                [disabled]="!!isInteractionDisabled"
                 (change)="onRadioSelect(optionValue(opt))"
               />
               <span>{{ optionLabel(opt) }}</span>
@@ -153,7 +153,7 @@
               [name]="field.id"
               value="option"
               [checked]="field.value === 'option'"
-              [disabled]="!!field.readonly"
+              [disabled]="!!isInteractionDisabled"
               (change)="onRadioSelect('option')"
             />
             <span>Option</span>
@@ -162,7 +162,7 @@
       </div>
     }
     @case ('image') {
-      <label class="section-upload-btn font-ibm" [class.section-upload-btn--readonly]="field.readonly">
+      <label class="section-upload-btn font-ibm" [class.section-upload-btn--readonly]="isInteractionDisabled">
         <span>{{ field.value || 'Upload Image' }}</span>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -173,13 +173,13 @@
           type="file"
           accept="image/*"
           class="sr-only"
-          [disabled]="!!field.readonly"
+          [disabled]="!!isInteractionDisabled"
           (change)="onFileSelected($event)"
         />
       </label>
     }
     @case ('file') {
-      <label class="section-upload-btn font-ibm" [class.section-upload-btn--readonly]="field.readonly">
+      <label class="section-upload-btn font-ibm" [class.section-upload-btn--readonly]="isInteractionDisabled">
         <span>{{ field.value || 'Upload File' }}</span>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -189,7 +189,7 @@
         <input
           type="file"
           class="sr-only"
-          [disabled]="!!field.readonly"
+          [disabled]="!!isInteractionDisabled"
           (change)="onFileSelected($event)"
         />
       </label>
@@ -200,7 +200,7 @@
         type="date"
         [placeholder]="field.placeholder || field.label"
         [value]="field.value || ''"
-        [attr.readonly]="field.readonly || null"
+        [attr.readonly]="isInteractionDisabled || null"
         (input)="onInput($event)"
       />
     }
@@ -210,7 +210,7 @@
         type="number"
         [placeholder]="field.placeholder || field.label"
         [value]="field.value || ''"
-        [attr.readonly]="field.readonly || null"
+        [attr.readonly]="isInteractionDisabled || null"
         (input)="onInput($event)"
       />
     }
@@ -220,7 +220,7 @@
         type="email"
         [placeholder]="field.placeholder || field.label"
         [value]="field.value || ''"
-        [attr.readonly]="field.readonly || null"
+        [attr.readonly]="isInteractionDisabled || null"
         (input)="onInput($event)"
       />
     }
@@ -230,7 +230,7 @@
         type="password"
         [placeholder]="field.placeholder || field.label"
         [value]="field.value || ''"
-        [attr.readonly]="field.readonly || null"
+        [attr.readonly]="isInteractionDisabled || null"
         (input)="onInput($event)"
       />
     }
@@ -240,7 +240,7 @@
           <select
             class="section-input font-ibm flex-1"
             [value]="field.parameterCategory || ''"
-            [disabled]="!!field.readonly"
+            [disabled]="!!isInteractionDisabled"
             (change)="onParameterCategoryChange(($any($event.target).value))"
           >
             <option value="" disabled>Select category</option>
@@ -251,7 +251,7 @@
           <select
             class="section-input font-ibm flex-1"
             [value]="field.parameterUnit || ''"
-            [disabled]="!!field.readonly || !field.parameterCategory"
+            [disabled]="!!isInteractionDisabled || !field.parameterCategory"
             (change)="onParameterUnitChange(($any($event.target).value))"
           >
             <option value="" disabled>Select unit</option>
@@ -265,7 +265,7 @@
           type="number"
           placeholder="Enter value"
           [value]="field.value || ''"
-          [attr.readonly]="field.readonly || null"
+          [attr.readonly]="isInteractionDisabled || null"
           (input)="onParameterValueChange($event)"
         />
       </div>
@@ -308,7 +308,7 @@
           <button
             type="button"
             class="h-6 w-6 flex items-center justify-center transition-colors"
-            [disabled]="!!field.readonly"
+            [disabled]="!!isInteractionDisabled"
             (click)="onRatingChange($index + 1)"
           >
             @if ($index < ratingValue) {
@@ -331,7 +331,7 @@
           type="number"
           placeholder="From"
           [value]="rangeFromValue"
-          [attr.readonly]="field.readonly || null"
+          [attr.readonly]="isInteractionDisabled || null"
           (input)="onRangeFromChange($event)"
         />
         <span class="text-[#A0A0A0]">–</span>
@@ -340,7 +340,7 @@
           type="number"
           placeholder="To"
           [value]="rangeToValue"
-          [attr.readonly]="field.readonly || null"
+          [attr.readonly]="isInteractionDisabled || null"
           (input)="onRangeToChange($event)"
         />
       </div>
@@ -352,7 +352,7 @@
           type="text"
           placeholder="Scan or enter barcode"
           [value]="field.value || ''"
-          [attr.readonly]="field.readonly || null"
+          [attr.readonly]="isInteractionDisabled || null"
           (input)="onInput($event)"
         />
         <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#A0A0A0]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -367,7 +367,7 @@
           type="text"
           placeholder="Scan or enter QR code"
           [value]="field.value || ''"
-          [attr.readonly]="field.readonly || null"
+          [attr.readonly]="isInteractionDisabled || null"
           (input)="onInput($event)"
         />
         <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#A0A0A0]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -381,7 +381,7 @@
         type="text"
         [placeholder]="field.placeholder || field.label"
         [value]="field.value || ''"
-        [attr.readonly]="field.readonly || null"
+        [attr.readonly]="isInteractionDisabled || null"
         (input)="onInput($event)"
       />
     }

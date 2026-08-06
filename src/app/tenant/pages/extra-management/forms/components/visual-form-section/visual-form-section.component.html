@@ -65,10 +65,14 @@
           />
         </div>
 
+        @let rowEffects = getRowConditionalEffects(primaryRow);
         @for (field of primaryRow.fields; track trackField($index, field)) {
+          @if (rowEffects[field.id]?.visible !== false) {
           <div class="section-field section-field--added" [style.flex-basis]="field.width || null">
             <app-section-field-preview
               [field]="field"
+              [forceRequired]="rowEffects[field.id]?.required ?? null"
+              [forceDisabled]="!!rowEffects[field.id]?.disabled"
               (valueChange)="onFieldValueChange(field.id, $event)"
             />
             @if (!field.isDefault) {
@@ -85,6 +89,7 @@
               </button>
             }
           </div>
+          }
         }
       </div>
 

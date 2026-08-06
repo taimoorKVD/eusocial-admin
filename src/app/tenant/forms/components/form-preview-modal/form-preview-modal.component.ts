@@ -12,6 +12,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs';
 import { DynamicField } from '../../../../interfaces/dynamic-field';
+import { shouldIncludeFieldInRuntimeForm } from '../../../../shared/conditional-logic';
 import { FormField } from '../../../form-builder/models/form-field.model';
 import { normalizeFieldOrder } from '../../../form-builder/utils/form-field.factory';
 import { FormStorageService } from '../../services/form-storage.service';
@@ -175,9 +176,7 @@ export class FormPreviewModalComponent implements OnDestroy {
 
   private buildPreviewFields(formFields: FormField[]): DynamicField[] {
     return normalizeFieldOrder(
-      (formFields || []).filter(
-        (field) => field.isShow !== false && field.label !== 'Role',
-      ),
+      (formFields || []).filter((field) => shouldIncludeFieldInRuntimeForm(field)),
     ) as DynamicField[];
   }
 

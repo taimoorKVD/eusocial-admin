@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { forkJoin, Observable, of } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { shouldIncludeFieldInRuntimeForm } from '../../../shared/conditional-logic';
 import { DynamicField, DynamicFieldType } from '../../../interfaces/dynamic-field';
 import { FieldOption, FieldType, FormField } from '../../form-builder/models/form-field.model';
 import { FieldOptionsService } from '../../form-builder/services/field-options.service';
@@ -33,7 +34,9 @@ export class DynamicFormFieldMapperService {
   constructor(private fieldOptionsService: FieldOptionsService) {}
 
   resolveFields(formFields: FormField[]): Observable<DynamicField[]> {
-    const visibleFields = (formFields || []).filter((field) => field.isShow !== false);
+    const visibleFields = (formFields || []).filter((field) =>
+      shouldIncludeFieldInRuntimeForm(field),
+    );
 
     if (!visibleFields.length) {
       return of([]);

@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { resolveCollectionConditionalEffects } from '../../../../../../shared/conditional-logic';
 import {
   FormFieldConfig,
   FormRow,
@@ -32,6 +33,10 @@ export class VisualFormSectionComponent {
       return createEmptyRow();
     }
     return this.section.rows[0];
+  }
+
+  getRowConditionalEffects(row: FormRow) {
+    return resolveCollectionConditionalEffects(row.fields);
   }
 
   onInstructionsChange(value: string): void {

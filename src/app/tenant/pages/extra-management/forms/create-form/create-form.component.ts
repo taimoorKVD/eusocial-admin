@@ -33,7 +33,10 @@ import {
   removeFormField,
   updateFormField,
 } from '../../../../form-builder/utils/form-field-operations';
-import { pruneConditionalLogicForDeletedFields } from '../../../../../shared/conditional-logic';
+import {
+  pruneConditionalLogicForDeletedFields,
+  resolveCollectionConditionalEffects,
+} from '../../../../../shared/conditional-logic';
 import { getLocationFieldDeleteBlockReason } from '../../../../form-builder/utils/location-field-dependencies.utils';
 import { FormEditorCoreModule } from '../../../../forms/form-editor-core.module';
 import { FormBuilderTab } from '../../../../forms/components/form-builder-workspace/form-builder-workspace.component';
@@ -797,6 +800,10 @@ export class CreateFormComponent implements OnInit {
 
   sectionHasFields(section: CustomFormSection): boolean {
     return section.rows.some((row) => row.fields.length > 0);
+  }
+
+  getRowConditionalEffects(row: { fields: FormFieldConfig[] }) {
+    return resolveCollectionConditionalEffects(row.fields);
   }
 
   onExistingRowFieldsDrop(event: CdkDragDrop<FormFieldConfig[]>): void {

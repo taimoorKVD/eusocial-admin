@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { resolveCollectionConditionalEffects } from '../../../../../../shared/conditional-logic';
 import {
   FormFieldConfig,
   FormRow,
@@ -30,6 +31,10 @@ export class ResponseFormSectionComponent {
         r.id === row.id ? { ...r, fields: r.fields.filter((f) => f.id !== fieldId) } : r,
       ),
     });
+  }
+
+  getRowConditionalEffects(row: FormRow) {
+    return resolveCollectionConditionalEffects(row.fields);
   }
 
   onFieldValueChange(row: FormRow, fieldId: string, value: string): void {

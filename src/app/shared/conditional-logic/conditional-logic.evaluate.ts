@@ -232,10 +232,10 @@ export function resolveConditionalEffects(
   for (const action of logic.actions) {
     switch (action.type) {
       case 'show':
-        visible = schemaVisible && matched;
+        visible = matched;
         break;
       case 'hide':
-        visible = schemaVisible && !matched;
+        visible = !matched;
         break;
       case 'require':
         required = matched ? true : schemaRequired;
@@ -266,6 +266,67 @@ export function resolveAllConditionalEffects(
   }
 
   return effects;
+}
+
+export function hasEnabledVisibilityCondition(
+  field: ConditionalLogicFieldLike
+): boolean {
+  const logic = normalizeConditionalLogic(field.condition);
+  return (
+    !!logic?.enabled &&
+    collectSourceFieldIds(logic).some(Boolean) &&
+    logic.actions.some(action => action.type === 'show' || action.type === 'hide')
+  );
+}
+
+/** Fields that must stay in the runtime renderer so Show/Hide can execute. */
+export function shouldIncludeFieldInRuntimeForm(
+  field: ConditionalLogicFieldLike & { label?: string }
+): boolean {
+  if (field.label === 'Role') {
+    return false;
+  }
+
+  if (hasEnabledVisibilityCondition(field)) {
+    return true;
+  }
+
+  return field.isShow !== false;
+}
+
+export function resolveCollectionConditionalEffects(
+  fields: Array<ConditionalLogicFieldLike & { value?: unknown }>
+): Record<string, ConditionalFieldEffects> {
+  const valuesByFieldId: Record<string, unknown> = {};
+
+  for (const field of fields) {
+    valuesByFieldId[field.id] = field.value;
+  }
+
+  return resolveAllConditionalEffects(fields, valuesByFieldId);
+}
+
+export function conditionalEffectsEqual(
+  left: Record<string, ConditionalFieldEffects>,
+  right: Record<string, ConditionalFieldEffects>
+): boolean {
+  const leftIds = Object.keys(left);
+  const rightIds = Object.keys(right);
+
+  if (leftIds.length !== rightIds.length) {
+    return false;
+  }
+
+  return leftIds.every(id => {
+    const a = left[id];
+    const b = right[id];
+    return (
+      !!b &&
+      a.visible === b.visible &&
+      a.required === b.required &&
+      a.disabled === b.disabled
+    );
+  });
 }
 
 export function buildValuesByFieldId(

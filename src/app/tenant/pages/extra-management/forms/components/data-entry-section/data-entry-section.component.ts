@@ -19,6 +19,7 @@ import {
   FormRow,
   createDataEntryRow,
 } from '../../models/dynamic-form.models';
+import { resolveCollectionConditionalEffects } from '../../../../../../shared/conditional-logic';
 import { resolveItemDisplayName } from '../../utils/field-builder-adapter.utils';
 import { SectionFieldPreviewComponent } from '../section-field-preview/section-field-preview.component';
 
@@ -273,7 +274,14 @@ export class DataEntrySectionComponent implements OnInit {
   }
 
   visibleFields(row: FormRow): FormFieldConfig[] {
-    return row.fields.filter((f) => !this.isParQtyField(f));
+    const effects = resolveCollectionConditionalEffects(row.fields);
+    return row.fields.filter(
+      (f) => !this.isParQtyField(f) && effects[f.id]?.visible !== false,
+    );
+  }
+
+  getRowConditionalEffects(row: FormRow) {
+    return resolveCollectionConditionalEffects(row.fields);
   }
 
   getParQtyField(row: FormRow): FormFieldConfig | undefined {
