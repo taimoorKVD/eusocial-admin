@@ -11,4 +11,8 @@ export const DYNAMIC_FORMS_ROUTES: Routes = [
     path: 'create',
     component: CreateFormComponent,
   },
+  {
+    path: 'edit/:id',
+    component: CreateFormComponent,
+  },
 ];

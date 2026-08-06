@@ -1,6 +1,6 @@
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs';
 import { SharedModule } from '../../../../../shared/shared.module';
@@ -17,6 +17,7 @@ import { SavedDynamicForm } from '../models/dynamic-form.models';
 })
 export class ViewFormsComponent implements OnInit {
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly session = inject(TenantSessionService);
   private readonly formsService = inject(TenantFormsService);
   private readonly destroyRef = inject(DestroyRef);
@@ -46,6 +47,13 @@ export class ViewFormsComponent implements OnInit {
 
   goToCreate(): void {
     this.router.navigate(['/tenant', this.session.getSlug(), 'dynamic-forms', 'create']);
+  }
+
+  goToEdit(form: SavedDynamicForm): void {
+    if (!form.id) {
+      return;
+    }
+    this.router.navigate(['edit', form.id], { relativeTo: this.route });
   }
 
   formatSectionTypes(types: string[]): string {

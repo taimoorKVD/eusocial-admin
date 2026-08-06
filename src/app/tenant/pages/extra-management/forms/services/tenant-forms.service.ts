@@ -52,6 +52,30 @@ export class TenantFormsService {
     return this.http.post<TenantFormsApiResponse>(this.apiUrl, payload);
   }
 
+  /** Fetch a single template (including its full schema) for the edit flow. */
+  getTemplateById(id: number): Observable<SavedDynamicForm> {
+    return this.http
+      .get<TenantFormsApiResponse>(`${this.apiUrl}/${id}`)
+      .pipe(map((response) => this.normalizeItem(this.extractItem(response))));
+  }
+
+  updateTemplate(
+    id: number,
+    payload: CreateTenantFormPayload,
+  ): Observable<TenantFormsApiResponse> {
+    return this.http.put<TenantFormsApiResponse>(`${this.apiUrl}/${id}`, payload);
+  }
+
+  private extractItem(response: TenantFormsApiResponse): TenantFormsApiItem {
+    if (response && typeof response === 'object' && !Array.isArray(response)) {
+      const data = response['data'];
+      if (data && typeof data === 'object' && !Array.isArray(data)) {
+        return data as TenantFormsApiItem;
+      }
+    }
+    return {};
+  }
+
   private normalizeResponse(
     response: TenantFormsApiResponse | TenantFormsApiItem[],
   ): SavedDynamicForm[] {

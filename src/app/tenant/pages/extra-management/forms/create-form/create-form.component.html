@@ -1,6 +1,10 @@
 <div class="create-form p-6">
   <div class="create-form__main">
-  <h2 class="create-form__page-title font-ibm">Create Form</h2>
+  <h2 class="create-form__page-title font-ibm">{{ isEditing() ? 'Edit Form' : 'Create Form' }}</h2>
+
+  @if (loading()) {
+    <app-eu-loader></app-eu-loader>
+  }
 
   <!-- ═══════════════════ STEP INDICATOR ═══════════════════ -->
   <div class="wizard-indicator">
@@ -1208,7 +1212,7 @@
           [disabled]="!canSave()"
           (click)="save()"
         >
-          Save
+          {{ isEditing() ? 'Update' : 'Save' }}
         </button>
       }
     </div>

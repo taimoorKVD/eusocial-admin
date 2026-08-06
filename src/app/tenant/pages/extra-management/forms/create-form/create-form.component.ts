@@ -13,10 +13,10 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
-import { startWith, take } from 'rxjs';
+import { finalize, startWith, take } from 'rxjs';
 import flatpickr from 'flatpickr';
 import { Instance as FlatpickrInstance } from 'flatpickr/dist/types/instance';
 import { TenantSessionService } from '../../../../../services/tenant-session.service';
@@ -24,6 +24,7 @@ import { TenantUserService } from '../../../../../services/tenant-user.service';
 import { TenantJobPositionService } from '../../../../../services/tenant-job-position.service';
 import { LocationCacheService } from '../../../../../services/location-cache.service';
 import { ToastrService } from 'ngx-toastr';
+import { SharedModule } from '../../../../../shared/shared.module';
 import { TenantFormsService } from '../services/tenant-forms.service';
 import { FormStorageService } from '../../../../forms/services/form-storage.service';
 import { FormField } from '../../../../form-builder/models/form-field.model';
@@ -61,6 +62,7 @@ import {
   createCustomSection,
   createEmptyRow,
   CustomFormSection,
+  DynamicFormPayload,
   FormFieldConfig,
   FormMetaConfig,
   FormRow,
@@ -69,6 +71,7 @@ import {
   FrequencyInterval,
   FrequencyMonthMode,
   FrequencyType,
+  SavedDynamicForm,
   buildDynamicFormPayload,
   createId,
 } from '../models/dynamic-form.models';
@@ -85,6 +88,7 @@ interface WizardStep {
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
+    SharedModule,
     FormEditorCoreModule,
     SectionFieldPreviewComponent,
   ],
@@ -120,6 +124,7 @@ export class CreateFormComponent implements OnInit {
   }
 
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly session = inject(TenantSessionService);
   private readonly formsService = inject(TenantFormsService);
   private readonly toastr = inject(ToastrService);
@@ -177,6 +182,14 @@ export class CreateFormComponent implements OnInit {
 
   readonly formName = signal('');
   readonly sections = signal<FormSection[]>([]);
+
+  // ── Edit Mode State ───────────────────────────────────────────
+  /** Template id when the wizard is opened from View Forms → Edit. */
+  readonly formId = signal<string>('');
+  readonly isEditing = computed(() => !!this.formId());
+  readonly loading = signal(false);
+  private loadedSchema: DynamicFormPayload | null = null;
+
   readonly sectionDialogOpen = signal(false);
   readonly sectionDialogMode = signal<'create' | 'rename'>('create');
   readonly editingSectionId = signal<string | null>(null);
@@ -516,8 +529,12 @@ export class CreateFormComponent implements OnInit {
   // ── Lifecycle ────────────────────────────────────────────────
 
   ngOnInit(): void {
+    this.formId.set(this.route.snapshot.paramMap.get('id') ?? '');
     this.loadJobPositions();
     this.loadUsers();
+    if (this.formId()) {
+      this.loadTemplate();
+    }
   }
 
   private loadJobPositions(): void {
@@ -530,8 +547,12 @@ export class CreateFormComponent implements OnInit {
           if (Array.isArray(data)) {
             this.jobPositionOptions.set(data.map((jp: any) => ({ id: String(jp.id), name: jp.name })));
           }
+          this.applyLoadedMeta();
         },
-        error: () => this.jobPositionOptions.set([]),
+        error: () => {
+          this.jobPositionOptions.set([]);
+          this.applyLoadedMeta();
+        },
       });
   }
 
@@ -557,8 +578,12 @@ export class CreateFormComponent implements OnInit {
                     name: nameFieldId ? String(u[nameFieldId] ?? '') : '',
                   })));
                 }
+                this.applyLoadedMeta();
               },
-              error: () => this.userOptions.set([]),
+              error: () => {
+                this.userOptions.set([]);
+                this.applyLoadedMeta();
+              },
             });
         },
         error: () => {
@@ -574,11 +599,137 @@ export class CreateFormComponent implements OnInit {
                     name: '',
                   })));
                 }
+                this.applyLoadedMeta();
               },
-              error: () => this.userOptions.set([]),
+              error: () => {
+                this.userOptions.set([]);
+                this.applyLoadedMeta();
+              },
             });
         },
       });
+  }
+
+  // ── Edit Mode (load / populate) ───────────────────────────────
+
+  private loadTemplate(): void {
+    this.loading.set(true);
+
+    this.formsService
+      .getTemplateById(Number(this.formId()))
+      .pipe(
+        finalize(() => this.loading.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (template) => this.populateForm(template),
+        error: (err) => {
+          this.toastr.error(err?.error?.message || 'Failed to load form template');
+        },
+      });
+  }
+
+  private populateForm(template: SavedDynamicForm): void {
+    const payload = template.payload ?? ({} as DynamicFormPayload);
+
+    this.formName.set(payload.formName?.trim() || template.formName || '');
+    this.sections.set(this.deserializeSections(payload.sections ?? []));
+    this.applyFrequencyToForm(payload);
+    this.loadedSchema = payload;
+    this.applyLoadedMeta();
+    this.wireRowLocationDependencies();
+  }
+
+  private deserializeSections(
+    sections: DynamicFormPayload['sections'],
+  ): FormSection[] {
+    return (sections ?? []).map((section) => ({
+      id: section.id ?? createId('section'),
+      name: section.name ?? '',
+      type: 'custom' as const,
+      rows: (section.rows ?? []).map((row) => ({
+        id: createId('row'),
+        fields: (row.fields ?? []).map((field) => this.deserializeField(field)),
+      })),
+    }));
+  }
+
+  private deserializeField(
+    field: DynamicFormPayload['sections'][number]['rows'][number]['fields'][number] & {
+      id?: string;
+    },
+  ): FormFieldConfig {
+    return {
+      ...field,
+      id: field?.id ?? createId('field'),
+      type: field?.type ?? 'text',
+      label: field?.label ?? '',
+      name: field?.name ?? '',
+      required: field?.required ?? false,
+    };
+  }
+
+  private applyFrequencyToForm(payload: DynamicFormPayload): void {
+    const frequency = payload.frequency ?? ({} as DynamicFormPayload['frequency']);
+    const recurring = frequency.recurring ?? createDefaultFrequencyRecurring();
+
+    this.frequencyForm.patchValue({
+      type: frequency.type ?? 'atOnce',
+      date: frequency.date ?? null,
+      every: recurring.every ?? 1,
+      interval: recurring.interval ?? 'month',
+      repeatCount: recurring.repeatCount ?? 1,
+      monthMode: recurring.monthMode ?? 'dayOfMonth',
+      dayOfMonth: recurring.dayOfMonth ?? 1,
+      weekOrder: recurring.weekOrder ?? 'first',
+      onTheMonth: recurring.onTheMonth ?? 'january',
+      daysOfWeek: [...(recurring.daysOfWeek ?? [])],
+      yearMonth: recurring.yearMonth ?? 'january',
+      yearDay: recurring.yearDay ?? 1,
+    });
+  }
+
+  /** Map saved Assign/Report ids to display names once options are available. */
+  private applyLoadedMeta(): void {
+    const schema = this.loadedSchema;
+    if (!schema) return;
+
+    const userOptions = this.userOptions();
+    const positionOptions = this.jobPositionOptions();
+
+    this.meta.update((current) => ({
+      ...current,
+      assignJobPosition: this.resolveSelectedNames(schema.assign?.jobPosition, positionOptions),
+      assignUsers: this.resolveSelectedNames(schema.assign?.users, userOptions),
+      reportJobPosition: this.resolveSelectedNames(schema.report?.jobPosition, positionOptions),
+      reportUsers: this.resolveSelectedNames(schema.report?.users, userOptions),
+      frequencyJobPosition: (schema.frequency?.jobPosition ?? '')
+        .split(', ')
+        .map((name) => name.trim())
+        .filter(Boolean),
+    }));
+  }
+
+  private resolveSelectedNames(
+    ids: number[] | null | undefined,
+    options: { id: string; name: string }[],
+  ): string[] {
+    if (!ids || !ids.length) return [];
+    return ids
+      .map((id) => options.find((option) => Number(option.id) === id)?.name)
+      .filter((name): name is string => !!name);
+  }
+
+  /** Restore Country → State → City cascading on the loaded rows. */
+  private wireRowLocationDependencies(): void {
+    for (const section of this.sections()) {
+      for (const row of section.rows) {
+        const { country, state, city } = getRowLocationFields(row.fields);
+        if (country || state || city) {
+          this.initializeRowLocationDependencies(section.id, row.id);
+        }
+      }
+    }
   }
 
   // ── Frequency helpers ─────────────────────────────────────────
@@ -1515,6 +1666,23 @@ export class CreateFormComponent implements OnInit {
     if (!this.canSave()) return;
 
     const payload = this.buildPayload();
+    const id = this.formId();
+
+    if (id) {
+      this.formsService
+        .updateTemplate(Number(id), { name: this.formName(), schema: payload })
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: () => {
+            this.toastr.success('Form updated successfully');
+            this.router.navigate(['/tenant', this.session.getSlug(), 'dynamic-forms']);
+          },
+          error: (err) => {
+            this.toastr.error(err?.error?.message || 'Failed to update form');
+          },
+        });
+      return;
+    }
 
     this.formsService
       .createForm({ name: this.formName(), schema: payload })
