@@ -221,7 +221,7 @@ export class CreateFormComponent implements OnInit {
     if (!target) return null;
 
     const section = this.sections().find((item) => item.id === target.sectionId);
-    if (!section || !('rows' in section)) return null;
+    if (!section) return null;
 
     const rowIndex = section.rows.findIndex((row) => row.id === target.rowId);
     const row: FormRow =
@@ -229,12 +229,9 @@ export class CreateFormComponent implements OnInit {
         ? section.rows[rowIndex]
         : { id: target.rowId, fields: [] };
 
-    const sectionLabel = section.type === 'custom' ? section.name : String(section.type);
-
     return {
       sectionId: section.id,
-      sectionType: section.type,
-      sectionLabel,
+      sectionLabel: section.name,
       row,
       rowIndex: rowIndex >= 0 ? rowIndex : 0,
     };
@@ -697,7 +694,6 @@ export class CreateFormComponent implements OnInit {
     const duplicate = this.sections().some(
       (section) =>
         section.id !== editingId &&
-        section.type === 'custom' &&
         section.name.trim().toLocaleLowerCase() === name.toLocaleLowerCase(),
     );
     if (duplicate) {
@@ -708,9 +704,7 @@ export class CreateFormComponent implements OnInit {
     if (this.sectionDialogMode() === 'rename' && editingId) {
       this.sections.update((list) =>
         list.map((section) =>
-          section.id === editingId && section.type === 'custom'
-            ? { ...section, name }
-            : section,
+          section.id === editingId ? { ...section, name } : section,
         ),
       );
     } else {
@@ -822,7 +816,7 @@ export class CreateFormComponent implements OnInit {
 
     this.sections.update((list) =>
       list.map((section) => {
-        if (section.id !== target.sectionId || !('rows' in section)) {
+        if (section.id !== target.sectionId) {
           return section;
         }
 
@@ -1039,7 +1033,7 @@ export class CreateFormComponent implements OnInit {
     }
 
     const section = this.sections().find((item) => item.id === target.sectionId);
-    if (!section || !('rows' in section)) {
+    if (!section) {
       this.rowBuilderFields.set([]);
       return;
     }
@@ -1054,7 +1048,7 @@ export class CreateFormComponent implements OnInit {
 
     this.sections.update((list) =>
       list.map((section) => {
-        if (section.id !== target.sectionId || !('rows' in section)) {
+        if (section.id !== target.sectionId) {
           return section;
         }
 
@@ -1083,7 +1077,7 @@ export class CreateFormComponent implements OnInit {
 
     this.sections.update((list) =>
       list.map((section) => {
-        if (section.id !== target.sectionId || !('rows' in section)) {
+        if (section.id !== target.sectionId) {
           return section;
         }
 
@@ -1107,7 +1101,7 @@ export class CreateFormComponent implements OnInit {
 
     this.sections.update((list) =>
       list.map((section) => {
-        if (section.id !== target.sectionId || !('rows' in section)) {
+        if (section.id !== target.sectionId) {
           return section;
         }
 
@@ -1132,22 +1126,16 @@ export class CreateFormComponent implements OnInit {
     }
 
     this.sections.update((list) =>
-      list.map((section) => {
-        if (!('rows' in section)) {
-          return section;
-        }
-
-        return {
-          ...section,
-          rows: section.rows.map((row) => ({
-            ...row,
-            fields: row.fields.map((field) => ({
-              ...field,
-              condition: pruneConditionalLogicForDeletedFields(field.condition, deletedIds),
-            })),
+      list.map((section) => ({
+        ...section,
+        rows: section.rows.map((row) => ({
+          ...row,
+          fields: row.fields.map((field) => ({
+            ...field,
+            condition: pruneConditionalLogicForDeletedFields(field.condition, deletedIds),
           })),
-        };
-      }),
+        })),
+      })),
     );
   }
 
@@ -1163,7 +1151,7 @@ export class CreateFormComponent implements OnInit {
    */
   private initializeRowLocationDependencies(sectionId: string, rowId: string): void {
     const section = this.sections().find((item) => item.id === sectionId);
-    if (!section || !('rows' in section)) return;
+    if (!section) return;
 
     const row = section.rows.find((item) => item.id === rowId);
     if (!row) return;
@@ -1404,7 +1392,7 @@ export class CreateFormComponent implements OnInit {
   ): void {
     this.sections.update((list) =>
       list.map((section) => {
-        if (section.id !== sectionId || !('rows' in section)) {
+        if (section.id !== sectionId) {
           return section;
         }
 
@@ -1433,7 +1421,6 @@ export class CreateFormComponent implements OnInit {
     this.sections.update((list) =>
       list.map((section) => {
         if (section.id !== target.sectionId) return section;
-        if (!('rows' in section)) return section;
 
         // When the section has no rows yet, create the first row using the same
         // rowId the builder was opened with — never introduce a different empty row.

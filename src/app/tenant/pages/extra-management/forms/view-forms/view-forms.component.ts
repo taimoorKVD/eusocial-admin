@@ -6,7 +6,7 @@ import { finalize } from 'rxjs';
 import { SharedModule } from '../../../../../shared/shared.module';
 import { TenantSessionService } from '../../../../../services/tenant-session.service';
 import { TenantFormsService } from '../services/tenant-forms.service';
-import { SECTION_OPTIONS, SavedDynamicForm, SectionType } from '../models/dynamic-form.models';
+import { SavedDynamicForm } from '../models/dynamic-form.models';
 
 @Component({
   selector: 'app-view-forms',
@@ -48,11 +48,7 @@ export class ViewFormsComponent implements OnInit {
     this.router.navigate(['/tenant', this.session.getSlug(), 'dynamic-forms', 'create']);
   }
 
-  sectionLabel(type: SectionType): string {
-    return SECTION_OPTIONS.find((o) => o.value === type)?.label ?? type;
-  }
-
-  formatSectionTypes(types: SectionType[]): string {
-    return types.map((t) => this.sectionLabel(t)).join(', ');
+  formatSectionTypes(types: string[]): string {
+    return types.join(', ');
   }
 }

@@ -2,11 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../../../../../environments/environment';
-import {
-  SavedDynamicForm,
-  SectionType,
-  createId,
-} from '../models/dynamic-form.models';
+import { SavedDynamicForm, createId } from '../models/dynamic-form.models';
 
 /** Raw item shape from GET /api/data-collection/templates. */
 export interface TenantFormsApiItem {
@@ -76,21 +72,9 @@ export class TenantFormsService {
       id: item.id != null ? String(item.id) : createId('form'),
       formName: item.name ?? '',
       sectionCount: sections.length,
-      sectionTypes: sections
-        .map((section) => section?.type)
-        .filter((type): type is SectionType => isSectionType(type)),
+      sectionTypes: sections.map((section) => String(section?.type ?? '')),
       createdAt: item.createdAt ?? item.created_at ?? '',
       payload: schema as SavedDynamicForm['payload'],
     };
   }
-}
-
-function isSectionType(value: unknown): value is SectionType {
-  return (
-    value === 'custom' ||
-    value === 'responseForm' ||
-    value === 'dataEntry' ||
-    value === 'checklistForm' ||
-    value === 'visualForm'
-  );
 }
