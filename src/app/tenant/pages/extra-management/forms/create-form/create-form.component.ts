@@ -23,7 +23,8 @@ import { TenantSessionService } from '../../../../../services/tenant-session.ser
 import { TenantUserService } from '../../../../../services/tenant-user.service';
 import { TenantJobPositionService } from '../../../../../services/tenant-job-position.service';
 import { LocationCacheService } from '../../../../../services/location-cache.service';
-import { DynamicFormsStoreService } from '../services/dynamic-forms-store.service';
+import { ToastrService } from 'ngx-toastr';
+import { TenantFormsService } from '../services/tenant-forms.service';
 import { FormStorageService } from '../../../../forms/services/form-storage.service';
 import { FormField } from '../../../../form-builder/models/form-field.model';
 import {
@@ -120,7 +121,8 @@ export class CreateFormComponent implements OnInit {
 
   private readonly router = inject(Router);
   private readonly session = inject(TenantSessionService);
-  private readonly store = inject(DynamicFormsStoreService);
+  private readonly formsService = inject(TenantFormsService);
+  private readonly toastr = inject(ToastrService);
   private readonly userService = inject(TenantUserService);
   private readonly jobPositionService = inject(TenantJobPositionService);
   private readonly locationCache = inject(LocationCacheService);
@@ -1525,9 +1527,19 @@ export class CreateFormComponent implements OnInit {
     if (!this.canSave()) return;
 
     const payload = this.buildPayload();
-    console.log('[Dynamic Forms] Submit payload:', payload);
-    this.store.save(payload);
-    this.router.navigate(['/tenant', this.session.getSlug(), 'dynamic-forms']);
+
+    this.formsService
+      .createForm({ name: this.formName(), schema: payload })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.toastr.success('Form created successfully');
+          this.router.navigate(['/tenant', this.session.getSlug(), 'dynamic-forms']);
+        },
+        error: (err) => {
+          this.toastr.error(err?.error?.message || 'Failed to create form');
+        },
+      });
   }
 
   private buildPayload() {
