@@ -1543,6 +1543,9 @@ export class CreateFormComponent implements OnInit {
   }
 
   private buildPayload() {
-    return buildDynamicFormPayload(this.formName(), this.sections(), this.meta());
+    return buildDynamicFormPayload(this.formName(), this.sections(), this.meta(), {
+      users: this.userOptions(),
+      jobPositions: this.jobPositionOptions(),
+    });
   }
 }

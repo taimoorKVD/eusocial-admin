@@ -172,12 +172,12 @@ export interface FormMetaConfig {
 export interface DynamicFormPayload {
   formName: string;
   assign: {
-    jobPosition: string | null;
-    users: string | null;
+    jobPosition: number[] | null;
+    users: number[] | null;
   };
   report: {
-    jobPosition: string | null;
-    users: string | null;
+    jobPosition: number[] | null;
+    users: number[] | null;
   };
   frequency: {
     jobPosition: string | null;
@@ -454,20 +454,59 @@ export function stripFieldId(field: FormFieldConfig): Omit<FormFieldConfig, 'id'
   };
 }
 
+/** Assignable user / job position option used to resolve names into IDs. */
+export interface AssignReportOption {
+  id: string | number;
+  name: string;
+}
+
+export interface AssignReportOptions {
+  users?: AssignReportOption[];
+  jobPositions?: AssignReportOption[];
+}
+
+function resolveSelectedIds(
+  names: string[],
+  options: AssignReportOption[] = [],
+): number[] {
+  const ids = new Set<number>();
+
+  for (const name of names) {
+    if (!name) continue;
+
+    for (const option of options) {
+      if (option.name === name) {
+        const id = Number(option.id);
+        if (Number.isFinite(id)) {
+          ids.add(id);
+        }
+      }
+    }
+  }
+
+  return [...ids];
+}
+
 export function buildDynamicFormPayload(
   formName: string,
   sections: FormSection[],
   meta: FormMetaConfig,
+  options: AssignReportOptions = {},
 ): DynamicFormPayload {
+  const assignJobPositionIds = resolveSelectedIds(meta.assignJobPosition, options.jobPositions);
+  const assignUserIds = resolveSelectedIds(meta.assignUsers, options.users);
+  const reportJobPositionIds = resolveSelectedIds(meta.reportJobPosition, options.jobPositions);
+  const reportUserIds = resolveSelectedIds(meta.reportUsers, options.users);
+
   return {
     formName: formName.trim(),
     assign: {
-      jobPosition: meta.assignJobPosition.length ? meta.assignJobPosition.join(', ') : null,
-      users: meta.assignUsers.length ? meta.assignUsers.join(', ') : null,
+      jobPosition: assignJobPositionIds.length ? assignJobPositionIds : null,
+      users: assignUserIds.length ? assignUserIds : null,
     },
     report: {
-      jobPosition: meta.reportJobPosition.length ? meta.reportJobPosition.join(', ') : null,
-      users: meta.reportUsers.length ? meta.reportUsers.join(', ') : null,
+      jobPosition: reportJobPositionIds.length ? reportJobPositionIds : null,
+      users: reportUserIds.length ? reportUserIds : null,
     },
     frequency: {
       jobPosition: meta.frequencyJobPosition.length ? meta.frequencyJobPosition.join(', ') : null,
