@@ -454,6 +454,7 @@ export class CreateFormComponent implements OnInit {
         altInput: true,
         altFormat: 'F j, Y',
         allowInput: false,
+        minDate: 'today',
         defaultDate: this.frequencyForm.controls.date.value || undefined,
         onChange: (_selectedDates, dateStr) => {
           this.frequencyForm.controls.date.setValue(dateStr || null, { emitEvent: true });
