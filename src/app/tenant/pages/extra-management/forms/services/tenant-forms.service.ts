@@ -66,6 +66,10 @@ export class TenantFormsService {
     return this.http.put<TenantFormsApiResponse>(`${this.apiUrl}/${id}`, payload);
   }
 
+  deleteTemplate(id: number): Observable<TenantFormsApiResponse> {
+    return this.http.delete<TenantFormsApiResponse>(`${this.apiUrl}/${id}`);
+  }
+
   private extractItem(response: TenantFormsApiResponse): TenantFormsApiItem {
     if (response && typeof response === 'object' && !Array.isArray(response)) {
       const data = response['data'];
