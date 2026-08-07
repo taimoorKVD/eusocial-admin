@@ -119,6 +119,18 @@
       <table class="w-full text-left text-sm font-ibm">
         <thead class="bg-gray-200 text-gray-700">
           <tr>
+            @if (selectable()) {
+              <th class="px-4 py-3 w-10 whitespace-nowrap">
+                <input
+                  type="checkbox"
+                  class="h-4 w-4 rounded border-gray-300 text-[#ea580c] focus:ring-[#ea580c]"
+                  [checked]="isAllSelected()"
+                  [indeterminate]="isIndeterminate()"
+                  [disabled]="!hasSelectableRecords()"
+                  (change)="onToggleSelectAll()"
+                />
+              </th>
+            }
             @for (field of visibleColumns(); track field.id) {
               <th class="px-4 py-3 whitespace-nowrap">
                 {{ field.label }}
@@ -132,7 +144,18 @@
 
         <tbody>
           @for (record of records(); track getRecordTrackId($index, record)) {
-            <tr class="border-b hover:bg-gray-50">
+            <tr class="border-b hover:bg-gray-50" [class.bg-orange-50]="isRecordSelected(record)">
+              @if (selectable()) {
+                <td class="px-4 py-3 align-middle">
+                  <input
+                    type="checkbox"
+                    class="h-4 w-4 rounded border-gray-300 text-[#ea580c] focus:ring-[#ea580c]"
+                    [checked]="isRecordSelected(record)"
+                    [disabled]="!isSelectableRecord(record)"
+                    (change)="onToggleRecordSelection(record)"
+                  />
+                </td>
+              }
               @for (field of visibleColumns(); track field.id) {
                 <td class="px-4 py-3 align-middle">
                   @switch (field.type) {

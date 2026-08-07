@@ -21,6 +21,7 @@ import {
   saveVisibleColumnIds,
   splitCommaSeparatedValue,
 } from './dynamic-listing.helpers';
+import { BulkSelectionState, toNumericIds } from './bulk-selection.state';
 
 @Component({
   selector: 'app-dynamic-listing',
@@ -54,6 +55,8 @@ export class DynamicListingComponent {
   readonly defaultVisibleCount = input(4);
   readonly showActions = input(true);
   readonly emptyMessage = input('No records found');
+  readonly selectable = input(false);
+  readonly bulkSelection = input<BulkSelectionState | undefined>(undefined);
 
   readonly editRecord = output<Record<string, unknown>>();
   readonly deleteRecord = output<Record<string, unknown>>();
@@ -61,6 +64,24 @@ export class DynamicListingComponent {
 
   readonly sortedFields = signal<DynamicField[]>([]);
   readonly visibleFieldIds = signal<Set<string>>(new Set());
+
+  readonly selectedIds = computed(() => this.bulkSelection()?.selectedIds() ?? []);
+
+  readonly selectableRecordIds = computed(() =>
+    toNumericIds(this.records().map((record) => record['id'])),
+  );
+
+  readonly hasSelectableRecords = computed(() => this.selectableRecordIds().length > 0);
+
+  readonly isAllSelected = computed(() => {
+    const state = this.bulkSelection();
+    return !!state && state.isAllSelected(this.selectableRecordIds());
+  });
+
+  readonly isIndeterminate = computed(() => {
+    const state = this.bulkSelection();
+    return !!state && state.isIndeterminate(this.selectableRecordIds());
+  });
 
   readonly locationFieldIds = computed(() =>
     getListingLocationFieldIds(this.sortedFields()),
@@ -178,6 +199,34 @@ export class DynamicListingComponent {
 
   onDelete(record: Record<string, unknown>): void {
     this.deleteRecord.emit(record);
+  }
+
+  isSelectableRecord(record: Record<string, unknown>): boolean {
+    const id = record['id'];
+    return id != null && id !== '' && !Number.isNaN(Number(id));
+  }
+
+  isRecordSelected(record: Record<string, unknown>): boolean {
+    if (!this.isSelectableRecord(record)) {
+      return false;
+    }
+    return this.selectedIds().includes(Number(record['id']));
+  }
+
+  onToggleRecordSelection(record: Record<string, unknown>): void {
+    const state = this.bulkSelection();
+    if (!state || !this.isSelectableRecord(record)) {
+      return;
+    }
+    state.toggle(Number(record['id']));
+  }
+
+  onToggleSelectAll(): void {
+    const state = this.bulkSelection();
+    if (!state) {
+      return;
+    }
+    state.toggleAll(this.selectableRecordIds());
   }
 
   private initializeColumns(fields: DynamicField[]): void {
