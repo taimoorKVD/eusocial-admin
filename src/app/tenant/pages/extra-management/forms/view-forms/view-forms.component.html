@@ -1,4 +1,8 @@
 <div class="p-6">
+  @if (loading() || deleting()) {
+    <app-eu-loader></app-eu-loader>
+  }
+
   <app-confirm-modal
     [isOpen]="showDeleteConfirmModal()"
     [title]="deleteConfirmTitle"
@@ -28,8 +32,6 @@
       <thead class="bg-gray-200 text-gray-700">
         <tr>
           <th class="px-4 py-3">Form Name</th>
-          <!-- <th class="px-4 py-3">Sections</th>
-          <th class="px-4 py-3">Section Types</th> -->
           <th class="px-4 py-3">Created At</th>
           <th class="px-4 py-3 text-right">Actions</th>
         </tr>
@@ -39,8 +41,6 @@
         @for (form of forms(); track form.id) {
           <tr class="border-b hover:bg-gray-50">
             <td class="px-4 py-3">{{ form.formName }}</td>
-            <!-- <td class="px-4 py-3">{{ form.sectionCount }}</td>
-            <td class="px-4 py-3">{{ formatSectionTypes(form.sectionTypes) }}</td> -->
             <td class="px-4 py-3">{{ form.createdAt | date: 'medium' }}</td>
             <td class="px-4 py-3 text-right">
               <button
@@ -72,7 +72,7 @@
       </tbody>
     </table>
 
-    @if (!hasForms()) {
+    @if (!loading() && !hasForms()) {
       <div class="text-center py-10">
         <p class="text-gray-400 text-sm font-ibm">No forms created yet</p>
         <button type="button" class="create-link font-ibm" (click)="goToCreate()">

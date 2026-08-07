@@ -36,12 +36,12 @@ export class ViewFormsComponent implements OnInit {
   readonly hasForms = computed(() => this.forms().length > 0);
   readonly page = signal(1);
   readonly lastPage = signal(1);
-  readonly total = signal(0);
   readonly filterFields = signal<GlobalFilterField[]>([]);
   readonly hasFilterFields = computed(() => this.filterFields().length > 0);
 
   readonly showPagination = computed(() => !this.loading() && this.forms().length > 0);
 
+  readonly deleting = signal(false);
   readonly showDeleteConfirmModal = signal(false);
   readonly deleteConfirmTitle = 'Delete Form';
   readonly deleteConfirmDescription =
@@ -74,13 +74,11 @@ export class ViewFormsComponent implements OnInit {
       .subscribe({
         next: (res) => {
           this.forms.set(res.forms);
-          this.total.set(res.total);
           this.page.set(res.page);
           this.lastPage.set(res.lastPage);
         },
         error: () => {
           this.forms.set([]);
-          this.total.set(0);
         },
       });
   }
@@ -140,9 +138,15 @@ export class ViewFormsComponent implements OnInit {
       return;
     }
 
+    this.closeDeleteConfirmModal();
+    this.deleting.set(true);
+
     this.formsService
       .deleteTemplate(id)
-      .pipe(takeUntilDestroyed(this.destroyRef))
+      .pipe(
+        finalize(() => this.deleting.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
       .subscribe({
         next: () => {
           this.toastr.success('Form deleted successfully');
@@ -156,16 +160,10 @@ export class ViewFormsComponent implements OnInit {
           this.toastr.error(err?.error?.message || 'Failed to delete form');
         },
       });
-
-    this.closeDeleteConfirmModal();
   }
 
   closeDeleteConfirmModal(): void {
     this.showDeleteConfirmModal.set(false);
     this.pendingDeleteId = null;
-  }
-
-  formatSectionTypes(types: string[]): string {
-    return types.join(', ');
   }
 }
