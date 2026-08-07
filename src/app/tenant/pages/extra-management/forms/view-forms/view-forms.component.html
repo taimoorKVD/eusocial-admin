@@ -13,6 +13,16 @@
     (closed)="closeDeleteConfirmModal()"
   ></app-confirm-modal>
 
+  <app-confirm-modal
+    [isOpen]="showBulkDeleteConfirmModal()"
+    title="Delete Forms"
+    [description]="bulkDeleteConfirmDescription()"
+    confirmText="Delete"
+    cancelText="Cancel"
+    (confirmed)="onConfirmBulkDelete()"
+    (closed)="closeBulkDeleteConfirmModal()"
+  ></app-confirm-modal>
+
   <app-top-header
     [title]="'Forms'"
     [buttonLabel]="'+ Create Form'"
@@ -27,10 +37,37 @@
     </app-global-filter>
   }
 
+  @if (hasForms() && selectedCount() > 0) {
+    <div class="mt-5 flex items-center justify-between gap-3 rounded bg-white px-4 py-3 shadow">
+      <span class="text-sm font-ibm text-gray-500">
+        Selected: {{ selectedCount() }}
+      </span>
+
+      <button
+        type="button"
+        class="inline-flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-sm font-medium text-red-500 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-40 font-ibm"
+        [disabled]="!hasSelection()"
+        (click)="openBulkDeleteConfirm()"
+      >
+        Bulk Delete
+      </button>
+    </div>
+  }
+
   <div class="bg-white rounded shadow overflow-hidden mt-5">
     <table class="w-full text-left text-sm font-ibm">
       <thead class="bg-gray-200 text-gray-700">
         <tr>
+          <th class="px-4 py-3 w-10">
+            <input
+              type="checkbox"
+              class="h-4 w-4 rounded border-gray-300 text-[#ea580c] focus:ring-[#ea580c]"
+              [checked]="isAllSelected()"
+              [indeterminate]="isIndeterminate()"
+              [disabled]="visibleDeletableForms().length === 0"
+              (change)="toggleSelectAll()"
+            />
+          </th>
           <th class="px-4 py-3">Form Name</th>
           <th class="px-4 py-3">Created At</th>
           <th class="px-4 py-3 text-right">Actions</th>
@@ -39,7 +76,16 @@
 
       <tbody>
         @for (form of forms(); track form.id) {
-          <tr class="border-b hover:bg-gray-50">
+          <tr class="border-b hover:bg-gray-50" [class.bg-orange-50]="isSelected(form)">
+            <td class="px-4 py-3">
+              <input
+                type="checkbox"
+                class="h-4 w-4 rounded border-gray-300 text-[#ea580c] focus:ring-[#ea580c]"
+                [checked]="isSelected(form)"
+                [disabled]="!isFormDeletable(form)"
+                (change)="toggleSelect(form)"
+              />
+            </td>
             <td class="px-4 py-3">{{ form.formName }}</td>
             <td class="px-4 py-3">{{ form.createdAt | date: 'medium' }}</td>
             <td class="px-4 py-3 text-right">

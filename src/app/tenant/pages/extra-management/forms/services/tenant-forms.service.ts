@@ -41,6 +41,11 @@ export interface TenantFormsPagedResult {
   lastPage: number;
 }
 
+/** Payload for the future bulk delete endpoint. */
+export interface BulkDeletePayload {
+  ids: number[];
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -125,6 +130,16 @@ export class TenantFormsService {
 
   deleteTemplate(id: number): Observable<TenantFormsApiResponse> {
     return this.http.delete<TenantFormsApiResponse>(`${this.apiUrl}/${id}`);
+  }
+
+  /**
+   * Bulk delete selected templates.
+   * NOTE: The backend endpoint is not available yet, so the URL is left empty
+   * until the real endpoint is provided.
+   */
+  bulkDeleteForms(ids: number[]): Observable<TenantFormsApiResponse> {
+    const payload: BulkDeletePayload = { ids };
+    return this.http.delete<TenantFormsApiResponse>('', { body: payload });
   }
 
   private extractItem(response: TenantFormsApiResponse): TenantFormsApiItem {
