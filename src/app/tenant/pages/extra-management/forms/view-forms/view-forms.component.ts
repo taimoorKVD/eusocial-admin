@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
+import { environment } from '../../../../../../environments/environment';
 import { SharedModule } from '../../../../../shared/shared.module';
 import { TenantSessionService } from '../../../../../services/tenant-session.service';
 import { TenantFormsService } from '../services/tenant-forms.service';
@@ -27,31 +28,57 @@ export class ViewFormsComponent implements OnInit {
   readonly forms = signal<SavedDynamicForm[]>([]);
   readonly loading = signal(false);
   readonly hasForms = computed(() => this.forms().length > 0);
+  readonly page = signal(1);
+  readonly lastPage = signal(1);
+  readonly total = signal(0);
+
+  readonly showPagination = computed(() => !this.loading() && this.forms().length > 0);
 
   readonly showDeleteConfirmModal = signal(false);
   readonly deleteConfirmTitle = 'Delete Form';
   readonly deleteConfirmDescription =
     'Please confirm that you want to delete this form. All related information will be permanently removed.';
 
+  private readonly defaultLimit = environment.limit;
   private pendingDeleteId: number | null = null;
 
   ngOnInit(): void {
-    this.loadForms();
+    this.loadForms(this.page());
   }
 
-  private loadForms(): void {
+  private loadForms(page: number): void {
     this.loading.set(true);
 
     this.formsService
-      .getForms()
+      .getForms(page, this.defaultLimit)
       .pipe(
         finalize(() => this.loading.set(false)),
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-        next: (forms) => this.forms.set(forms),
-        error: () => this.forms.set([]),
+        next: (res) => {
+          this.forms.set(res.forms);
+          this.total.set(res.total);
+          this.page.set(res.page);
+          this.lastPage.set(res.lastPage);
+        },
+        error: () => {
+          this.forms.set([]);
+          this.total.set(0);
+        },
       });
+  }
+
+  prevPage(): void {
+    if (this.page() > 1) {
+      this.loadForms(this.page() - 1);
+    }
+  }
+
+  nextPage(): void {
+    if (this.page() < this.lastPage()) {
+      this.loadForms(this.page() + 1);
+    }
   }
 
   goToCreate(): void {
@@ -86,7 +113,11 @@ export class ViewFormsComponent implements OnInit {
       .subscribe({
         next: () => {
           this.toastr.success('Form deleted successfully');
-          this.loadForms();
+          if (this.forms().length === 1 && this.page() > 1) {
+            this.loadForms(this.page() - 1);
+          } else {
+            this.loadForms(this.page());
+          }
         },
         error: (err) => {
           this.toastr.error(err?.error?.message || 'Failed to delete form');

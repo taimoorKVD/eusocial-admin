@@ -73,4 +73,30 @@
       </div>
     }
   </div>
+
+  @if (showPagination()) {
+    <div class="flex justify-between items-center px-4 py-3 border border-gray-200 border-t-0 rounded-b bg-white">
+      <span class="text-sm text-gray-500 font-ibm">
+        Page {{ page() }} of {{ lastPage() }}
+      </span>
+
+      <div class="flex items-center gap-2">
+        <button
+          class="px-3 py-1.5 rounded-lg text-sm font-medium border border-[#ea580c]/30 bg-[#ea580c]/10 text-[#ea580c] hover:bg-[#ea580c]/20 transition disabled:opacity-40 disabled:cursor-not-allowed font-ibm"
+          [disabled]="page() === 1"
+          (click)="prevPage()"
+        >
+          ← Prev
+        </button>
+
+        <button
+          class="px-3 py-1.5 rounded-lg text-sm font-medium border border-[#ea580c]/30 bg-[#ea580c]/10 text-[#ea580c] hover:bg-[#ea580c]/20 transition disabled:opacity-40 disabled:cursor-not-allowed font-ibm"
+          [disabled]="page() === lastPage()"
+          (click)="nextPage()"
+        >
+          Next →
+        </button>
+      </div>
+    </div>
+  }
 </div>

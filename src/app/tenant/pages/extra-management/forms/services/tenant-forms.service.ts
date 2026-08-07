@@ -34,6 +34,13 @@ export interface CreateTenantFormPayload {
   createdBy?: number;
 }
 
+export interface TenantFormsPagedResult {
+  forms: SavedDynamicForm[];
+  total: number;
+  page: number;
+  lastPage: number;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -42,10 +49,26 @@ export class TenantFormsService {
 
   constructor(private http: HttpClient) {}
 
-  getForms(): Observable<SavedDynamicForm[]> {
+  getForms(page: number = 1, limit?: number): Observable<TenantFormsPagedResult> {
     return this.http
-      .get<TenantFormsApiResponse | TenantFormsApiItem[]>(this.apiUrl)
-      .pipe(map((response) => this.normalizeResponse(response)));
+      .get<TenantFormsApiResponse | TenantFormsApiItem[]>(
+        `${this.apiUrl}?page=${page}${limit ? `&limit=${limit}` : ''}`,
+      )
+      .pipe(
+        map((response) => {
+          const meta =
+            response && typeof response === 'object' && !Array.isArray(response)
+              ? response['meta']
+              : undefined;
+
+          return {
+            forms: this.normalizeResponse(response),
+            total: Number(meta?.total ?? 0),
+            page: Number(meta?.page ?? page),
+            lastPage: Number(meta?.lastPage ?? 1),
+          };
+        }),
+      );
   }
 
   createForm(payload: CreateTenantFormPayload): Observable<TenantFormsApiResponse> {
