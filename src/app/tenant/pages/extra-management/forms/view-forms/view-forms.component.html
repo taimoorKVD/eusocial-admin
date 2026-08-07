@@ -15,13 +15,21 @@
     (buttonClick)="goToCreate()"
   />
 
+  @if (hasFilterFields()) {
+    <app-global-filter
+      [fields]="filterFields()"
+      (search)="onFilterSearch($event)"
+      (clear)="onFilterClear()">
+    </app-global-filter>
+  }
+
   <div class="bg-white rounded shadow overflow-hidden mt-5">
     <table class="w-full text-left text-sm font-ibm">
       <thead class="bg-gray-200 text-gray-700">
         <tr>
           <th class="px-4 py-3">Form Name</th>
-          <th class="px-4 py-3">Sections</th>
-          <th class="px-4 py-3">Section Types</th>
+          <!-- <th class="px-4 py-3">Sections</th>
+          <th class="px-4 py-3">Section Types</th> -->
           <th class="px-4 py-3">Created At</th>
           <th class="px-4 py-3 text-right">Actions</th>
         </tr>
@@ -31,8 +39,8 @@
         @for (form of forms(); track form.id) {
           <tr class="border-b hover:bg-gray-50">
             <td class="px-4 py-3">{{ form.formName }}</td>
-            <td class="px-4 py-3">{{ form.sectionCount }}</td>
-            <td class="px-4 py-3">{{ formatSectionTypes(form.sectionTypes) }}</td>
+            <!-- <td class="px-4 py-3">{{ form.sectionCount }}</td>
+            <td class="px-4 py-3">{{ formatSectionTypes(form.sectionTypes) }}</td> -->
             <td class="px-4 py-3">{{ form.createdAt | date: 'medium' }}</td>
             <td class="px-4 py-3 text-right">
               <button

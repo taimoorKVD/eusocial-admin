@@ -6,9 +6,15 @@ import { finalize } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
 import { environment } from '../../../../../../environments/environment';
 import { SharedModule } from '../../../../../shared/shared.module';
+import { GlobalFilterField } from '../../../../../shared/global-filter/global-filter';
+import { pruneFiltersByAllowedKeys } from '../../../../../shared/dynamic-listing/dynamic-listing.helpers';
 import { TenantSessionService } from '../../../../../services/tenant-session.service';
 import { TenantFormsService } from '../services/tenant-forms.service';
 import { SavedDynamicForm } from '../models/dynamic-form.models';
+
+const FORM_FILTER_FIELDS: GlobalFilterField[] = [
+  { key: 'name', label: 'Form Name', placeholder: 'Search by form name', type: 'text' },
+];
 
 @Component({
   selector: 'app-view-forms',
@@ -31,6 +37,8 @@ export class ViewFormsComponent implements OnInit {
   readonly page = signal(1);
   readonly lastPage = signal(1);
   readonly total = signal(0);
+  readonly filterFields = signal<GlobalFilterField[]>([]);
+  readonly hasFilterFields = computed(() => this.filterFields().length > 0);
 
   readonly showPagination = computed(() => !this.loading() && this.forms().length > 0);
 
@@ -41,16 +49,24 @@ export class ViewFormsComponent implements OnInit {
 
   private readonly defaultLimit = environment.limit;
   private pendingDeleteId: number | null = null;
+  private filters: Record<string, unknown> = {};
 
   ngOnInit(): void {
+    this.filterFields.set(FORM_FILTER_FIELDS);
     this.loadForms(this.page());
   }
 
   private loadForms(page: number): void {
     this.loading.set(true);
 
-    this.formsService
-      .getForms(page, this.defaultLimit)
+    const allowedKeys = this.getAllowedFilterKeys();
+    const activeFilters = pruneFiltersByAllowedKeys(this.filters, allowedKeys);
+
+    const apiCall = Object.keys(activeFilters).length
+      ? this.formsService.searchForms(activeFilters, this.defaultLimit)
+      : this.formsService.getForms(page, this.defaultLimit);
+
+    apiCall
       .pipe(
         finalize(() => this.loading.set(false)),
         takeUntilDestroyed(this.destroyRef),
@@ -79,6 +95,23 @@ export class ViewFormsComponent implements OnInit {
     if (this.page() < this.lastPage()) {
       this.loadForms(this.page() + 1);
     }
+  }
+
+  onFilterSearch(filters: Record<string, unknown>): void {
+    const allowedKeys = this.getAllowedFilterKeys();
+    this.filters = pruneFiltersByAllowedKeys(filters, allowedKeys);
+    this.page.set(1);
+    this.loadForms(this.page());
+  }
+
+  onFilterClear(): void {
+    this.filters = {};
+    this.page.set(1);
+    this.loadForms(this.page());
+  }
+
+  private getAllowedFilterKeys(): Set<string> {
+    return new Set(this.filterFields().map((field) => field.key));
   }
 
   goToCreate(): void {

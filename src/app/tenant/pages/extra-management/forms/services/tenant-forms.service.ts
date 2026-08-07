@@ -71,6 +71,40 @@ export class TenantFormsService {
       );
   }
 
+  searchForms(
+    filters: Record<string, unknown>,
+    limit?: number,
+  ): Observable<TenantFormsPagedResult> {
+    const params = new URLSearchParams({
+      ...(limit ? { limit: limit.toString() } : {}),
+      ...(filters as Record<string, string>),
+    });
+
+    return this.http
+      .get<TenantFormsApiResponse | TenantFormsApiItem[]>(
+        `${this.apiUrl}/search?${params.toString()}`,
+      )
+      .pipe(
+        map((response) => {
+          const meta =
+            response && typeof response === 'object' && !Array.isArray(response)
+              ? response['meta']
+              : undefined;
+          const count =
+            response && typeof response === 'object' && !Array.isArray(response)
+              ? response['count']
+              : undefined;
+
+          return {
+            forms: this.normalizeResponse(response),
+            total: Number(count ?? meta?.total ?? 0),
+            page: Number(meta?.page ?? 1),
+            lastPage: Number(meta?.lastPage ?? 1),
+          };
+        }),
+      );
+  }
+
   createForm(payload: CreateTenantFormPayload): Observable<TenantFormsApiResponse> {
     return this.http.post<TenantFormsApiResponse>(this.apiUrl, payload);
   }
