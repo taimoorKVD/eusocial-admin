@@ -5,6 +5,8 @@ import { Router } from '@angular/router';
 import { TenantSessionService } from '../../services/tenant-session.service';
 import { ToastrService } from 'ngx-toastr';
 import { LocationCacheService } from '../../services/location-cache.service';
+import { ReportingGroupService } from '../../services/reporting-group.service';
+import { TenantProfileService } from '../../services/tenant-profile.service';
 
 @Component({
   selector: 'app-tenant-login',
@@ -20,6 +22,8 @@ import { LocationCacheService } from '../../services/location-cache.service';
     errorMessage = '';
 
       private readonly locationCache = inject(LocationCacheService);
+      private readonly reportingGroupService = inject(ReportingGroupService);
+      private readonly profileService = inject(TenantProfileService);
 
       constructor( private session: TenantSessionService, private fb: FormBuilder, private tenantAuth: TenantAuthService, private router: Router, private toastr: ToastrService ) {}
 
@@ -37,7 +41,9 @@ import { LocationCacheService } from '../../services/location-cache.service';
       if (token && slug) {
         // Ensure location cache is ready for an already-authenticated session.
         this.locationCache.warmCache();
-        this.router.navigate(['/tenant', slug, 'home']);
+        this.reportingGroupService.reload();
+        this.profileService.refresh();
+        this.router.navigate(['/tenant', slug, 'user-dashboard']);
       }
     }
 
@@ -75,8 +81,10 @@ import { LocationCacheService } from '../../services/location-cache.service';
       }
 
       this.session.setSession(token, slug, user);
+      this.reportingGroupService.reload();
+      this.profileService.refresh();
       this.toastr.success('Login successful');
-      this.router.navigate(['/tenant', slug, 'home']);
+      this.router.navigate(['/tenant', slug, 'user-dashboard']);
       this.loading = false;
     },
 

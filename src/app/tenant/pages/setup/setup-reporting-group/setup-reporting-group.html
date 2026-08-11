@@ -1,114 +1,305 @@
-<div class="p-6">
+<app-confirm-modal
+  [isOpen]="showDeleteConfirm()"
+  title="Confirm Delete"
+  [description]="deleteConfirmDescription()"
+  confirmText="Delete"
+  cancelText="Cancel"
+  (confirmed)="onConfirmDelete()"
+  (closed)="closeDeleteConfirm()"
+></app-confirm-modal>
 
-  <h3 class="font-medium text-[16px] text-[#0054AC] font-ibm mb-[20px]">+ Reporting Groups</h3>
+<div class="p-4 md:p-6">
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
+    <div>
+      <h2 class="text-[20px] font-semibold text-[#161616] font-ibm m-0">
+        Reporting Groups
+      </h2>
+      <p class="mt-1 text-sm text-[#6F6F6F] font-ibm">
+        Organize existing items into groups and categories for kitchen reporting.
+      </p>
+    </div>
 
-  <div class="grid grid-cols-3 gap-6">
+    <button
+      type="button"
+      class="inline-flex items-center justify-center gap-2 rounded border border-[#FF9015] bg-[#FF9015] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#e57f0f] font-ibm"
+      (click)="openCreateGroup()"
+    >
+      + Create Reporting Group
+    </button>
+  </div>
 
-    <div *ngFor="let category of categories" class="space-y-4">
+  @if (!hasGroups()) {
+    <div class="rounded-xl border border-dashed border-[#C6C6C6] bg-white px-6 py-16 text-center">
+      <p class="text-base font-medium text-[#161616] font-ibm">
+        No reporting groups yet
+      </p>
+      <p class="mt-2 text-sm text-[#6F6F6F] font-ibm">
+        Create a reporting group, add categories, then assign existing items.
+      </p>
+      <button
+        type="button"
+        class="mt-6 inline-flex items-center justify-center rounded border border-[#FF9015] px-4 py-2 text-sm font-medium text-[#FF9015] transition hover:bg-[#FFF4EA] font-ibm"
+        (click)="openCreateGroup()"
+      >
+        Create your first group
+      </button>
+    </div>
+  } @else {
+    <div class="space-y-4">
+      @for (group of groups(); track trackByGroupId($index, group)) {
+        <div class="overflow-hidden rounded-xl border border-[#E0E0E0] bg-white shadow-sm">
+          <div
+            class="flex cursor-pointer items-center justify-between gap-3 bg-[#FFF7F0] px-4 py-3"
+            (click)="toggleGroup(group.id)"
+          >
+            <div class="flex min-w-0 items-center gap-3">
+              <span class="text-[#FF9015] text-sm font-ibm">
+                {{ isGroupExpanded(group.id) ? '▾' : '▸' }}
+              </span>
+              <div class="min-w-0">
+                <h3 class="truncate text-[15px] font-semibold text-[#161616] font-ibm m-0">
+                  {{ group.name }}
+                </h3>
+                <p class="mt-0.5 text-xs text-[#6F6F6F] font-ibm">
+                  {{ group.categories.length }}
+                  {{ group.categories.length === 1 ? 'category' : 'categories' }}
+                </p>
+              </div>
+            </div>
 
-      <!-- Title -->
-      <h3 class="text-[12px] font-medium text-[#525252]">
-        {{ category.name }}
-      </h3>
-
-      <!-- Add Item -->
-      <div class="flex items-center gap-2 pb-2" style="border-bottom: 1px solid #161616;">
-
-        <input
-          [(ngModel)]="category.newItem"
-          (keydown.enter)="handleEnter(category)"
-          placeholder="Add Items"
-          class="flex-1 outline-none text-sm bg-transparent"
-        />
-
-        <button
-          (click)="addItem(category)"
-          class="text-lg font-bold"
-        >
-          +
-        </button>
-      </div>
-
-      <!-- Dropdown Box -->
-      <div class="bg-gray-100 rounded shadow">
-
-        <div class="bg-[#CCE1F7] px-3 py-2 text-sm flex justify-between">
-          <span>Choose an option</span>
-          <span>⌄</span>
-        </div>
-
-        <!-- Items -->
-        <div *ngFor="let item of category.items" class="bg-[#fff] !border-b !border-[#c6c6c6] px-3 py-2 flex justify-between items-center">
-
-          <!-- Name / Input -->
-          <div class="flex-1">
-            <input
-              *ngIf="item.editing"
-              [(ngModel)]="item.name"
-              (keydown.enter)="handleEnter(category, item)"
-              class="w-full bg-white border px-2 py-1 text-sm"
-            />
-
-            <span *ngIf="!item.editing" class="text-sm">
-              {{ item.name }}
-            </span>
-          </div>
-
-          <!-- Actions -->
-          <div class="relative group">
-
-            <button class="px-2">⋯</button>
-
-            <!-- Dropdown -->
-            <div class="absolute right-0 hidden group-hover:block bg-white shadow rounded w-24">
-
+            <div class="flex shrink-0 items-center gap-2" (click)="$event.stopPropagation()">
               <button
-                *ngIf="!item.editing"
-                (click)="enableEdit(item)"
-                class="block w-full text-left px-3 py-2 text-sm hover:bg-gray-100"
+                type="button"
+                class="rounded border border-[#FF9015]/40 px-2.5 py-1 text-xs font-medium text-[#FF9015] hover:bg-[#FFF4EA] font-ibm"
+                (click)="openAddCategory(group, $event)"
+              >
+                + Category
+              </button>
+              <button
+                type="button"
+                class="rounded border border-[#C6C6C6] px-2.5 py-1 text-xs font-medium text-[#525252] hover:bg-gray-50 font-ibm"
+                (click)="openEditGroup(group, $event)"
               >
                 Edit
               </button>
-
               <button
-                *ngIf="item.editing"
-                (click)="saveEdit(item)"
-                class="block w-full text-left px-3 py-2 text-sm hover:bg-gray-100"
-              >
-                Save
-              </button>
-
-              <button
-                (click)="deleteItem(category, item.id)"
-                class="block w-full text-left px-3 py-2 text-sm text-red-500 hover:bg-gray-100"
+                type="button"
+                class="rounded border border-red-200 px-2.5 py-1 text-xs font-medium text-red-500 hover:bg-red-50 font-ibm"
+                (click)="confirmDeleteGroup(group, $event)"
               >
                 Delete
               </button>
-
             </div>
           </div>
 
-        </div>
+          @if (isGroupExpanded(group.id)) {
+            <div class="border-t border-[#E0E0E0] px-4 py-4">
+              @if (!group.categories.length) {
+                <div class="rounded-lg border border-dashed border-[#D0D0D0] px-4 py-8 text-center">
+                  <p class="text-sm text-[#6F6F6F] font-ibm">
+                    No categories in this group yet.
+                  </p>
+                  <button
+                    type="button"
+                    class="mt-3 text-sm font-medium text-[#FF9015] hover:underline font-ibm"
+                    (click)="openAddCategory(group)"
+                  >
+                    Add a category
+                  </button>
+                </div>
+              } @else {
+                <div class="space-y-3">
+                  @for (category of group.categories; track trackByCategoryId($index, category)) {
+                    <div class="rounded-lg border border-[#E8E8E8] bg-[#FAFAFA]">
+                      <div
+                        class="flex cursor-pointer items-center justify-between gap-3 px-3 py-2.5"
+                        (click)="toggleCategory(category.id)"
+                      >
+                        <div class="flex min-w-0 items-center gap-2">
+                          <span class="text-[#525252] text-xs font-ibm">
+                            {{ isCategoryExpanded(category.id) ? '▾' : '▸' }}
+                          </span>
+                          <div class="min-w-0">
+                            <p class="truncate text-sm font-medium text-[#161616] font-ibm m-0">
+                              {{ category.name }}
+                            </p>
+                            <p class="text-xs text-[#8D8D8D] font-ibm">
+                              {{ category.items.length }}
+                              {{ category.items.length === 1 ? 'item' : 'items' }}
+                            </p>
+                          </div>
+                        </div>
 
+                        <div class="flex shrink-0 items-center gap-2" (click)="$event.stopPropagation()">
+                          <button
+                            type="button"
+                            class="rounded border border-[#0054AC]/30 px-2 py-1 text-xs font-medium text-[#0054AC] hover:bg-[#EEF5FC] font-ibm"
+                            (click)="openAssignItems(group, category, $event)"
+                          >
+                            Assign Items
+                          </button>
+                          <button
+                            type="button"
+                            class="rounded border border-[#C6C6C6] px-2 py-1 text-xs font-medium text-[#525252] hover:bg-white font-ibm"
+                            (click)="openEditCategory(group, category, $event)"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            class="rounded border border-red-200 px-2 py-1 text-xs font-medium text-red-500 hover:bg-red-50 font-ibm"
+                            (click)="confirmDeleteCategory(group, category, $event)"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+
+                      @if (isCategoryExpanded(category.id)) {
+                        <div class="border-t border-[#E8E8E8] bg-white px-3 py-3">
+                          @if (!category.items.length) {
+                            <p class="text-sm text-[#8D8D8D] font-ibm">
+                              No items assigned. Use Assign Items to link existing catalog items.
+                            </p>
+                          } @else {
+                            <ul class="space-y-2">
+                              @for (item of category.items; track trackByItemId($index, item)) {
+                                <li
+                                  class="flex items-center justify-between gap-3 rounded border border-[#ECECEC] px-3 py-2"
+                                >
+                                  <span class="text-sm text-[#161616] font-ibm">
+                                    {{ item.name }}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    class="text-xs font-medium text-red-500 hover:underline font-ibm"
+                                    (click)="confirmRemoveItem(group, category, item, $event)"
+                                  >
+                                    Remove
+                                  </button>
+                                </li>
+                              }
+                            </ul>
+                          }
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>
+
+@if (modalMode()) {
+  <div
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+    (click)="closeModal()"
+  >
+    <div
+      class="w-full max-w-lg rounded-xl bg-white shadow-xl"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="flex items-center justify-between border-b border-[#E8E8E8] px-5 py-4">
+        <h3 class="text-base font-semibold text-[#161616] font-ibm m-0">
+          {{ modalTitle() }}
+        </h3>
+        <button
+          type="button"
+          class="text-[#6F6F6F] hover:text-[#161616]"
+          (click)="closeModal()"
+          aria-label="Close"
+        >
+          ✕
+        </button>
       </div>
 
+      <div class="px-5 py-4">
+        @if (modalMode() !== 'assign-items') {
+          <label class="block text-sm font-medium text-[#525252] font-ibm mb-1.5">
+            {{ modalMode()?.includes('category') ? 'Category name' : 'Group name' }}
+          </label>
+          <input
+            type="text"
+            class="w-full border border-[#C6C6C6] px-3 py-2.5 text-sm text-[#161616] outline-none focus:border-[#FF9015] font-ibm"
+            [ngModel]="modalName()"
+            (ngModelChange)="modalName.set($event)"
+            [placeholder]="modalMode()?.includes('category') ? 'e.g. Produce' : 'e.g. Product Specific Items'"
+            (keydown.enter)="saveModal()"
+          />
+        } @else {
+          <p class="mb-3 text-sm text-[#6F6F6F] font-ibm">
+            Select existing items to assign to this category. Item records are managed in the Items module.
+          </p>
+
+          <input
+            type="search"
+            class="mb-3 w-full border border-[#C6C6C6] px-3 py-2.5 text-sm text-[#161616] outline-none focus:border-[#FF9015] font-ibm"
+            [ngModel]="catalogSearch()"
+            (ngModelChange)="catalogSearch.set($event)"
+            placeholder="Search items..."
+          />
+
+          @if (catalogLoading()) {
+            <div class="py-10 text-center text-sm text-[#6F6F6F] font-ibm">
+              Loading items...
+            </div>
+          } @else if (!filteredCatalogItems().length) {
+            <div class="rounded-lg border border-dashed border-[#D0D0D0] px-4 py-8 text-center text-sm text-[#6F6F6F] font-ibm">
+              No items found. Create items in the Items module first.
+            </div>
+          } @else {
+            <div class="max-h-72 space-y-2 overflow-y-auto pr-1">
+              @for (item of filteredCatalogItems(); track item.id) {
+                <label
+                  class="flex cursor-pointer items-center gap-3 rounded border border-[#ECECEC] px-3 py-2 hover:bg-[#FAFAFA]"
+                >
+                  <input
+                    type="checkbox"
+                    class="h-4 w-4 accent-[#FF9015]"
+                    [checked]="isCatalogItemSelected(item.id)"
+                    (change)="toggleCatalogItem(item.id)"
+                  />
+                  <span class="text-sm text-[#161616] font-ibm">{{ item.name }}</span>
+                </label>
+              }
+            </div>
+          }
+        }
+      </div>
+
+      <div class="flex justify-end gap-3 border-t border-[#E8E8E8] px-5 py-4">
+        <button
+          type="button"
+          class="rounded border border-[#C6C6C6] px-4 py-2 text-sm font-medium text-[#525252] hover:bg-gray-50 font-ibm"
+          (click)="closeModal()"
+        >
+          Cancel
+        </button>
+
+        @if (modalMode() === 'assign-items') {
+          <button
+            type="button"
+            class="rounded bg-[#FF9015] px-4 py-2 text-sm font-medium text-white hover:bg-[#e57f0f] font-ibm"
+            (click)="saveAssignedItems()"
+          >
+            Save Assignments
+          </button>
+        } @else {
+          <button
+            type="button"
+            class="rounded bg-[#FF9015] px-4 py-2 text-sm font-medium text-white hover:bg-[#e57f0f] disabled:opacity-50 font-ibm"
+            [disabled]="modalSaving()"
+            (click)="saveModal()"
+          >
+            {{ modalSaving() ? 'Saving...' : 'Save' }}
+          </button>
+        }
+      </div>
     </div>
-
   </div>
-
-  <!-- Footer Buttons -->
-  <div class="flex justify-end gap-4 mt-10">
-
-    <button class="border border-red-400 text-red-500 px-6 py-2">
-      Delete
-    </button>
-
-    <button class="border border-blue-400 text-blue-500 px-6 py-2">
-      Cancel
-    </button>
-
-    <button (click)="onSave()" class="bg-blue-600 text-white px-6 py-2">
-        Save
-    </button>
-  </div>
-</div>
+}

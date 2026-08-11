@@ -1,0 +1,207 @@
+@if (loading()) {
+  <div class="min-h-[60vh] flex justify-center items-center">
+    <div
+      class="h-10 w-10 rounded-full border-4 border-[#FF9015]/30 border-t-[#FF9015] animate-spin"
+      role="status"
+    ></div>
+  </div>
+} @else if (!profile()) {
+  <div class="p-6">
+    <div class="rounded-xl border border-[#E8E8E8] bg-white px-6 py-12 text-center shadow-sm">
+      <p class="text-base font-medium text-[#161616] font-ibm m-0">
+        Profile unavailable
+      </p>
+      <p class="mt-2 text-sm text-[#6F6F6F] font-ibm">
+        No authenticated tenant user was found in the current session.
+      </p>
+    </div>
+  </div>
+} @else {
+  <div class="p-4 md:p-6">
+    <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <h2 class="text-[20px] font-semibold text-[#161616] font-ibm m-0">
+          Profile
+        </h2>
+        <p class="mt-1 text-sm text-[#6F6F6F] font-ibm">
+          View and update your tenant admin profile details.
+        </p>
+      </div>
+
+      @if (!editing()) {
+        <button
+          type="button"
+          class="inline-flex items-center justify-center rounded border border-[#FF9015] bg-[#FF9015] px-4 py-2 text-sm font-medium text-white hover:bg-[#e57f0f] font-ibm"
+          (click)="startEdit()"
+        >
+          Edit Profile
+        </button>
+      }
+    </div>
+
+    <div class="mb-5 flex items-center gap-4 rounded-xl border border-[#E8E8E8] bg-white p-4 shadow-sm">
+      @if (avatarSrc) {
+        <img
+          [src]="avatarSrc"
+          (error)="onAvatarError($event)"
+          class="h-[70px] w-[70px] rounded-full border border-[#E0E0E0] object-cover"
+          width="70"
+          height="70"
+          alt="Profile"
+        />
+      } @else {
+        <div
+          class="flex h-[70px] w-[70px] items-center justify-center rounded-full bg-[#3B3B3B] text-white text-xl font-semibold font-ibm"
+          aria-hidden="true"
+        >
+          {{ displayName.charAt(0).toUpperCase() }}
+        </div>
+      }
+      <div class="min-w-0">
+        <h3 class="m-0 truncate text-lg font-semibold text-[#161616] font-ibm">
+          {{ displayName }}
+        </h3>
+        <p class="m-0 mt-1 truncate text-sm text-[#6F6F6F] font-ibm">
+          {{ profile()?.email }}
+        </p>
+        <p class="m-0 mt-1 text-sm text-[#525252] font-ibm">
+          <span class="font-medium">Role:</span> {{ roleLabel }}
+        </p>
+      </div>
+    </div>
+
+    <form
+      [formGroup]="form"
+      (ngSubmit)="saveProfile()"
+      class="rounded-xl border border-[#E8E8E8] bg-white p-4 md:p-5 shadow-sm space-y-4"
+    >
+      <h4 class="m-0 textProfile Information-sm font-semibold uppercase tracking-wide text-[#6F6F6F] font-ibm">
+
+      </h4>
+
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div>
+          <label class="mb-1 block text-sm font-medium text-[#525252] font-ibm">
+            First Name
+          </label>
+          <input
+            type="text"
+            formControlName="firstName"
+            class="w-full border border-[#C6C6C6] px-3 py-2.5 text-sm text-[#161616] outline-none focus:border-[#FF9015] disabled:bg-[#F4F4F4] font-ibm"
+            [readonly]="!editing()"
+            placeholder="First name"
+          />
+          @if (f['firstName'].touched && f['firstName'].errors?.['required']) {
+            <small class="mt-1 block text-xs text-red-600 font-ibm">
+              First name is required.
+            </small>
+          }
+        </div>
+
+        <div>
+          <label class="mb-1 block text-sm font-medium text-[#525252] font-ibm">
+            Last Name
+          </label>
+          <input
+            type="text"
+            formControlName="lastName"
+            class="w-full border border-[#C6C6C6] px-3 py-2.5 text-sm text-[#161616] outline-none focus:border-[#FF9015] disabled:bg-[#F4F4F4] font-ibm"
+            [readonly]="!editing()"
+            placeholder="Last name"
+          />
+        </div>
+
+        <div>
+          <label class="mb-1 block text-sm font-medium text-[#525252] font-ibm">
+            Email
+          </label>
+          <input
+            type="email"
+            formControlName="email"
+            class="w-full border border-[#C6C6C6] px-3 py-2.5 text-sm text-[#161616] outline-none disabled:bg-[#F4F4F4] font-ibm"
+            readonly
+          />
+          <small class="mt-1 block text-xs text-[#8D8D8D] font-ibm">
+            Email is used for login and cannot be changed here.
+          </small>
+        </div>
+
+        <div>
+          <label class="mb-1 block text-sm font-medium text-[#525252] font-ibm">
+            Phone
+          </label>
+          <input
+            type="tel"
+            formControlName="phone"
+            class="w-full border border-[#C6C6C6] px-3 py-2.5 text-sm text-[#161616] outline-none focus:border-[#FF9015] disabled:bg-[#F4F4F4] font-ibm"
+            [readonly]="!editing()"
+            placeholder="Phone number"
+          />
+          @if (f['phone'].touched && f['phone'].errors?.['phone']) {
+            <small class="mt-1 block text-xs text-red-600 font-ibm">
+              Enter a valid phone number.
+            </small>
+          }
+        </div>
+<!--
+        <div>
+          <label class="mb-1 block text-sm font-medium text-[#525252] font-ibm">
+            Username
+          </label>
+          <input
+            type="text"
+            formControlName="username"
+            class="w-full border border-[#C6C6C6] px-3 py-2.5 text-sm text-[#161616] outline-none disabled:bg-[#F4F4F4] font-ibm"
+            readonly
+            placeholder="—"
+          />
+        </div> -->
+
+        <div>
+          <label class="mb-1 block text-sm font-medium text-[#525252] font-ibm">
+            Role / Account Type
+          </label>
+          <input
+            type="text"
+            formControlName="role"
+            class="w-full border border-[#C6C6C6] px-3 py-2.5 text-sm text-[#161616] outline-none disabled:bg-[#F4F4F4] font-ibm"
+            readonly
+          />
+        </div>
+      </div>
+<!--
+      <div>
+        <label class="mb-1 block text-sm font-medium text-[#525252] font-ibm">
+          Profile Image URL
+        </label>
+        <input
+          type="url"
+          formControlName="avatarUrl"
+          class="w-full border border-[#C6C6C6] px-3 py-2.5 text-sm text-[#161616] outline-none focus:border-[#FF9015] disabled:bg-[#F4F4F4] font-ibm"
+          [readonly]="!editing()"
+          placeholder="https://..."
+        />
+      </div> -->
+
+      @if (editing()) {
+        <div class="flex justify-end gap-3 pt-2">
+          <button
+            type="button"
+            class="rounded border border-[#C6C6C6] px-4 py-2 text-sm font-medium text-[#525252] hover:bg-gray-50 font-ibm"
+            (click)="cancelEdit()"
+            [disabled]="saving()"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            class="rounded bg-[#FF9015] px-4 py-2 text-sm font-medium text-white hover:bg-[#e57f0f] disabled:opacity-50 font-ibm"
+            [disabled]="saving()"
+          >
+            {{ saving() ? 'Saving...' : 'Save Changes' }}
+          </button>
+        </div>
+      }
+    </form>
+  </div>
+}

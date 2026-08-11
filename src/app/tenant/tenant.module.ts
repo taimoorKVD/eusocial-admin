@@ -29,6 +29,7 @@ import { RoleComponent } from './pages/setup/Roles/role/role.component';
 import { RoleListingComponent } from './pages/setup/Roles/role-listing/role-listing.component';
 import { RouterModule } from '@angular/router';
 import { FormEditorCoreModule } from './forms/form-editor-core.module';
+import { TenantProfileComponent } from './pages/profile/tenant-profile.component';
 
 
 
@@ -50,6 +51,7 @@ import { FormEditorCoreModule } from './forms/form-editor-core.module';
     SetupItemsListing,
     SetupItemComponent,
     SetupReportingGroup,
+    TenantProfileComponent,
     LocationComponent,
     LocationListingComponent,
     RoleComponent,

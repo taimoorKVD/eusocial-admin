@@ -24,6 +24,7 @@ import { RoleListingComponent } from './pages/setup/Roles/role-listing/role-list
 import { BuilderComponent } from './form-builder/components/builder/builder.component';
 import { FormsListComponent } from './forms/forms-list/forms-list.component';
 import { FormsEditorComponent } from './forms/forms-editor/forms-editor.component';
+import { TenantProfileComponent } from './pages/profile/tenant-profile.component';
 
 const routes: Routes = [
 
@@ -39,7 +40,7 @@ const routes: Routes = [
     canActivate: [tenantAuthGuard],
     canActivateChild: [tenantAuthGuard],
     children: [
-      { path: '', redirectTo: 'home', pathMatch: 'full' },
+      { path: '', redirectTo: 'user-dashboard', pathMatch: 'full' },
       { path: 'home', component: HomeComponent },
       { path: 'user-dashboard', component: UserDashboardComponent },
 
@@ -64,6 +65,8 @@ const routes: Routes = [
       { path: 'items/edit/:id', component: SetupItemComponent },
 
       { path: 'reporting-group', component: SetupReportingGroup },
+
+      { path: 'profile', component: TenantProfileComponent },
 
       { path: 'location', component: LocationListingComponent },
       { path: 'location/create', component: LocationComponent },

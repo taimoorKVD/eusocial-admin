@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, catchError, map, of, shareReplay, switchMap } from 'rxjs';
 import { environment } from '../../../../environments/environment';
@@ -6,6 +6,7 @@ import { FieldOption, FormField } from '../models/form-field.model';
 import { FormModuleListItem } from '../../forms/models/form-module.model';
 import { FormsService } from '../../forms/services/forms.service';
 import { FormStorageService } from '../../forms/services/form-storage.service';
+import { ReportingGroupService } from '../../../services/reporting-group.service';
 
 const MODULE_API_PATHS: Record<string, string> = {
   users: '/users',
@@ -38,6 +39,7 @@ export class DynamicModuleOptionsService {
   private readonly recordsCache = new Map<string, Observable<Record<string, unknown>[]>>();
   private readonly moduleDataCache = new Map<string, Observable<ModuleDataCache>>();
   private readonly schemaColumnsCache = new Map<string, Observable<string[]>>();
+  private readonly reportingGroupService = inject(ReportingGroupService);
 
   constructor(
     private http: HttpClient,
@@ -67,6 +69,15 @@ export class DynamicModuleOptionsService {
 
   getModuleRecords(moduleSlug: string): Observable<Record<string, unknown>[]> {
     const cacheKey = this.normalizeSlug(moduleSlug);
+
+    // Phase 1: serve Reporting Groups from localStorage (no API yet).
+    if (
+      cacheKey === 'reporting-group' ||
+      cacheKey === 'reporting-groups' ||
+      cacheKey === 'reportinggroups'
+    ) {
+      return of(this.reportingGroupService.getModuleRecords());
+    }
 
     if (!this.recordsCache.has(cacheKey)) {
       const endpoint = this.resolveModuleEndpoint(moduleSlug);

@@ -1,6 +1,9 @@
-import { Component, HostListener, EventEmitter, Output} from '@angular/core';
+import { Component, HostListener, EventEmitter, Output, OnInit, OnDestroy, inject } from '@angular/core';
+import { Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { TenantAuthService } from '../../services/tenant-auth.service';
 import { TenantSessionService } from '../../services/tenant-session.service';
+import { TenantProfileService } from '../../services/tenant-profile.service';
 
 @Component({
   selector: 'app-tenant-topbar',
@@ -9,24 +12,28 @@ import { TenantSessionService } from '../../services/tenant-session.service';
   templateUrl: './tenant-topbar.component.html',
   styleUrl: './tenant-topbar.component.scss'
 })
-export class TenantTopbarComponent {
+export class TenantTopbarComponent implements OnInit, OnDestroy {
   @Output() toggleSidebar = new EventEmitter<void>();
   dropdownOpen = false;
   userName: string = '';
+  avatarUrl: string | null = null;
 
-  constructor(private tenantAuth: TenantAuthService, private tenantSession: TenantSessionService) {}
+  private readonly tenantAuth = inject(TenantAuthService);
+  private readonly tenantSession = inject(TenantSessionService);
+  private readonly profileService = inject(TenantProfileService);
+  private readonly router = inject(Router);
+  private userSub?: Subscription;
 
   ngOnInit() {
-    // this.userName = this.tenantSession.getSlug() || '';
-    const user = this.tenantSession.getUser();
-    const slug = this.tenantSession.getSlug();
+    this.refreshUserDisplay();
+    this.userSub = this.tenantSession.user$.subscribe(() => {
+      this.profileService.refresh();
+      this.refreshUserDisplay();
+    });
+  }
 
-    // Prefer authenticated user identity; keep slug only as fallback.
-    this.userName =
-      user?.name ||
-      user?.email ||
-      slug ||
-      'Tenant User';
+  ngOnDestroy(): void {
+    this.userSub?.unsubscribe();
   }
 
   toggleDropdown() {
@@ -37,7 +44,6 @@ export class TenantTopbarComponent {
     this.dropdownOpen = false;
   }
 
-  // click outside close
   @HostListener('document:click', ['$event'])
   handleClickOutside(event: Event) {
     const target = event.target as HTMLElement;
@@ -48,10 +54,27 @@ export class TenantTopbarComponent {
   }
 
   goToProfile() {
-    console.log('Profile clicked');
+    this.closeDropdown();
+    const slug = this.tenantSession.getSlug();
+    if (!slug) {
+      return;
+    }
+    this.router.navigate(['/tenant', slug, 'profile']);
   }
 
   logout() {
     this.tenantAuth.logout();
+  }
+
+  private refreshUserDisplay(): void {
+    const profile = this.profileService.getProfile();
+    const slug = this.tenantSession.getSlug();
+
+    this.userName =
+      this.profileService.getDisplayName(profile) ||
+      slug ||
+      'Tenant User';
+
+    this.avatarUrl = profile?.avatarUrl || null;
   }
 }
