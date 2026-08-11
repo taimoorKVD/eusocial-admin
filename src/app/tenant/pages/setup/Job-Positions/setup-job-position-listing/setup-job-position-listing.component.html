@@ -1,8 +1,18 @@
 <div class="min-h-screen bg-gray-100 p-4">
 
-    <ng-container *ngIf="isLoading">
+    <ng-container *ngIf="isLoading || deleting">
       <app-eu-loader></app-eu-loader>
     </ng-container>
+
+    <app-confirm-modal
+      [isOpen]="showBulkDeleteConfirmModal"
+      title="Delete Job Positions"
+      [description]="bulkDeleteConfirmDescription"
+      confirmText="Delete"
+      cancelText="Cancel"
+      (confirmed)="onConfirmBulkDelete()"
+      (closed)="closeBulkDeleteConfirmModal()">
+    </app-confirm-modal>
 
     <app-top-header
       [title]="'Job Positions'"
@@ -16,12 +26,36 @@
       (clear)="onFilterClear()">
     </app-global-filter>
 
+    <div *ngIf="bulkSelection.hasSelection()" class="mt-5 flex items-center justify-between gap-3 rounded bg-white px-4 py-3 shadow">
+      <span class="text-sm font-ibm text-gray-500">
+        Selected: {{ bulkSelection.count() }}
+      </span>
+
+      <button
+        type="button"
+        class="inline-flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-sm font-medium text-red-500 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-40 font-ibm"
+        [disabled]="!bulkSelection.hasSelection()"
+        (click)="openBulkDeleteConfirm()">
+        Bulk Delete
+      </button>
+    </div>
+
   <div class="bg-white rounded shadow overflow-hidden mt-5">
 
     <table class="w-full text-left text-sm font-ibm">
 
       <thead class="bg-gray-200 text-gray-700">
         <tr>
+          <th class="px-4 py-3 w-10">
+            <input
+              type="checkbox"
+              class="h-4 w-4 rounded border-gray-300 text-[#ea580c] focus:ring-[#ea580c]"
+              [checked]="isAllSelected()"
+              [indeterminate]="isIndeterminate()"
+              [disabled]="selectableJobPositionIds().length === 0"
+              (change)="toggleSelectAll()"
+            />
+          </th>
           <th class="px-4 py-3 w-[70px]">ID</th>
           <th class="px-4 py-3 w-[160px]">Name</th>
           <!-- <th class="px-4 py-3">Description</th> -->
@@ -32,7 +66,17 @@
 
       <tbody>
 
-        <tr *ngFor="let job of jobPositions; let i = index" class="border-t">
+        <tr *ngFor="let job of jobPositions; let i = index" class="border-t" [class.bg-orange-50]="isSelected(job)">
+
+          <td class="px-4 py-3 w-10">
+            <input
+              type="checkbox"
+              class="h-4 w-4 rounded border-gray-300 text-[#ea580c] focus:ring-[#ea580c]"
+              [checked]="isSelected(job)"
+              [disabled]="job?.id == null"
+              (change)="toggleSelect(job)"
+            />
+          </td>
 
           <td class="px-4 py-3">
             {{ (page - 1) * 15 + i + 1 }}
@@ -73,7 +117,7 @@
 
         <!-- Empty State -->
         <tr *ngIf="jobPositions.length === 0">
-          <td colspan="4" class="text-center py-6 text-gray-400">
+          <td colspan="5" class="text-center py-6 text-gray-400">
             No job positions found
           </td>
         </tr>

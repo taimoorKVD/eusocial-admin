@@ -14,6 +14,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { catchError, finalize, forkJoin, map, of, switchMap } from 'rxjs';
 import { TenantItemService } from '../../../../../services/tenant-item.service';
 import { TenantSessionService } from '../../../../../services/tenant-session.service';
+import { ReportingGroupService } from '../../../../../services/reporting-group.service';
 import { FormStorageService } from '../../../../forms/services/form-storage.service';
 import { FormField } from '../../../../form-builder/models/form-field.model';
 import { normalizeFieldOrder } from '../../../../form-builder/utils/form-field.factory';
@@ -48,6 +49,7 @@ export class SetupItemComponent {
   private readonly tenantSession = inject(TenantSessionService);
   private readonly formStorageService = inject(FormStorageService);
   private readonly itemService = inject(TenantItemService);
+  private readonly reportingGroupService = inject(ReportingGroupService);
   private readonly destroyRef = inject(DestroyRef);
 
   private readonly dynamicForm = viewChild(DynamicFormComponent);
@@ -507,7 +509,7 @@ export class SetupItemComponent {
         next: (fields) => {
           const previousFields = this.formFields();
           const preservedValues = this.latestFormValue();
-          this.formFields.set(fields);
+          this.formFields.set(this.enrichReportingGroupFields(fields));
 
           const remappedValues = remapDynamicFormValuesByFieldId(
             preservedValues,
@@ -675,9 +677,45 @@ export class SetupItemComponent {
     const data = (response[dataPath] as Record<string, unknown>[]) || [];
 
     field.options = data.map((item) => ({
-      label: item[labelKey],
-      value: item[valueKey],
+      label: item[labelKey] ?? item['name'] ?? item['label'],
+      value: item[valueKey] ?? item['id'] ?? item['value'],
     })) as DynamicField['options'];
+  }
+
+  /**
+   * Ensures Reporting Group select fields use live category options from
+   * ReportingGroupService (localStorage Phase 1), including when the form
+   * schema field is named/labelled Reporting Group.
+   */
+  private enrichReportingGroupFields(fields: DynamicField[]): DynamicField[] {
+    const options = this.reportingGroupService.getCategoryOptions().map((option) => ({
+      label: option.label,
+      value: option.value,
+    }));
+
+    return fields.map((field) => {
+      if (!this.isReportingGroupField(field)) {
+        return field;
+      }
+
+      return {
+        ...field,
+        options: options as DynamicField['options'],
+      };
+    });
+  }
+
+  private isReportingGroupField(field: DynamicField): boolean {
+    if (
+      this.reportingGroupService.isReportingGroupsEndpoint(
+        field.optionSource?.endpoint,
+      )
+    ) {
+      return true;
+    }
+
+    const haystack = `${field.name || ''} ${field.label || ''}`.toLowerCase();
+    return /reporting[\s_-]*group/.test(haystack);
   }
 
   readonly showConfirmModal = signal(false);

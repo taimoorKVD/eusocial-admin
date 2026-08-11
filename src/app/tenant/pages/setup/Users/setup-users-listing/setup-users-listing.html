@@ -8,7 +8,17 @@
   (closed)="closeDeleteConfirmModal()"
 ></app-confirm-modal>
 
-@if (loading()) {
+<app-confirm-modal
+  [isOpen]="showBulkDeleteConfirmModal()"
+  title="Delete Users"
+  [description]="bulkDeleteConfirmDescription()"
+  confirmText="Delete"
+  cancelText="Cancel"
+  (confirmed)="onConfirmBulkDelete()"
+  (closed)="closeBulkDeleteConfirmModal()"
+></app-confirm-modal>
+
+@if (loading() || deleting()) {
   <app-eu-loader></app-eu-loader>
 }
 
@@ -28,6 +38,23 @@
     </app-global-filter>
   }
 
+  @if (hasFormFields() && bulkSelection.hasSelection()) {
+    <div class="mt-5 flex items-center justify-between gap-3 rounded bg-white px-4 py-3 shadow">
+      <span class="text-sm font-ibm text-gray-500">
+        Selected: {{ bulkSelection.count() }}
+      </span>
+
+      <button
+        type="button"
+        class="inline-flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-sm font-medium text-red-500 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-40 font-ibm"
+        [disabled]="!bulkSelection.hasSelection()"
+        (click)="openBulkDeleteConfirm()"
+      >
+        Bulk Delete
+      </button>
+    </div>
+  }
+
   @if (hasFormFields()) {
     <div class="mt-5">
       <app-dynamic-listing
@@ -36,6 +63,8 @@
         [storageKey]="columnStorageKey"
         [defaultVisibleCount]="defaultVisibleCount"
         [showActions]="true"
+        [selectable]="true"
+        [bulkSelection]="bulkSelection"
         emptyMessage="No users found"
         (visibleColumnsChange)="onVisibleColumnsChange($event)"
         (editRecord)="goToEdit($event)"

@@ -5,6 +5,7 @@ import { normalizeFieldOrder } from '../../form-builder/utils/form-field.factory
 import { Observable, map, of } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { LocationCacheService } from '../../../services/location-cache.service';
+import { ReportingGroupService } from '../../../services/reporting-group.service';
 
 export interface StoredFormSchema {
   moduleName: string;
@@ -32,6 +33,7 @@ interface SaveSchemaRequest {
 export class FormStorageService {
   private saveSchemaUrl = `${environment.tenantApiUrl}/forms`;
   private readonly locationCache = inject(LocationCacheService);
+  private readonly reportingGroupService = inject(ReportingGroupService);
 
   constructor(private http: HttpClient) {}
 
@@ -135,11 +137,11 @@ export class FormStorageService {
       return cached;
     }
 
-    // console.log(endpoint)
-    // const normalizedEndpoint = endpoint.replace(/^\/+/, '').toLowerCase();
-    // if (normalizedEndpoint === 'states' || normalizedEndpoint === 'cities') {
-    //   return of(null as T);
-    // }
+    // Phase 1: Reporting Groups live in localStorage until the API exists.
+    const reportingGroups = this.reportingGroupService.tryGetApiResponse(endpoint);
+    if (reportingGroups) {
+      return of(reportingGroups as T);
+    }
 
     const apiUrl = `${environment.tenantApiUrl}/${endpoint}`;
     return this.http.get<T>(apiUrl);

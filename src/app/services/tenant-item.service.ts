@@ -42,4 +42,8 @@ export class TenantItemService {
   deleteItem(id: number) {
     return this.http.delete(`${this.baseUrl}/${id}`);
   }
+
+  bulkDeleteItems(ids: number[]) {
+    return this.http.delete('', { body: { ids } });
+  }
 }

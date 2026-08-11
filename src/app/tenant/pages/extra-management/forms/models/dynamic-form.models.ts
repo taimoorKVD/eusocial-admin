@@ -1,10 +1,3 @@
-export type SectionType =
-  | 'custom'
-  | 'responseForm'
-  | 'dataEntry'
-  | 'checklistForm'
-  | 'visualForm';
-
 import { FieldCondition } from '../../../../../shared/conditional-logic';
 import { OptionSource } from '../../../../form-builder/models/form-field.model';
 
@@ -83,48 +76,7 @@ export interface CustomFormSection {
   rows: FormRow[];
 }
 
-export interface ResponseFormSection {
-  id: string;
-  type: 'responseForm';
-  rows: FormRow[];
-}
-
-export interface DataEntrySection {
-  id: string;
-  type: 'dataEntry';
-  rows: FormRow[];
-}
-
-export interface ChecklistFormSection {
-  id: string;
-  type: 'checklistForm';
-  rows: FormRow[];
-}
-
-export interface VisualFormFile {
-  name: string;
-  size: number;
-}
-
-export interface VisualFormConfiguration {
-  files: VisualFormFile[];
-  instructions: string;
-}
-
-export interface VisualFormSection {
-  id: string;
-  type: 'visualForm';
-  configuration: VisualFormConfiguration;
-  /** User-added fields beyond the mandatory upload + description defaults. */
-  rows: FormRow[];
-}
-
-export type FormSection =
-  | CustomFormSection
-  | ResponseFormSection
-  | DataEntrySection
-  | ChecklistFormSection
-  | VisualFormSection;
+export type FormSection = CustomFormSection;
 
 export type FrequencyType = 'atOnce' | 'recurring';
 export type FrequencyInterval = 'day' | 'week' | 'month' | 'year';
@@ -172,12 +124,12 @@ export interface FormMetaConfig {
 export interface DynamicFormPayload {
   formName: string;
   assign: {
-    jobPosition: string | null;
-    users: string | null;
+    jobPosition: number[] | null;
+    users: number[] | null;
   };
   report: {
-    jobPosition: string | null;
-    users: string | null;
+    jobPosition: number[] | null;
+    users: number[] | null;
   };
   frequency: {
     jobPosition: string | null;
@@ -185,48 +137,22 @@ export interface DynamicFormPayload {
     type: FrequencyType;
     recurring: FrequencyRecurringConfig | null;
   };
-  sections: Array<
-    | {
-        id: string;
-        name: string;
-        type: 'custom';
-        rows: Array<{ fields: Omit<FormFieldConfig, 'id'>[] }>;
-      }
-    | {
-        type: 'responseForm';
-        rows: Array<{ fields: Omit<FormFieldConfig, 'id'>[] }>;
-      }
-    | {
-        type: 'dataEntry';
-        rows: Array<{ fields: Omit<FormFieldConfig, 'id'>[] }>;
-      }
-    | {
-        type: 'checklistForm';
-        rows: Array<{ fields: Omit<FormFieldConfig, 'id'>[] }>;
-      }
-    | {
-        type: 'visualForm';
-        configuration: VisualFormConfiguration;
-        rows: Array<{ fields: Omit<FormFieldConfig, 'id'>[] }>;
-      }
-  >;
+  sections: Array<{
+    id: string;
+    name: string;
+    type: 'custom';
+    rows: Array<{ fields: Omit<FormFieldConfig, 'id'>[] }>;
+  }>;
 }
 
 export interface SavedDynamicForm {
   id: string;
   formName: string;
   sectionCount: number;
-  sectionTypes: SectionType[];
+  sectionTypes: string[];
   createdAt: string;
   payload: DynamicFormPayload;
 }
-
-export const SECTION_OPTIONS: { label: string; value: SectionType }[] = [
-  // { label: 'Response Form', value: 'responseForm' },
-  { label: 'Data Entry', value: 'dataEntry' },
-  { label: 'Checklist Form', value: 'checklistForm' },
-  { label: 'Visual Form', value: 'visualForm' },
-];
 
 export const FIELD_TYPE_OPTIONS: { label: string; value: FieldType }[] = [
   { label: 'Text', value: 'text' },
@@ -261,94 +187,6 @@ export function createId(prefix = 'id'): string {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 }
 
-function createDefaultField(
-  partial: Omit<FormFieldConfig, 'id' | 'isDefault'> & { isDefault?: boolean },
-): FormFieldConfig {
-  return {
-    id: createId('field'),
-    isDefault: true,
-    ...partial,
-  };
-}
-
-export function createResponseFormDefaultFields(): FormFieldConfig[] {
-  return [
-    createDefaultField({
-      type: 'text',
-      label: 'Description',
-      name: 'description',
-      placeholder: 'Lorem Ipsum',
-      required: true,
-      width: '50%',
-    }),
-  ];
-}
-
-export function createDataEntryDefaultFields(): FormFieldConfig[] {
-  return [
-    createDefaultField({
-      type: 'select',
-      label: 'Item',
-      name: 'item',
-      placeholder: 'Select item',
-      required: true,
-      width: '22%',
-    }),
-    createDefaultField({
-      type: 'checkbox',
-      label: 'Include Par',
-      name: 'include_par',
-      required: false,
-      width: '18%',
-    }),
-    createDefaultField({
-      type: 'select',
-      label: 'User Response',
-      name: 'user_response',
-      required: true,
-      width: '22%',
-      options: ['Current Quantity'],
-    }),
-    createDefaultField({
-      type: 'select',
-      label: 'Action',
-      name: 'action',
-      required: true,
-      width: '16%',
-      options: ['Order'],
-    }),
-  ];
-}
-
-export function createChecklistFormDefaultFields(): FormFieldConfig[] {
-  return [
-    createDefaultField({
-      type: 'text',
-      label: 'Description',
-      name: 'description',
-      placeholder: 'Lorem Ipsum',
-      required: true,
-      width: '40%',
-    }),
-    createDefaultField({
-      type: 'text',
-      label: 'Response',
-      name: 'response_yes',
-      placeholder: 'Yes',
-      required: true,
-      width: '25%',
-    }),
-    createDefaultField({
-      type: 'text',
-      label: 'Response',
-      name: 'response_no',
-      placeholder: 'No',
-      required: true,
-      width: '25%',
-    }),
-  ];
-}
-
 export function createEmptyRow(): FormRow {
   return { id: createId('row'), fields: [] };
 }
@@ -360,69 +198,6 @@ export function createCustomSection(name: string): CustomFormSection {
     type: 'custom',
     rows: [],
   };
-}
-
-export function createResponseFormRow(): FormRow {
-  return { id: createId('row'), fields: createResponseFormDefaultFields() };
-}
-
-export function createDataEntryRow(): FormRow {
-  return { id: createId('row'), fields: createDataEntryDefaultFields() };
-}
-
-export function createChecklistFormRow(): FormRow {
-  return { id: createId('row'), fields: createChecklistFormDefaultFields() };
-}
-
-export function createResponseFormSection(): ResponseFormSection {
-  return {
-    id: createId('section'),
-    type: 'responseForm',
-    rows: [createResponseFormRow()],
-  };
-}
-
-export function createDataEntrySection(): DataEntrySection {
-  return {
-    id: createId('section'),
-    type: 'dataEntry',
-    rows: [createDataEntryRow()],
-  };
-}
-
-export function createChecklistFormSection(): ChecklistFormSection {
-  return {
-    id: createId('section'),
-    type: 'checklistForm',
-    rows: [createChecklistFormRow()],
-  };
-}
-
-export function createVisualFormSection(): VisualFormSection {
-  return {
-    id: createId('section'),
-    type: 'visualForm',
-    configuration: {
-      files: [],
-      instructions: '',
-    },
-    rows: [createEmptyRow()],
-  };
-}
-
-export function createSection(type: SectionType): FormSection {
-  switch (type) {
-    case 'custom':
-      return createCustomSection('Untitled Section');
-    case 'responseForm':
-      return createResponseFormSection();
-    case 'dataEntry':
-      return createDataEntrySection();
-    case 'checklistForm':
-      return createChecklistFormSection();
-    case 'visualForm':
-      return createVisualFormSection();
-  }
 }
 
 export function stripFieldId(field: FormFieldConfig): Omit<FormFieldConfig, 'id'> & {
@@ -454,20 +229,59 @@ export function stripFieldId(field: FormFieldConfig): Omit<FormFieldConfig, 'id'
   };
 }
 
+/** Assignable user / job position option used to resolve names into IDs. */
+export interface AssignReportOption {
+  id: string | number;
+  name: string;
+}
+
+export interface AssignReportOptions {
+  users?: AssignReportOption[];
+  jobPositions?: AssignReportOption[];
+}
+
+function resolveSelectedIds(
+  names: string[],
+  options: AssignReportOption[] = [],
+): number[] {
+  const ids = new Set<number>();
+
+  for (const name of names) {
+    if (!name) continue;
+
+    for (const option of options) {
+      if (option.name === name) {
+        const id = Number(option.id);
+        if (Number.isFinite(id)) {
+          ids.add(id);
+        }
+      }
+    }
+  }
+
+  return [...ids];
+}
+
 export function buildDynamicFormPayload(
   formName: string,
   sections: FormSection[],
   meta: FormMetaConfig,
+  options: AssignReportOptions = {},
 ): DynamicFormPayload {
+  const assignJobPositionIds = resolveSelectedIds(meta.assignJobPosition, options.jobPositions);
+  const assignUserIds = resolveSelectedIds(meta.assignUsers, options.users);
+  const reportJobPositionIds = resolveSelectedIds(meta.reportJobPosition, options.jobPositions);
+  const reportUserIds = resolveSelectedIds(meta.reportUsers, options.users);
+
   return {
     formName: formName.trim(),
     assign: {
-      jobPosition: meta.assignJobPosition.length ? meta.assignJobPosition.join(', ') : null,
-      users: meta.assignUsers.length ? meta.assignUsers.join(', ') : null,
+      jobPosition: assignJobPositionIds.length ? assignJobPositionIds : null,
+      users: assignUserIds.length ? assignUserIds : null,
     },
     report: {
-      jobPosition: meta.reportJobPosition.length ? meta.reportJobPosition.join(', ') : null,
-      users: meta.reportUsers.length ? meta.reportUsers.join(', ') : null,
+      jobPosition: reportJobPositionIds.length ? reportJobPositionIds : null,
+      users: reportUserIds.length ? reportUserIds : null,
     },
     frequency: {
       jobPosition: meta.frequencyJobPosition.length ? meta.frequencyJobPosition.join(', ') : null,
@@ -476,34 +290,13 @@ export function buildDynamicFormPayload(
       recurring:
         meta.frequencyType === 'recurring' ? { ...meta.frequencyRecurring } : null,
     },
-    sections: sections.map((section) => {
-      if (section.type === 'custom') {
-        return {
-          id: section.id,
-          name: section.name,
-          type: 'custom' as const,
-          rows: section.rows.map((row) => ({
-            fields: row.fields.map(stripFieldId),
-          })),
-        };
-      }
-
-      if (section.type === 'visualForm') {
-        return {
-          type: 'visualForm' as const,
-          configuration: { ...section.configuration },
-          rows: section.rows.map((row) => ({
-            fields: row.fields.map(stripFieldId),
-          })),
-        };
-      }
-
-      return {
-        type: section.type,
-        rows: section.rows.map((row) => ({
-          fields: row.fields.map(stripFieldId),
-        })),
-      };
-    }),
+    sections: sections.map((section) => ({
+      id: section.id,
+      name: section.name,
+      type: 'custom' as const,
+      rows: section.rows.map((row) => ({
+        fields: row.fields.map(stripFieldId),
+      })),
+    })),
   };
 }

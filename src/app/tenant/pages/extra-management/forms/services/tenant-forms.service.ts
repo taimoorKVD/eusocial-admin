@@ -1,0 +1,180 @@
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable, map } from 'rxjs';
+import { environment } from '../../../../../../environments/environment';
+import { SavedDynamicForm, createId } from '../models/dynamic-form.models';
+
+/** Raw item shape from GET /api/data-collection/templates. */
+export interface TenantFormsApiItem {
+  id?: number;
+  name?: string;
+  schema?: Record<string, any> | null;
+  status?: string;
+  isActive?: boolean;
+  createdAt?: string;
+  created_at?: string;
+}
+
+export interface TenantFormsApiResponse {
+  success?: boolean;
+  message?: string;
+  count?: number;
+  meta?: {
+    total?: number;
+    page?: number;
+    lastPage?: number;
+  };
+  data?: TenantFormsApiItem[];
+}
+
+/** Payload for POST /api/data-collection/templates. */
+export interface CreateTenantFormPayload {
+  name: string;
+  schema?: Record<string, any>;
+  createdBy?: number;
+}
+
+export interface TenantFormsPagedResult {
+  forms: SavedDynamicForm[];
+  total: number;
+  page: number;
+  lastPage: number;
+}
+
+/** Payload for the future bulk delete endpoint. */
+export interface BulkDeletePayload {
+  ids: number[];
+}
+
+@Injectable({
+  providedIn: 'root',
+})
+export class TenantFormsService {
+  private readonly apiUrl = `${environment.tenantApiUrl}/data-collection/templates`;
+
+  constructor(private http: HttpClient) {}
+
+  getForms(page: number = 1, limit?: number): Observable<TenantFormsPagedResult> {
+    return this.http
+      .get<TenantFormsApiResponse | TenantFormsApiItem[]>(
+        `${this.apiUrl}?page=${page}${limit ? `&limit=${limit}` : ''}`,
+      )
+      .pipe(
+        map((response) => {
+          const meta =
+            response && typeof response === 'object' && !Array.isArray(response)
+              ? response['meta']
+              : undefined;
+
+          return {
+            forms: this.normalizeResponse(response),
+            total: Number(meta?.total ?? 0),
+            page: Number(meta?.page ?? page),
+            lastPage: Number(meta?.lastPage ?? 1),
+          };
+        }),
+      );
+  }
+
+  searchForms(
+    filters: Record<string, unknown>,
+    limit?: number,
+  ): Observable<TenantFormsPagedResult> {
+    const params = new URLSearchParams({
+      ...(limit ? { limit: limit.toString() } : {}),
+      ...(filters as Record<string, string>),
+    });
+
+    return this.http
+      .get<TenantFormsApiResponse | TenantFormsApiItem[]>(
+        `${this.apiUrl}/search?${params.toString()}`,
+      )
+      .pipe(
+        map((response) => {
+          const meta =
+            response && typeof response === 'object' && !Array.isArray(response)
+              ? response['meta']
+              : undefined;
+          const count =
+            response && typeof response === 'object' && !Array.isArray(response)
+              ? response['count']
+              : undefined;
+
+          return {
+            forms: this.normalizeResponse(response),
+            total: Number(count ?? meta?.total ?? 0),
+            page: Number(meta?.page ?? 1),
+            lastPage: Number(meta?.lastPage ?? 1),
+          };
+        }),
+      );
+  }
+
+  createForm(payload: CreateTenantFormPayload): Observable<TenantFormsApiResponse> {
+    return this.http.post<TenantFormsApiResponse>(this.apiUrl, payload);
+  }
+
+  /** Fetch a single template (including its full schema) for the edit flow. */
+  getTemplateById(id: number): Observable<SavedDynamicForm> {
+    return this.http
+      .get<TenantFormsApiResponse>(`${this.apiUrl}/${id}`)
+      .pipe(map((response) => this.normalizeItem(this.extractItem(response))));
+  }
+
+  updateTemplate(
+    id: number,
+    payload: CreateTenantFormPayload,
+  ): Observable<TenantFormsApiResponse> {
+    return this.http.put<TenantFormsApiResponse>(`${this.apiUrl}/${id}`, payload);
+  }
+
+  deleteTemplate(id: number): Observable<TenantFormsApiResponse> {
+    return this.http.delete<TenantFormsApiResponse>(`${this.apiUrl}/${id}`);
+  }
+
+  /**
+   * Bulk delete selected templates.
+   * NOTE: The backend endpoint is not available yet, so the URL is left empty
+   * until the real endpoint is provided.
+   */
+  bulkDeleteForms(ids: number[]): Observable<TenantFormsApiResponse> {
+    const payload: BulkDeletePayload = { ids };
+    return this.http.delete<TenantFormsApiResponse>('', { body: payload });
+  }
+
+  private extractItem(response: TenantFormsApiResponse): TenantFormsApiItem {
+    if (response && typeof response === 'object' && !Array.isArray(response)) {
+      const data = response['data'];
+      if (data && typeof data === 'object' && !Array.isArray(data)) {
+        return data as TenantFormsApiItem;
+      }
+    }
+    return {};
+  }
+
+  private normalizeResponse(
+    response: TenantFormsApiResponse | TenantFormsApiItem[],
+  ): SavedDynamicForm[] {
+    const items = Array.isArray(response)
+      ? response
+      : Array.isArray(response?.data)
+        ? response.data
+        : [];
+
+    return items.map((item) => this.normalizeItem(item));
+  }
+
+  private normalizeItem(item: TenantFormsApiItem): SavedDynamicForm {
+    const schema = item.schema ?? {};
+    const sections = Array.isArray(schema['sections']) ? schema['sections'] : [];
+
+    return {
+      id: item.id != null ? String(item.id) : createId('form'),
+      formName: item.name ?? '',
+      sectionCount: sections.length,
+      sectionTypes: sections.map((section) => String(section?.type ?? '')),
+      createdAt: item.createdAt ?? item.created_at ?? '',
+      payload: schema as SavedDynamicForm['payload'],
+    };
+  }
+}

@@ -4,6 +4,7 @@ import { TenantJobPositionService } from '../../../../../services/tenant-job-pos
 import { ToastrService } from 'ngx-toastr';
 import { TenantSessionService } from '../../../../../services/tenant-session.service';
 import { environment } from '../../../../../../environments/environment.prod';
+import { BulkSelectionState, toNumericIds } from '../../../../../shared/dynamic-listing/bulk-selection.state';
 
 @Component({
   selector: 'app-setup-job-position-listing',
@@ -27,6 +28,15 @@ export class SetupJobPositionListingComponent {
     }
   ];
   private defaultLimit = environment.limit;
+
+  bulkSelection = new BulkSelectionState();
+  deleting = false;
+  showBulkDeleteConfirmModal = false;
+
+  get bulkDeleteConfirmDescription(): string {
+    const count = this.bulkSelection.count();
+    return `Delete ${count} selected job position${count === 1 ? '' : 's'}? This action cannot be undone.`;
+  }
 
   constructor( private tenantJobPosition: TenantJobPositionService, private router: Router, private toastr: ToastrService, public session: TenantSessionService) {}
 
@@ -58,6 +68,7 @@ export class SetupJobPositionListingComponent {
         this.jobPositions = [];
         this.total = 0;
         this.isLoading = false;
+        this.bulkSelection.clear();
       },
     });
 
@@ -143,6 +154,8 @@ deleteJob(id: number) {
 
       this.isLoading = false;
 
+      this.bulkSelection.clear();
+
       this.jobPositions = this.jobPositions.filter(job => job.id !== id);
 
       if (this.jobPositions.length === 0 && this.page > 1) {
@@ -171,6 +184,79 @@ deleteJob(id: number) {
     }
   });
 }
+
+  isSelected(job: any): boolean {
+    const id = Number(job?.id);
+    return !Number.isNaN(id) && this.bulkSelection.isSelected(id);
+  }
+
+  toggleSelect(job: any): void {
+    const id = Number(job?.id);
+    if (!Number.isNaN(id)) {
+      this.bulkSelection.toggle(id);
+    }
+  }
+
+  selectableJobPositionIds(): number[] {
+    return toNumericIds(this.jobPositions.map((job) => job?.id));
+  }
+
+  isAllSelected(): boolean {
+    return this.bulkSelection.isAllSelected(this.selectableJobPositionIds());
+  }
+
+  isIndeterminate(): boolean {
+    return this.bulkSelection.isIndeterminate(this.selectableJobPositionIds());
+  }
+
+  toggleSelectAll(): void {
+    this.bulkSelection.toggleAll(this.selectableJobPositionIds());
+  }
+
+  openBulkDeleteConfirm(): void {
+    if (!this.bulkSelection.hasSelection()) {
+      return;
+    }
+    this.showBulkDeleteConfirmModal = true;
+  }
+
+  closeBulkDeleteConfirmModal(): void {
+    this.showBulkDeleteConfirmModal = false;
+  }
+
+  onConfirmBulkDelete(): void {
+    const ids = [...this.bulkSelection.selectedIds()];
+    if (!ids.length) {
+      return;
+    }
+
+    const allVisibleSelected =
+      this.jobPositions.length > 0 && this.bulkSelection.count() === this.jobPositions.length;
+
+    this.closeBulkDeleteConfirmModal();
+    this.deleting = true;
+
+    this.tenantJobPosition.bulkDeleteJobPositions(ids).subscribe({
+      next: () => {
+        this.toastr.success('Job positions deleted successfully');
+        this.bulkSelection.clear();
+        this.deleting = false;
+        this.reloadAfterDelete(allVisibleSelected);
+      },
+      error: (err) => {
+        this.deleting = false;
+        this.toastr.error(err?.error?.message || 'Failed to delete job positions');
+      },
+    });
+  }
+
+  private reloadAfterDelete(pageEmpty: boolean): void {
+    if (pageEmpty && this.page > 1) {
+      this.loadJobPositions(this.page - 1);
+    } else {
+      this.loadJobPositions(this.page);
+    }
+  }
 
   goToCreate() {
     this.router.navigate([
@@ -205,24 +291,28 @@ deleteJob(id: number) {
   prevPage(): void {
 
   if (this.page > 1) {
+    this.bulkSelection.clear();
     this.loadJobPositions(this.page - 1);
   }
 }
 
 nextPage(): void {
   if (this.page < this.lastPage) {
+    this.bulkSelection.clear();
     this.loadJobPositions(this.page + 1);
   }
 }
 
  onFilterSearch(filters: any): void {
     this.filters = filters;
+    this.bulkSelection.clear();
     this.page = 1;
     this.loadJobPositions(this.page);
   }
 
   onFilterClear(): void {
     this.filters = {};
+    this.bulkSelection.clear();
     this.page = 1;
     this.loadJobPositions(this.page);
   }

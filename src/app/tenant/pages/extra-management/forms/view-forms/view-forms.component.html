@@ -1,34 +1,124 @@
 <div class="p-6">
+  @if (loading() || deleting()) {
+    <app-eu-loader></app-eu-loader>
+  }
+
+  <app-confirm-modal
+    [isOpen]="showDeleteConfirmModal()"
+    [title]="deleteConfirmTitle"
+    [description]="deleteConfirmDescription"
+    confirmText="Delete"
+    cancelText="Close"
+    (confirmed)="onConfirmDeleteForm()"
+    (closed)="closeDeleteConfirmModal()"
+  ></app-confirm-modal>
+
+  <app-confirm-modal
+    [isOpen]="showBulkDeleteConfirmModal()"
+    title="Delete Forms"
+    [description]="bulkDeleteConfirmDescription()"
+    confirmText="Delete"
+    cancelText="Cancel"
+    (confirmed)="onConfirmBulkDelete()"
+    (closed)="closeBulkDeleteConfirmModal()"
+  ></app-confirm-modal>
+
   <app-top-header
     [title]="'Forms'"
     [buttonLabel]="'+ Create Form'"
     (buttonClick)="goToCreate()"
   />
 
+  @if (hasFilterFields()) {
+    <app-global-filter
+      [fields]="filterFields()"
+      (search)="onFilterSearch($event)"
+      (clear)="onFilterClear()">
+    </app-global-filter>
+  }
+
+  @if (hasForms() && selectedCount() > 0) {
+    <div class="mt-5 flex items-center justify-between gap-3 rounded bg-white px-4 py-3 shadow">
+      <span class="text-sm font-ibm text-gray-500">
+        Selected: {{ selectedCount() }}
+      </span>
+
+      <button
+        type="button"
+        class="inline-flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-sm font-medium text-red-500 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-40 font-ibm"
+        [disabled]="!hasSelection()"
+        (click)="openBulkDeleteConfirm()"
+      >
+        Bulk Delete
+      </button>
+    </div>
+  }
+
   <div class="bg-white rounded shadow overflow-hidden mt-5">
     <table class="w-full text-left text-sm font-ibm">
       <thead class="bg-gray-200 text-gray-700">
         <tr>
+          <th class="px-4 py-3 w-10">
+            <input
+              type="checkbox"
+              class="h-4 w-4 rounded border-gray-300 text-[#ea580c] focus:ring-[#ea580c]"
+              [checked]="isAllSelected()"
+              [indeterminate]="isIndeterminate()"
+              [disabled]="visibleDeletableForms().length === 0"
+              (change)="toggleSelectAll()"
+            />
+          </th>
           <th class="px-4 py-3">Form Name</th>
-          <th class="px-4 py-3">Sections</th>
-          <th class="px-4 py-3">Section Types</th>
           <th class="px-4 py-3">Created At</th>
+          <th class="px-4 py-3 text-right">Actions</th>
         </tr>
       </thead>
 
       <tbody>
         @for (form of forms(); track form.id) {
-          <tr class="border-b hover:bg-gray-50">
+          <tr class="border-b hover:bg-gray-50" [class.bg-orange-50]="isSelected(form)">
+            <td class="px-4 py-3">
+              <input
+                type="checkbox"
+                class="h-4 w-4 rounded border-gray-300 text-[#ea580c] focus:ring-[#ea580c]"
+                [checked]="isSelected(form)"
+                [disabled]="!isFormDeletable(form)"
+                (change)="toggleSelect(form)"
+              />
+            </td>
             <td class="px-4 py-3">{{ form.formName }}</td>
-            <td class="px-4 py-3">{{ form.sectionCount }}</td>
-            <td class="px-4 py-3">{{ formatSectionTypes(form.sectionTypes) }}</td>
             <td class="px-4 py-3">{{ form.createdAt | date: 'medium' }}</td>
+            <td class="px-4 py-3 text-right">
+              <button
+                type="button"
+                class="inline-flex items-center justify-center rounded-md p-1.5 text-[#ea580c] transition-colors hover:bg-orange-50"
+                aria-label="Edit form"
+                (click)="goToEdit(form)"
+              >
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5Z"></path>
+                </svg>
+              </button>
+              <button
+                type="button"
+                class="inline-flex items-center justify-center rounded-md p-1.5 text-red-500 transition-colors hover:bg-red-50"
+                aria-label="Delete form"
+                (click)="deleteForm(form)"
+              >
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path d="M3 6h18"></path>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
+                  <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+              </button>
+            </td>
           </tr>
         }
       </tbody>
     </table>
 
-    @if (!hasForms()) {
+    @if (!loading() && !hasForms()) {
       <div class="text-center py-10">
         <p class="text-gray-400 text-sm font-ibm">No forms created yet</p>
         <button type="button" class="create-link font-ibm" (click)="goToCreate()">
@@ -37,4 +127,30 @@
       </div>
     }
   </div>
+
+  @if (showPagination()) {
+    <div class="flex justify-between items-center px-4 py-3 border border-gray-200 border-t-0 rounded-b bg-white">
+      <span class="text-sm text-gray-500 font-ibm">
+        Page {{ page() }} of {{ lastPage() }}
+      </span>
+
+      <div class="flex items-center gap-2">
+        <button
+          class="px-3 py-1.5 rounded-lg text-sm font-medium border border-[#ea580c]/30 bg-[#ea580c]/10 text-[#ea580c] hover:bg-[#ea580c]/20 transition disabled:opacity-40 disabled:cursor-not-allowed font-ibm"
+          [disabled]="page() === 1"
+          (click)="prevPage()"
+        >
+          ← Prev
+        </button>
+
+        <button
+          class="px-3 py-1.5 rounded-lg text-sm font-medium border border-[#ea580c]/30 bg-[#ea580c]/10 text-[#ea580c] hover:bg-[#ea580c]/20 transition disabled:opacity-40 disabled:cursor-not-allowed font-ibm"
+          [disabled]="page() === lastPage()"
+          (click)="nextPage()"
+        >
+          Next →
+        </button>
+      </div>
+    </div>
+  }
 </div>

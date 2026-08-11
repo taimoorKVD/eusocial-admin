@@ -21,6 +21,7 @@ import {
   mapVisibleColumnsToFilterFields,
   pruneFiltersByAllowedKeys,
 } from '../../../../../shared/dynamic-listing/dynamic-listing.helpers';
+import { BulkSelectionState } from '../../../../../shared/dynamic-listing/bulk-selection.state';
 import { loadDynamicDropdownOptions } from '../../../../../shared/dynamic-listing/dynamic-field-options.loader';
 import { ToastrService } from 'ngx-toastr';
 
@@ -72,6 +73,14 @@ export class SetupItemsListing {
   readonly deleteConfirmDescription =
     'Please confirm that you want to delete this item. All related information will be permanently removed.';
 
+  readonly bulkSelection = new BulkSelectionState();
+  readonly deleting = signal(false);
+  readonly showBulkDeleteConfirmModal = signal(false);
+  readonly bulkDeleteConfirmDescription = computed(() => {
+    const count = this.bulkSelection.count();
+    return `Delete ${count} selected item${count === 1 ? '' : 's'}? This action cannot be undone.`;
+  });
+
   private readonly defaultLimit = environment.limit;
   private pendingDeleteId: number | null = null;
   private filters: Record<string, unknown> = {};
@@ -121,6 +130,7 @@ export class SetupItemsListing {
       .subscribe({
         next: () => {
           this.toastr.success('Item deleted successfully');
+          this.bulkSelection.clear();
           if (this.items().length === 1 && this.page() > 1) {
             this.loadItems(this.page() - 1);
           } else {
@@ -140,14 +150,65 @@ export class SetupItemsListing {
     this.pendingDeleteId = null;
   }
 
+  openBulkDeleteConfirm(): void {
+    if (!this.bulkSelection.hasSelection()) {
+      return;
+    }
+    this.showBulkDeleteConfirmModal.set(true);
+  }
+
+  closeBulkDeleteConfirmModal(): void {
+    this.showBulkDeleteConfirmModal.set(false);
+  }
+
+  onConfirmBulkDelete(): void {
+    const ids = [...this.bulkSelection.selectedIds()];
+    if (!ids.length) {
+      return;
+    }
+
+    const allVisibleSelected =
+      this.items().length > 0 && this.bulkSelection.count() === this.items().length;
+
+    this.closeBulkDeleteConfirmModal();
+    this.deleting.set(true);
+
+    this.itemService
+      .bulkDeleteItems(ids)
+      .pipe(
+        finalize(() => this.deleting.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: () => {
+          this.toastr.success('Items deleted successfully');
+          this.bulkSelection.clear();
+          this.reloadAfterDelete(allVisibleSelected);
+        },
+        error: (err) => {
+          this.toastr.error(err?.error?.message || 'Failed to delete items');
+        },
+      });
+  }
+
+  private reloadAfterDelete(pageEmpty: boolean): void {
+    if (pageEmpty && this.page() > 1) {
+      this.loadItems(this.page() - 1);
+    } else {
+      this.loadItems(this.page());
+    }
+  }
+
   prevPage(): void {
     if (this.page() > 1) {
+      this.bulkSelection.clear();
       this.loadItems(this.page() - 1);
     }
   }
 
   nextPage(): void {
     if (this.page() < this.lastPage()) {
+      this.bulkSelection.clear();
       this.loadItems(this.page() + 1);
     }
   }
@@ -155,12 +216,14 @@ export class SetupItemsListing {
   onFilterSearch(filters: Record<string, unknown>): void {
     const allowedKeys = this.getAllowedFilterKeys();
     this.filters = pruneFiltersByAllowedKeys(filters, allowedKeys);
+    this.bulkSelection.clear();
     this.page.set(1);
     this.loadItems(this.page());
   }
 
   onFilterClear(): void {
     this.filters = {};
+    this.bulkSelection.clear();
     this.page.set(1);
     this.loadItems(this.page());
   }
@@ -264,6 +327,7 @@ export class SetupItemsListing {
         error: () => {
           this.items.set([]);
           this.total.set(0);
+          this.bulkSelection.clear();
         },
       });
   }

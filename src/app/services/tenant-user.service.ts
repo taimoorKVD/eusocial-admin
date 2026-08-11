@@ -59,6 +59,10 @@ export class TenantUserService {
     return this.http.delete(`${this.baseUrl}/${id}`);
   }
 
+  bulkDeleteUsers(ids: number[]) {
+    return this.http.delete('', { body: { ids } });
+  }
+
 getJobPositions() {
   return this.http.get(this.jobPosition);
 }
