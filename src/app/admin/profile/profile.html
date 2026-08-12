@@ -60,20 +60,38 @@
               Generate Password
             </button>
           </div>
-          <input class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-400 focus:outline-none" [type]="showPassword ? 'text' : 'password'" formControlName="password"
-            placeholder="Leave blank to keep current password" autocomplete="new-password" />
-          <i class="bi text-gray-500 cursor-pointer" [ngClass]="showPassword ? 'bi-eye-slash' : 'bi-eye'"
-            (click)="togglePasswordVisibility()"></i>
+          <div class="password-input-wrap">
+            <input class="w-full border border-gray-300 rounded-lg px-3 py-2 pr-11 focus:ring-2 focus:ring-orange-400 focus:outline-none" [type]="showPassword ? 'text' : 'password'" formControlName="password"
+              placeholder="Leave blank to keep current password" autocomplete="new-password" />
+            <button type="button" class="password-toggle" (click)="togglePasswordVisibility()" [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'">
+              <svg *ngIf="!showPassword" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7s-8.268-2.943-9.542-7z"/>
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+              <svg *ngIf="showPassword" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3l18 18M10.584 10.587A2 2 0 0012 14a2 2 0 001.414-.586M9.88 5.09A9.77 9.77 0 0112 5c4.478 0 8.268 2.943 9.542 7a9.956 9.956 0 01-4.293 5.132M6.228 6.228A9.956 9.956 0 002.458 12c1.274 4.057 5.064 7 9.542 7a9.77 9.77 0 003.09-.495"/>
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
 
       <div>
         <div class="form-group password-field floating-input">
           <label class="block mb-1 text-sm font-medium text-gray-700">Confirm Password</label>
-          <input class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-400 focus:outline-none" [type]="showConfirmPassword ? 'text' : 'password'" formControlName="password_confirm"
-            placeholder="Re-enter password" autocomplete="new-password" />
-          <i class="bi text-gray-500 cursor-pointer" [ngClass]="showConfirmPassword ? 'bi-eye-slash' : 'bi-eye'"
-            (click)="toggleConfirmPasswordVisibility()"></i>
+          <div class="password-input-wrap">
+            <input class="w-full border border-gray-300 rounded-lg px-3 py-2 pr-11 focus:ring-2 focus:ring-orange-400 focus:outline-none" [type]="showConfirmPassword ? 'text' : 'password'" formControlName="password_confirm"
+              placeholder="Re-enter password" autocomplete="new-password" />
+            <button type="button" class="password-toggle" (click)="toggleConfirmPasswordVisibility()" [attr.aria-label]="showConfirmPassword ? 'Hide password' : 'Show password'">
+              <svg *ngIf="!showConfirmPassword" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7s-8.268-2.943-9.542-7z"/>
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+              <svg *ngIf="showConfirmPassword" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3l18 18M10.584 10.587A2 2 0 0012 14a2 2 0 001.414-.586M9.88 5.09A9.77 9.77 0 0112 5c4.478 0 8.268 2.943 9.542 7a9.956 9.956 0 01-4.293 5.132M6.228 6.228A9.956 9.956 0 002.458 12c1.274 4.057 5.064 7 9.542 7a9.77 9.77 0 003.09-.495"/>
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     </div>

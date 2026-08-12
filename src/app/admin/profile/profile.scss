@@ -66,18 +66,31 @@
       }
     }
 
-    i {
-      position: absolute;
-      right: 8px;
-      top: 35px;
-      cursor: pointer;
-      color: #6c757d;
-      font-size: 1rem;
-      transition: color 0.2s;
+    .password-input-wrap {
+      position: relative;
     }
 
-    i:hover {
-      color: #ea580c;
+    .password-toggle {
+      position: absolute;
+      right: 0.7rem;
+      top: 50%;
+      transform: translateY(-50%);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      border: none;
+      background: transparent;
+      color: #6b7280;
+      cursor: pointer;
+
+      &:hover {
+        color: #ea580c;
+      }
+    }
+
+    input {
+      padding-right: 2.75rem;
     }
   }
 

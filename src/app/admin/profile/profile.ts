@@ -149,7 +149,6 @@ export class Profile implements OnInit, OnDestroy {
     this.form.get('password_confirm')?.markAsTouched();
     this.showPassword = true;
     this.showConfirmPassword = true;
-    this.toastr.success('Strong password generated');
   }
 
   private createRandomPassword(): string {
