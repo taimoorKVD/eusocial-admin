@@ -19,7 +19,6 @@ export class RoleForm {
   selectedPermissions: number[] = [];
   isEditMode = false;
   roleId!: number;
-  message = '';
   saving = false;
   loadingPermissions = false;
 
@@ -85,7 +84,7 @@ export class RoleForm {
         if (callback) callback();
       },
       error: () => {
-        this.message = 'Failed to load permissions ❌';
+        this.toastr.error('Failed to load permissions');
         this.loadingPermissions = false;
       },
     });
@@ -125,7 +124,7 @@ export class RoleForm {
         this.saving = false;
       },
       error: () => {
-        this.message = 'Failed to load role ❌';
+        this.toastr.error('Failed to load role');
         this.saving = false;
       },
     });

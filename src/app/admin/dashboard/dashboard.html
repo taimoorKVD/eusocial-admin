@@ -1,6 +1,281 @@
-<section class="admin-card mx-auto mt-4 max-w-3xl bg-white rounded-xl shadow-sm p-6 border border-gray-100 text-center space-y-2">
-    <div class="flex items-center justify-center gap-2">
-        <h2 class="text-xl font-semibold text-gray-800">Welcome to Eusocial</h2>
-    </div>
-    <p class="text-sm text-gray-500">You are logged in and ready to manage your workspace.</p>
-</section>
+<div class="sa-dashboard">
+  <!-- Loading -->
+  <div class="sa-state" *ngIf="loading">
+    <div class="sa-spinner" role="status" aria-label="Loading dashboard"></div>
+    <p>Loading dashboard…</p>
+  </div>
+
+  <!-- Error -->
+  <div class="sa-state sa-state--error" *ngIf="!loading && error">
+    <p>{{ error }}</p>
+    <button type="button" class="sa-btn sa-btn--primary" (click)="loadDashboard()">Retry</button>
+  </div>
+
+  <ng-container *ngIf="!loading && !error">
+    <!-- Welcome banner -->
+    <section class="sa-welcome">
+      <div class="sa-welcome__content">
+        <h2>Welcome Back, {{ welcomeName }}! 👋</h2>
+        <p>Here's what's happening across your platform today.</p>
+      </div>
+      <div class="sa-welcome__art" aria-hidden="true">
+        <svg viewBox="0 0 220 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="40" y="18" width="140" height="90" rx="10" fill="#fff" fill-opacity="0.95"/>
+          <rect x="52" y="32" width="50" height="8" rx="4" fill="#FDBA74"/>
+          <rect x="52" y="48" width="116" height="6" rx="3" fill="#FED7AA"/>
+          <rect x="52" y="62" width="90" height="6" rx="3" fill="#FED7AA"/>
+          <circle cx="160" cy="70" r="18" fill="#FF9015" fill-opacity="0.2"/>
+          <path d="M148 72c4-8 12-12 20-10" stroke="#FF9015" stroke-width="3" stroke-linecap="round"/>
+          <rect x="70" y="108" width="80" height="8" rx="4" fill="#fff" fill-opacity="0.55"/>
+          <rect x="90" y="116" width="40" height="6" rx="3" fill="#fff" fill-opacity="0.35"/>
+        </svg>
+      </div>
+    </section>
+
+    <!-- KPI cards -->
+    <section class="sa-kpi-grid">
+      <article class="sa-kpi" *ngFor="let card of kpiCards" [class.sa-kpi--disabled]="card.kpi?.available === false">
+        <div class="sa-kpi__head">
+          <span class="sa-kpi__title">{{ card.title }}</span>
+          <span class="sa-kpi__icon" [attr.data-icon]="card.icon">
+            <ng-container [ngSwitch]="card.icon">
+              <svg *ngSwitchCase="'buildings'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3.75h6V21h-7.5V4.5a.75.75 0 0 1 .75-.75Zm9 4.5h6V21h-7.5V9a.75.75 0 0 1 .75-.75Z"/>
+              </svg>
+              <svg *ngSwitchCase="'users'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z"/>
+              </svg>
+              <svg *ngSwitchCase="'user'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"/>
+              </svg>
+              <svg *ngSwitchCase="'currency'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M14.25 7.756a4.5 4.5 0 1 0 0 8.488M7.5 10.5h5.25m-5.25 3h5.25M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+              </svg>
+              <svg *ngSwitchCase="'card'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z"/>
+              </svg>
+              <svg *ngSwitchDefault viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 0 0 3 15h-.75M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm3 0h.008v.008H18V10.5Zm-12 0h.008v.008H6V10.5Z"/>
+              </svg>
+            </ng-container>
+          </span>
+        </div>
+
+        <div class="sa-kpi__value">{{ formatKpiValue(card) }}</div>
+
+        <div class="sa-kpi__foot">
+          <ng-container *ngIf="card.kpi?.available !== false; else comingSoonKpi">
+            <span class="sa-kpi__change" [class.sa-kpi__change--up]="changeTone(card.kpi) === 'up'"
+              [class.sa-kpi__change--down]="changeTone(card.kpi) === 'down'"
+              [class.sa-kpi__change--flat]="changeTone(card.kpi) === 'flat'">
+              <span *ngIf="changeTone(card.kpi) === 'up'">↑</span>
+              <span *ngIf="changeTone(card.kpi) === 'down'">↓</span>
+              {{ card.kpi?.changeLabel }}
+            </span>
+            <svg class="sa-sparkline" viewBox="0 0 72 28" preserveAspectRatio="none" aria-hidden="true">
+              <polyline [attr.points]="sparklinePoints(card.kpi?.trend)" fill="none" stroke="#FF9015" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </ng-container>
+          <ng-template #comingSoonKpi>
+            <span class="sa-kpi__soon">Coming soon</span>
+          </ng-template>
+        </div>
+      </article>
+    </section>
+
+    <!-- Charts row -->
+    <section class="sa-charts">
+      <article class="sa-card sa-card--chart">
+        <div class="sa-card__header">
+          <h3>Tenants Overview</h3>
+          <div class="sa-period">This Month</div>
+        </div>
+
+        <div class="sa-line-chart" *ngIf="lineChart.newPoints.length; else emptyLine">
+          <svg [attr.viewBox]="'0 0 ' + lineChart.width + ' ' + lineChart.height" class="sa-line-chart__svg">
+            <g class="sa-line-chart__grid">
+              <line *ngFor="let tick of lineChart.yTicks"
+                [attr.x1]="lineChart.padding.left"
+                [attr.x2]="lineChart.width - lineChart.padding.right"
+                [attr.y1]="tick.y"
+                [attr.y2]="tick.y"
+                stroke="#F1F5F9" stroke-width="1"/>
+              <text *ngFor="let tick of lineChart.yTicks"
+                [attr.x]="lineChart.padding.left - 8"
+                [attr.y]="tick.y + 4"
+                text-anchor="end"
+                class="sa-line-chart__axis">{{ tick.label }}</text>
+            </g>
+
+            <path [attr.d]="lineChart.activePath" fill="none" stroke="#FDBA74" stroke-width="2.5" stroke-linecap="round"/>
+            <path [attr.d]="lineChart.newPath" fill="none" stroke="#F97316" stroke-width="2.5" stroke-linecap="round"/>
+
+            <circle *ngFor="let p of lineChart.activePoints" [attr.cx]="p.x" [attr.cy]="p.y" r="3.5" fill="#FDBA74"/>
+            <circle *ngFor="let p of lineChart.newPoints" [attr.cx]="p.x" [attr.cy]="p.y" r="3.5" fill="#F97316"/>
+
+            <text *ngFor="let label of lineChart.xLabels"
+              [attr.x]="label.x"
+              [attr.y]="lineChart.height - 8"
+              text-anchor="middle"
+              class="sa-line-chart__axis">{{ label.label }}</text>
+          </svg>
+
+          <div class="sa-line-chart__legend">
+            <span><i class="dot dot--new"></i> New Tenants</span>
+            <span><i class="dot dot--active"></i> Active Tenants</span>
+          </div>
+        </div>
+        <ng-template #emptyLine>
+          <div class="sa-empty">No tenant activity for this period.</div>
+        </ng-template>
+
+        <div class="sa-summary">
+          <div>
+            <span class="sa-summary__label">New Tenants</span>
+            <strong>{{ data?.tenantsOverview?.summary?.newTenants ?? 0 }}</strong>
+          </div>
+          <div>
+            <span class="sa-summary__label">Upgraded</span>
+            <strong>{{ data?.tenantsOverview?.summary?.upgraded ?? 0 }}</strong>
+          </div>
+          <div>
+            <span class="sa-summary__label">Downgraded</span>
+            <strong>{{ data?.tenantsOverview?.summary?.downgraded ?? 0 }}</strong>
+          </div>
+          <div>
+            <span class="sa-summary__label">Cancelled</span>
+            <strong>{{ data?.tenantsOverview?.summary?.cancelled ?? 0 }}</strong>
+          </div>
+        </div>
+      </article>
+
+      <article class="sa-card sa-card--donut">
+        <div class="sa-card__header">
+          <h3>Subscription Plan Distribution</h3>
+        </div>
+
+        <div class="sa-donut-wrap" *ngIf="data?.planDistribution as plans">
+          <div class="sa-donut" [class.sa-donut--muted]="!plans.available">
+            <svg viewBox="0 0 140 140" aria-hidden="true">
+              <circle cx="70" cy="70" r="54" fill="none" stroke="#F1F5F9" stroke-width="16"/>
+              <circle *ngFor="let seg of donut.segments"
+                cx="70" cy="70" r="54"
+                fill="none"
+                [attr.stroke]="seg.color"
+                stroke-width="16"
+                stroke-linecap="butt"
+                [attr.stroke-dasharray]="seg.dasharray"
+                [attr.stroke-dashoffset]="seg.dashoffset"
+                transform="rotate(-90 70 70)"/>
+            </svg>
+            <div class="sa-donut__center">
+              <strong>{{ plans.total }}</strong>
+              <span>Total Tenants</span>
+            </div>
+          </div>
+
+          <ul class="sa-donut__legend">
+            <li *ngFor="let seg of donut.segments">
+              <span class="swatch" [style.background]="seg.color"></span>
+              <div class="meta">
+                <strong>{{ seg.segment.name }}</strong>
+                <span>{{ seg.segment.count }} ({{ seg.segment.percentage | number:'1.0-1' }}%)</span>
+              </div>
+            </li>
+          </ul>
+
+          <p class="sa-hint" *ngIf="!plans.available">Plan billing is coming soon — tenants are currently unassigned.</p>
+        </div>
+      </article>
+    </section>
+
+    <!-- Bottom row -->
+    <section class="sa-bottom">
+      <article class="sa-card sa-card--table">
+        <div class="sa-card__header">
+          <h3>Recent Tenants</h3>
+          <a routerLink="/tenants" class="sa-btn sa-btn--outline">View All Tenants</a>
+        </div>
+
+        <div class="sa-table-wrap" *ngIf="data?.recentTenants?.length; else emptyTenants">
+          <table class="sa-table">
+            <thead>
+              <tr>
+                <th>Tenant Name</th>
+                <th>Domain</th>
+                <th>Plan</th>
+                <th>Status</th>
+                <th>Users</th>
+                <th>Joined On</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let tenant of data?.recentTenants; trackBy: trackByTenantId">
+                <td>
+                  <div class="sa-tenant-name">
+                    <span class="sa-avatar">{{ tenantInitials(tenant.name) }}</span>
+                    <span>{{ tenant.name }}</span>
+                  </div>
+                </td>
+                <td class="muted">{{ tenant.domain || '—' }}</td>
+                <td>
+                  <span class="plan-badge" [ngClass]="planBadgeClass(tenant.plan)">{{ planLabel(tenant.plan) }}</span>
+                </td>
+                <td>
+                  <span class="status-pill">
+                    <i class="status-dot" [ngClass]="statusDotClass(tenant.status)"></i>
+                    {{ tenant.status || '—' }}
+                  </span>
+                </td>
+                <td>{{ tenant.users ?? '—' }}</td>
+                <td class="muted">{{ formatJoinedOn(tenant.joinedOn) }}</td>
+                <td class="sa-actions">
+                  <a [routerLink]="['/tenants', tenant.id, 'edit']" class="sa-icon-btn" title="Manage tenant" aria-label="Manage tenant">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>
+                  </a>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <ng-template #emptyTenants>
+          <div class="sa-empty">No recent tenants yet.</div>
+        </ng-template>
+      </article>
+
+      <article class="sa-card sa-card--health">
+        <div class="sa-card__header">
+          <h3>System Health</h3>
+          <button type="button" class="sa-btn sa-btn--outline" disabled title="Coming soon">View Details</button>
+        </div>
+
+        <ul class="sa-health-list">
+          <li *ngFor="let row of healthRows">
+            <div class="sa-health-list__icon" [attr.data-icon]="row.icon">
+              <svg *ngIf="row.icon === 'database'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375"/>
+              </svg>
+              <svg *ngIf="row.icon === 'storage'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5M10.5 11.25h3M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z"/>
+              </svg>
+              <svg *ngIf="row.icon === 'email'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75"/>
+              </svg>
+              <svg *ngIf="row.icon === 'api'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 14.25h13.5m-13.5 0a3 3 0 0 1-3-3m3 3a3 3 0 1 0 0 6h13.5a3 3 0 1 0 0-6m-16.5-3a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3m-19.5 0a4.506 4.506 0 0 1 .776-2.5"/>
+              </svg>
+            </div>
+            <div class="sa-health-list__meta">
+              <strong>{{ row.title }}</strong>
+              <span>{{ row.item?.label || 'Status unavailable' }}</span>
+            </div>
+            <span class="health-badge" [ngClass]="healthStatusClass(row.item?.status)">
+              {{ healthStatusLabel(row.item) }}
+            </span>
+          </li>
+        </ul>
+      </article>
+    </section>
+  </ng-container>
+</div>

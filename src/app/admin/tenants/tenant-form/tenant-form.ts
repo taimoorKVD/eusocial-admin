@@ -13,7 +13,6 @@ import { ToastrService } from 'ngx-toastr';
 })
 export class TenantForm {
   form!: FormGroup;
-  message = '';
   isEditMode = false;
   tenantId!: number;
   tenant: Tenant | null = null;
@@ -63,7 +62,7 @@ sending = false;
           customDomain: t.customDomain,
         });
       },
-      error: () => (this.message = 'Failed to load tenant ❌'),
+      error: () => this.toastr.error('Failed to load tenant'),
     });
   }
 
@@ -98,22 +97,19 @@ sending = false;
 
     request$.subscribe({
       next: (res: any) => {
-        this.message = res.message || 'Saved successfully ✅';
-
         if (!this.isEditMode) {
           this.toastr.success('Tenant created successfully');
-           this.tenantId = res.data?.id; // ✅ REQUIRED
-          // ✅ FIXED PATH
+          this.tenantId = res.data?.id;
           this.generatedEmail = res.data?.admin?.email || '';
           this.generatedPassword = res.data?.admin?.password || '';
-
           this.showCredentialModal = true;
         } else {
           this.toastr.success('Tenant updated successfully');
           setTimeout(() => this.router.navigate(['/tenants']), 800);
         }
       },
-      error: () => (this.message = 'Tenant name is already Exist ❌'),
+      error: (err) =>
+        this.toastr.error(err?.error?.message || 'Tenant name already exists'),
     });
   }
 
@@ -131,11 +127,11 @@ sendCredentials() {
     .subscribe({
       next: () => {
         this.sending = false;
-        alert('Credentials sent ✅');
+        this.toastr.success('Credentials sent successfully');
       },
       error: () => {
         this.sending = false;
-        alert('Failed ❌');
+        this.toastr.error('Failed to send credentials');
       }
     });
 }
@@ -149,10 +145,10 @@ closeModal() {
     if (!confirm('Are you sure you want to delete this tenant?')) return;
     this.tenantService.delete(this.tenantId).subscribe({
       next: () => {
-        this.message = 'Tenant deleted ✅';
+        this.toastr.success('Tenant deleted successfully');
         setTimeout(() => this.router.navigate(['/tenants']), 800);
       },
-      error: () => (this.message = 'Failed to delete tenant ❌'),
+      error: () => this.toastr.error('Failed to delete tenant'),
     });
   }
 

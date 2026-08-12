@@ -1,90 +1,93 @@
 <div class="user-form p-4 md:px-6 md:py-4" *ngIf="!loading; else loadingTpl">
-    <!-- Header -->
-    <div class="flex items-center justify-between mb-4">
-        <h3 class="text-xl font-semibold text-gray-800 m-0">My Profile</h3>
+  <div class="flex items-center justify-between mb-4">
+    <h3 class="text-xl font-semibold text-gray-800 m-0">My Profile</h3>
+  </div>
+
+  <div class="bg-white rounded-xl shadow-sm p-4 border border-gray-100 flex items-center gap-3 mb-4">
+    <div class="h-[70px] w-[70px] rounded-full bg-gradient-to-br from-orange-400 to-orange-600 text-white grid place-items-center text-xl font-bold">
+      {{ (profile?.name || 'SA').slice(0, 2).toUpperCase() }}
+    </div>
+    <div>
+      <h5 class="m-0 text-lg font-semibold text-gray-800">{{ profile?.name }}</h5>
+      <small class="text-sm text-gray-500">{{ profile?.email }}</small>
+      <p class="text-sm text-gray-600 mt-1">
+        <strong>Role:</strong> {{ roleLabel }}
+      </p>
+    </div>
+  </div>
+
+  <hr class="my-4 border-gray-200" />
+
+  <form [formGroup]="form" (ngSubmit)="saveProfile()" class="carbon-form bg-white rounded-xl shadow-sm p-4 border border-gray-100 space-y-4">
+    <h6 class="section-title text-sm font-semibold text-gray-600 uppercase tracking-wide">Profile Information</h6>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label class="block mb-1 text-sm font-medium text-gray-700">First Name</label>
+        <input class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-400 focus:outline-none" type="text" formControlName="first_name" placeholder="First name" autocomplete="off" />
+        <small class="error text-red-600" *ngIf="f['first_name'].touched && f['first_name'].errors?.['required']">
+          First name is required.
+        </small>
+      </div>
+
+      <div>
+        <label class="block mb-1 text-sm font-medium text-gray-700">Last Name</label>
+        <input class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-400 focus:outline-none" type="text" formControlName="last_name" placeholder="Last name" autocomplete="off" />
+        <small class="error text-red-600" *ngIf="f['last_name'].touched && f['last_name'].errors?.['required']">
+          Last name is required.
+        </small>
+      </div>
+
+      <div>
+        <label class="block mb-1 text-sm font-medium text-gray-700">Email</label>
+        <input class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-500" type="email" formControlName="email" readonly />
+        <small class="text-xs text-gray-400">Email is read-only.</small>
+      </div>
+
+      <div>
+        <label class="block mb-1 text-sm font-medium text-gray-700">Role</label>
+        <input class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-500" type="text" formControlName="role" readonly />
+        <small class="text-xs text-gray-400">Role is read-only.</small>
+      </div>
     </div>
 
-    <!-- Profile Summary -->
-    <div class="bg-white rounded-xl shadow-sm p-4 border border-gray-100 flex items-center gap-3 mb-4">
-        <img src="assets/no-image.png" class="rounded-full border border-gray-200" width="70" height="70" alt="Profile" />
-        <div>
-            <h5 class="m-0 text-lg font-semibold text-gray-800">{{ user?.name }}</h5>
-            <small class="text-sm text-gray-500">{{ user?.email }}</small>
-            <p class="text-sm text-gray-600 mt-1">
-                <strong>Role:</strong> {{ user?.role?.name || 'User' }}
-            </p>
-        </div>
-    </div>
-
-    <hr class="my-4 border-gray-200" />
-
-    <!-- Profile Form -->
-    <form [formGroup]="form" (ngSubmit)="saveProfile()" class="carbon-form bg-white rounded-xl shadow-sm p-4 border border-gray-100 space-y-4">
-        <h6 class="section-title text-sm font-semibold text-gray-600 uppercase tracking-wide">Profile Information</h6>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <div class="form-group floating-input">
-                    <label class="block mb-1 text-sm font-medium text-gray-700">Name</label>
-                    <input class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none" type="text" formControlName="name" placeholder="Enter full name" autocomplete="off" />
-                    <small class="error text-red-600" *ngIf="f['name'].touched && f['name'].errors?.['required']">
-                        Name is required.
-                    </small>
-                </div>
-            </div>
-
-            <div>
-                <div class="form-group floating-input">
-                    <label class="block mb-1 text-sm font-medium text-gray-700">Email</label>
-                    <input class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none" type="email" formControlName="email" placeholder="Enter email address" autocomplete="off" />
-                    <small class="error text-red-600" *ngIf="f['email'].touched && f['email'].errors?.['required']">
-                        Email is required.
-                    </small>
-                    <small class="error text-red-600" *ngIf="f['email'].touched && f['email'].errors?.['email']">
-                        Please enter a valid email.
-                    </small>
-                </div>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-            <div>
-                <div class="form-group password-field floating-input">
-                    <label class="block mb-1 text-sm font-medium text-gray-700">New Password</label>
-                    <input class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none" [type]="showPassword ? 'text' : 'password'" formControlName="password"
-                        placeholder="Leave blank to keep current password" autocomplete="new-password" autocorrect="off"
-                        autocapitalize="off" spellcheck="false" />
-                    <i class="bi text-gray-500 cursor-pointer" [ngClass]="showPassword ? 'bi-eye-slash' : 'bi-eye'"
-                        (click)="togglePasswordVisibility()"></i>
-                </div>
-            </div>
-
-            <div>
-                <div class="form-group password-field floating-input">
-                    <label class="block mb-1 text-sm font-medium text-gray-700">Confirm Password</label>
-                    <input class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none" [type]="showConfirmPassword ? 'text' : 'password'" formControlName="password_confirm"
-                        placeholder="Re-enter password" autocomplete="new-password" autocorrect="off"
-                        autocapitalize="off" spellcheck="false" />
-                    <i class="bi text-gray-500 cursor-pointer" [ngClass]="showConfirmPassword ? 'bi-eye-slash' : 'bi-eye'"
-                        (click)="toggleConfirmPasswordVisibility()"></i>
-                </div>
-            </div>
-        </div>
-
-        <div class="form-actions mt-5 flex justify-end gap-3">
-            <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition duration-150 disabled:opacity-50" [disabled]="saving || form.invalid">
-                {{ saving ? 'Saving...' : 'Save Changes' }}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+      <div>
+        <div class="form-group password-field floating-input">
+          <div class="password-label-row">
+            <label class="block mb-0 text-sm font-medium text-gray-700">New Password</label>
+            <button type="button" class="generate-password-link" (click)="generatePassword()">
+              Generate Password
             </button>
+          </div>
+          <input class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-400 focus:outline-none" [type]="showPassword ? 'text' : 'password'" formControlName="password"
+            placeholder="Leave blank to keep current password" autocomplete="new-password" />
+          <i class="bi text-gray-500 cursor-pointer" [ngClass]="showPassword ? 'bi-eye-slash' : 'bi-eye'"
+            (click)="togglePasswordVisibility()"></i>
         </div>
+      </div>
 
-        <div *ngIf="message" class="text-center mt-4 text-sm text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg py-2 px-3">
-            {{ message }}
+      <div>
+        <div class="form-group password-field floating-input">
+          <label class="block mb-1 text-sm font-medium text-gray-700">Confirm Password</label>
+          <input class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-400 focus:outline-none" [type]="showConfirmPassword ? 'text' : 'password'" formControlName="password_confirm"
+            placeholder="Re-enter password" autocomplete="new-password" />
+          <i class="bi text-gray-500 cursor-pointer" [ngClass]="showConfirmPassword ? 'bi-eye-slash' : 'bi-eye'"
+            (click)="toggleConfirmPasswordVisibility()"></i>
         </div>
-    </form>
+      </div>
+    </div>
+
+    <div class="form-actions mt-5 flex justify-end gap-3">
+      <button type="submit" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition duration-150 disabled:opacity-50" [disabled]="saving || form.invalid">
+        {{ saving ? 'Saving...' : 'Save Changes' }}
+      </button>
+    </div>
+  </form>
 </div>
 
 <ng-template #loadingTpl>
-    <div class="min-h-[60vh] flex justify-center items-center">
-        <div class="h-10 w-10 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin" role="status"></div>
-    </div>
+  <div class="min-h-[60vh] flex justify-center items-center">
+    <div class="h-10 w-10 rounded-full border-4 border-orange-200 border-t-orange-500 animate-spin" role="status"></div>
+  </div>
 </ng-template>

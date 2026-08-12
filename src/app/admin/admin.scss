@@ -1,18 +1,17 @@
 .admin-wrapper {
   display: flex;
-  height: 100vh;
-  background-color: #f6f7f8;
+  min-height: 100vh;
+  background-color: #f5f6f8;
 }
 
 .admin-main {
-  margin-left: 250px;
-  margin-top: 64px;
-  padding: 2rem;
+  margin-left: 264px;
+  margin-top: 72px;
+  padding: 1.35rem 1.5rem 2rem;
   flex-grow: 1;
-  background: linear-gradient(#f6f7f8, #f8f9fb);
-  min-height: calc(100vh - 64px);
+  background: #f5f6f8;
+  min-height: calc(100vh - 72px);
 }
-
 
 .admin-card {
   background: #fff;
@@ -23,4 +22,10 @@
   max-width: 900px;
   margin: 0 auto;
   color: #202124;
+}
+
+@media (max-width: 992px) {
+  .admin-main {
+    margin-left: 0;
+  }
 }
