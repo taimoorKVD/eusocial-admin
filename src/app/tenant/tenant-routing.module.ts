@@ -3,7 +3,6 @@ import { RouterModule, Routes } from '@angular/router';
 import { TenantLayoutComponent } from './tenant-layout/tenant-layout.component';
 import { HomeComponent } from './pages/home/home.component';
 import { UserDashboardComponent } from './pages/user-dashboard/user-dashboard.component';
-import { EmployeeDashboardComponent } from './pages/employee/employee-dashboard/employee-dashboard.component';
 import { EmployeeMyFormsComponent } from './pages/employee/employee-my-forms/employee-my-forms.component';
 import { EmployeeAssignmentComponent } from './pages/employee/employee-assignment/employee-assignment.component';
 import { EmployeeHistoryComponent } from './pages/employee/employee-history/employee-history.component';
@@ -54,13 +53,14 @@ const routes: Routes = [
       },
 
       { path: 'profile', component: TenantProfileComponent },
+      { path: 'user-dashboard', component: UserDashboardComponent },
+      { path: 'employee-dashboard', redirectTo: 'user-dashboard', pathMatch: 'full' },
 
       {
         path: '',
         canActivate: [tenantAdminGuard],
         children: [
           { path: 'home', component: HomeComponent },
-          { path: 'user-dashboard', component: UserDashboardComponent },
 
           { path: 'users', component: SetupUsersListing },
           { path: 'users/create', component: SetupUserComponent },
@@ -108,7 +108,6 @@ const routes: Routes = [
         path: '',
         canActivate: [tenantEmployeeGuard],
         children: [
-          { path: 'employee-dashboard', component: EmployeeDashboardComponent },
           { path: 'my-forms', component: EmployeeMyFormsComponent },
           { path: 'my-forms/:id', component: EmployeeAssignmentComponent },
           { path: 'history', component: EmployeeHistoryComponent },

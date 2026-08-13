@@ -1,11 +1,19 @@
-import { Component, DestroyRef, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Component, Input, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { TenantSessionService } from '../../../../services/tenant-session.service';
-import { EmployeeDashboardService } from '../../../../services/employee-dashboard.service';
-import { EmployeeDashboardData } from '../../../../interfaces/employee-assignment';
-import { TenantProfileService } from '../../../../services/tenant-profile.service';
+import {
+  EmployeeDashboardData,
+  EmployeeStatValue,
+  TodaysAssignment,
+} from '../../../../interfaces/dashboard';
+
+interface EmployeeStatCardView {
+  key: string;
+  title: string;
+  stat: EmployeeStatValue;
+  icon: 'clipboard' | 'clock' | 'check' | 'alert';
+}
 
 @Component({
   selector: 'app-employee-dashboard',
@@ -14,36 +22,84 @@ import { TenantProfileService } from '../../../../services/tenant-profile.servic
   templateUrl: './employee-dashboard.component.html',
 })
 export class EmployeeDashboardComponent {
-  private readonly dashboardService = inject(EmployeeDashboardService);
   private readonly session = inject(TenantSessionService);
-  private readonly profileService = inject(TenantProfileService);
   private readonly router = inject(Router);
-  private readonly destroyRef = inject(DestroyRef);
 
-  readonly loading = signal(true);
-  readonly data = signal<EmployeeDashboardData | null>(null);
+  @Input({ required: true }) data!: EmployeeDashboardData;
 
-  get displayName(): string {
-    return this.profileService.getDisplayName();
+  get statCards(): EmployeeStatCardView[] {
+    const stats = this.data.stats;
+    return [
+      {
+        key: 'myAssignments',
+        title: 'My Assignments',
+        stat: stats.myAssignments,
+        icon: 'clipboard',
+      },
+      {
+        key: 'inProgress',
+        title: 'In Progress',
+        stat: stats.inProgress,
+        icon: 'clock',
+      },
+      {
+        key: 'completed',
+        title: 'Completed',
+        stat: stats.completed,
+        icon: 'check',
+      },
+      {
+        key: 'overdue',
+        title: 'Overdue',
+        stat: stats.overdue,
+        icon: 'alert',
+      },
+    ];
   }
 
-  ngOnInit(): void {
-    this.dashboardService
-      .getDashboardData()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (dashboard) => {
-          this.data.set(dashboard);
-          this.loading.set(false);
-        },
-        error: () => {
-          this.loading.set(false);
-        },
-      });
+  get welcomeHeading(): string {
+    const firstName = this.data.welcome.firstName;
+    if (firstName) {
+      return `Welcome Back, ${firstName}!`;
+    }
+
+    const fullName = this.data.welcome.fullName;
+    if (fullName) {
+      return `Welcome Back, ${fullName}!`;
+    }
+
+    return this.data.welcome.message || 'Welcome Back!';
+  }
+
+  get welcomeSubtitle(): string {
+    const message = this.data.welcome.message.trim();
+    const name = this.data.welcome.firstName || this.data.welcome.fullName;
+    if (!message) {
+      return '';
+    }
+    if (!name) {
+      return message === this.welcomeHeading ? '' : message;
+    }
+
+    const stripped = message
+      .replace(new RegExp(`^Welcome Back,?\\s*${this.escapeRegExp(name)}!?\\s*`, 'i'), '')
+      .trim();
+    return stripped === this.welcomeHeading ? '' : stripped;
   }
 
   goToMyForms(): void {
     this.router.navigate(['/tenant', this.session.getSlug(), 'my-forms']);
+  }
+
+  goToHistory(): void {
+    this.router.navigate(['/tenant', this.session.getSlug(), 'history']);
+  }
+
+  openAssignment(item: TodaysAssignment): void {
+    if (!item.id) {
+      return;
+    }
+    this.router.navigate(['/tenant', this.session.getSlug(), 'my-forms', item.id]);
   }
 
   statusLabel(status: string): string {
@@ -54,8 +110,32 @@ export class EmployeeDashboardComponent {
         return 'Pending';
       case 'completed':
         return 'Completed';
+      case 'overdue':
+        return 'Overdue';
       default:
         return status;
     }
+  }
+
+  priorityLabel(priority: string): string {
+    if (!priority) {
+      return '';
+    }
+    return priority.charAt(0).toUpperCase() + priority.slice(1).toLowerCase();
+  }
+
+  priorityDotClass(priority: string): string {
+    switch (priority) {
+      case 'high':
+        return 'bg-[#EF4444]';
+      case 'low':
+        return 'bg-[#22C55E]';
+      default:
+        return 'bg-[#FF9015]';
+    }
+  }
+
+  private escapeRegExp(value: string): string {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 }

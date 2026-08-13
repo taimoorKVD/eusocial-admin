@@ -82,9 +82,6 @@ export class TenantSessionService {
     if (!slug) {
       return ['/tenant/login'];
     }
-    if (this.isEmployee()) {
-      return ['/tenant', slug, 'employee-dashboard'];
-    }
     return ['/tenant', slug, 'user-dashboard'];
   }
 

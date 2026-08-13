@@ -55,30 +55,3 @@ export interface EmployeeSubmissionPayload {
   answers: Record<string, unknown>;
   submit: boolean;
 }
-
-export interface EmployeeDashboardStatCard {
-  key: string;
-  label: string;
-  value: number;
-  hint?: string;
-}
-
-export interface EmployeeDashboardActivityItem {
-  id: string;
-  title: string;
-  detail: string;
-  timeAgo: string;
-}
-
-export interface EmployeeDashboardUpcomingItem {
-  id: string;
-  title: string;
-  when: string;
-  status: string;
-}
-
-export interface EmployeeDashboardData {
-  stats: EmployeeDashboardStatCard[];
-  upcoming: EmployeeDashboardUpcomingItem[];
-  recentActivity: EmployeeDashboardActivityItem[];
-}
