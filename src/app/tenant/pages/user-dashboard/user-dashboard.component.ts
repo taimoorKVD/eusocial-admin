@@ -1,8 +1,6 @@
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Router } from '@angular/router';
 import { finalize } from 'rxjs';
-import { TenantSessionService } from '../../../services/tenant-session.service';
 import { TenantDashboardService } from '../../../services/tenant-dashboard.service';
 import {
   EmployeeDashboardData,
@@ -17,9 +15,7 @@ import {
   styleUrl: './user-dashboard.component.scss',
 })
 export class UserDashboardComponent {
-  readonly session = inject(TenantSessionService);
   private readonly dashboardService = inject(TenantDashboardService);
-  private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly loading = signal(true);
@@ -42,14 +38,6 @@ export class UserDashboardComponent {
 
   retry(): void {
     this.loadDashboard();
-  }
-
-  goToPage(module: string): void {
-    this.router.navigate(['/tenant', this.session.getSlug(), module, 'create']);
-  }
-
-  goToModule(module: string): void {
-    this.router.navigate(['/tenant', this.session.getSlug(), module]);
   }
 
   private loadDashboard(): void {
