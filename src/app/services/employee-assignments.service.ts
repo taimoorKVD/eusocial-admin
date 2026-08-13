@@ -73,12 +73,15 @@ export class EmployeeAssignmentsService {
   }
 
   private normalizeListItem(item: Record<string, unknown>): EmployeeAssignmentListItem {
+    const submission = this.asRecord(item['submission']);
+
     return {
       id: this.readId(item),
       status: this.readString(item['status']) || 'pending',
       title: this.readTitle(item),
       dueDate: this.readDate(item),
       createdAt: this.readCreatedAt(item),
+      submittedAt: this.readSubmittedAt(item, submission),
       raw: item,
     };
   }
@@ -224,6 +227,20 @@ export class EmployeeAssignmentsService {
 
   private readCreatedAt(item: Record<string, unknown>): string | null {
     const text = this.readString(item['createdAt'] ?? item['created_at']);
+    return text || null;
+  }
+
+  private readSubmittedAt(
+    item: Record<string, unknown>,
+    submission: Record<string, unknown>,
+  ): string | null {
+    const text = this.readString(
+      item['submittedAt'] ??
+        item['submitted_at'] ??
+        submission['submittedAt'] ??
+        submission['submitted_at'] ??
+        submission['createdAt'],
+    );
     return text || null;
   }
 

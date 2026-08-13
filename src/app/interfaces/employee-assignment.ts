@@ -15,6 +15,8 @@ export interface EmployeeAssignmentListItem {
   title: string;
   dueDate: string | null;
   createdAt: string | null;
+  /** Completion timestamp for submitted assignments. */
+  submittedAt: string | null;
   raw: Record<string, unknown>;
 }
 
@@ -79,12 +81,4 @@ export interface EmployeeDashboardData {
   stats: EmployeeDashboardStatCard[];
   upcoming: EmployeeDashboardUpcomingItem[];
   recentActivity: EmployeeDashboardActivityItem[];
-}
-
-export interface EmployeeHistoryItem {
-  id: string;
-  title: string;
-  submittedAt: string;
-  status: string;
-  detail: string;
 }
