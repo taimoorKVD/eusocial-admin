@@ -11,6 +11,7 @@ import { TenantLayoutComponent } from './tenant-layout/tenant-layout.component';
 import { TenantSidebarComponent } from './tenant-sidebar/tenant-sidebar.component';
 import { TenantTopbarComponent } from './tenant-topbar/tenant-topbar.component';
 import { UserDashboardComponent } from './pages/user-dashboard/user-dashboard.component';
+import { EmployeeDashboardComponent } from './pages/employee/employee-dashboard/employee-dashboard.component';
 import { SetupJobPositionComponent } from './pages/setup/Job-Positions/setup-job-position/setup-job-position.component';
 import { TenantLoginComponent } from './tenant-login/tenant-login.component';
 import { SetupVendorComponent } from './pages/setup/Vendor/setup-vendor/setup-vendor.component';
@@ -66,6 +67,7 @@ import { TenantProfileComponent } from './pages/profile/tenant-profile.component
     SharedModule,
     RouterModule,
     FormEditorCoreModule,
+    EmployeeDashboardComponent,
   ],
     exports: [
     SetupUserComponent,

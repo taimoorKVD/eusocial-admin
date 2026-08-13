@@ -1,6 +1,7 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { TenantSessionService } from '../../services/tenant-session.service';
+import { TenantAuthService } from '../../services/tenant-auth.service';
 
 @Component({
   selector: 'app-tenant-sidebar',
@@ -16,7 +17,16 @@ export class TenantSidebarComponent {
   constructor(
     private route: ActivatedRoute,
     public session: TenantSessionService,
+    private tenantAuth: TenantAuthService,
   ) {}
+
+  get isEmployee(): boolean {
+    return this.session.isEmployee();
+  }
+
+  logout(): void {
+    this.tenantAuth.logout();
+  }
 
   openSetup = false;
   openExtraManagement = false;

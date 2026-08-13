@@ -1,5 +1,7 @@
+import { HttpClient } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { Observable, map, of, throwError } from 'rxjs';
+import { environment } from '../../environments/environment';
 import { TenantProfile } from '../interfaces/tenant-profile';
 import { TenantSessionService } from './tenant-session.service';
 
@@ -11,13 +13,15 @@ export type TenantProfileUpdate = Partial<
 >;
 
 /**
- * Tenant admin profile access for Phase 1 (localStorage).
- * Later: replace persist/load with Update Profile API — page can stay the same.
+ * Tenant admin profile access. Profile updates are persisted through the
+ * backend API; the session/user cache is only kept in sync with the response.
  */
 @Injectable({ providedIn: 'root' })
 export class TenantProfileService {
   private readonly session = inject(TenantSessionService);
+  private readonly http = inject(HttpClient);
   private readonly STORAGE_PREFIX = 'tenant_profile_overrides';
+  private readonly apiUrl = environment.tenantApiUrl;
 
   private readonly profileSignal = signal<TenantProfile | null>(this.buildProfile());
 
@@ -36,52 +40,32 @@ export class TenantProfileService {
     this.profileSignal.set(this.buildProfile());
   }
 
-  updateProfile(update: TenantProfileUpdate): TenantProfile {
+  /**
+   * Persists the editable profile fields through the backend API
+   * (PUT /users/profile). Emits the refreshed profile once the backend
+   * confirms the update.
+   */
+  updateProfile(update: TenantProfileUpdate): Observable<TenantProfile> {
     const current = this.buildProfile();
     if (!current) {
-      throw new Error('No authenticated user profile available');
+      return throwError(() => new Error('No authenticated user profile available'));
     }
 
     const firstName = this.clean(update.firstName ?? current.firstName);
     const lastName = this.clean(update.lastName ?? current.lastName);
     const phone = this.clean(update.phone ?? current.phone);
-    const avatarUrl = this.clean(update.avatarUrl ?? current.avatarUrl);
-    const username = this.clean(update.username ?? current.username);
 
-    const nameFromParts = [firstName, lastName].filter(Boolean).join(' ').trim();
-    const name =
-      this.clean(update.name) ||
-      nameFromParts ||
-      this.clean(current.name) ||
-      '';
-
-    const overrides: TenantProfileUpdate = {
-      firstName: firstName || undefined,
-      lastName: lastName || undefined,
-      name: name || undefined,
-      phone: phone || undefined,
-      avatarUrl: avatarUrl || undefined,
-      username: username || undefined,
+    const payload = {
+      first_name: firstName,
+      last_name: lastName,
+      phone: phone,
     };
 
-    this.saveOverrides(overrides);
-
-    const sessionPatch: Record<string, unknown> = {
-      name,
-      phone: phone || undefined,
-      username: username || undefined,
-      avatarUrl: avatarUrl || undefined,
-      firstName: firstName || undefined,
-      lastName: lastName || undefined,
-      first_name: firstName || undefined,
-      last_name: lastName || undefined,
-    };
-
-    this.session.updateUser(sessionPatch);
-
-    const next = this.buildProfile();
-    this.profileSignal.set(next);
-    return next!;
+    return this.http
+      .put<unknown>(`${this.apiUrl}/users/profile`, payload)
+      .pipe(
+        map((response) => this.applyProfileResponse(response, { firstName, lastName, phone }))
+      );
   }
 
   getDisplayName(profile: TenantProfile | null = this.profileSignal()): string {
@@ -114,6 +98,13 @@ export class TenantProfileService {
     }
 
     if (profile.accountType) {
+      const accountType = String(profile.accountType).toLowerCase();
+      if (accountType === 'tenant_user') {
+        return 'Staff';
+      }
+      if (accountType === 'tenant_admin') {
+        return 'Tenant Admin';
+      }
       return String(profile.accountType);
     }
 
@@ -173,7 +164,10 @@ export class TenantProfileService {
         this.clean(base['profile_image'] as string) ||
         undefined,
       role: base.role,
-      accountType: this.clean(base.accountType as string) || undefined,
+      accountType:
+        this.clean(base.accountType as string) ||
+        this.clean(base['account_type'] as string) ||
+        undefined,
     };
   }
 
@@ -190,12 +184,62 @@ export class TenantProfileService {
     }
   }
 
-  private saveOverrides(overrides: TenantProfileUpdate): void {
+  /** Drops legacy localStorage overrides after a successful API update. */
+  private clearOverrides(): void {
     try {
-      localStorage.setItem(this.storageKey(), JSON.stringify(overrides));
+      localStorage.removeItem(this.storageKey());
     } catch {
       // ignore storage failures
     }
+  }
+
+  /**
+   * Applies the backend response to the session/user cache so the UI reflects
+   * the updated profile. Falls back to the submitted values when the response
+   * does not include a field.
+   */
+  private applyProfileResponse(
+    response: unknown,
+    submitted: { firstName: string; lastName: string; phone: string }
+  ): TenantProfile {
+    const record = response && typeof response === 'object'
+      ? (response as Record<string, unknown>)
+      : {};
+
+    const data = record['data'] && typeof record['data'] === 'object'
+      ? record['data'] as Record<string, unknown>
+      : record;
+
+    const firstName = this.clean(
+      data['first_name'] ?? data['firstName'] ?? submitted.firstName
+    );
+    const lastName = this.clean(
+      data['last_name'] ?? data['lastName'] ?? submitted.lastName
+    );
+    const phone = this.clean(
+      data['phone'] ?? data['phoneNumber'] ?? data['phone_number'] ?? submitted.phone
+    );
+    const name =
+      this.clean(data['name']) ||
+      [firstName, lastName].filter(Boolean).join(' ').trim();
+
+    this.session.updateUser({
+      firstName: firstName || undefined,
+      lastName: lastName || undefined,
+      first_name: firstName || undefined,
+      last_name: lastName || undefined,
+      name: name || undefined,
+      phone: phone || undefined,
+    });
+
+    this.clearOverrides();
+    this.refresh();
+
+    const next = this.getProfile();
+    if (!next) {
+      throw new Error('No authenticated user profile available');
+    }
+    return next;
   }
 
   private storageKey(): string {

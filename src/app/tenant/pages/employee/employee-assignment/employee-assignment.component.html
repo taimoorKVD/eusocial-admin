@@ -1,0 +1,160 @@
+<div class="w-full px-4 py-5 sm:px-6 lg:px-8">
+  @if (loading() || starting() || submitting()) {
+    <app-eu-loader></app-eu-loader>
+  }
+
+  <button
+    type="button"
+    class="mb-4 text-sm font-medium text-[#FF9015] hover:underline font-ibm"
+    (click)="goBack()"
+  >
+    ← Back to My Forms
+  </button>
+
+  @if (errorMessage()) {
+    <div class="rounded-xl border border-[#FECACA] bg-[#FEF2F2] px-4 py-4">
+      <p class="m-0 text-sm text-[#B42318] font-ibm">{{ errorMessage() }}</p>
+      <button
+        type="button"
+        class="mt-3 text-sm font-medium text-[#FF9015] hover:underline font-ibm"
+        (click)="retry()"
+      >
+        Try again
+      </button>
+    </div>
+  } @else if (assignment(); as current) {
+    <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <div class="min-w-0">
+        <h1 class="m-0 text-2xl font-semibold text-[#161616] font-ibm">
+          {{ formTitle() }}
+        </h1>
+        <p class="mt-1.5 m-0 text-sm text-[#6F6F6F] font-ibm">
+          @if (isCompleted()) {
+            Viewing submitted answers in read-only mode.
+          } @else {
+            Fill the assigned form and submit it when complete.
+          }
+        </p>
+        @if (current.dueDate) {
+          <p class="mt-1 m-0 text-sm text-[#6F6F6F] font-ibm">
+            Due {{ current.dueDate | date: 'mediumDate' }}
+          </p>
+        }
+      </div>
+      <span
+        class="inline-flex w-fit shrink-0 rounded-md px-2.5 py-1 text-xs font-medium font-ibm"
+        [ngClass]="statusClass(current.status)"
+      >
+        {{ statusLabel(current.status) }}
+      </span>
+    </div>
+
+    @if (formError()) {
+      <div class="rounded-xl border border-[#FECACA] bg-[#FEF2F2] px-4 py-4">
+        <p class="m-0 text-sm text-[#B42318] font-ibm">{{ formError() }}</p>
+        <button
+          type="button"
+          class="mt-3 text-sm font-medium text-[#FF9015] hover:underline font-ibm"
+          (click)="retry()"
+        >
+          Try again
+        </button>
+      </div>
+    } @else if (showSuccess()) {
+      <div class="rounded-xl border border-[#E8E8E8] bg-white px-6 py-12 text-center shadow-sm">
+        <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#ECFDF3]">
+          <svg class="h-7 w-7 text-[#067647]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <h2 class="m-0 text-lg font-semibold text-[#161616] font-ibm">
+          Form submitted
+        </h2>
+        <p class="mt-2 m-0 text-sm text-[#6F6F6F] font-ibm">
+          Your answers were sent successfully.
+        </p>
+        <div class="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <button
+            type="button"
+            class="rounded-lg border border-[#FF9015] bg-white px-4 py-2.5 text-sm font-medium text-[#FF9015] transition-colors hover:bg-[#FFF4EA] font-ibm"
+            (click)="viewSubmittedForm()"
+          >
+            View submitted form
+          </button>
+          <button
+            type="button"
+            class="rounded-lg bg-[#FF9015] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#e57f0f] font-ibm"
+            (click)="goBack()"
+          >
+            Return to My Forms
+          </button>
+        </div>
+      </div>
+    } @else if (isCancelled()) {
+      <div class="rounded-xl border border-[#E8E8E8] bg-white px-6 py-12 text-center shadow-sm">
+        <p class="m-0 text-base font-medium text-[#161616] font-ibm">
+          This assignment was cancelled
+        </p>
+      </div>
+    } @else if (isPending()) {
+      <div class="rounded-xl border border-[#E8E8E8] bg-white p-5 shadow-sm sm:p-6">
+        <h2 class="m-0 text-base font-semibold text-[#161616] font-ibm">
+          Ready to start
+        </h2>
+        <p class="mt-2 m-0 text-sm leading-6 text-[#6F6F6F] font-ibm">
+          Start this assignment to mark it in progress and open the form.
+        </p>
+        <button
+          type="button"
+          class="mt-5 rounded-lg bg-[#FF9015] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#e57f0f] disabled:opacity-50 font-ibm"
+          [disabled]="starting()"
+          (click)="startAssignment()"
+        >
+          Start Assignment
+        </button>
+      </div>
+    } @else if (!hasForm()) {
+      <div class="rounded-xl border border-[#E8E8E8] bg-white px-6 py-12 text-center shadow-sm">
+        <p class="m-0 text-base font-medium text-[#161616] font-ibm">
+          No form fields available
+        </p>
+      </div>
+    } @else if (showForm()) {
+      <div class="space-y-5">
+        @for (section of sections(); track section.id) {
+          <section class="rounded-xl border border-[#E8E8E8] bg-white p-4 shadow-sm sm:p-5">
+            <h2 class="mb-4 m-0 text-base font-semibold text-[#161616] font-ibm">
+              {{ section.name }}
+            </h2>
+            <app-dynamic-form
+              [fields]="section.fields"
+              [enableLocationDependencies]="true"
+            ></app-dynamic-form>
+          </section>
+        }
+
+        @if (canFill()) {
+          <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <button type="button" class="btn btn--cancel" (click)="goBack()">
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="rounded-lg bg-[#FF9015] px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#e57f0f] disabled:opacity-50 font-ibm"
+              [disabled]="submitting()"
+              (click)="submitForm()"
+            >
+              Submit Form
+            </button>
+          </div>
+        } @else if (isCompleted()) {
+          <div class="flex justify-end">
+            <button type="button" class="btn btn--cancel" (click)="goBack()">
+              Back to My Forms
+            </button>
+          </div>
+        }
+      </div>
+    }
+  }
+</div>

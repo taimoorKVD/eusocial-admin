@@ -8,9 +8,12 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { catchError, forkJoin, of } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
 import { ReportingGroupService } from '../../../../services/reporting-group.service';
 import { TenantItemService } from '../../../../services/tenant-item.service';
+import { FormStorageService } from '../../../forms/services/form-storage.service';
+import { DynamicField } from '../../../../interfaces/dynamic-field';
 import {
   ReportingGroup,
   ReportingGroupAssignedItem,
@@ -42,6 +45,7 @@ interface CatalogItem {
 export class SetupReportingGroup implements OnInit {
   private readonly reportingGroupService = inject(ReportingGroupService);
   private readonly itemService = inject(TenantItemService);
+  private readonly formStorageService = inject(FormStorageService);
   private readonly toastr = inject(ToastrService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -417,15 +421,28 @@ export class SetupReportingGroup implements OnInit {
   private loadCatalogItems(): void {
     this.catalogLoading.set(true);
 
-    this.itemService
-      .getItems(1, 500)
+    // The Items listing resolves each field's API key from the Items module's
+    // form schema (field.id || field.name). Reuse the same approach instead of
+    // hardcoding the item-name key.
+    const schema$ = this.formStorageService.loadForm('items').pipe(
+      catchError(() => of(null))
+    );
+
+    forkJoin({
+      items: this.itemService.getItems(1, 500),
+      schema: schema$,
+    })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (response) => {
-          const records = this.extractRecords(response);
+        next: ({ items, schema }) => {
+          const itemNameKey = this.resolveItemNameKey(
+            (schema?.fields || []) as DynamicField[]
+          );
+          const records = this.extractRecords(items);
+
           this.catalogItems.set(
             records
-              .map((record) => this.toCatalogItem(record))
+              .map((record) => this.toCatalogItem(record, itemNameKey))
               .filter((item): item is CatalogItem => !!item)
           );
           this.catalogLoading.set(false);
@@ -458,10 +475,55 @@ export class SetupReportingGroup implements OnInit {
     return [];
   }
 
-  private toCatalogItem(record: Record<string, unknown>): CatalogItem | null {
+  /**
+   * Finds the Items schema field that represents the Item Name and returns its
+   * API key, using the same `field.id || field.name` resolution as the Items
+   * listing page. Returns '' when the schema has no matching field.
+   */
+  private resolveItemNameKey(fields: DynamicField[]): string {
+    const labelMatches = (...labels: string[]) =>
+      (field: DynamicField) =>
+        labels.includes(String(field.label ?? '').trim().toLowerCase());
+
+    const nameField =
+      fields.find((field) => field.name === 'name') ||
+      fields.find((field) => field.name === 'item_name') ||
+      fields.find(labelMatches('name')) ||
+      fields.find(labelMatches('item name'));
+
+    if (!nameField) {
+      return '';
+    }
+
+    return nameField.id || nameField.name || '';
+  }
+
+  private toCatalogItem(
+    record: Record<string, unknown>,
+    itemNameKey: string
+  ): CatalogItem | null {
     const id = record['id'] ?? record['_id'];
     if (id == null || id === '') {
       return null;
+    }
+
+    const name = this.resolveItemName(record, itemNameKey);
+
+    return {
+      id: id as number | string,
+      name: typeof name === 'string' && name.trim() ? name.trim() : `Item ${id}`,
+    };
+  }
+
+  private resolveItemName(
+    record: Record<string, unknown>,
+    itemNameKey: string
+  ): unknown {
+    if (itemNameKey) {
+      const value = record[itemNameKey];
+      if (typeof value === 'string' && value.trim()) {
+        return value;
+      }
     }
 
     const nameCandidates = [
@@ -472,13 +534,8 @@ export class SetupReportingGroup implements OnInit {
       record['label'],
     ];
 
-    const name = nameCandidates.find(
+    return nameCandidates.find(
       (value) => typeof value === 'string' && value.trim()
     );
-
-    return {
-      id: id as number | string,
-      name: typeof name === 'string' ? name.trim() : `Item ${id}`,
-    };
   }
 }

@@ -3,6 +3,9 @@ import { RouterModule, Routes } from '@angular/router';
 import { TenantLayoutComponent } from './tenant-layout/tenant-layout.component';
 import { HomeComponent } from './pages/home/home.component';
 import { UserDashboardComponent } from './pages/user-dashboard/user-dashboard.component';
+import { EmployeeMyFormsComponent } from './pages/employee/employee-my-forms/employee-my-forms.component';
+import { EmployeeAssignmentComponent } from './pages/employee/employee-assignment/employee-assignment.component';
+import { EmployeeHistoryComponent } from './pages/employee/employee-history/employee-history.component';
 // import { SetupUserComponent } from './pages/setup/setup-user/setup-user.component';
 import { SetupJobPositionComponent } from './pages/setup/Job-Positions/setup-job-position/setup-job-position.component';
 import { TenantLoginComponent } from './tenant-login/tenant-login.component';
@@ -16,14 +19,16 @@ import { SetupJobPositionListingComponent } from './pages/setup/Job-Positions/se
 import { LocationComponent } from './pages/extra-management/location/location.component';
 import { LocationListingComponent } from './pages/extra-management/location-listing/location-listing.component';
 import { tenantAuthGuard } from '../guards/tenant-auth-guard';
+import {
+  tenantAdminGuard,
+  tenantEmployeeGuard,
+  tenantHomeRedirectGuard,
+} from '../guards/tenant-role.guard';
 import { SetupVendorsListing } from './pages/setup/Vendor/setup-vendors-listing/setup-vendors-listing';
 import { TenantForgotPasswordComponent } from './tenant-forgot-password/tenant-forgot-password.component';
 import { TenantResetPasswordComponent } from './tenant-reset-password/tenant-reset-password.component';
 import { RoleComponent } from './pages/setup/Roles/role/role.component';
 import { RoleListingComponent } from './pages/setup/Roles/role-listing/role-listing.component';
-import { BuilderComponent } from './form-builder/components/builder/builder.component';
-import { FormsListComponent } from './forms/forms-list/forms-list.component';
-import { FormsEditorComponent } from './forms/forms-editor/forms-editor.component';
 import { TenantProfileComponent } from './pages/profile/tenant-profile.component';
 
 const routes: Routes = [
@@ -40,56 +45,74 @@ const routes: Routes = [
     canActivate: [tenantAuthGuard],
     canActivateChild: [tenantAuthGuard],
     children: [
-      { path: '', redirectTo: 'user-dashboard', pathMatch: 'full' },
-      { path: 'home', component: HomeComponent },
-      { path: 'user-dashboard', component: UserDashboardComponent },
-
-      { path: 'users', component: SetupUsersListing },
-      { path: 'users/create', component: SetupUserComponent },
-      { path: 'users/edit/:id', component: SetupUserComponent },
-
-      { path: 'roles', component: RoleListingComponent },
-      { path: 'roles/create', component: RoleComponent },
-      { path: 'roles/edit/:id', component: RoleComponent },
-
-      { path: 'job-position', component: SetupJobPositionListingComponent },
-      { path: 'job-position/create', component: SetupJobPositionComponent },
-      { path: 'job-position/edit/:id', component: SetupJobPositionComponent },
-
-      { path: 'vendors', component: SetupVendorsListing },
-      { path: 'vendors/create', component: SetupVendorComponent },
-      { path: 'vendors/edit/:id', component: SetupVendorComponent },
-
-      { path: 'items', component: SetupItemsListing },
-      { path: 'items/create', component: SetupItemComponent },
-      { path: 'items/edit/:id', component: SetupItemComponent },
-
-      { path: 'reporting-group', component: SetupReportingGroup },
+      {
+        path: '',
+        pathMatch: 'full',
+        canActivate: [tenantHomeRedirectGuard],
+        component: UserDashboardComponent,
+      },
 
       { path: 'profile', component: TenantProfileComponent },
+      { path: 'user-dashboard', component: UserDashboardComponent },
+      { path: 'employee-dashboard', redirectTo: 'user-dashboard', pathMatch: 'full' },
 
-      { path: 'location', component: LocationListingComponent },
-      { path: 'location/create', component: LocationComponent },
-      { path: 'location/edit/:id', component: LocationComponent },
-
-      // Extra Management — Dynamic Forms (Create / View)
       {
-        path: 'dynamic-forms',
-        loadChildren: () =>
-          import('./pages/extra-management/forms/forms.routes').then(
-            (m) => m.DYNAMIC_FORMS_ROUTES,
-          ),
+        path: '',
+        canActivate: [tenantAdminGuard],
+        children: [
+          { path: 'home', component: HomeComponent },
+
+          { path: 'users', component: SetupUsersListing },
+          { path: 'users/create', component: SetupUserComponent },
+          { path: 'users/edit/:id', component: SetupUserComponent },
+
+          { path: 'roles', component: RoleListingComponent },
+          { path: 'roles/create', component: RoleComponent },
+          { path: 'roles/edit/:id', component: RoleComponent },
+
+          { path: 'job-position', component: SetupJobPositionListingComponent },
+          { path: 'job-position/create', component: SetupJobPositionComponent },
+          { path: 'job-position/edit/:id', component: SetupJobPositionComponent },
+
+          { path: 'vendors', component: SetupVendorsListing },
+          { path: 'vendors/create', component: SetupVendorComponent },
+          { path: 'vendors/edit/:id', component: SetupVendorComponent },
+
+          { path: 'items', component: SetupItemsListing },
+          { path: 'items/create', component: SetupItemComponent },
+          { path: 'items/edit/:id', component: SetupItemComponent },
+
+          { path: 'reporting-group', component: SetupReportingGroup },
+
+          { path: 'location', component: LocationListingComponent },
+          { path: 'location/create', component: LocationComponent },
+          { path: 'location/edit/:id', component: LocationComponent },
+
+          {
+            path: 'dynamic-forms',
+            loadChildren: () =>
+              import('./pages/extra-management/forms/forms.routes').then(
+                (m) => m.DYNAMIC_FORMS_ROUTES,
+              ),
+          },
+
+          {
+            path: 'forms',
+            loadChildren: () =>
+              import('./forms/forms-module').then((m) => m.FormsModule),
+          },
+        ],
       },
 
-      // { path: 'form-builder', component: BuilderComponent },
-      // { path: 'forms', component: FormsListComponent },
-      // { path: 'forms/:module', component: FormsEditorComponent },
       {
-        path: 'forms',
-        loadChildren: () =>
-          import('./forms/forms-module').then((m) => m.FormsModule),
+        path: '',
+        canActivate: [tenantEmployeeGuard],
+        children: [
+          { path: 'my-forms', component: EmployeeMyFormsComponent },
+          { path: 'my-forms/:id', component: EmployeeAssignmentComponent },
+          { path: 'history', component: EmployeeHistoryComponent },
+        ],
       },
-
     ]
   },
     // fallback

@@ -7,6 +7,7 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { finalize } from 'rxjs';
 import {
   FormBuilder,
   FormGroup,
@@ -102,27 +103,32 @@ export class TenantProfileComponent implements OnInit {
 
     this.saving.set(true);
 
-    try {
-      const raw = this.form.getRawValue();
-      const updated = this.profileService.updateProfile({
+    const raw = this.form.getRawValue();
+    this.profileService
+      .updateProfile({
         firstName: String(raw.firstName || '').trim(),
         lastName: String(raw.lastName || '').trim(),
         phone: String(raw.phone || '').trim(),
-        avatarUrl: String(raw.avatarUrl || '').trim(),
+      })
+      .pipe(
+        finalize(() => this.saving.set(false)),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe({
+        next: (updated) => {
+          this.profile.set(updated);
+          this.patchForm(updated);
+          this.editing.set(false);
+          this.snapshot = null;
+          this.toastr.success('Profile updated successfully');
+        },
+        error: (error) => {
+          this.toastr.error(
+            error?.error?.message ||
+              (error instanceof Error ? error.message : 'Failed to update profile')
+          );
+        },
       });
-
-      this.profile.set(updated);
-      this.patchForm(updated);
-      this.editing.set(false);
-      this.snapshot = null;
-      this.toastr.success('Profile updated successfully');
-    } catch (error) {
-      this.toastr.error(
-        error instanceof Error ? error.message : 'Failed to update profile'
-      );
-    } finally {
-      this.saving.set(false);
-    }
   }
 
   onAvatarError(event: Event): void {

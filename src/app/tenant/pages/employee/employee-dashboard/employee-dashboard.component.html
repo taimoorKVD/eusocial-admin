@@ -1,0 +1,271 @@
+<div class="w-full px-4 py-5 sm:px-6 lg:px-8">
+  <div class="mb-6">
+    <h1 class="m-0 text-2xl font-semibold text-[#161616] font-ibm">
+      Employee Dashboard
+    </h1>
+  </div>
+
+  <!-- Welcome banner -->
+  <section
+    class="relative mb-6 overflow-hidden rounded-xl border border-[#E8E8E8] bg-white px-5 py-6 shadow-sm sm:px-6"
+  >
+    <div
+      class="pointer-events-none absolute inset-y-0 right-0 hidden w-2/5 bg-gradient-to-l from-[#FF9015]/15 to-transparent sm:block"
+    ></div>
+
+    <div class="relative flex items-center justify-between gap-6">
+      <div class="min-w-0">
+        <h2 class="m-0 text-2xl font-semibold text-[#FF9015] font-ibm sm:text-[28px]">
+          {{ welcomeHeading }} 👋
+        </h2>
+        @if (welcomeSubtitle) {
+          <p class="mt-2 m-0 text-sm text-[#6F6F6F] font-ibm sm:text-base">
+            {{ welcomeSubtitle }}
+          </p>
+        }
+      </div>
+
+      <div class="relative hidden shrink-0 sm:block" aria-hidden="true">
+        <svg width="120" height="88" viewBox="0 0 120 88" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="18" y="14" width="58" height="66" rx="8" fill="#FFF4EA" stroke="#FF9015" stroke-width="2"/>
+          <rect x="32" y="8" width="30" height="12" rx="4" fill="#FF9015"/>
+          <path d="M30 36h34M30 48h34M30 60h22" stroke="#FF9015" stroke-width="2.5" stroke-linecap="round"/>
+          <circle cx="92" cy="58" r="18" fill="#FFF4EA" stroke="#FF9015" stroke-width="2"/>
+          <path d="M92 48v12l8 4" stroke="#FF9015" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stat cards -->
+  <section class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    @for (card of statCards; track card.key) {
+      <div
+        class="overflow-hidden rounded-xl border border-[#E8E8E8] bg-white shadow-sm transition-shadow hover:shadow-md"
+      >
+        <div class="flex items-start justify-between gap-3 p-5 pb-4">
+          <div class="min-w-0">
+            <p class="m-0 text-sm font-medium text-[#6F6F6F] font-ibm">
+              {{ card.title }}
+            </p>
+            <p class="mt-2 m-0 text-3xl font-semibold text-[#161616] font-ibm">
+              {{ card.stat.value }}
+            </p>
+            @if (card.stat.label) {
+              <p class="mt-1.5 m-0 text-xs leading-5 text-[#8D8D8D] font-ibm">
+                {{ card.stat.label }}
+              </p>
+            }
+          </div>
+
+          <div
+            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#FFF4EA] text-[#FF9015]"
+          >
+            @switch (card.icon) {
+              @case ('clipboard') {
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6M9 16h4"/>
+                </svg>
+              }
+              @case ('clock') {
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <circle cx="12" cy="12" r="8"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l2.5 1.5"/>
+                </svg>
+              }
+              @case ('check') {
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <circle cx="12" cy="12" r="8"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m8.5 12 2.5 2.5 4.5-5"/>
+                </svg>
+              }
+              @case ('alert') {
+                <svg class="h-5 w-5 text-[#EF4444]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <circle cx="12" cy="12" r="8"/>
+                  <path stroke-linecap="round" d="M12 8v4"/>
+                  <circle cx="12" cy="16" r="0.8" fill="currentColor" stroke="none"/>
+                </svg>
+              }
+            }
+          </div>
+        </div>
+        <div class="h-1.5 w-full bg-[#FF9015]"></div>
+      </div>
+    }
+  </section>
+
+  <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
+    <!-- Today's Assignments -->
+    <section class="flex flex-col rounded-xl border border-[#E8E8E8] bg-white p-5 shadow-sm">
+      <div class="flex items-center justify-between gap-4">
+        <h2 class="m-0 text-base font-semibold text-[#161616] font-ibm">
+          Today's Assignments
+        </h2>
+        <button
+          type="button"
+          class="shrink-0 text-sm font-medium text-[#FF9015] transition-colors hover:text-[#e57f0f] hover:underline font-ibm"
+          (click)="goToMyForms()"
+        >
+          View All
+        </button>
+      </div>
+
+      <div class="mt-5 flex-1 space-y-3">
+        @if (data.todaysAssignments.length === 0) {
+          <div class="rounded-lg border border-[#ECECEC] bg-[#FAFAFA] px-4 py-8 text-center">
+            <p class="m-0 text-sm font-medium text-[#161616] font-ibm">
+              No assignments for today
+            </p>
+            <p class="mt-1.5 m-0 text-xs text-[#6F6F6F] font-ibm">
+              New assigned work will show up here.
+            </p>
+          </div>
+        } @else {
+          @for (item of data.todaysAssignments; track item.id) {
+            <button
+              type="button"
+              class="flex w-full items-center gap-3 rounded-lg border border-[#ECECEC] bg-[#FAFAFA] px-3.5 py-3 text-left transition-colors hover:border-[#FF9015]/40 hover:bg-[#FFF8F1]"
+              (click)="openAssignment(item)"
+            >
+              <div
+                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#FFF4EA] text-[#FF9015]"
+              >
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2Z"/>
+                </svg>
+              </div>
+
+              <div class="min-w-0 flex-1">
+                <p class="m-0 truncate text-sm font-semibold text-[#161616] font-ibm">
+                  {{ item.title }}
+                </p>
+                @if (item.category) {
+                  <p class="mt-0.5 m-0 truncate text-xs text-[#6F6F6F] font-ibm">
+                    {{ item.category }}
+                  </p>
+                }
+                @if (item.dueLabel || item.dueAt || item.status) {
+                  <p class="mt-0.5 m-0 truncate text-xs text-[#8D8D8D] font-ibm">
+                    @if (item.dueLabel) {
+                      <time [attr.datetime]="item.dueAt || null">{{ item.dueLabel }}</time>
+                    } @else if (item.dueAt) {
+                      <time [attr.datetime]="item.dueAt">{{ item.dueAt | date: 'mediumDate' }}</time>
+                    }
+                    @if (item.status && item.status !== 'pending') {
+                      @if (item.dueLabel || item.dueAt) {
+                        <span> · </span>
+                      }
+                      {{ statusLabel(item.status) }}
+                    }
+                  </p>
+                }
+              </div>
+
+              @if (item.priority) {
+                <span class="inline-flex shrink-0 items-center gap-1.5 text-xs font-medium text-[#525252] font-ibm">
+                  <span
+                    class="h-2 w-2 rounded-full"
+                    [ngClass]="priorityDotClass(item.priority)"
+                  ></span>
+                  {{ priorityLabel(item.priority) }}
+                </span>
+              }
+            </button>
+          }
+        }
+      </div>
+
+      <button
+        type="button"
+        class="mt-5 w-full rounded-lg bg-[#FF9015] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#e57f0f] font-ibm"
+        (click)="goToMyForms()"
+      >
+        View All Assignments
+      </button>
+    </section>
+
+    <!-- Recent Activity -->
+    <section class="flex flex-col rounded-xl border border-[#E8E8E8] bg-white p-5 shadow-sm">
+      <h2 class="m-0 text-base font-semibold text-[#161616] font-ibm">
+        Recent Activity
+      </h2>
+
+      <div class="mt-5 flex-1 space-y-4">
+        @if (data.recentActivity.length === 0) {
+          <div class="rounded-lg border border-[#ECECEC] bg-[#FAFAFA] px-4 py-8 text-center">
+            <p class="m-0 text-sm font-medium text-[#161616] font-ibm">
+              No recent activity
+            </p>
+            <p class="mt-1.5 m-0 text-xs text-[#6F6F6F] font-ibm">
+              Submitted work and assignment updates will appear here.
+            </p>
+          </div>
+        } @else {
+          @for (activity of data.recentActivity; track activity.id) {
+            <div class="flex items-start justify-between gap-3">
+              <div
+                class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
+                [class.bg-[#ECFDF3]]="activity.type === 'submitted'"
+                [class.text-[#067647]]="activity.type === 'submitted'"
+                [class.bg-[#EEF4FF]]="activity.type === 'started' || activity.type === 'draft_saved'"
+                [class.text-[#2563EB]]="activity.type === 'started' || activity.type === 'draft_saved'"
+                [class.bg-[#FFF4EA]]="activity.type !== 'submitted' && activity.type !== 'started' && activity.type !== 'draft_saved'"
+                [class.text-[#FF9015]]="activity.type !== 'submitted' && activity.type !== 'started' && activity.type !== 'draft_saved'"
+              >
+                @switch (activity.type) {
+                  @case ('submitted') {
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="8"/>
+                      <path stroke-linecap="round" stroke-linejoin="round" d="m8.5 12 2.5 2.5 4.5-5"/>
+                    </svg>
+                  }
+                  @case ('started') {
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487a2.1 2.1 0 1 1 2.97 2.97L8.25 19.04 4 20.25l1.21-4.25 11.652-11.513Z"/>
+                    </svg>
+                  }
+                  @case ('draft_saved') {
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2Z"/>
+                    </svg>
+                  }
+                  @default {
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                      <circle cx="12" cy="12" r="8"/>
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l2.5 1.5"/>
+                    </svg>
+                  }
+                }
+              </div>
+
+              <div class="min-w-0 flex-1">
+                <p class="m-0 text-sm font-medium text-[#161616] font-ibm">
+                  {{ activity.description }}
+                </p>
+              </div>
+
+              @if (activity.relativeTime || activity.createdAt) {
+                <p class="m-0 shrink-0 whitespace-nowrap text-xs text-[#8D8D8D] font-ibm">
+                  {{ activity.relativeTime || (activity.createdAt | date: 'medium') }}
+                </p>
+              }
+            </div>
+          }
+        }
+      </div>
+
+      <button
+        type="button"
+        class="mt-5 inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-[#FF9015] bg-white px-4 py-2.5 text-sm font-medium text-[#FF9015] transition-colors hover:bg-[#FFF4EA] font-ibm"
+        (click)="goToHistory()"
+      >
+        View All Activity
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/>
+        </svg>
+      </button>
+    </section>
+  </div>
+</div>
