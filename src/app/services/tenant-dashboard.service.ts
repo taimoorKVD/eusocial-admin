@@ -5,7 +5,6 @@ import { environment } from '../../environments/environment';
 import {
   DashboardActivityItem,
   DashboardReportingGroupSummary,
-  DashboardStatCard,
   EmployeeDashboardData,
   EmployeeRecentActivity,
   EmployeeStatValue,
@@ -16,13 +15,6 @@ import {
   TodaysAssignment,
 } from '../interfaces/dashboard';
 import { TenantSessionService } from './tenant-session.service';
-
-export type {
-  DashboardActivityItem,
-  DashboardReportingGroupSummary,
-  DashboardStatCard,
-  TenantAdminDashboardData as TenantDashboardData,
-} from '../interfaces/dashboard';
 
 @Injectable({ providedIn: 'root' })
 export class TenantDashboardService {
@@ -163,131 +155,54 @@ export class TenantDashboardService {
   }
 
   private normalizeAdmin(data: Record<string, unknown>): TenantAdminDashboardData {
-    const overviewSource = data['overview'] ?? data;
-    const inventorySource = data['inventory'] ?? data['inventoryOverview'] ?? {};
-    const operationalSource = data['operational'] ?? data['operationalOverview'] ?? {};
+    const overview = this.asRecord(data['overview']);
+    const labels = this.asRecord(overview['labels']);
+    const breakdown = this.asRecord(overview['breakdown']);
+    const inventory = this.asRecord(data['inventory']);
+    const user = this.asRecord(data['user']);
 
     return {
-      overview: this.normalizeStatCards(overviewSource, [
-        {
-          key: 'users',
-          label: 'Total Users',
-          hint: 'Active kitchen & floor staff',
-          aliases: ['users', 'totalUsers', 'total_users'],
+      overview: {
+        totalUsers: this.toNumber(overview['totalUsers'] ?? overview['total_users']),
+        totalItems: this.toNumber(overview['totalItems'] ?? overview['total_items']),
+        totalVendors: this.toNumber(overview['totalVendors'] ?? overview['total_vendors']),
+        totalForms: this.toNumber(overview['totalForms'] ?? overview['total_forms']),
+        labels: {
+          totalUsers: this.readString(labels['totalUsers'] ?? labels['total_users']),
+          totalItems: this.readString(labels['totalItems'] ?? labels['total_items']),
+          totalVendors: this.readString(labels['totalVendors'] ?? labels['total_vendors']),
+          totalForms: this.readString(labels['totalForms'] ?? labels['total_forms']),
         },
-        {
-          key: 'items',
-          label: 'Total Items',
-          hint: 'Inventory catalog',
-          aliases: ['items', 'totalItems', 'total_items'],
+        breakdown: {
+          formBuilderForms: this.toNumber(
+            breakdown['formBuilderForms'] ?? breakdown['form_builder_forms'],
+          ),
+          dataCollectionTemplates: this.toNumber(
+            breakdown['dataCollectionTemplates'] ?? breakdown['data_collection_templates'],
+          ),
         },
-        {
-          key: 'vendors',
-          label: 'Total Vendors',
-          hint: 'Suppliers & services',
-          aliases: ['vendors', 'totalVendors', 'total_vendors'],
-        },
-        {
-          key: 'forms',
-          label: 'Total Forms',
-          hint: 'Ops & compliance forms',
-          aliases: ['forms', 'totalForms', 'total_forms'],
-        },
-      ]),
-      operational: this.normalizeStatCards(operationalSource, [
-        {
-          key: 'assigned',
-          label: 'Assigned Forms',
-          aliases: ['assigned', 'assignedForms', 'assigned_forms'],
-        },
-        {
-          key: 'pending',
-          label: 'Pending Forms',
-          aliases: ['pending', 'pendingForms', 'pending_forms'],
-        },
-        {
-          key: 'completed',
-          label: 'Completed Forms',
-          aliases: ['completed', 'completedForms', 'completed_forms'],
-        },
-        {
-          key: 'overdue',
-          label: 'Overdue Forms',
-          aliases: ['overdue', 'overdueForms', 'overdue_forms'],
-        },
-      ]),
-      inventory: this.normalizeStatCards(inventorySource, [
-        {
-          key: 'total-items',
-          label: 'Total Items',
-          aliases: ['total-items', 'totalItems', 'total_items', 'items'],
-        },
-        {
-          key: 'low-stock',
-          label: 'Low Stock',
-          aliases: ['low-stock', 'lowStock', 'low_stock'],
-        },
-        {
-          key: 'below-par',
-          label: 'Below PAR',
-          aliases: ['below-par', 'belowPar', 'below_par'],
-        },
-        {
-          key: 'order-required',
-          label: 'Order Required',
-          aliases: ['order-required', 'orderRequired', 'order_required'],
-        },
-      ]),
+      },
+      inventory: {
+        totalItems: this.toNumber(inventory['totalItems'] ?? inventory['total_items']),
+        lowStock: this.toNumber(inventory['lowStock'] ?? inventory['low_stock']),
+        belowPar: this.toNumber(inventory['belowPar'] ?? inventory['below_par']),
+        orderRequired: this.toNumber(
+          inventory['orderRequired'] ?? inventory['order_required'],
+        ),
+        available: inventory['available'] !== false,
+      },
       recentActivity: this.readArray(data['recentActivity'] ?? data['recent_activity']).map(
         (item, index) => this.normalizeAdminActivity(this.asRecord(item), index),
       ),
       reportingGroups: this.readArray(
         data['reportingGroups'] ?? data['reporting_groups'],
       ).map((item, index) => this.normalizeReportingGroup(this.asRecord(item), index)),
+      user: {
+        id: this.readId(user, ''),
+        name: this.readString(user['name']),
+        role: this.readString(user['role']),
+      },
     };
-  }
-
-  private normalizeStatCards(
-    source: unknown,
-    defaults: Array<{ key: string; label: string; hint?: string; aliases: string[] }>,
-  ): DashboardStatCard[] {
-    if (Array.isArray(source)) {
-      const cards = source.map((item, index) => {
-        const record = this.asRecord(item);
-        const key = this.readString(record['key']) || defaults[index]?.key || `card-${index}`;
-        return {
-          key,
-          label: this.readString(record['label']) || defaults[index]?.label || key,
-          value: this.toNumber(record['value'] ?? record['count'] ?? record['total']),
-          hint: this.readString(record['hint']) || undefined,
-        };
-      });
-
-      if (cards.length) {
-        return cards;
-      }
-    }
-
-    const record = this.asRecord(source);
-    return defaults.map((item) => {
-      const raw = this.findByAliases(record, item.aliases);
-      if (typeof raw === 'number') {
-        return {
-          key: item.key,
-          label: item.label,
-          value: raw,
-          hint: item.hint,
-        };
-      }
-
-      const nested = this.asRecord(raw);
-      return {
-        key: item.key,
-        label: this.readString(nested['label']) || item.label,
-        value: this.toNumber(nested['value'] ?? nested['count'] ?? nested['total'] ?? raw),
-        hint: this.readString(nested['hint']) || item.hint,
-      };
-    });
   }
 
   private normalizeAdminActivity(
@@ -298,8 +213,8 @@ export class TenantDashboardService {
     const description = this.readString(item['description']);
     const detail = this.readString(item['detail'] ?? item['message']);
     const resolvedTitle = title || description || 'Activity';
-    const resolvedDetail = [detail, title ? description : '']
-      .find((value) => value && value !== resolvedTitle) ?? '';
+    const resolvedDetail =
+      [detail, title ? description : ''].find((value) => value && value !== resolvedTitle) ?? '';
 
     return {
       id: this.readId(item, `activity-${index}`),
@@ -328,15 +243,6 @@ export class TenantDashboardService {
       categories,
       itemCount: this.toNumber(item['itemCount'] ?? item['item_count'] ?? item['items']),
     };
-  }
-
-  private findByAliases(record: Record<string, unknown>, aliases: string[]): unknown {
-    for (const alias of aliases) {
-      if (record[alias] !== undefined && record[alias] !== null) {
-        return record[alias];
-      }
-    }
-    return undefined;
   }
 
   private readArray(value: unknown): unknown[] {

@@ -52,11 +52,39 @@ export interface EmployeeDashboardData {
   recentActivity: EmployeeRecentActivity[];
 }
 
-export interface DashboardStatCard {
-  key: string;
-  label: string;
-  value: number;
-  hint?: string;
+export interface AdminOverviewLabels {
+  totalUsers: string;
+  totalItems: string;
+  totalVendors: string;
+  totalForms: string;
+}
+
+export interface AdminFormBreakdown {
+  formBuilderForms: number;
+  dataCollectionTemplates: number;
+}
+
+export interface AdminOverview {
+  totalUsers: number;
+  totalItems: number;
+  totalVendors: number;
+  totalForms: number;
+  labels: AdminOverviewLabels;
+  breakdown: AdminFormBreakdown;
+}
+
+export interface AdminInventory {
+  totalItems: number;
+  lowStock: number;
+  belowPar: number;
+  orderRequired: number;
+  available: boolean;
+}
+
+export interface AdminDashboardUser {
+  id: string;
+  name: string;
+  role: string;
 }
 
 export interface DashboardActivityItem {
@@ -74,11 +102,11 @@ export interface DashboardReportingGroupSummary {
 }
 
 export interface TenantAdminDashboardData {
-  overview: DashboardStatCard[];
-  operational: DashboardStatCard[];
-  inventory: DashboardStatCard[];
+  overview: AdminOverview;
+  inventory: AdminInventory;
   recentActivity: DashboardActivityItem[];
   reportingGroups: DashboardReportingGroupSummary[];
+  user: AdminDashboardUser;
 }
 
 export type NormalizedDashboard =
