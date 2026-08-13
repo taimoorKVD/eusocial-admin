@@ -31,6 +31,63 @@ export class TenantSessionService {
     return this.readUser();
   }
 
+  /** Reads `user_type` / `userType` from the stored login user. */
+  getUserType(): string {
+    const user = this.readUser();
+    if (!user || typeof user !== 'object') {
+      return '';
+    }
+    return this.readString(user.user_type ?? user.userType).toLowerCase();
+  }
+
+  /** Reads `account_type` / `accountType` from the stored login user. */
+  getAccountType(): string {
+    const user = this.readUser();
+    if (!user || typeof user !== 'object') {
+      return '';
+    }
+    return this.readString(user.account_type ?? user.accountType).toLowerCase();
+  }
+
+  /**
+   * Employee / staff: tenant user with account_type tenant_user.
+   * Missing user_type is treated as tenant so existing sessions still work.
+   */
+  isEmployee(): boolean {
+    const userType = this.getUserType();
+    const isTenant = !userType || userType === 'tenant';
+    return isTenant && this.getAccountType() === 'tenant_user';
+  }
+
+  /**
+   * Tenant admin experience. Missing account_type defaults to admin so
+   * existing Phase 1 sessions are unchanged.
+   */
+  isTenantAdmin(): boolean {
+    if (this.isEmployee()) {
+      return false;
+    }
+    const userType = this.getUserType();
+    const isTenant = !userType || userType === 'tenant';
+    if (!isTenant) {
+      return false;
+    }
+    const accountType = this.getAccountType();
+    return !accountType || accountType === 'tenant_admin';
+  }
+
+  /** Default landing commands after login / home redirect. */
+  getHomeCommands(): string[] {
+    const slug = this.getSlug();
+    if (!slug) {
+      return ['/tenant/login'];
+    }
+    if (this.isEmployee()) {
+      return ['/tenant', slug, 'employee-dashboard'];
+    }
+    return ['/tenant', slug, 'user-dashboard'];
+  }
+
   /** Merge and persist user fields (used by Profile updates). */
   updateUser(partial: Record<string, unknown>): any {
     const current = this.readUser() || {};
@@ -53,5 +110,9 @@ export class TenantSessionService {
     } catch {
       return null;
     }
+  }
+
+  private readString(value: unknown): string {
+    return typeof value === 'string' ? value.trim() : '';
   }
 }

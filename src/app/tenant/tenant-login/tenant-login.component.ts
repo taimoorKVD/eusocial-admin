@@ -43,7 +43,7 @@ import { TenantProfileService } from '../../services/tenant-profile.service';
         this.locationCache.warmCache();
         this.reportingGroupService.reload();
         this.profileService.refresh();
-        this.router.navigate(['/tenant', slug, 'user-dashboard']);
+        this.router.navigate(this.session.getHomeCommands());
       }
     }
 
@@ -72,7 +72,19 @@ import { TenantProfileService } from '../../services/tenant-profile.service';
     next: (res) => {
       const token = res.accessToken;
       const slug = res.tenant_slug || detectedSlug;
-      const user = res.user;
+      const user = {
+        ...(res.user || {}),
+        user_type:
+          res.user?.user_type ??
+          res.user?.userType ??
+          res.user_type ??
+          res.userType,
+        account_type:
+          res.user?.account_type ??
+          res.user?.accountType ??
+          res.account_type ??
+          res.accountType,
+      };
 
       if (!slug) {
         this.toastr.error('Tenant slug is missing from login response');
@@ -84,7 +96,7 @@ import { TenantProfileService } from '../../services/tenant-profile.service';
       this.reportingGroupService.reload();
       this.profileService.refresh();
       this.toastr.success('Login successful');
-      this.router.navigate(['/tenant', slug, 'user-dashboard']);
+      this.router.navigate(this.session.getHomeCommands());
       this.loading = false;
     },
 

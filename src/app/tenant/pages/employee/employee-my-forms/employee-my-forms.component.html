@@ -1,0 +1,119 @@
+<div class="w-full px-4 py-5 sm:px-6 lg:px-8">
+  @if (loading()) {
+    <app-eu-loader></app-eu-loader>
+  }
+
+  <div class="mb-6">
+    <h1 class="m-0 text-2xl font-semibold text-[#161616] font-ibm">
+      My Forms
+    </h1>
+    <p class="mt-1.5 m-0 text-sm text-[#6F6F6F] font-ibm">
+      Assigned work for the current user. Open a form to start or continue filling it.
+    </p>
+  </div>
+
+  <div class="mb-5 flex flex-wrap gap-2">
+    @for (filter of filters; track filter.value) {
+      <button
+        type="button"
+        class="rounded-full border px-3.5 py-1.5 text-sm font-medium font-ibm transition-colors"
+        [class.border-[#FF9015]]="status() === filter.value"
+        [class.bg-[#FF9015]]="status() === filter.value"
+        [class.text-white]="status() === filter.value"
+        [class.border-[#E8E8E8]]="status() !== filter.value"
+        [class.bg-white]="status() !== filter.value"
+        [class.text-[#525252]]="status() !== filter.value"
+        (click)="onFilterChange(filter.value)"
+      >
+        {{ filter.label }}
+      </button>
+    }
+  </div>
+
+  @if (errorMessage()) {
+    <div class="rounded-xl border border-[#FECACA] bg-[#FEF2F2] px-4 py-4">
+      <p class="m-0 text-sm text-[#B42318] font-ibm">{{ errorMessage() }}</p>
+      <button
+        type="button"
+        class="mt-3 text-sm font-medium text-[#FF9015] hover:underline font-ibm"
+        (click)="retry()"
+      >
+        Try again
+      </button>
+    </div>
+  } @else if (!loading() && !hasAssignments()) {
+    <div class="rounded-xl border border-[#E8E8E8] bg-white px-6 py-12 text-center shadow-sm">
+      <p class="m-0 text-base font-medium text-[#161616] font-ibm">
+        No assignments found
+      </p>
+      <p class="mt-2 m-0 text-sm text-[#6F6F6F] font-ibm">
+        There is no assigned work for this filter yet.
+      </p>
+    </div>
+  } @else if (hasAssignments()) {
+    <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      @for (item of assignments(); track item.id) {
+        <article class="rounded-xl border border-[#E8E8E8] bg-white p-5 shadow-sm">
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <h2 class="m-0 truncate text-base font-semibold text-[#161616] font-ibm">
+                {{ item.title }}
+              </h2>
+              @if (item.dueDate) {
+                <p class="mt-1.5 m-0 text-sm text-[#6F6F6F] font-ibm">
+                  Due {{ item.dueDate | date: 'mediumDate' }}
+                </p>
+              } @else if (item.createdAt) {
+                <p class="mt-1.5 m-0 text-sm text-[#6F6F6F] font-ibm">
+                  Assigned {{ item.createdAt | date: 'mediumDate' }}
+                </p>
+              }
+            </div>
+            <span
+              class="shrink-0 rounded-md px-2.5 py-1 text-xs font-medium font-ibm"
+              [ngClass]="statusClass(item.status)"
+            >
+              {{ statusLabel(item.status) }}
+            </span>
+          </div>
+
+          <div class="mt-4 flex justify-end">
+            <button
+              type="button"
+              class="rounded-lg bg-[#FF9015] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#e57f0f] font-ibm"
+              (click)="openAssignment(item)"
+            >
+              {{ item.status === 'pending' ? 'Open' : item.status === 'completed' ? 'View' : 'Continue' }}
+            </button>
+          </div>
+        </article>
+      }
+    </div>
+  }
+
+  @if (showPagination()) {
+    <div class="mt-5 flex flex-col gap-3 rounded-xl border border-[#E8E8E8] bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+      <span class="text-sm text-[#6F6F6F] font-ibm">
+        Page {{ page() }} of {{ lastPage() }}
+      </span>
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          class="rounded-lg border border-[#ea580c]/30 bg-[#ea580c]/10 px-3 py-1.5 text-sm font-medium text-[#ea580c] transition hover:bg-[#ea580c]/20 disabled:cursor-not-allowed disabled:opacity-40 font-ibm"
+          [disabled]="page() === 1"
+          (click)="prevPage()"
+        >
+          ← Prev
+        </button>
+        <button
+          type="button"
+          class="rounded-lg border border-[#ea580c]/30 bg-[#ea580c]/10 px-3 py-1.5 text-sm font-medium text-[#ea580c] transition hover:bg-[#ea580c]/20 disabled:cursor-not-allowed disabled:opacity-40 font-ibm"
+          [disabled]="page() === lastPage()"
+          (click)="nextPage()"
+        >
+          Next →
+        </button>
+      </div>
+    </div>
+  }
+</div>
