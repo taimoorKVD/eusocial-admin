@@ -1,108 +1,81 @@
-import { HttpErrorResponse, HttpEvent, HttpHandler, HttpInterceptor, HttpInterceptorFn, HttpRequest } from '@angular/common/http';
+import {
+  HttpErrorResponse,
+  HttpEvent,
+  HttpHandler,
+  HttpInterceptor,
+  HttpRequest,
+} from '@angular/common/http';
 import { Router } from '@angular/router';
-import { TenantSessionService } from '../services/tenant-session.service';
 import { catchError, Observable, throwError } from 'rxjs';
 import { Injectable } from '@angular/core';
 import { ToastrService } from 'ngx-toastr';
-
-// export const tenantAuthInterceptor: HttpInterceptorFn = (req, next) => {
-//   return next(req);
-// };
+import { environment } from '../../environments/environment';
+import { PortalService } from '../services/portal.service';
 
 @Injectable()
 export class TenantAuthInterceptor implements HttpInterceptor {
 
   constructor(
+    private portal: PortalService,
     private router: Router,
-    // private session: TenantSessionService,
     private toastr: ToastrService,
   ) {}
 
   private isLoggingOut = false;
 
-// intercept(req: HttpRequest<any>, next: HttpHandler) {
+  intercept(
+    req: HttpRequest<any>,
+    next: HttpHandler
+  ): Observable<HttpEvent<any>> {
 
-//   const token = localStorage.getItem('tenant_token');
-//   const isLoginRequest = req.url.includes('/tenant/login');
+    const isMasterApi = req.url.startsWith(environment.apiUrl);
+    const isTenantApi =
+      req.url.startsWith(environment.tenantApiUrl) && !isMasterApi;
 
-//   let authReq = req;
-
-//   // attach token
-//   if (token && !isLoginRequest) {
-//     authReq = req.clone({
-//       setHeaders: {
-//         Authorization: `Bearer ${token}`
-//       }
-//     });
-//   }
-
-//   return next.handle(authReq).pipe(
-//     catchError((error: HttpErrorResponse) => {
-
-//       // ✅ ONLY THIS CONDITION MATTERS
-//       if (error.status === 401 && !this.isLoggingOut) {
-
-//         this.isLoggingOut = true;
-
-//         // clear session
-//         localStorage.clear();
-
-//         // redirect
-//         this.router.navigate(['/tenant/login']);
-
-//         // optional message
-//         // alert('Session expired, please login again');\
-//         this.toastr.error('Session expired');
-//       }
-
-//       return throwError(() => error);
-//     })
-//   );
-// }
-  intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+    if (!isTenantApi) {
+      return next.handle(req);
+    }
 
     const token = localStorage.getItem('tenant_token');
-    const slug = localStorage.getItem('tenant_slug');
+    const tenantSlug =
+      this.portal.tenantSlug || localStorage.getItem('tenant_slug');
 
     const isLoginRequest = /\/login(\?|$)/.test(req.url);
 
-    let authReq = req;
+    const headers: Record<string, string> = {};
 
-    // ✅ attach token + tenant slug
-    if (token && !isLoginRequest) {
-      authReq = req.clone({
-        setHeaders: {
-          Authorization: `Bearer ${token}`,
-          // 'X-Tenant-Slug': slug
-        }
-      });
+    if (tenantSlug) {
+      headers['X-Tenant-Slug'] = tenantSlug;
     }
+
+    if (token && !isLoginRequest) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const authReq =
+      Object.keys(headers).length > 0
+        ? req.clone({ setHeaders: headers })
+        : req;
 
     return next.handle(authReq).pipe(
       catchError((error: HttpErrorResponse) => {
 
         const message = error?.error?.message || '';
 
-        // Only handle auth errors for authenticated requests (not login endpoint, not unauthenticated calls)
         if (token && !isLoginRequest) {
 
-          // 🔴 401 → session expired
           if (error.status === 401) {
             this.forceLogout('Session expired');
           }
 
-          // 🔴 403 → smart handling
           else if (error.status === 403) {
 
-            // tenant/session issue → logout
             if (
-              message.includes('tenant') ||
-              message.includes('authenticated')
+              message.toLowerCase().includes('tenant') ||
+              message.toLowerCase().includes('authenticated')
             ) {
               this.forceLogout('Session invalid for this tenant');
-            }
-            else {
-              // permission issue → no logout
+            } else {
               this.toastr.error('You do not have permission');
             }
           }
@@ -113,17 +86,18 @@ export class TenantAuthInterceptor implements HttpInterceptor {
     );
   }
 
-  // 🔥 central logout
   private forceLogout(msg: string) {
 
     if (this.isLoggingOut) return;
 
     this.isLoggingOut = true;
 
-    localStorage.clear();
+    localStorage.removeItem('tenant_token');
+    localStorage.removeItem('tenant_slug');
+    localStorage.removeItem('tenant_user');
 
     this.toastr.error(msg);
 
-    this.router.navigate(['/tenant/login']);
+    this.router.navigate(['/login']);
   }
 }

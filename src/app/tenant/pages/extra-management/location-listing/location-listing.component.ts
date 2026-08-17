@@ -1,7 +1,6 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { TenantLocationService } from '../../../../services/tenant-location.service';
-import { TenantSessionService } from '../../../../services/tenant-session.service';
 import { GlobalFilterField } from '../../../../shared/global-filter/global-filter';
 import { environment } from '../../../../../environments/environment.prod';
 
@@ -61,7 +60,6 @@ export class LocationListingComponent {
   constructor(
     private locationService: TenantLocationService,
     private router: Router,
-    public session: TenantSessionService,
   ) {}
 
   ngOnInit(): void {
@@ -98,11 +96,11 @@ export class LocationListingComponent {
   }
 
   goToCreate() {
-    this.router.navigate(['/tenant', this.session.getSlug(), 'location', 'create']);
+    this.router.navigate(['/location', 'create']);
   }
 
   goToEdit(id: number) {
-    this.router.navigate(['/tenant', this.session.getSlug(), 'location', 'edit', id]);
+    this.router.navigate(['/location', 'edit', id]);
   }
 
   deleteLocation(id: number) {

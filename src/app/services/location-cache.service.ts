@@ -58,6 +58,7 @@ export class LocationCacheService {
   readonly cities: Signal<any[]> = computed(() => this.responses.cities()?.data ?? []);
 
   constructor() {
+    this.evictPersistedCities();
     this.hydrateFromStorage();
   }
 
@@ -198,8 +199,9 @@ export class LocationCacheService {
         if (!response || !Array.isArray(response.data)) {
           return;
         }
-        this.responses[kind].set(response);
-        this.persist(kind, response);
+        const slimmed = this.slimResponse(kind, response);
+        this.responses[kind].set(slimmed);
+        this.persist(kind, slimmed);
       });
   }
 
@@ -277,7 +279,7 @@ export class LocationCacheService {
   }
 
   private hydrateFromStorage(): void {
-    (['countries', 'states', 'cities'] as LocationKind[]).forEach((kind) => {
+    (['countries', 'states'] as LocationKind[]).forEach((kind) => {
       try {
         const raw = localStorage.getItem(this.storageKey(kind));
         if (!raw) {
@@ -294,11 +296,71 @@ export class LocationCacheService {
   }
 
   private persist(kind: LocationKind, response: LocationApiResponse): void {
+    // Full city catalogs exceed the browser localStorage quota (~5MB).
+    // Keep cities in memory for the session; persist only countries/states.
+    if (kind === 'cities') {
+      return;
+    }
+
     try {
       localStorage.setItem(this.storageKey(kind), JSON.stringify(response));
-    } catch (e) {
-      console.error(e);
+    } catch {
+      this.evictPersistedCities();
     }
+  }
+
+  /** Drops any previously saved city catalog so quota errors do not recur. */
+  private evictPersistedCities(): void {
+    try {
+      const prefix = `${this.STORAGE_PREFIX}_cities_`;
+      const keys: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key?.startsWith(prefix)) {
+          keys.push(key);
+        }
+      }
+      keys.forEach((key) => localStorage.removeItem(key));
+    } catch {
+      // ignore storage access issues
+    }
+  }
+
+  private slimResponse(kind: LocationKind, response: LocationApiResponse): LocationApiResponse {
+    return {
+      ...response,
+      data: (response.data ?? []).map((record) => this.slimRecord(kind, record)),
+    };
+  }
+
+  private slimRecord(kind: LocationKind, record: any): any {
+    if (!record || typeof record !== 'object') {
+      return record;
+    }
+
+    const id = record.id ?? record.city_id ?? record.state_id ?? record.country_id;
+    const name = record.name ?? record.label ?? record.title ?? record.city ?? record.state ?? record.country;
+
+    if (kind === 'countries') {
+      return { id, name, label: name };
+    }
+
+    if (kind === 'states') {
+      return {
+        id,
+        name,
+        label: name,
+        country_id: record.country_id ?? record.countryId ?? record.country,
+      };
+    }
+
+    return {
+      id,
+      name,
+      label: name,
+      state_id: record.state_id ?? record.stateId ?? record.state,
+      country_id: record.country_id ?? record.countryId ?? record.country,
+    };
   }
 
   private storageKey(kind: LocationKind): string {

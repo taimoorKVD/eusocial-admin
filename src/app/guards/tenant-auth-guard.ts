@@ -1,30 +1,24 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
+import { PortalService } from '../services/portal.service';
 
-export const tenantAuthGuard: CanActivateFn = (route, state) => {
+export const tenantAuthGuard: CanActivateFn = () => {
   const router = inject(Router);
+  const portal = inject(PortalService);
 
-  // 🔐 token check
   const token = localStorage.getItem('tenant_token');
-
-  // 🏢 tenant slug from URL
-  const slug = route.paramMap.get('slug');
-
-  // 💾 stored slug (login ke baad save hona chahiye)
+  const hostnameSlug = portal.tenantSlug;
   const savedSlug = localStorage.getItem('tenant_slug');
 
-  // ❌ case 1: user login nahi hai
   if (!token) {
-    router.navigate(['/tenant/login']);
+    router.navigate(['/login']);
     return false;
   }
 
-  // ❌ case 2: slug mismatch (multi-tenant security)
-  if (slug && savedSlug && slug !== savedSlug) {
-    router.navigate(['/tenant/login']);
+  if (hostnameSlug && savedSlug && hostnameSlug !== savedSlug) {
+    router.navigate(['/login']);
     return false;
   }
 
-  // ✅ allow access
   return true;
 };

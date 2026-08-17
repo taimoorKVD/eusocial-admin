@@ -13,7 +13,6 @@ import { ToastrService } from 'ngx-toastr';
 import { ActivatedRoute, Router } from '@angular/router';
 import { catchError, finalize, forkJoin, map, of, switchMap } from 'rxjs';
 import { TenantVendorService } from '../../../../../services/tenant-vendor.service';
-import { TenantSessionService } from '../../../../../services/tenant-session.service';
 import { FormStorageService } from '../../../../forms/services/form-storage.service';
 import { FormField } from '../../../../form-builder/models/form-field.model';
 import { normalizeFieldOrder } from '../../../../form-builder/utils/form-field.factory';
@@ -45,7 +44,6 @@ export class SetupVendorComponent {
   private readonly toastr = inject(ToastrService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  private readonly tenantSession = inject(TenantSessionService);
   private readonly formStorageService = inject(FormStorageService);
   private readonly vendorService = inject(TenantVendorService);
   private readonly destroyRef = inject(DestroyRef);
@@ -130,7 +128,7 @@ export class SetupVendorComponent {
         .subscribe({
           next: () => {
             this.toastr.success('Vendor updated successfully');
-            this.router.navigate(['/tenant', this.tenantSession.getSlug(), 'vendors']);
+            this.router.navigate(['/vendors']);
           },
           error: (err) => {
             this.toastr.error(err?.error?.message || 'Failed to update vendor');
@@ -145,7 +143,7 @@ export class SetupVendorComponent {
       .subscribe({
         next: () => {
           this.toastr.success('Vendor created successfully');
-          this.router.navigate(['/tenant', this.tenantSession.getSlug(), 'vendors']);
+          this.router.navigate(['/vendors']);
         },
         error: (err) => {
           this.toastr.error(err?.error?.message || 'Failed to create vendor');
@@ -710,11 +708,7 @@ export class SetupVendorComponent {
         break;
 
       case 'cancel':
-        this.router.navigate([
-          '/tenant',
-          this.tenantSession.getSlug(),
-          'vendors',
-        ]);
+        this.router.navigate(['/vendors']);
         break;
     }
 
@@ -737,11 +731,7 @@ export class SetupVendorComponent {
       .subscribe({
         next: () => {
           this.toastr.success('Vendor deleted successfully');
-          this.router.navigate([
-            '/tenant',
-            this.tenantSession.getSlug(),
-            'vendors',
-          ]);
+          this.router.navigate(['/vendors']);
         },
         error: (err) => {
           this.toastr.error(
@@ -752,6 +742,6 @@ export class SetupVendorComponent {
   }
 
   goToVendorListing(): void {
-    this.router.navigate(['/tenant', this.tenantSession.getSlug(), 'vendors']);
+    this.router.navigate(['/vendors']);
   }
 }

@@ -1,0 +1,280 @@
+<div class="w-full px-4 py-5 sm:px-6 lg:px-8">
+  <div class="mb-6">
+    <h1 class="m-0 text-2xl font-semibold text-[#161616] font-ibm">
+      Dashboard
+    </h1>
+  </div>
+
+  <!-- Welcome banner -->
+  <section
+    class="relative mb-6 overflow-hidden rounded-xl border border-[#E8E8E8] bg-white px-5 py-6 shadow-sm sm:px-6"
+  >
+    <div
+      class="pointer-events-none absolute inset-y-0 right-0 hidden w-2/5 bg-gradient-to-l from-[#FF9015]/15 to-transparent sm:block"
+    ></div>
+
+    <div class="relative flex items-center justify-between gap-6">
+      <div class="min-w-0">
+        <h2 class="m-0 text-2xl font-semibold text-[#FF9015] font-ibm sm:text-[28px]">
+          {{ welcomeHeading }} 👋
+        </h2>
+        @if (welcomeSubtitle) {
+          <p class="mt-2 m-0 text-sm text-[#6F6F6F] font-ibm sm:text-base">
+            {{ welcomeSubtitle }}
+          </p>
+        }
+      </div>
+
+      <div class="relative hidden shrink-0 sm:block" aria-hidden="true">
+        <svg width="120" height="88" viewBox="0 0 120 88" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="18" y="14" width="58" height="66" rx="8" fill="#FFF4EA" stroke="#FF9015" stroke-width="2"/>
+          <rect x="32" y="8" width="30" height="12" rx="4" fill="#FF9015"/>
+          <path d="M30 36h34M30 48h34M30 60h22" stroke="#FF9015" stroke-width="2.5" stroke-linecap="round"/>
+          <circle cx="92" cy="58" r="18" fill="#FFF4EA" stroke="#FF9015" stroke-width="2"/>
+          <path d="M92 48v12l8 4" stroke="#FF9015" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- Overview stat cards -->
+  <section class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    @for (card of overviewCards; track card.key) {
+      <ng-container [ngTemplateOutlet]="statCard" [ngTemplateOutletContext]="{ card }" />
+    }
+  </section>
+
+  <!-- Form breakdown -->
+  <section class="mb-6">
+    <h2 class="mb-3.5 m-0 text-base font-semibold text-[#161616] font-ibm">
+      Form Breakdown
+    </h2>
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      @for (card of breakdownCards; track card.key) {
+        <ng-container [ngTemplateOutlet]="statCard" [ngTemplateOutletContext]="{ card }" />
+      }
+    </div>
+  </section>
+
+  <!-- Inventory -->
+  <section class="mb-6">
+    <h2 class="mb-3.5 m-0 text-base font-semibold text-[#161616] font-ibm">
+      Inventory Overview
+    </h2>
+
+    @if (!inventoryAvailable) {
+      <div class="rounded-xl border border-[#E8E8E8] bg-white p-5 shadow-sm">
+        <div class="rounded-lg border border-[#ECECEC] bg-[#FAFAFA] px-4 py-8 text-center">
+          <p class="m-0 text-sm font-medium text-[#161616] font-ibm">
+            Inventory data unavailable
+          </p>
+          <p class="mt-1.5 m-0 text-xs text-[#6F6F6F] font-ibm">
+            Inventory metrics will appear here when they are ready.
+          </p>
+        </div>
+      </div>
+    } @else {
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        @for (card of inventoryCards; track card.key) {
+          <ng-container [ngTemplateOutlet]="statCard" [ngTemplateOutletContext]="{ card }" />
+        }
+      </div>
+    }
+  </section>
+
+  <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
+    <!-- Recent Activity -->
+    <section class="flex flex-col rounded-xl border border-[#E8E8E8] bg-white p-5 shadow-sm">
+      <h2 class="m-0 text-base font-semibold text-[#161616] font-ibm">
+        Recent Activity
+      </h2>
+
+      <div class="mt-5 flex-1 space-y-4">
+        @if (data.recentActivity.length === 0) {
+          <div class="rounded-lg border border-[#ECECEC] bg-[#FAFAFA] px-4 py-8 text-center">
+            <p class="m-0 text-sm font-medium text-[#161616] font-ibm">
+              No recent activity
+            </p>
+            <p class="mt-1.5 m-0 text-xs text-[#6F6F6F] font-ibm">
+              Operational updates will appear here.
+            </p>
+          </div>
+        } @else {
+          @for (activity of data.recentActivity; track activity.id) {
+            <div class="flex items-start justify-between gap-3">
+              <div
+                class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#FFF4EA] text-[#FF9015]"
+              >
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <circle cx="12" cy="12" r="8"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l2.5 1.5"/>
+                </svg>
+              </div>
+
+              <div class="min-w-0 flex-1">
+                <p class="m-0 text-sm font-medium text-[#161616] font-ibm">
+                  {{ activity.title }}
+                </p>
+                @if (activity.detail) {
+                  <p class="mt-1 m-0 text-sm leading-5 text-[#6F6F6F] font-ibm">
+                    {{ activity.detail }}
+                  </p>
+                }
+              </div>
+
+              @if (activity.timeAgo) {
+                <p class="m-0 shrink-0 whitespace-nowrap text-xs text-[#8D8D8D] font-ibm">
+                  {{ activity.timeAgo }}
+                </p>
+              }
+            </div>
+          }
+        }
+      </div>
+    </section>
+
+    <!-- Reporting Groups -->
+    <section class="flex flex-col rounded-xl border border-[#E8E8E8] bg-white p-5 shadow-sm">
+      <div class="flex items-center justify-between gap-4">
+        <h2 class="m-0 text-base font-semibold text-[#161616] font-ibm">
+          Reporting Groups
+        </h2>
+        <button
+          type="button"
+          class="shrink-0 text-sm font-medium text-[#FF9015] transition-colors hover:text-[#e57f0f] hover:underline font-ibm"
+          (click)="goToModule('reporting-group')"
+        >
+          Manage
+        </button>
+      </div>
+
+      <div class="mt-5 flex-1 space-y-3">
+        @if (data.reportingGroups.length === 0) {
+          <div class="rounded-lg border border-[#ECECEC] bg-[#FAFAFA] px-4 py-8 text-center">
+            <p class="m-0 text-sm font-medium text-[#161616] font-ibm">
+              No reporting groups
+            </p>
+            <p class="mt-1.5 m-0 text-xs text-[#6F6F6F] font-ibm">
+              Reporting groups will appear here when they are created.
+            </p>
+          </div>
+        } @else {
+          @for (group of data.reportingGroups; track group.id) {
+            <div class="rounded-lg border border-[#ECECEC] bg-[#FAFAFA] px-4 py-3.5">
+              <div class="flex items-start justify-between gap-4">
+                <div class="min-w-0 flex-1">
+                  <p class="m-0 text-sm font-semibold text-[#161616] font-ibm">
+                    {{ group.name }}
+                  </p>
+                  @if (group.categories.length) {
+                    <p class="mt-1.5 m-0 text-xs leading-5 text-[#6F6F6F] font-ibm">
+                      {{ group.categories.join(' · ') }}
+                    </p>
+                  }
+                </div>
+                <span
+                  class="shrink-0 rounded-md bg-[#FFF4EA] px-2.5 py-1 text-xs font-medium text-[#FF9015] font-ibm"
+                >
+                  {{ group.itemCount }} items
+                </span>
+              </div>
+            </div>
+          }
+        }
+      </div>
+
+      <div class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <button
+          type="button"
+          class="rounded-lg bg-[#FF9015] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#e57f0f] font-ibm"
+          (click)="goToCreate('items')"
+        >
+          + Add Item
+        </button>
+        <button
+          type="button"
+          class="rounded-lg border border-[#FF9015] bg-white px-4 py-2.5 text-sm font-medium text-[#FF9015] transition-colors hover:bg-[#FFF4EA] font-ibm"
+          (click)="goToCreate('vendors')"
+        >
+          + Add Vendor
+        </button>
+      </div>
+    </section>
+  </div>
+</div>
+
+<ng-template #statCard let-card="card">
+  <div
+    class="overflow-hidden rounded-xl border border-[#E8E8E8] bg-white shadow-sm transition-shadow hover:shadow-md"
+  >
+    <div class="flex items-start justify-between gap-3 p-5 pb-4">
+      <div class="min-w-0">
+        <p class="m-0 text-sm font-medium text-[#6F6F6F] font-ibm">
+          {{ card.title }}
+        </p>
+        <p
+          class="mt-2 m-0 text-3xl font-semibold font-ibm"
+          [class.text-[#FF9015]]="card.emphasize"
+          [class.text-[#161616]]="!card.emphasize"
+        >
+          {{ card.value }}
+        </p>
+        @if (card.label) {
+          <p class="mt-1.5 m-0 text-xs leading-5 text-[#8D8D8D] font-ibm">
+            {{ card.label }}
+          </p>
+        }
+      </div>
+
+      <div
+        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#FFF4EA] text-[#FF9015]"
+      >
+        @switch (card.icon) {
+          @case ('users') {
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="M2.5 20a5.5 5.5 0 0 1 11 0"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13 18.5a4.5 4.5 0 0 1 8 1.5"/>
+            </svg>
+          }
+          @case ('items') {
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 3 20 7.5 12 12 4 7.5 12 3Z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 12.5 12 17l8-4.5"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 17 12 21l8-4"/>
+            </svg>
+          }
+          @case ('vendors') {
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 8h12l3 4v6H3V8Z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 8V5h4v7"/>
+              <circle cx="7" cy="18" r="1.5"/>
+              <circle cx="15" cy="18" r="1.5"/>
+            </svg>
+          }
+          @case ('forms') {
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2Z"/>
+            </svg>
+          }
+          @case ('templates') {
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6M9 16h4"/>
+            </svg>
+          }
+          @case ('alert') {
+            <svg class="h-5 w-5" [class.text-[#FF9015]]="card.emphasize" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <circle cx="12" cy="12" r="8"/>
+              <path stroke-linecap="round" d="M12 8v4"/>
+              <circle cx="12" cy="16" r="0.8" fill="currentColor" stroke="none"/>
+            </svg>
+          }
+        }
+      </div>
+    </div>
+    <div class="h-1.5 w-full bg-[#FF9015]"></div>
+  </div>
+</ng-template>

@@ -13,7 +13,6 @@ import { ToastrService } from 'ngx-toastr';
 import { ActivatedRoute, Router } from '@angular/router';
 import { catchError, finalize, forkJoin, map, of, switchMap } from 'rxjs';
 import { TenantItemService } from '../../../../../services/tenant-item.service';
-import { TenantSessionService } from '../../../../../services/tenant-session.service';
 import { ReportingGroupService } from '../../../../../services/reporting-group.service';
 import { FormStorageService } from '../../../../forms/services/form-storage.service';
 import { FormField } from '../../../../form-builder/models/form-field.model';
@@ -46,7 +45,6 @@ export class SetupItemComponent {
   private readonly toastr = inject(ToastrService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  private readonly tenantSession = inject(TenantSessionService);
   private readonly formStorageService = inject(FormStorageService);
   private readonly itemService = inject(TenantItemService);
   private readonly reportingGroupService = inject(ReportingGroupService);
@@ -132,7 +130,7 @@ export class SetupItemComponent {
         .subscribe({
           next: () => {
             this.toastr.success('Item updated successfully');
-            this.router.navigate(['/tenant', this.tenantSession.getSlug(), 'items']);
+            this.router.navigate(['/items']);
           },
           error: (err) => {
             this.toastr.error(err?.error?.message || 'Failed to update item');
@@ -147,7 +145,7 @@ export class SetupItemComponent {
       .subscribe({
         next: () => {
           this.toastr.success('Item created successfully');
-          this.router.navigate(['/tenant', this.tenantSession.getSlug(), 'items']);
+          this.router.navigate(['/items']);
         },
         error: (err) => {
           console.error('Create item error:', err);
@@ -753,11 +751,7 @@ export class SetupItemComponent {
         break;
 
       case 'cancel':
-        this.router.navigate([
-          '/tenant',
-          this.tenantSession.getSlug(),
-          'items',
-        ]);
+        this.router.navigate(['/items']);
         break;
     }
 
@@ -780,11 +774,7 @@ export class SetupItemComponent {
       .subscribe({
         next: () => {
           this.toastr.success('Item deleted successfully');
-          this.router.navigate([
-            '/tenant',
-            this.tenantSession.getSlug(),
-            'items',
-          ]);
+          this.router.navigate(['/items']);
         },
         error: (err) => {
           this.toastr.error(
@@ -795,7 +785,7 @@ export class SetupItemComponent {
   }
 
   goToItemListing(): void {
-    this.router.navigate(['/tenant', this.tenantSession.getSlug(), 'items']);
+    this.router.navigate(['/items']);
   }
 
 }

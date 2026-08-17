@@ -7,6 +7,7 @@ import { ToastrService } from 'ngx-toastr';
 import { LocationCacheService } from '../../services/location-cache.service';
 import { ReportingGroupService } from '../../services/reporting-group.service';
 import { TenantProfileService } from '../../services/tenant-profile.service';
+import { PortalService } from '../../services/portal.service';
 
 @Component({
   selector: 'app-tenant-login',
@@ -24,6 +25,7 @@ import { TenantProfileService } from '../../services/tenant-profile.service';
       private readonly locationCache = inject(LocationCacheService);
       private readonly reportingGroupService = inject(ReportingGroupService);
       private readonly profileService = inject(TenantProfileService);
+      private readonly portal = inject(PortalService);
 
       constructor( private session: TenantSessionService, private fb: FormBuilder, private tenantAuth: TenantAuthService, private router: Router, private toastr: ToastrService ) {}
 
@@ -43,7 +45,7 @@ import { TenantProfileService } from '../../services/tenant-profile.service';
         this.locationCache.warmCache();
         this.reportingGroupService.reload();
         this.profileService.refresh();
-        this.router.navigate(['/tenant', slug, 'user-dashboard']);
+        this.router.navigate(this.session.getHomeCommands());
       }
     }
 
@@ -60,10 +62,10 @@ import { TenantProfileService } from '../../services/tenant-profile.service';
   this.loading = true; // ✅ start loader
 
   const { email, password } = this.loginForm.value;
-  const detectedSlug = this.extractTenantSlugFromEmail(email);
+  const detectedSlug = this.portal.tenantSlug || this.extractTenantSlugFromEmail(email);
 
   if (!detectedSlug) {
-    this.toastr.error('Unable to detect tenant from email domain');
+    this.toastr.error('Unable to detect tenant. Open this tenant URL, for example http://folio3.localhost:4200');
     this.loading = false;
     return;
   }
@@ -72,7 +74,19 @@ import { TenantProfileService } from '../../services/tenant-profile.service';
     next: (res) => {
       const token = res.accessToken;
       const slug = res.tenant_slug || detectedSlug;
-      const user = res.user;
+      const user = {
+        ...(res.user || {}),
+        user_type:
+          res.user?.user_type ??
+          res.user?.userType ??
+          res.user_type ??
+          res.userType,
+        account_type:
+          res.user?.account_type ??
+          res.user?.accountType ??
+          res.account_type ??
+          res.accountType,
+      };
 
       if (!slug) {
         this.toastr.error('Tenant slug is missing from login response');
@@ -84,7 +98,7 @@ import { TenantProfileService } from '../../services/tenant-profile.service';
       this.reportingGroupService.reload();
       this.profileService.refresh();
       this.toastr.success('Login successful');
-      this.router.navigate(['/tenant', slug, 'user-dashboard']);
+      this.router.navigate(this.session.getHomeCommands());
       this.loading = false;
     },
 

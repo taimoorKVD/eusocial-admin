@@ -2,7 +2,6 @@ import { Component } from '@angular/core';
 import { RoleService } from '../../../../../services/role.service';
 import { Router } from '@angular/router';
 import { TenantRoleService } from '../../../../../services/tenant-role.service';
-import { TenantSessionService } from '../../../../../services/tenant-session.service';
 import { GlobalFilterField } from '../../../../../shared/global-filter/global-filter';
 import { environment } from '../../../../../../environments/environment.prod';
 
@@ -30,7 +29,6 @@ export class RoleListingComponent {
   constructor(
     private rolesService: TenantRoleService,
     private router: Router,
-    private tenantSession: TenantSessionService,
   ) {}
 
   ngOnInit(): void {
@@ -63,16 +61,11 @@ export class RoleListingComponent {
   }
 
   goToCreate() {
-    this.router.navigate([
-      '/tenant',
-      this.tenantSession.getSlug(),
-      'roles',
-      'create'
-    ]);
+    this.router.navigate(['/roles', 'create']);
   }
 
   editRole(id: number) {
-    this.router.navigate([ '/tenant', this.tenantSession.getSlug(),'roles/edit', id]);
+    this.router.navigate(['/roles', 'edit', id]);
   }
 
   deleteRole(id: number) {

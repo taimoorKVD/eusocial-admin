@@ -1,240 +1,26 @@
 @if (loading()) {
-  <div class="px-6 py-8 lg:px-8">
+  <div class="w-full px-4 py-5 sm:px-6 lg:px-8">
     <div class="rounded-xl border border-[#E8E8E8] bg-white p-6 shadow-sm">
       <p class="m-0 text-sm text-[#6F6F6F] font-ibm">
         Loading dashboard...
       </p>
     </div>
   </div>
-} @else if (data(); as dashboard) {
-
+} @else if (errorMessage()) {
   <div class="w-full px-4 py-5 sm:px-6 lg:px-8">
-
-    <!-- Page Header -->
-    <div class="mb-6">
-      <h1 class="m-0 text-2xl font-semibold text-[#161616] font-ibm">
-        Dashboard
-      </h1>
-
-      <p class="mt-1.5 m-0 text-sm text-[#6F6F6F] font-ibm">
-        Overview of your restaurant and kitchen operations.
-      </p>
-    </div>
-
-    <!-- Overview -->
-    <section class="mb-7">
-      <h2 class="mb-3.5 m-0 text-base font-semibold text-[#161616] font-ibm">
-        Overview
-      </h2>
-
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        @for (card of dashboard.overview; track card.key) {
-          <div
-            class="rounded-xl border border-[#E8E8E8] bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
-          >
-            <p class="m-0 text-sm text-[#6F6F6F] font-ibm">
-              {{ card.label }}
-            </p>
-
-            <p class="mt-2 m-0 text-3xl font-semibold text-[#161616] font-ibm">
-              {{ card.value }}
-            </p>
-
-            @if (card.hint) {
-              <p class="mt-1.5 m-0 text-xs leading-5 text-[#8D8D8D] font-ibm">
-                {{ card.hint }}
-              </p>
-            }
-          </div>
-        }
-      </div>
-    </section>
-
-    <!-- Operational Overview -->
-    <!-- <section class="mb-7">
-      <h2 class="mb-3.5 m-0 text-base font-semibold text-[#161616] font-ibm">
-        Operational Overview
-      </h2>
-
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        @for (card of dashboard.operational; track card.key) {
-          <div
-            class="rounded-xl border border-[#E8E8E8] bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
-          >
-            <p class="m-0 text-sm text-[#6F6F6F] font-ibm">
-              {{ card.label }}
-            </p>
-
-            <p
-              class="mt-2 m-0 text-3xl font-semibold font-ibm"
-              [style.color]="
-                card.key === 'overdue'
-                  ? '#EF4444'
-                  : '#161616'
-              "
-            >
-              {{ card.value }}
-            </p>
-          </div>
-        }
-      </div>
-    </section> -->
-
-    <!-- Inventory Overview -->
-    <section class="mb-7">
-      <h2 class="mb-3.5 m-0 text-base font-semibold text-[#161616] font-ibm">
-        Inventory Overview
-      </h2>
-
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        @for (card of dashboard.inventory; track card.key) {
-          <div
-            class="rounded-xl border border-[#E8E8E8] bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
-          >
-            <p class="m-0 text-sm text-[#6F6F6F] font-ibm">
-              {{ card.label }}
-            </p>
-
-            <p
-              class="mt-2 m-0 text-3xl font-semibold font-ibm"
-              [style.color]="
-                card.key === 'low-stock' ||
-                card.key === 'below-par' ||
-                card.key === 'order-required'
-                  ? '#FF9015'
-                  : '#161616'
-              "
-            >
-              {{ card.value }}
-            </p>
-          </div>
-        }
-      </div>
-    </section>
-
-    <!-- Bottom Sections -->
-    <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
-
-      <!-- Recent Activity -->
-      <section
-        class="rounded-xl border border-[#E8E8E8] bg-white p-5 shadow-sm"
+    <div class="rounded-xl border border-[#FECACA] bg-[#FEF2F2] px-4 py-4">
+      <p class="m-0 text-sm text-[#B42318] font-ibm">{{ errorMessage() }}</p>
+      <button
+        type="button"
+        class="mt-3 text-sm font-medium text-[#FF9015] hover:underline font-ibm"
+        (click)="retry()"
       >
-        <div class="flex items-center justify-between">
-          <h2 class="m-0 text-base font-semibold text-[#161616] font-ibm">
-            Recent Activity
-          </h2>
-        </div>
-
-        <div class="mt-5 space-y-5">
-          @for (activity of dashboard.recentActivity; track activity.id) {
-            <div class="flex gap-3.5">
-
-              <div
-                class="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-[#FF9015]"
-              ></div>
-
-              <div class="min-w-0 flex-1">
-                <p
-                  class="m-0 text-sm font-medium text-[#161616] font-ibm"
-                >
-                  {{ activity.title }}
-                </p>
-
-                <p
-                  class="mt-1 m-0 text-sm leading-5 text-[#6F6F6F] font-ibm"
-                >
-                  {{ activity.detail }}
-                </p>
-
-                <p
-                  class="mt-1.5 m-0 text-xs text-[#8D8D8D] font-ibm"
-                >
-                  {{ activity.timeAgo }}
-                </p>
-              </div>
-
-            </div>
-          }
-        </div>
-      </section>
-
-      <!-- Reporting Groups -->
-      <section
-        class="rounded-xl border border-[#E8E8E8] bg-white p-5 shadow-sm"
-      >
-        <div class="flex items-center justify-between gap-4">
-
-          <h2
-            class="m-0 text-base font-semibold text-[#161616] font-ibm"
-          >
-            Reporting Groups Overview
-          </h2>
-
-          <button
-            type="button"
-            class="shrink-0 text-sm font-medium text-[#FF9015] transition-colors hover:text-[#e57f0f] hover:underline font-ibm"
-            (click)="goToModule('reporting-group')"
-          >
-            Manage
-          </button>
-
-        </div>
-
-        <div class="mt-5 space-y-3">
-          @for (group of dashboard.reportingGroups; track group.id) {
-            <div
-              class="rounded-lg border border-[#ECECEC] bg-[#FAFAFA] px-4 py-3.5"
-            >
-              <div class="flex items-start justify-between gap-4">
-
-                <div class="min-w-0 flex-1">
-                  <p
-                    class="m-0 text-sm font-semibold text-[#161616] font-ibm"
-                  >
-                    {{ group.name }}
-                  </p>
-
-                  <p
-                    class="mt-1.5 m-0 text-xs leading-5 text-[#6F6F6F] font-ibm"
-                  >
-                    {{ group.categories.join(' · ') }}
-                  </p>
-                </div>
-
-                <span
-                  class="shrink-0 rounded-md bg-[#FFF4EA] px-2.5 py-1 text-xs font-medium text-[#FF9015] font-ibm"
-                >
-                  {{ group.itemCount }} items
-                </span>
-
-              </div>
-            </div>
-          }
-        </div>
-
-        <!-- Actions -->
-        <div class="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
-
-          <button
-            type="button"
-            class="rounded-lg bg-[#FF9015] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#e57f0f] font-ibm"
-            (click)="goToPage('items')"
-          >
-            + Add Item
-          </button>
-
-          <button
-            type="button"
-            class="rounded-lg border border-[#FF9015] bg-white px-4 py-2.5 text-sm font-medium text-[#FF9015] transition-colors hover:bg-[#FFF4EA] font-ibm"
-            (click)="goToPage('vendors')"
-          >
-            + Add Vendor
-          </button>
-
-        </div>
-      </section>
-
+        Try again
+      </button>
     </div>
-
   </div>
+} @else if (employeeData(); as dashboard) {
+  <app-employee-dashboard [data]="dashboard" />
+} @else if (adminData(); as dashboard) {
+  <app-tenant-admin-dashboard [data]="dashboard" />
 }

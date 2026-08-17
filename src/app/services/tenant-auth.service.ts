@@ -3,6 +3,7 @@ import { environment } from '../../environments/environment';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { catchError, Observable, tap, throwError } from 'rxjs';
+import { PortalService } from './portal.service';
 
 @Injectable({
   providedIn: 'root'
@@ -11,10 +12,14 @@ export class TenantAuthService {
   private apiUrl = `${environment.tenantApiUrl}`;
 
 
-  constructor(private http: HttpClient, private router: Router) { }
+  constructor(
+    private http: HttpClient,
+    private router: Router,
+    private portal: PortalService,
+  ) { }
 
   login(email: string, password: string, slug?: string): Observable<any> {
-    const normalizedSlug = slug?.trim();
+    const normalizedSlug = this.resolveSlug(slug, email);
     const body: { email: string; password: string; tenant_slug?: string } = {
       email,
       password,
@@ -29,9 +34,9 @@ export class TenantAuthService {
 
           localStorage.setItem('tenant_token', response.accessToken);
 
-          // ✅ FIX: store slug
-          if (response.tenant_slug) {
-            localStorage.setItem('tenant_slug', response.tenant_slug);
+          const storedSlug = response.tenant_slug || normalizedSlug;
+          if (storedSlug) {
+            localStorage.setItem('tenant_slug', storedSlug);
           }
 
           if (response.user) {
@@ -46,7 +51,7 @@ export class TenantAuthService {
   }
 
   forgotPassword(email: string): Observable<any> {
-    const slug = this.extractTenantSlugFromEmail(email);
+    const slug = this.resolveSlug(undefined, email);
     const body: { email: string; tenant_slug?: string } = {
       email,
       ...(slug ? { tenant_slug: slug } : {}),
@@ -58,7 +63,7 @@ export class TenantAuthService {
   }
 
   verifyResetToken(email: string, token: string): Observable<any> {
-    const slug = this.extractTenantSlugFromEmail(email);
+    const slug = this.resolveSlug(undefined, email);
     const body: { email: string; token: string; tenant_slug?: string } = {
       email,
       token,
@@ -76,7 +81,7 @@ export class TenantAuthService {
     password: string;
     password_confirm: string;
   }): Observable<any> {
-    const slug = this.extractTenantSlugFromEmail(payload.email);
+    const slug = this.resolveSlug(undefined, payload.email);
     const body = {
       ...payload,
       ...(slug ? { tenant_slug: slug } : {}),
@@ -92,10 +97,9 @@ logout(): void {
   localStorage.removeItem('tenant_slug');
   localStorage.removeItem('tenant_user');
 
-  this.router.navigate(['/tenant/login']);
+  this.router.navigate(['/login']);
 }
 
-  // ✅ Same reusable API call with auth
   postWithAuth<T>(url: string, body: any): Observable<T> {
     const token = localStorage.getItem('tenant_token');
 
@@ -116,6 +120,14 @@ logout(): void {
 
   private handleUnauthorized() {
     this.logout();
+  }
+
+  /** Hostname is the source of truth; email domain is only a fallback. */
+  private resolveSlug(explicit?: string, email?: string): string | undefined {
+    const fromHost = this.portal.tenantSlug?.trim();
+    const fromArg = explicit?.trim();
+    const fromEmail = email ? this.extractTenantSlugFromEmail(email) : null;
+    return fromHost || fromArg || fromEmail || undefined;
   }
 
   private extractTenantSlugFromEmail(email: string): string | null {

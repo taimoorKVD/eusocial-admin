@@ -19,7 +19,6 @@ import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { finalize, startWith, take } from 'rxjs';
 import flatpickr from 'flatpickr';
 import { Instance as FlatpickrInstance } from 'flatpickr/dist/types/instance';
-import { TenantSessionService } from '../../../../../services/tenant-session.service';
 import { TenantUserService } from '../../../../../services/tenant-user.service';
 import { TenantJobPositionService } from '../../../../../services/tenant-job-position.service';
 import { LocationCacheService } from '../../../../../services/location-cache.service';
@@ -125,7 +124,6 @@ export class CreateFormComponent implements OnInit {
 
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
-  private readonly session = inject(TenantSessionService);
   private readonly formsService = inject(TenantFormsService);
   private readonly toastr = inject(ToastrService);
   private readonly userService = inject(TenantUserService);
@@ -1659,7 +1657,7 @@ export class CreateFormComponent implements OnInit {
   }
 
   cancel(): void {
-    this.router.navigate(['/tenant', this.session.getSlug(), 'dynamic-forms']);
+    this.router.navigate(['/dynamic-forms']);
   }
 
   save(): void {
@@ -1675,7 +1673,7 @@ export class CreateFormComponent implements OnInit {
         .subscribe({
           next: () => {
             this.toastr.success('Form updated successfully');
-            this.router.navigate(['/tenant', this.session.getSlug(), 'dynamic-forms']);
+            this.router.navigate(['/dynamic-forms']);
           },
           error: (err) => {
             this.toastr.error(err?.error?.message || 'Failed to update form');
@@ -1690,7 +1688,7 @@ export class CreateFormComponent implements OnInit {
       .subscribe({
         next: () => {
           this.toastr.success('Form created successfully');
-          this.router.navigate(['/tenant', this.session.getSlug(), 'dynamic-forms']);
+          this.router.navigate(['/dynamic-forms']);
         },
         error: (err) => {
           this.toastr.error(err?.error?.message || 'Failed to create form');

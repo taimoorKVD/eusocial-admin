@@ -98,6 +98,13 @@ export class TenantProfileService {
     }
 
     if (profile.accountType) {
+      const accountType = String(profile.accountType).toLowerCase();
+      if (accountType === 'tenant_user') {
+        return 'Staff';
+      }
+      if (accountType === 'tenant_admin') {
+        return 'Tenant Admin';
+      }
       return String(profile.accountType);
     }
 
@@ -157,7 +164,10 @@ export class TenantProfileService {
         this.clean(base['profile_image'] as string) ||
         undefined,
       role: base.role,
-      accountType: this.clean(base.accountType as string) || undefined,
+      accountType:
+        this.clean(base.accountType as string) ||
+        this.clean(base['account_type'] as string) ||
+        undefined,
     };
   }
 
