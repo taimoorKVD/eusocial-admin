@@ -7,6 +7,7 @@ import {
 } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Auth } from '../services/auth';
+import { environment } from '../../environments/environment';
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
@@ -17,11 +18,9 @@ export class AuthInterceptor implements HttpInterceptor {
     next: HttpHandler,
   ): Observable<HttpEvent<any>> {
 
-    // Tenant API requests are handled by TenantAuthInterceptor.
-    if (
-      req.url.includes('api.eusocial.thebetawebsite.com/api/') &&
-      !req.url.includes('/api/master/')
-    ) {
+    // Only attach the admin token to master API calls.
+    // Tenant API (local and production) is handled by TenantAuthInterceptor.
+    if (!req.url.startsWith(environment.apiUrl)) {
       return next.handle(req);
     }
 

@@ -2,7 +2,6 @@ import { Component } from '@angular/core';
 import { TenantLocationService } from '../../../../services/tenant-location.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { TenantSessionService } from '../../../../services/tenant-session.service';
 import { ToastrService } from 'ngx-toastr';
 
 @Component({
@@ -23,7 +22,6 @@ export class LocationComponent {
     private locationService: TenantLocationService,
     private route: ActivatedRoute,
     private router: Router,
-    public session: TenantSessionService,
     private toastr: ToastrService,
   ) {}
 
@@ -147,14 +145,14 @@ export class LocationComponent {
       this.locationService.updateLocation(this.selectedId, payload).subscribe({
         next: () => {
           this.toastr.success('Location updated successfully');
-          this.router.navigate(['/tenant', this.session.getSlug(), 'location']);
+          this.router.navigate(['/location']);
         },
       });
     } else {
       this.locationService.createLocation(payload).subscribe({
         next: () => {
           this.toastr.success('Location created successfully');
-          this.router.navigate(['/tenant', this.session.getSlug(), 'location']);
+          this.router.navigate(['/location']);
         },
       });
     }

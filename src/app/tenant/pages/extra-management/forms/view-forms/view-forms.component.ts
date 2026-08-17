@@ -8,7 +8,6 @@ import { environment } from '../../../../../../environments/environment';
 import { SharedModule } from '../../../../../shared/shared.module';
 import { GlobalFilterField } from '../../../../../shared/global-filter/global-filter';
 import { pruneFiltersByAllowedKeys } from '../../../../../shared/dynamic-listing/dynamic-listing.helpers';
-import { TenantSessionService } from '../../../../../services/tenant-session.service';
 import { TenantFormsService } from '../services/tenant-forms.service';
 import { SavedDynamicForm } from '../models/dynamic-form.models';
 
@@ -26,7 +25,6 @@ const FORM_FILTER_FIELDS: GlobalFilterField[] = [
 export class ViewFormsComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
-  private readonly session = inject(TenantSessionService);
   private readonly formsService = inject(TenantFormsService);
   private readonly toastr = inject(ToastrService);
   private readonly destroyRef = inject(DestroyRef);
@@ -140,7 +138,7 @@ export class ViewFormsComponent implements OnInit {
   }
 
   goToCreate(): void {
-    this.router.navigate(['/tenant', this.session.getSlug(), 'dynamic-forms', 'create']);
+    this.router.navigate(['/dynamic-forms', 'create']);
   }
 
   goToEdit(form: SavedDynamicForm): void {

@@ -78,11 +78,10 @@ export class TenantSessionService {
 
   /** Default landing commands after login / home redirect. */
   getHomeCommands(): string[] {
-    const slug = this.getSlug();
-    if (!slug) {
-      return ['/tenant/login'];
+    if (!this.getSlug()) {
+      return ['/login'];
     }
-    return ['/tenant', slug, 'user-dashboard'];
+    return ['/user-dashboard'];
   }
 
   /** Merge and persist user fields (used by Profile updates). */

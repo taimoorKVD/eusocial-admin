@@ -13,7 +13,6 @@ import { ToastrService } from 'ngx-toastr';
 import { ActivatedRoute, Router } from '@angular/router';
 import { catchError, finalize, forkJoin, map, of, switchMap } from 'rxjs';
 import { TenantUserService } from '../../../../../services/tenant-user.service';
-import { TenantSessionService } from '../../../../../services/tenant-session.service';
 import { FormStorageService } from '../../../../forms/services/form-storage.service';
 import { FormField } from '../../../../form-builder/models/form-field.model';
 import { normalizeFieldOrder } from '../../../../form-builder/utils/form-field.factory';
@@ -45,7 +44,6 @@ export class SetupUserComponent {
   private readonly toastr = inject(ToastrService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  private readonly tenantSession = inject(TenantSessionService);
   private readonly formStorageService = inject(FormStorageService);
   private readonly userService = inject(TenantUserService);
   private readonly destroyRef = inject(DestroyRef);
@@ -130,7 +128,7 @@ export class SetupUserComponent {
         .subscribe({
           next: () => {
             this.toastr.success('User updated successfully');
-            this.router.navigate(['/tenant', this.tenantSession.getSlug(), 'users']);
+            this.router.navigate(['/users']);
           },
           error: (err) => {
             this.toastr.error(err?.error?.message || 'Failed to update user');
@@ -145,7 +143,7 @@ export class SetupUserComponent {
       .subscribe({
         next: () => {
           this.toastr.success('User created successfully');
-          this.router.navigate(['/tenant', this.tenantSession.getSlug(), 'users']);
+          this.router.navigate(['/users']);
         },
         error: (err) => {
           console.error('Create user error:', err);
@@ -724,11 +722,7 @@ export class SetupUserComponent {
         break;
 
       case 'cancel':
-        this.router.navigate([
-          '/tenant',
-          this.tenantSession.getSlug(),
-          'users',
-        ]);
+        this.router.navigate(['/users']);
         break;
     }
 
@@ -751,11 +745,7 @@ export class SetupUserComponent {
       .subscribe({
         next: () => {
           this.toastr.success('User deleted successfully');
-          this.router.navigate([
-            '/tenant',
-            this.tenantSession.getSlug(),
-            'users',
-          ]);
+          this.router.navigate(['/users']);
         },
         error: (err) => {
           this.toastr.error(
@@ -766,7 +756,7 @@ export class SetupUserComponent {
   }
 
   goToUserListing(): void {
-    this.router.navigate(['/tenant', this.tenantSession.getSlug(), 'users']);
+    this.router.navigate(['/users']);
   }
 
 }

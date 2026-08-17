@@ -1,7 +1,6 @@
 import { Component, Input, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { TenantSessionService } from '../../../services/tenant-session.service';
 import { TenantAdminDashboardData } from '../../../interfaces/dashboard';
 
 interface AdminStatCardView {
@@ -20,7 +19,6 @@ interface AdminStatCardView {
   templateUrl: './tenant-admin-dashboard.component.html',
 })
 export class TenantAdminDashboardComponent {
-  private readonly session = inject(TenantSessionService);
   private readonly router = inject(Router);
 
   @Input({ required: true }) data!: TenantAdminDashboardData;
@@ -130,10 +128,10 @@ export class TenantAdminDashboardComponent {
   }
 
   goToModule(module: string): void {
-    this.router.navigate(['/tenant', this.session.getSlug(), module]);
+    this.router.navigate(['/', module]);
   }
 
   goToCreate(module: string): void {
-    this.router.navigate(['/tenant', this.session.getSlug(), module, 'create']);
+    this.router.navigate(['/', module, 'create']);
   }
 }

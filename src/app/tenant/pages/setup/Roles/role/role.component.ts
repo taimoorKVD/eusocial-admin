@@ -3,7 +3,6 @@ import { FormBuilder, FormGroup } from '@angular/forms';
 import { RoleService } from '../../../../../services/role.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TenantRoleService } from '../../../../../services/tenant-role.service';
-import { TenantSessionService } from '../../../../../services/tenant-session.service';
 import { ToastrService } from 'ngx-toastr';
 
 @Component({
@@ -27,7 +26,6 @@ export class RoleComponent {
     private rolesService: TenantRoleService,
     private route: ActivatedRoute,
     private router: Router,
-    private session: TenantSessionService,
     private toastr: ToastrService,
   ) {}
 
@@ -112,11 +110,7 @@ submit() {
 
         this.toastr.success('Role updated successfully');
 
-        this.router.navigate([
-          '/tenant',
-          this.session.getSlug(),
-          'roles'
-        ]);
+        this.router.navigate(['/roles']);
       }
 
     });
@@ -129,11 +123,7 @@ submit() {
 
         this.toastr.success('Role created successfully');
 
-        this.router.navigate([
-          '/tenant',
-          this.session.getSlug(),
-          'roles'
-        ]);
+        this.router.navigate(['/roles']);
       }
 
     });

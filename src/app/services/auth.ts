@@ -50,23 +50,13 @@ export class Auth {
     localStorage.removeItem(this.userKey);
     localStorage.removeItem(this.tokenKey);
     this.currentUserSubject.next(null);
-    const url = window.location.pathname;
-    if (url === '/tenant' || url.startsWith('/tenant/')) {
-      this.router.navigate(['/login']);
-    } else {
-      this.router.navigate(['/login']);
-    }
+    this.router.navigate(['/login']);
   }
 
   private clearAndRedirect(): void {
     localStorage.removeItem(this.userKey);
     this.currentUserSubject.next(null);
-    const url = window.location.pathname;
-    if (url === '/tenant' || url.startsWith('/tenant/')) {
-      this.router.navigate(['/login']);
-    } else {
-      this.router.navigate(['/login']);
-    }
+    this.router.navigate(['/login']);
   }
 
   // --------------------------

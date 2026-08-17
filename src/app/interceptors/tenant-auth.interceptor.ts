@@ -9,11 +9,14 @@ import { Router } from '@angular/router';
 import { catchError, Observable, throwError } from 'rxjs';
 import { Injectable } from '@angular/core';
 import { ToastrService } from 'ngx-toastr';
+import { environment } from '../../environments/environment';
+import { PortalService } from '../services/portal.service';
 
 @Injectable()
 export class TenantAuthInterceptor implements HttpInterceptor {
 
   constructor(
+    private portal: PortalService,
     private router: Router,
     private toastr: ToastrService,
   ) {}
@@ -25,57 +28,34 @@ export class TenantAuthInterceptor implements HttpInterceptor {
     next: HttpHandler
   ): Observable<HttpEvent<any>> {
 
-    const token = localStorage.getItem('tenant_token');
-    const storedSlug = localStorage.getItem('tenant_slug');
+    const isMasterApi = req.url.startsWith(environment.apiUrl);
+    const isTenantApi =
+      req.url.startsWith(environment.tenantApiUrl) && !isMasterApi;
 
-    const hostname = window.location.hostname;
-
-    // Derive tenant from the current frontend hostname.
-    //
-    // folio3.eusocial.thebetawebsite.com
-    //                ↓
-    //              folio3
-    //
-    const baseDomain = '.eusocial.thebetawebsite.com';
-
-    let tenantSlug = storedSlug;
-
-    if (hostname.endsWith(baseDomain)) {
-      const subdomain = hostname.slice(
-        0,
-        -baseDomain.length
-      );
-
-      if (
-        subdomain &&
-        subdomain !== 'www' &&
-        subdomain !== 'admin'
-      ) {
-        tenantSlug = subdomain.toLowerCase();
-      }
+    if (!isTenantApi) {
+      return next.handle(req);
     }
+
+    const token = localStorage.getItem('tenant_token');
+    const tenantSlug =
+      this.portal.tenantSlug || localStorage.getItem('tenant_slug');
 
     const isLoginRequest = /\/login(\?|$)/.test(req.url);
 
-    let authReq = req;
-
     const headers: Record<string, string> = {};
 
-    // Attach tenant to API requests.
     if (tenantSlug) {
       headers['X-Tenant-Slug'] = tenantSlug;
     }
 
-    // Attach tenant JWT after login.
     if (token && !isLoginRequest) {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
-    if (Object.keys(headers).length > 0) {
-      authReq = req.clone({
-        setHeaders: headers,
-      });
-    }
+    const authReq =
+      Object.keys(headers).length > 0
+        ? req.clone({ setHeaders: headers })
+        : req;
 
     return next.handle(authReq).pipe(
       catchError((error: HttpErrorResponse) => {
@@ -112,7 +92,9 @@ export class TenantAuthInterceptor implements HttpInterceptor {
 
     this.isLoggingOut = true;
 
-    localStorage.clear();
+    localStorage.removeItem('tenant_token');
+    localStorage.removeItem('tenant_slug');
+    localStorage.removeItem('tenant_user');
 
     this.toastr.error(msg);
 

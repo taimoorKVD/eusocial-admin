@@ -32,12 +32,15 @@ const routes: Routes = [
    * ADMIN PORTAL
    *
    * admin.eusocial.thebetawebsite.com
+   * http://admin.localhost:4200
+   * http://localhost:4200
    *
    * ============================================================
    */
 
   {
     path: '',
+    canMatch: [AdminPortalGuard],
     children: [
 
       /*
@@ -200,6 +203,7 @@ const routes: Routes = [
    *
    * tenant1.eusocial.thebetawebsite.com
    * folio3.eusocial.thebetawebsite.com
+   * http://folio3.localhost:4200
    *
    * TenantModule now owns:
    *
@@ -216,6 +220,7 @@ const routes: Routes = [
 
   {
     path: '',
+    canMatch: [TenantPortalGuard],
     canActivate: [TenantPortalGuard],
     children: [
       {

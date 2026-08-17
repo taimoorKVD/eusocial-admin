@@ -15,7 +15,6 @@ import { catchError, finalize, forkJoin, map, of, switchMap, throwError } from '
 import { SharedModule } from '../../../../shared/shared.module';
 import { DynamicFormComponent } from '../../../../shared/dynamic-form/dynamic-form.component';
 import { DynamicFormFieldMapperService } from '../../../forms/services/dynamic-form-field.mapper.service';
-import { TenantSessionService } from '../../../../services/tenant-session.service';
 import { EmployeeAssignmentsService } from '../../../../services/employee-assignments.service';
 import {
   EmployeeAssignmentDetail,
@@ -33,7 +32,6 @@ import { mapAssignmentSectionsToBuilder } from '../utils/assignment-form.mapper'
 export class EmployeeAssignmentComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  private readonly session = inject(TenantSessionService);
   private readonly assignmentsService = inject(EmployeeAssignmentsService);
   private readonly fieldMapper = inject(DynamicFormFieldMapperService);
   private readonly toastr = inject(ToastrService);
@@ -80,7 +78,7 @@ export class EmployeeAssignmentComponent implements OnInit {
   }
 
   goBack(): void {
-    this.router.navigate(['/tenant', this.session.getSlug(), 'my-forms']);
+    this.router.navigate(['/my-forms']);
   }
 
   statusLabel(status: string | undefined): string {

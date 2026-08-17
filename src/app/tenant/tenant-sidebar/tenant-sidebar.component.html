@@ -26,7 +26,7 @@
   <div class="tenant-sidebar__menu overflow-y-auto flex-1">
 
     @if (isEmployee) {
-      <a [routerLink]="['/tenant', session.getSlug(), 'user-dashboard']"
+      <a [routerLink]="['/user-dashboard']"
         routerLinkActive="tenant-sidebar__link--active"
         class="tenant-sidebar__link font-ibm">
         <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
@@ -39,7 +39,7 @@
         Dashboard
       </a>
 
-      <a [routerLink]="['/tenant', session.getSlug(), 'my-forms']"
+      <a [routerLink]="['/my-forms']"
         routerLinkActive="tenant-sidebar__link--active"
         [routerLinkActiveOptions]="{ exact: false }"
         class="tenant-sidebar__link font-ibm">
@@ -50,7 +50,7 @@
         My Forms
       </a>
 
-      <a [routerLink]="['/tenant', session.getSlug(), 'history']"
+      <a [routerLink]="['/history']"
         routerLinkActive="tenant-sidebar__link--active"
         class="tenant-sidebar__link font-ibm">
         <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
@@ -62,7 +62,7 @@
         History
       </a>
 
-      <a [routerLink]="['/tenant', session.getSlug(), 'profile']"
+      <a [routerLink]="['/profile']"
         routerLinkActive="tenant-sidebar__link--active"
         class="tenant-sidebar__link font-ibm">
         <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
@@ -89,7 +89,7 @@
       </button>
     } @else {
     <!-- HOME -->
-    <a [routerLink]="['/tenant',  session.getSlug(), 'home']" routerLinkActive="tenant-sidebar__link--active"
+    <a [routerLink]="['/home']" routerLinkActive="tenant-sidebar__link--active"
       class="tenant-sidebar__link font-ibm">
 
       <!-- <svg style="opacity: 0" width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -107,7 +107,7 @@
     </a>
 
     <!-- USER DASHBOARD -->
-    <a [routerLink]="['/tenant',  session.getSlug(), 'user-dashboard']"
+    <a [routerLink]="['/user-dashboard']"
       routerLinkActive="tenant-sidebar__link--active"
       class="tenant-sidebar__link font-ibm">
 
@@ -155,7 +155,7 @@
       <!-- SUB MENU -->
       <div *ngIf="openSetup" class="tenant-sidebar__submenu">
 
-        <a [routerLink]="['/tenant', session.getSlug(), 'users']"
+        <a [routerLink]="['/users']"
           routerLinkActive="tenant-sidebar__sublink--active"
           class="tenant-sidebar__sublink font-ibm">
           <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
@@ -168,7 +168,7 @@
           Users
         </a>
 
-        <!-- <a [routerLink]="['/tenant', session.getSlug(), 'roles']"
+        <!-- <a [routerLink]="['/roles']"
           routerLinkActive="tenant-sidebar__sublink--active"
           class="tenant-sidebar__sublink font-ibm">
           <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
@@ -181,7 +181,7 @@
           Roles
         </a> -->
 
-        <a [routerLink]="['/tenant',  session.getSlug(), 'job-position']"
+        <a [routerLink]="['/job-position']"
           routerLinkActive="tenant-sidebar__sublink--active"
           class="tenant-sidebar__sublink font-ibm">
           <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
@@ -194,7 +194,7 @@
           Job Positions
         </a>
 
-        <a [routerLink]="['/tenant',  session.getSlug(), 'items']"
+        <a [routerLink]="['/items']"
           routerLinkActive="tenant-sidebar__sublink--active"
           class="tenant-sidebar__sublink font-ibm">
           <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
@@ -206,7 +206,7 @@
           Items
         </a>
 
-        <a [routerLink]="['/tenant',  session.getSlug(), 'vendors']"
+        <a [routerLink]="['/vendors']"
           routerLinkActive="tenant-sidebar__sublink--active"
           class="tenant-sidebar__sublink font-ibm">
           <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
@@ -219,7 +219,7 @@
           Vendors
         </a>
 
-        <a [routerLink]="['/tenant',  session.getSlug(), 'reporting-group']"
+        <a [routerLink]="['/reporting-group']"
           routerLinkActive="tenant-sidebar__sublink--active"
           class="tenant-sidebar__sublink font-ibm">
           <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
@@ -268,8 +268,8 @@
       <!-- SUB MENU -->
       <div *ngIf="openExtraManagement" class="tenant-sidebar__submenu">
 
-        <!-- <a [routerLink]="['/tenant', session.getSlug(), 'users']" -->
-        <a [routerLink]="['/tenant',  session.getSlug(), 'location']"
+        <!-- <a [routerLink]="['/users']" -->
+        <a [routerLink]="['/location']"
           routerLinkActive="tenant-sidebar__sublink--active"
           class="tenant-sidebar__sublink font-ibm">
           <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
@@ -284,7 +284,7 @@
 
       </div>
     </div>
-    <a [routerLink]="['/tenant', session.getSlug(), 'dynamic-forms']"
+    <a [routerLink]="['/dynamic-forms']"
       routerLinkActive="tenant-sidebar__sublink--active"
       class="tenant-sidebar__link font-ibm">
       <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
@@ -295,7 +295,7 @@
     </a>
 
     <!-- FORMS -->
-    <!-- <a [routerLink]="['/tenant',  session.getSlug(), 'forms']"
+    <!-- <a [routerLink]="['/forms']"
       routerLinkActive="text-[#333333] border-l-4 border-blue-500 font-bold"
       class="text-[#525252] font-ibm flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100">
       <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
@@ -341,8 +341,8 @@
       <!-- SUB MENU -->
       <div *ngIf="openFormBuilder" class="tenant-sidebar__submenu">
 
-        <!-- <a [routerLink]="['/tenant', session.getSlug(), 'users']" -->
-        <a [routerLink]="['/tenant',  session.getSlug(), 'forms', 'users']"
+        <!-- <a [routerLink]="['/users']" -->
+        <a [routerLink]="['/forms', 'users']"
           routerLinkActive="tenant-sidebar__sublink--active"
           class="tenant-sidebar__sublink font-ibm">
           <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
@@ -355,7 +355,7 @@
           Users
         </a>
 
-        <!-- <a [routerLink]="['/tenant',  session.getSlug(), 'forms', 'vendors']"
+        <!-- <a [routerLink]="['/forms', 'vendors']"
           routerLinkActive="tenant-sidebar__sublink--active"
           class="tenant-sidebar__sublink font-ibm">
           <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
@@ -368,7 +368,7 @@
           Vendors
         </a>
 
-        <a [routerLink]="['/tenant',  session.getSlug(), 'forms', 'job-positions']"
+        <a [routerLink]="['/forms', 'job-positions']"
           routerLinkActive="tenant-sidebar__sublink--active"
           class="tenant-sidebar__sublink font-ibm">
           <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
@@ -381,7 +381,7 @@
           Job-postions
         </a>
 
-        <a [routerLink]="['/tenant',  session.getSlug(), 'forms', 'items']"
+        <a [routerLink]="['/forms', 'items']"
           routerLinkActive="tenant-sidebar__sublink--active"
           class="tenant-sidebar__sublink font-ibm">
           <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
