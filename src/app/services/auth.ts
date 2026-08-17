@@ -26,12 +26,17 @@ export class Auth {
         next: (res: AuthResponse) => {
           // Make sure we have a valid token response
           if (res && res.access_token) {
+            const user = this.normalizeUser(res.user);
+
             // ✅ Save token & user info locally
             localStorage.setItem(this.tokenKey, res.access_token);
-            localStorage.setItem(this.userKey, JSON.stringify(res.user));
+            if (res.refresh_token) {
+              localStorage.setItem('refresh_token', res.refresh_token);
+            }
+            localStorage.setItem(this.userKey, JSON.stringify(user));
 
             // ✅ Update BehaviorSubject so components see the new user immediately
-            this.currentUserSubject.next(res.user);
+            this.currentUserSubject.next(user);
             this.justLoggedIn = true; // ✅ mark as just logged in
           }
         },
@@ -155,7 +160,12 @@ export class Auth {
   // --------------------------
   private getStoredUser(): User | null {
     const stored = localStorage.getItem(this.userKey);
-    return stored ? (JSON.parse(stored) as User) : null;
+    if (!stored) return null;
+    try {
+      return this.normalizeUser(JSON.parse(stored) as User);
+    } catch {
+      return null;
+    }
   }
 
   getToken(): string | null {
@@ -168,5 +178,25 @@ export class Auth {
 
   currentUser(): User | null {
     return this.currentUserSubject.value;
+  }
+
+  setCurrentUser(user: User | null): void {
+    if (user) {
+      const normalized = this.normalizeUser(user);
+      localStorage.setItem(this.userKey, JSON.stringify(normalized));
+      this.currentUserSubject.next(normalized);
+    } else {
+      localStorage.removeItem(this.userKey);
+      this.currentUserSubject.next(null);
+    }
+  }
+
+  private normalizeUser(user: User | any): User {
+    if (!user) return user;
+    const role = user.role;
+    if (typeof role === 'string') {
+      return { ...user, role: { id: 0, name: role } };
+    }
+    return user as User;
   }
 }

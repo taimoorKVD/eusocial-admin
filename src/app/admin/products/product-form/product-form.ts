@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ProductService } from '../../../services/product.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { environment } from '../../../../environments/environment';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-product-form',
@@ -15,7 +16,6 @@ export class ProductForm {
   form!: FormGroup;
   isEditMode = false;
   productId!: number;
-  message = '';
   loading = false;
   imagePreview: string | ArrayBuffer | null = null;
   selectedFile: File | null = null;
@@ -24,7 +24,8 @@ export class ProductForm {
     private fb: FormBuilder,
     private productService: ProductService,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private toastr: ToastrService
   ) { }
 
   ngOnInit(): void {
@@ -60,7 +61,7 @@ export class ProductForm {
         this.loading = false;
       },
       error: () => {
-        this.message = 'Failed to load product ❌';
+        this.toastr.error('Failed to load product');
         this.loading = false;
       },
     });
@@ -69,9 +70,9 @@ export class ProductForm {
   saveProduct(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      this.toastr.error('Please fill in all required fields correctly');
       return;
     }
-    // console.log('Submitting form with values:', this.form.value);
 
     const formData = new FormData();
     formData.append('name', this.form.value.name);
@@ -86,14 +87,14 @@ export class ProductForm {
 
     req$.subscribe({
       next: () => {
-        this.message = this.isEditMode
-          ? 'Product updated successfully ✅'
-          : 'Product created successfully ✅';
+        this.toastr.success(
+          this.isEditMode ? 'Product updated successfully' : 'Product created successfully'
+        );
         this.loading = false;
         setTimeout(() => this.router.navigate(['/products']), 1000);
       },
       error: () => {
-        this.message = 'Failed to save product ❌';
+        this.toastr.error('Failed to save product');
         this.loading = false;
       },
     });

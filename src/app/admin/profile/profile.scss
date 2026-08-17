@@ -40,18 +40,57 @@
   .password-field {
     position: relative;
 
-    i {
-      position: absolute;
-      right: 8px;
-      top: 35px;
-      cursor: pointer;
-      color: #6c757d;
-      font-size: 1rem;
-      transition: color 0.2s;
+    .password-label-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 6px;
     }
 
-    i:hover {
-      color: #0d6efd;
+    .generate-password-link {
+      margin: 0;
+      padding: 0;
+      border: none;
+      background: none;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #ff9015;
+      cursor: pointer;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      white-space: nowrap;
+
+      &:hover {
+        color: #c2410c;
+      }
+    }
+
+    .password-input-wrap {
+      position: relative;
+    }
+
+    .password-toggle {
+      position: absolute;
+      right: 0.7rem;
+      top: 50%;
+      transform: translateY(-50%);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      border: none;
+      background: transparent;
+      color: #6b7280;
+      cursor: pointer;
+
+      &:hover {
+        color: #ea580c;
+      }
+    }
+
+    input {
+      padding-right: 2.75rem;
     }
   }
 

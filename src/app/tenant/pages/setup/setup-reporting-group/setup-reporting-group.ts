@@ -50,6 +50,7 @@ export class SetupReportingGroup implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly groups = this.reportingGroupService.groups;
+  readonly loading = signal(false);
   readonly expandedGroupIds = signal<Set<string>>(new Set());
   readonly expandedCategoryIds = signal<Set<string>>(new Set());
 
@@ -63,6 +64,7 @@ export class SetupReportingGroup implements OnInit {
   readonly catalogLoading = signal(false);
   readonly catalogSearch = signal('');
   readonly selectedItemIds = signal<Set<string>>(new Set());
+  readonly assignedItemIds = signal<Set<string>>(new Set());
 
   readonly showDeleteConfirm = signal(false);
   readonly deleteConfirmDescription = signal('');
@@ -97,7 +99,8 @@ export class SetupReportingGroup implements OnInit {
   });
 
   ngOnInit(): void {
-    this.reportingGroupService.reload();
+    this.loadReportingGroups();
+    this.loadCatalogItems();
   }
 
   isGroupExpanded(groupId: string): boolean {
@@ -177,6 +180,9 @@ export class SetupReportingGroup implements OnInit {
     this.selectedItemIds.set(
       new Set(category.items.map((item) => String(item.id)))
     );
+    this.assignedItemIds.set(
+      new Set(category.items.map((item) => String(item.id)))
+    );
     this.modalMode.set('assign-items');
     this.ensureGroupExpanded(group.id);
     this.ensureCategoryExpanded(category.id);
@@ -209,79 +215,105 @@ export class SetupReportingGroup implements OnInit {
 
     this.modalSaving.set(true);
 
-    try {
-      if (mode === 'create-group') {
-        const group = this.reportingGroupService.createGroup(name);
-        this.ensureGroupExpanded(group.id);
-        this.toastr.success('Reporting group created');
-      } else if (mode === 'edit-group') {
-        const groupId = this.activeGroupId();
-        if (!groupId) {
-          return;
-        }
-        this.reportingGroupService.updateGroup(groupId, name);
-        this.toastr.success('Reporting group updated');
-      } else if (mode === 'add-category') {
-        const groupId = this.activeGroupId();
-        if (!groupId) {
-          return;
-        }
-        const category = this.reportingGroupService.addCategory(groupId, name);
-        this.ensureCategoryExpanded(category.id);
-        this.toastr.success('Category added');
-      } else if (mode === 'edit-category') {
-        const groupId = this.activeGroupId();
-        const categoryId = this.activeCategoryId();
-        if (!groupId || !categoryId) {
-          return;
-        }
-        this.reportingGroupService.updateCategory(groupId, categoryId, name);
-        this.toastr.success('Category updated');
-      }
+    let request$: import('rxjs').Observable<unknown>;
 
-      this.closeModal();
-    } catch (error) {
-      this.toastr.error(
-        error instanceof Error ? error.message : 'Unable to save changes'
-      );
-    } finally {
+    if (mode === 'create-group') {
+      request$ = this.reportingGroupService.createGroup(name);
+    } else if (mode === 'edit-group') {
+      const groupId = this.activeGroupId();
+      if (!groupId) {
+        this.modalSaving.set(false);
+        return;
+      }
+      request$ = this.reportingGroupService.updateGroup(groupId, name);
+    } else if (mode === 'add-category') {
+      const groupId = this.activeGroupId();
+      if (!groupId) {
+        this.modalSaving.set(false);
+        return;
+      }
+      request$ = this.reportingGroupService.addCategory(groupId, name);
+    } else if (mode === 'edit-category') {
+      const categoryId = this.activeCategoryId();
+      if (!categoryId) {
+        this.modalSaving.set(false);
+        return;
+      }
+      request$ = this.reportingGroupService.updateCategory(categoryId, name);
+    } else {
       this.modalSaving.set(false);
+      return;
     }
+
+    request$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.toastr.success(
+            mode.includes('group')
+              ? (mode === 'create-group' ? 'Reporting group created' : 'Reporting group updated')
+              : (mode === 'add-category' ? 'Category added' : 'Category updated')
+          );
+          this.closeModal();
+          this.loadReportingGroups();
+        },
+        error: (error: unknown) => {
+          this.modalSaving.set(false);
+          const message =
+            error && typeof error === 'object' && 'error' in error
+              ? (error as { error?: { message?: string } }).error?.message
+              : undefined;
+          this.toastr.error(message || 'Unable to save changes');
+        },
+      });
   }
 
   saveAssignedItems(): void {
-    const groupId = this.activeGroupId();
     const categoryId = this.activeCategoryId();
-    if (!groupId || !categoryId) {
+    if (!categoryId) {
       return;
     }
 
     const selected = this.selectedItemIds();
-    const items: ReportingGroupAssignedItem[] = this.catalogItems()
+    const itemIds = this.catalogItems()
       .filter((item) => selected.has(String(item.id)))
-      .map((item) => ({ id: item.id, name: item.name }));
+      .map((item) => item.id);
 
     // Keep previously assigned items that may no longer be in the catalog page.
-    const existing =
-      this.reportingGroupService
-        .getGroupById(groupId)
-        ?.categories.find((category) => category.id === categoryId)?.items ?? [];
+    const groupId = this.activeGroupId();
+    if (groupId) {
+      const existing =
+        this.reportingGroupService
+          .getGroupById(groupId)
+          ?.categories.find((category) => category.id === categoryId)?.items ?? [];
 
-    for (const item of existing) {
-      if (selected.has(String(item.id)) && !items.some((entry) => String(entry.id) === String(item.id))) {
-        items.push(item);
+      for (const item of existing) {
+        if (selected.has(String(item.id)) && !itemIds.some((id) => String(id) === String(item.id))) {
+          itemIds.push(item.id);
+        }
       }
     }
 
-    try {
-      this.reportingGroupService.setCategoryItems(groupId, categoryId, items);
-      this.toastr.success('Items assigned successfully');
-      this.closeModal();
-    } catch (error) {
-      this.toastr.error(
-        error instanceof Error ? error.message : 'Unable to assign items'
-      );
-    }
+    this.modalSaving.set(true);
+
+    this.reportingGroupService
+      .assignItemsToCategory(categoryId, itemIds)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.toastr.success('Items assigned successfully');
+          this.closeModal();
+          this.loadReportingGroups();
+        },
+        error: (error: unknown) => {
+          this.modalSaving.set(false);
+          const message =
+            error && typeof error === 'object' && 'error' in error
+              ? (error as { error?: { message?: string } }).error?.message
+              : undefined;
+          this.toastr.error(message || 'Unable to assign items');
+        },
+      });
   }
 
   confirmDeleteGroup(group: ReportingGroup, event?: Event): void {
@@ -345,32 +377,43 @@ export class SetupReportingGroup implements OnInit {
       return;
     }
 
-    try {
-      if (pending.type === 'group') {
-        this.reportingGroupService.deleteGroup(pending.groupId);
-        this.toastr.success('Reporting group deleted');
-        return;
-      }
+    let request$: import('rxjs').Observable<unknown> | null = null;
 
-      if (pending.type === 'category' && pending.categoryId) {
-        this.reportingGroupService.deleteCategory(pending.groupId, pending.categoryId);
-        this.toastr.success('Category deleted');
-        return;
-      }
-
-      if (pending.type === 'item' && pending.categoryId && pending.itemId != null) {
-        this.reportingGroupService.removeItemFromCategory(
-          pending.groupId,
-          pending.categoryId,
-          pending.itemId
-        );
-        this.toastr.success('Item removed from category');
-      }
-    } catch (error) {
-      this.toastr.error(
-        error instanceof Error ? error.message : 'Unable to delete'
+    if (pending.type === 'group') {
+      request$ = this.reportingGroupService.deleteGroup(pending.groupId);
+    } else if (pending.type === 'category' && pending.categoryId) {
+      request$ = this.reportingGroupService.deleteCategory(pending.categoryId);
+    } else if (pending.type === 'item' && pending.categoryId && pending.itemId != null) {
+      request$ = this.reportingGroupService.removeItemsFromCategory(
+        pending.categoryId,
+        [pending.itemId]
       );
     }
+
+    if (!request$) {
+      return;
+    }
+
+    request$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          const messages: Record<string, string> = {
+            group: 'Reporting group deleted',
+            category: 'Category deleted',
+            item: 'Item removed from category',
+          };
+          this.toastr.success(messages[pending.type]);
+          this.loadReportingGroups();
+        },
+        error: (error: unknown) => {
+          const message =
+            error && typeof error === 'object' && 'error' in error
+              ? (error as { error?: { message?: string } }).error?.message
+              : undefined;
+          this.toastr.error(message || 'Unable to delete');
+        },
+      });
   }
 
   closeDeleteConfirm(): void {
@@ -394,6 +437,10 @@ export class SetupReportingGroup implements OnInit {
     return this.selectedItemIds().has(String(itemId));
   }
 
+  isItemAssigned(itemId: number | string): boolean {
+    return this.assignedItemIds().has(String(itemId));
+  }
+
   trackByGroupId(_: number, group: ReportingGroup): string {
     return group.id;
   }
@@ -404,6 +451,22 @@ export class SetupReportingGroup implements OnInit {
 
   trackByItemId(_: number, item: ReportingGroupAssignedItem): string {
     return String(item.id);
+  }
+
+  private loadReportingGroups(): void {
+    this.loading.set(true);
+    this.reportingGroupService
+      .loadGroups()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.loading.set(false);
+        },
+        error: () => {
+          this.loading.set(false);
+          this.toastr.error('Failed to load reporting groups');
+        },
+      });
   }
 
   private ensureGroupExpanded(groupId: string): void {
@@ -419,11 +482,12 @@ export class SetupReportingGroup implements OnInit {
   }
 
   private loadCatalogItems(): void {
+    if (this.catalogItems().length > 0) {
+      return;
+    }
+
     this.catalogLoading.set(true);
 
-    // The Items listing resolves each field's API key from the Items module's
-    // form schema (field.id || field.name). Reuse the same approach instead of
-    // hardcoding the item-name key.
     const schema$ = this.formStorageService.loadForm('items').pipe(
       catchError(() => of(null))
     );
@@ -475,11 +539,6 @@ export class SetupReportingGroup implements OnInit {
     return [];
   }
 
-  /**
-   * Finds the Items schema field that represents the Item Name and returns its
-   * API key, using the same `field.id || field.name` resolution as the Items
-   * listing page. Returns '' when the schema has no matching field.
-   */
   private resolveItemNameKey(fields: DynamicField[]): string {
     const labelMatches = (...labels: string[]) =>
       (field: DynamicField) =>

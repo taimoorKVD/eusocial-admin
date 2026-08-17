@@ -230,19 +230,33 @@ export class TenantDashboardService {
     item: Record<string, unknown>,
     index: number,
   ): DashboardReportingGroupSummary {
-    const categoriesRaw = item['categories'] ?? item['categoryNames'];
-    const categories = Array.isArray(categoriesRaw)
-      ? categoriesRaw.map((value) => this.readString(value)).filter(Boolean)
-      : this.readString(categoriesRaw)
-        ? [this.readString(categoriesRaw)]
-        : [];
-
     return {
       id: this.readId(item, `group-${index}`),
       name: this.readString(item['name'] ?? item['title']) || 'Reporting group',
-      categories,
+      categories: this.normalizeReportingGroupCategories(item),
       itemCount: this.toNumber(item['itemCount'] ?? item['item_count'] ?? item['items']),
     };
+  }
+
+  /** Prefer `categoryNames` strings; otherwise pull `name` from category objects. */
+  private normalizeReportingGroupCategories(item: Record<string, unknown>): string[] {
+    const fromNames = this.readArray(item['categoryNames'] ?? item['category_names'])
+      .map((value) => this.readString(value))
+      .filter(Boolean);
+
+    if (fromNames.length) {
+      return fromNames;
+    }
+
+    return this.readArray(item['categories'])
+      .map((value) => {
+        if (typeof value === 'string' || typeof value === 'number') {
+          return this.readString(value);
+        }
+        const record = this.asRecord(value);
+        return this.readString(record['name'] ?? record['categoryName'] ?? record['title']);
+      })
+      .filter(Boolean);
   }
 
   private readArray(value: unknown): unknown[] {

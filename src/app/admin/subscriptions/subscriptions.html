@@ -1,0 +1,159 @@
+<div class="platform-page" (click)="closeMenus()">
+  <section class="kpi-grid" *ngIf="stats">
+    <article class="kpi-card">
+      <div class="kpi-card__top">
+        <span class="kpi-card__label">Active Subscriptions</span>
+        <span class="kpi-card__icon kpi-card__icon--purple">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z"/></svg>
+        </span>
+      </div>
+      <div class="kpi-card__value">{{ stats.activeSubscriptions | number }}</div>
+    </article>
+
+    <article class="kpi-card">
+      <div class="kpi-card__top">
+        <span class="kpi-card__label">Monthly Recurring Revenue</span>
+        <span class="kpi-card__icon kpi-card__icon--green">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
+        </span>
+      </div>
+      <div class="kpi-card__value">{{ money(stats.mrr?.formatted, stats.mrr?.amount) }}</div>
+    </article>
+
+    <article class="kpi-card">
+      <div class="kpi-card__top">
+        <span class="kpi-card__label">Annual Recurring Revenue</span>
+        <span class="kpi-card__icon kpi-card__icon--orange">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 0 0 3 15h-.75M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/></svg>
+        </span>
+      </div>
+      <div class="kpi-card__value">{{ money(stats.arr?.formatted, stats.arr?.amount) }}</div>
+    </article>
+
+    <article class="kpi-card">
+      <div class="kpi-card__top">
+        <span class="kpi-card__label">Cancelled This Month</span>
+        <span class="kpi-card__icon kpi-card__icon--red">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+        </span>
+      </div>
+      <div class="kpi-card__value">{{ stats.cancelledThisMonth | number }}</div>
+    </article>
+  </section>
+
+  <div class="toolbar">
+    <div class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35m0 0A7.5 7.5 0 1 0 6 6a7.5 7.5 0 0 0 10.65 10.65Z"/></svg>
+      <input type="text" [(ngModel)]="search" placeholder="Search by tenant or domain..." (keyup.enter)="applyFilters()" />
+    </div>
+    <select [(ngModel)]="planId">
+      <option value="">All Plans</option>
+      <option *ngFor="let plan of plans" [ngValue]="plan.id">{{ plan.name }}</option>
+    </select>
+    <select [(ngModel)]="status">
+      <option *ngFor="let opt of statusOptions" [ngValue]="opt.value">{{ opt.label }}</option>
+    </select>
+    <button type="button" class="btn-outline" (click)="applyFilters()">Filters</button>
+    <button type="button" class="btn-ghost" (click)="clearFilters()">Clear</button>
+  </div>
+
+  <section class="platform-card">
+    <div class="platform-state" *ngIf="loading">
+      <div class="platform-spinner"></div>
+      <p>Loading subscriptions…</p>
+    </div>
+
+    <div class="table-wrap" *ngIf="!loading">
+      <table class="platform-table">
+        <thead>
+          <tr>
+            <th>Tenant</th>
+            <th>Plan</th>
+            <th>Status</th>
+            <th>Billing Cycle</th>
+            <th>Next Billing</th>
+            <th>Amount</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let sub of subscriptions">
+            <td>
+              <div class="tenant-cell">
+                <strong>{{ sub.tenant?.name || '—' }}</strong>
+                <span>{{ sub.tenant?.domain || sub.tenant?.subdomain || '—' }}</span>
+              </div>
+            </td>
+            <td>
+              <span class="plan-badge" [ngClass]="planBadgeClass(sub.plan?.name)">{{ sub.plan?.name || '—' }}</span>
+            </td>
+            <td>
+              <span class="status-pill" [ngClass]="statusClass(sub.status)">
+                <i class="dot"></i>{{ formatStatus(sub.status) }}
+              </span>
+            </td>
+            <td>{{ cycleLabel(sub.billingCycle) }}</td>
+            <td class="muted">{{ formatDate(sub.nextBilling) }}</td>
+            <td>{{ money(sub.formattedAmount, sub.amount) }}</td>
+            <td class="actions">
+              <div class="plan-card__menu" style="display:inline-block">
+                <button type="button" class="icon-btn" (click)="toggleMenu(sub.id, $event)" aria-label="Actions">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>
+                </button>
+                <div class="menu-pop" *ngIf="openMenuId === sub.id" (click)="$event.stopPropagation()">
+                  <button type="button" (click)="openChangePlan(sub)">Change Plan</button>
+                  <button type="button" class="danger" (click)="openCancel(sub)" [disabled]="sub.status === 'cancelled'">Cancel</button>
+                </div>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="!subscriptions.length">
+            <td colspan="7" class="muted" style="text-align:center;padding:2.5rem 1rem">No subscriptions found.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pagination" *ngIf="!loading && lastPage > 0">
+      <span>Page {{ page }} of {{ lastPage }} · {{ total }} total</span>
+      <div class="pages">
+        <button type="button" [disabled]="page === 1" (click)="loadList(page - 1)">←</button>
+        <button type="button" *ngFor="let p of pages()" [class.active]="p === page" (click)="loadList(p)">{{ p }}</button>
+        <button type="button" [disabled]="page === lastPage" (click)="loadList(page + 1)">→</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="modal-backdrop" *ngIf="showCancelModal">
+  <div class="modal-card">
+    <h3>Cancel Subscription</h3>
+    <p>Cancel subscription for <strong>{{ selected?.tenant?.name }}</strong>?</p>
+    <label class="checkbox" style="display:flex;gap:.5rem;margin-top:1rem;align-items:center;font-size:.85rem;color:#475569">
+      <input type="checkbox" [(ngModel)]="cancelAtPeriodEnd" />
+      Cancel at period end
+    </label>
+    <div class="modal-actions">
+      <button type="button" class="btn-ghost" (click)="showCancelModal = false" [disabled]="actionLoading">Keep</button>
+      <button type="button" class="btn-danger" (click)="confirmCancel()" [disabled]="actionLoading">
+        {{ actionLoading ? 'Cancelling...' : 'Confirm Cancel' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" *ngIf="showChangePlanModal">
+  <div class="modal-card">
+    <h3>Change Plan</h3>
+    <p>Update plan for <strong>{{ selected?.tenant?.name }}</strong>.</p>
+    <select [(ngModel)]="changePlanId" style="width:100%;margin-top:1rem;border:1px solid #e2e8f0;border-radius:10px;padding:.6rem .75rem">
+      <option *ngFor="let plan of plans" [ngValue]="plan.id">{{ plan.name }} — {{ money(plan.formattedPrice, plan.price) }}</option>
+    </select>
+    <div class="modal-actions">
+      <button type="button" class="btn-ghost" (click)="showChangePlanModal = false" [disabled]="actionLoading">Cancel</button>
+      <button type="button" class="btn-primary" (click)="confirmChangePlan()" [disabled]="actionLoading || !changePlanId">
+        {{ actionLoading ? 'Saving...' : 'Change Plan' }}
+      </button>
+    </div>
+  </div>
+</div>

@@ -1,94 +1,253 @@
-<div class="user-form p-4 md:px-6 md:py-4">
-  <div class="flex justify-between items-center mb-4">
-    <h3 class="text-xl font-semibold text-gray-800 m-0">
-      {{ isEditMode ? 'Edit Tenant' : 'Create Tenant' }}
-    </h3>
-    <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition duration-150" (click)="backToList()">
-      <i class="bi bi-arrow-left mr-2"></i> Back
-    </button>
+<div class="platform-page tenant-form-page">
+  <div class="platform-state" *ngIf="loading">
+    <div class="platform-spinner"></div>
+    <p>Loading tenant…</p>
   </div>
 
-  <form [formGroup]="form" (ngSubmit)="saveTenant()" class="carbon-form bg-white rounded-xl shadow-sm p-4 border border-gray-100 space-y-4">
-    <h6 class="section-title text-sm font-semibold text-gray-600 uppercase tracking-wide">Tenant Information</h6>
+  <form *ngIf="!loading" [formGroup]="form" (ngSubmit)="saveTenant()" class="tenant-form-grid">
+    <div class="tenant-form-col">
+      <section class="form-card">
+        <h3>Tenant Information</h3>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div>
-        <div class="form-group">
-          <label class="block mb-1 text-sm font-medium text-gray-700">Tenant Name</label>
-          <input class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none" type="text" formControlName="name" placeholder="Enter tenant name" />
-          <small class="error text-red-600" *ngIf="f['name'].touched && f['name'].errors?.['required']">
-            Tenant name is required.
-          </small>
+        <div class="field">
+          <label>Tenant Name <span>*</span></label>
+          <input type="text" formControlName="name" placeholder="Acme Corporation" />
+          <small class="error" *ngIf="f['name'].touched && f['name'].errors?.['required']">Tenant name is required.</small>
         </div>
-      </div>
 
-      <div>
-        <div class="form-group">
-          <label class="block mb-1 text-sm font-medium text-gray-700">Custom Domain (optional)</label>
-          <input class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none" type="text" formControlName="customDomain" placeholder="e.g. mycompany.com" />
-          <small class="error text-red-600" *ngIf="f['customDomain'].touched && f['customDomain'].errors?.['pattern']">
-            Enter a valid domain (e.g. mycompany.com).
-          </small>
+        <div class="field">
+          <label>Domain <span>*</span></label>
+          <input type="text" formControlName="domain" placeholder="acme.com" />
+          <small class="hint">This will be used as a subdomain: {{ subdomainPreview }}</small>
+          <small class="error" *ngIf="f['domain'].touched && f['domain'].errors?.['required']">Domain is required.</small>
+          <small class="error" *ngIf="f['domain'].touched && f['domain'].errors?.['pattern']">Enter a valid domain (e.g. acme.com).</small>
         </div>
-      </div>
+
+        <div class="field">
+          <label>Business Email <span>*</span></label>
+          <input type="email" formControlName="email" placeholder="hello@acme.com" />
+          <small class="error" *ngIf="f['email'].touched && f['email'].errors?.['required']">Business email is required.</small>
+          <small class="error" *ngIf="f['email'].touched && f['email'].errors?.['email']">Enter a valid email.</small>
+        </div>
+
+        <div class="field">
+          <label>Phone Number</label>
+          <input type="text" formControlName="phoneNumber" placeholder="+1 2025550147" />
+        </div>
+
+        <div class="field">
+          <label>Industry</label>
+          <select formControlName="industry">
+            <option value="">Select industry</option>
+            <option *ngFor="let item of industries" [ngValue]="item">{{ item }}</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Description</label>
+          <textarea rows="4" formControlName="description" maxlength="500" placeholder="Short description of the organization"></textarea>
+          <small class="counter">{{ descriptionCount }}/500</small>
+        </div>
+      </section>
+
+      <section class="form-card">
+        <h3>Address</h3>
+
+        <div class="grid-3">
+          <div class="field">
+            <label>Country</label>
+            <ng-select
+              class="tenant-ng-select"
+              formControlName="countryId"
+              [items]="countries"
+              bindLabel="name"
+              bindValue="id"
+              placeholder="Select country"
+              [searchable]="true"
+              [clearable]="true"
+              appendTo="body"
+              notFoundText="No countries found"
+              (clear)="clearLocationControl('countryId')"
+            >
+              <ng-template ng-clearbutton-tmp>
+                <span
+                  class="ng-clear-wrapper"
+                  role="button"
+                  title="Clear"
+                  (mousedown)="onClearMouseDown($event, 'countryId')"
+                >
+                  <span class="ng-clear" aria-hidden="true">×</span>
+                </span>
+              </ng-template>
+            </ng-select>
+          </div>
+          <div class="field">
+            <label>State / Province</label>
+            <ng-select
+              class="tenant-ng-select"
+              formControlName="stateId"
+              [items]="states"
+              bindLabel="name"
+              bindValue="id"
+              placeholder="Select state"
+              [searchable]="true"
+              [clearable]="true"
+              appendTo="body"
+              notFoundText="No states found"
+              (clear)="clearLocationControl('stateId')"
+            >
+              <ng-template ng-clearbutton-tmp>
+                <span
+                  class="ng-clear-wrapper"
+                  role="button"
+                  title="Clear"
+                  (mousedown)="onClearMouseDown($event, 'stateId')"
+                >
+                  <span class="ng-clear" aria-hidden="true">×</span>
+                </span>
+              </ng-template>
+            </ng-select>
+          </div>
+          <div class="field">
+            <label>City</label>
+            <ng-select
+              class="tenant-ng-select"
+              formControlName="city"
+              [items]="cities"
+              bindLabel="name"
+              bindValue="name"
+              placeholder="Select city"
+              [searchable]="true"
+              [clearable]="true"
+              appendTo="body"
+              notFoundText="No cities found"
+              (clear)="clearLocationControl('city')"
+            >
+              <ng-template ng-clearbutton-tmp>
+                <span
+                  class="ng-clear-wrapper"
+                  role="button"
+                  title="Clear"
+                  (mousedown)="onClearMouseDown($event, 'city')"
+                >
+                  <span class="ng-clear" aria-hidden="true">×</span>
+                </span>
+              </ng-template>
+            </ng-select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Address</label>
+          <textarea rows="3" formControlName="address" maxlength="200" placeholder="123 Main Street"></textarea>
+          <small class="counter">{{ addressCount }}/200</small>
+        </div>
+
+        <div class="field field--sm">
+          <label>Postal Code</label>
+          <input type="text" formControlName="postalCode" placeholder="78701" />
+        </div>
+      </section>
     </div>
 
-    <div class="form-actions mt-5 flex justify-end gap-3">
-        <!-- <button *ngIf="isEditMode" type="button" class="text-red-600 hover:text-red-700" (click)="deleteTenant()">
-                Delete
-            </button> -->
-      <button type="button" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition duration-150" (click)="backToList()">Cancel</button>
-      <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition duration-150">{{ isEditMode ? 'Update' : 'Save' }}</button>
+    <div class="tenant-form-col">
+      <section class="form-card" *ngIf="!isEditMode">
+        <h3>Subscription & Plan</h3>
+
+        <div class="field">
+          <label>Select Plan <span>*</span></label>
+          <select formControlName="planId">
+            <option [ngValue]="null">Select a plan</option>
+            <option *ngFor="let plan of plans" [ngValue]="plan.id">{{ planLabel(plan) }}</option>
+          </select>
+          <small class="error" *ngIf="f['planId'].touched && f['planId'].errors?.['required']">Plan is required.</small>
+        </div>
+
+        <div class="field">
+          <label>Billing Cycle <span>*</span></label>
+          <div class="radio-row">
+            <label class="radio">
+              <input type="radio" formControlName="billingCycle" value="monthly" />
+              <span>Monthly</span>
+            </label>
+            <label class="radio">
+              <input type="radio" formControlName="billingCycle" value="yearly" />
+              <span>Yearly</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Trial Period</label>
+          <select formControlName="trialDays">
+            <option *ngFor="let opt of trialOptions" [ngValue]="opt.value">{{ opt.label }}</option>
+          </select>
+          <small class="hint">Trial period is optional</small>
+        </div>
+      </section>
+
+      <section class="form-card" *ngIf="isEditMode">
+        <h3>Subscription & Plan</h3>
+        <p class="hint">Plan changes are managed from Subscriptions. Current plan is shown below for reference.</p>
+        <div class="field">
+          <label>Current Plan</label>
+          <input type="text" [value]="currentPlanLabel" readonly />
+        </div>
+      </section>
+
+      <section class="form-card" *ngIf="!isEditMode">
+        <h3>Admin User</h3>
+
+        <div class="field">
+          <label>Admin Name <span>*</span></label>
+          <input type="text" formControlName="adminName" placeholder="Jane Doe" />
+          <small class="error" *ngIf="f['adminName'].touched && f['adminName'].errors?.['required']">Admin name is required.</small>
+        </div>
+
+        <div class="field">
+          <label>Admin Email <span>*</span></label>
+          <input type="email" formControlName="adminEmail" placeholder="jane@acme.com" />
+          <small class="error" *ngIf="f['adminEmail'].touched && f['adminEmail'].errors?.['required']">Admin email is required.</small>
+          <small class="error" *ngIf="f['adminEmail'].touched && f['adminEmail'].errors?.['email']">Enter a valid email.</small>
+        </div>
+
+        <div class="field">
+          <div class="label-row">
+            <label>Admin Password <span>*</span></label>
+            <button type="button" class="generate-link" (click)="generatePassword()">Generate Password</button>
+          </div>
+          <div class="password-wrap">
+            <input [type]="showPassword ? 'text' : 'password'" formControlName="adminPassword" placeholder="Enter password" autocomplete="new-password" />
+            <button type="button" class="eye-btn" (click)="togglePassword()" [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'">
+              <svg *ngIf="!showPassword" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7s-8.268-2.943-9.542-7z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg *ngIf="showPassword" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3l18 18M10.584 10.587A2 2 0 0012 14a2 2 0 001.414-.586M9.88 5.09A9.77 9.77 0 0112 5c4.478 0 8.268 2.943 9.542 7a9.956 9.956 0 01-4.293 5.132M6.228 6.228A9.956 9.956 0 002.458 12c1.274 4.057 5.064 7 9.542 7a9.77 9.77 0 003.09-.495"/></svg>
+            </button>
+          </div>
+          <small class="error" *ngIf="f['adminPassword'].touched && f['adminPassword'].errors?.['required']">Password is required.</small>
+          <small class="error" *ngIf="f['adminPassword'].touched && f['adminPassword'].errors?.['minlength']">Password must be at least 8 characters.</small>
+        </div>
+
+        <div class="field">
+          <label>Confirm Password <span>*</span></label>
+          <div class="password-wrap">
+            <input [type]="showConfirmPassword ? 'text' : 'password'" formControlName="adminConfirmPassword" placeholder="Re-enter password" autocomplete="new-password" />
+            <button type="button" class="eye-btn" (click)="toggleConfirmPassword()" [attr.aria-label]="showConfirmPassword ? 'Hide password' : 'Show password'">
+              <svg *ngIf="!showConfirmPassword" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7s-8.268-2.943-9.542-7z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg *ngIf="showConfirmPassword" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3l18 18M10.584 10.587A2 2 0 0012 14a2 2 0 001.414-.586M9.88 5.09A9.77 9.77 0 0112 5c4.478 0 8.268 2.943 9.542 7a9.956 9.956 0 01-4.293 5.132M6.228 6.228A9.956 9.956 0 002.458 12c1.274 4.057 5.064 7 9.542 7a9.77 9.77 0 003.09-.495"/></svg>
+            </button>
+          </div>
+          <small class="error" *ngIf="f['adminConfirmPassword'].touched && f['adminConfirmPassword'].errors?.['required']">Confirm password is required.</small>
+          <small class="error" *ngIf="form.errors?.['passwordsMismatch'] && f['adminConfirmPassword'].touched">Passwords do not match.</small>
+        </div>
+      </section>
     </div>
 
-    <div *ngIf="message" class="text-center mt-4 text-sm text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg py-2 px-3">{{ message }}</div>
-  </form>
-</div>
-
-<div class="fixed inset-0 z-40 bg-black/40 p-4 flex items-center justify-center" *ngIf="showCredentialModal">
-  <div class="custom-modal w-full max-w-lg bg-white rounded-xl shadow-xl border border-gray-100 p-5">
-
-    <h5 class="mb-3 text-xl font-semibold text-gray-800">Tenant Credentials</h5>
-
-    <!-- Email -->
-    <div class="mb-3 space-y-1">
-      <label class="block text-sm font-medium text-gray-700">Email</label>
-      <div class="flex gap-2">
-        <input type="text" [value]="generatedEmail" readonly class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-700" />
-        <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition duration-150" (click)="copy(generatedEmail)">Copy</button>
-      </div>
-    </div>
-
-    <!-- Password -->
-    <div class="mb-3 space-y-1">
-      <label class="block text-sm font-medium text-gray-700">Password</label>
-      <div class="flex gap-2">
-        <input type="text" [value]="generatedPassword" readonly class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-700" />
-        <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition duration-150" (click)="copy(generatedPassword)">Copy</button>
-      </div>
-    </div>
-
-    <p class="text-sm text-gray-500">
-      Please input email to send tenant login credentials
-    </p>
-
-    <!-- Send -->
-    <div class="flex gap-2">
-      <input
-        type="email"
-        [(ngModel)]="sendToEmail"
-        placeholder="Enter email"
-        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-      />
-      <button class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition duration-150 disabled:opacity-50" (click)="sendCredentials()" [disabled]="sending">
-        {{ sending ? 'Sending...' : 'Send' }}
+    <div class="tenant-form-actions">
+      <button type="button" class="btn-ghost" (click)="backToList()">Cancel</button>
+      <button type="submit" class="btn-primary" [disabled]="saving">
+        <svg *ngIf="!isEditMode" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="save-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-4-4z"/><path stroke-linecap="round" stroke-linejoin="round" d="M17 3v4H7V3M7 21v-8h10v8"/></svg>
+        {{ saving ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Tenant' : 'Create Tenant') }}
       </button>
     </div>
-
-    <!-- Footer -->
-    <div class="mt-4 text-right">
-      <button class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition duration-150" (click)="closeModal()">Done</button>
-    </div>
-
-  </div>
+  </form>
 </div>

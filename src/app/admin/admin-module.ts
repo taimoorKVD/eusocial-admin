@@ -9,6 +9,7 @@ import { Dashboard } from './dashboard/dashboard';
 import { Admin } from './admin';
 import { Profile } from './profile/profile';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { NgSelectModule } from '@ng-select/ng-select';
 import { Users } from './users/users';
 import { UserForm } from './users/user-form/user-form';
 import { Roles } from './roles/roles';
@@ -19,6 +20,10 @@ import { Tenants } from './tenants/tenants';
 import { TenantForm } from './tenants/tenant-form/tenant-form';
 import { PermissionsComponent } from './permissions/permissions.component';
 import { PermissionsFormComponent } from './permissions/permissions-form/permissions-form.component';
+import { Plans } from './plans/plans';
+import { PlanForm } from './plans/plan-form/plan-form';
+import { Subscriptions } from './subscriptions/subscriptions';
+import { Invoices } from './invoices/invoices';
 
 @NgModule({
   declarations: [
@@ -36,10 +41,20 @@ import { PermissionsFormComponent } from './permissions/permissions-form/permiss
     Tenants,
     TenantForm,
     PermissionsComponent,
-    PermissionsFormComponent
-
+    PermissionsFormComponent,
+    Plans,
+    PlanForm,
+    Subscriptions,
+    Invoices,
   ],
-  imports: [CommonModule, AdminRoutingModule, ReactiveFormsModule, FormsModule, SharedModule],
+  imports: [
+    CommonModule,
+    AdminRoutingModule,
+    ReactiveFormsModule,
+    FormsModule,
+    SharedModule,
+    NgSelectModule,
+  ],
   exports: [Admin],
   providers: [
     DatePipe, // ✅ For date: pipe usage
