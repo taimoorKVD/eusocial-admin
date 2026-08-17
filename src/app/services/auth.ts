@@ -52,7 +52,7 @@ export class Auth {
     this.currentUserSubject.next(null);
     const url = window.location.pathname;
     if (url === '/tenant' || url.startsWith('/tenant/')) {
-      this.router.navigate(['/tenant/login']);
+      this.router.navigate(['/login']);
     } else {
       this.router.navigate(['/login']);
     }
@@ -63,7 +63,7 @@ export class Auth {
     this.currentUserSubject.next(null);
     const url = window.location.pathname;
     if (url === '/tenant' || url.startsWith('/tenant/')) {
-      this.router.navigate(['/tenant/login']);
+      this.router.navigate(['/login']);
     } else {
       this.router.navigate(['/login']);
     }

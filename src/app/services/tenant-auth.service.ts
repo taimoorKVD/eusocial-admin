@@ -92,7 +92,7 @@ logout(): void {
   localStorage.removeItem('tenant_slug');
   localStorage.removeItem('tenant_user');
 
-  this.router.navigate(['/tenant/login']);
+  this.router.navigate(['/login']);
 }
 
   // ✅ Same reusable API call with auth

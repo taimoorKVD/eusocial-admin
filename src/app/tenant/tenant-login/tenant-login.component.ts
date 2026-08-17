@@ -44,6 +44,7 @@ import { TenantProfileService } from '../../services/tenant-profile.service';
         this.reportingGroupService.reload();
         this.profileService.refresh();
         this.router.navigate(this.session.getHomeCommands());
+        this.router.navigate(['/user-dashboard']);
       }
     }
 
@@ -97,6 +98,7 @@ import { TenantProfileService } from '../../services/tenant-profile.service';
       this.profileService.refresh();
       this.toastr.success('Login successful');
       this.router.navigate(this.session.getHomeCommands());
+      this.router.navigate(['/user-dashboard']);
       this.loading = false;
     },
 
