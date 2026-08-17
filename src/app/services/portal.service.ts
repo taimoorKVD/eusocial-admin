@@ -64,6 +64,14 @@ export function resolvePortalIdentity(
   return { type: 'admin', tenantSlug: null };
 }
 
+export function resolveDocumentTitle(identity: PortalIdentity): string {
+  if (identity.type === 'tenant' && identity.tenantSlug) {
+    return `${identity.tenantSlug} | Eusocial`;
+  }
+
+  return 'Admin | Eusocial';
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -82,6 +90,14 @@ export class PortalService {
 
   get tenantSlug(): string | null {
     return this.identity.tenantSlug;
+  }
+
+  get documentTitle(): string {
+    return resolveDocumentTitle(this.identity);
+  }
+
+  applyDocumentTitle(): void {
+    document.title = this.documentTitle;
   }
 
   isAdmin(): boolean {
