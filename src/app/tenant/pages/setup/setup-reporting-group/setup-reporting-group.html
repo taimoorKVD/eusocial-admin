@@ -260,15 +260,21 @@
             <div class="max-h-72 space-y-2 overflow-y-auto pr-1">
               @for (item of filteredCatalogItems(); track item.id) {
                 <label
-                  class="flex cursor-pointer items-center gap-3 rounded border border-[#ECECEC] px-3 py-2 hover:bg-[#FAFAFA]"
+                  [class]="isItemAssigned(item.id)
+                    ? 'flex items-center gap-3 rounded border border-[#ECECEC] px-3 py-2 opacity-50 cursor-not-allowed'
+                    : 'flex cursor-pointer items-center gap-3 rounded border border-[#ECECEC] px-3 py-2 hover:bg-[#FAFAFA]'"
                 >
                   <input
                     type="checkbox"
                     class="h-4 w-4 accent-[#FF9015]"
                     [checked]="isCatalogItemSelected(item.id)"
+                    [disabled]="isItemAssigned(item.id)"
                     (change)="toggleCatalogItem(item.id)"
                   />
                   <span class="text-sm text-[#161616] font-ibm">{{ item.name }}</span>
+                  @if (isItemAssigned(item.id)) {
+                    <span class="ml-auto text-xs text-[#8D8D8D] font-ibm">Already assigned</span>
+                  }
                 </label>
               }
             </div>

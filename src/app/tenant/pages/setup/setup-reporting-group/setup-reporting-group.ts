@@ -64,6 +64,7 @@ export class SetupReportingGroup implements OnInit {
   readonly catalogLoading = signal(false);
   readonly catalogSearch = signal('');
   readonly selectedItemIds = signal<Set<string>>(new Set());
+  readonly assignedItemIds = signal<Set<string>>(new Set());
 
   readonly showDeleteConfirm = signal(false);
   readonly deleteConfirmDescription = signal('');
@@ -177,6 +178,9 @@ export class SetupReportingGroup implements OnInit {
     this.modalName.set('');
     this.catalogSearch.set('');
     this.selectedItemIds.set(
+      new Set(category.items.map((item) => String(item.id)))
+    );
+    this.assignedItemIds.set(
       new Set(category.items.map((item) => String(item.id)))
     );
     this.modalMode.set('assign-items');
@@ -431,6 +435,10 @@ export class SetupReportingGroup implements OnInit {
 
   isCatalogItemSelected(itemId: number | string): boolean {
     return this.selectedItemIds().has(String(itemId));
+  }
+
+  isItemAssigned(itemId: number | string): boolean {
+    return this.assignedItemIds().has(String(itemId));
   }
 
   trackByGroupId(_: number, group: ReportingGroup): string {
