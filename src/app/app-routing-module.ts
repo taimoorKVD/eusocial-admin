@@ -193,19 +193,27 @@ const routes: Routes = [
             ],
           },
 
+          /*
+           * Plans
+           */
+          {
+            path: 'plans',
+            children: [
+              { path: '', component: Plans },
+              { path: 'create', component: PlanForm },
+              { path: ':id/edit', component: PlanForm },
+            ],
+          },
+
+          /*
+           * Subscriptions / Billing
+           */
+          { path: 'subscriptions', component: Subscriptions },
+          { path: 'invoices', component: Invoices },
+          { path: 'billing', redirectTo: 'invoices', pathMatch: 'full' },
+
         ],
       },
-      {
-        path: 'plans',
-        children: [
-          { path: '', component: Plans },
-          { path: 'create', component: PlanForm },
-          { path: ':id/edit', component: PlanForm },
-        ],
-      },
-      { path: 'subscriptions', component: Subscriptions },
-      { path: 'invoices', component: Invoices },
-      { path: 'billing', redirectTo: 'invoices', pathMatch: 'full' },
 
     ],
   },
