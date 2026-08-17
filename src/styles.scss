@@ -3,7 +3,36 @@
 @tailwind utilities;
 
 @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400..700;1,400..700&display=swap');
+@import '@ng-select/ng-select/themes/default.theme.css';
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&display=swap');
+
+/* Tenant form searchable selects (panel appends to body) */
+.ng-dropdown-panel.tenant-ng-select {
+  --sa-orange: #ff9015;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 10px !important;
+  background: #fff !important;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08) !important;
+  padding: 0.25rem !important;
+
+  .ng-option {
+    border-radius: 8px;
+    color: #334155;
+
+    &.ng-option-marked,
+    &:hover {
+      background: rgba(255, 144, 21, 0.12) !important;
+      color: var(--sa-orange) !important;
+    }
+
+    &.ng-option-selected,
+    &.ng-option-selected.ng-option-marked {
+      background: rgba(255, 144, 21, 0.18) !important;
+      color: var(--sa-orange) !important;
+      font-weight: 600;
+    }
+  }
+}
 
 body {
   background-color: #f6f7f8;

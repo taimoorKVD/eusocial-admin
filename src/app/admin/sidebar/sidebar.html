@@ -23,7 +23,7 @@
       <ul class="sa-sidebar__list">
         <li *ngFor="let link of group.links">
           <a
-            *ngIf="!link.comingSoon && link.route; else soonLink"
+            *ngIf="isLinkEnabled(link)"
             class="sa-sidebar__link"
             [routerLink]="link.route"
             routerLinkActive="is-active"
@@ -31,12 +31,14 @@
             <ng-container *ngTemplateOutlet="iconTpl; context: { $implicit: link.icon }"></ng-container>
             <span>{{ link.label }}</span>
           </a>
-          <ng-template #soonLink>
-            <span class="sa-sidebar__link is-disabled" title="Coming soon">
-              <ng-container *ngTemplateOutlet="iconTpl; context: { $implicit: link.icon }"></ng-container>
-              <span>{{ link.label }}</span>
-            </span>
-          </ng-template>
+          <span
+            *ngIf="!isLinkEnabled(link)"
+            class="sa-sidebar__link is-disabled"
+            title="Coming soon"
+          >
+            <ng-container *ngTemplateOutlet="iconTpl; context: { $implicit: link.icon }"></ng-container>
+            <span>{{ link.label }}</span>
+          </span>
         </li>
       </ul>
     </div>

@@ -1,114 +1,139 @@
-<div class="page-wrapper p-4 md:px-6 md:py-4 space-y-4">
-    <ng-container *ngIf="loading">
-      <app-eu-loader></app-eu-loader>
-    </ng-container>
+<div class="platform-page">
+  <section class="kpi-grid">
+    <article class="kpi-card">
+      <div class="kpi-card__top">
+        <span class="kpi-card__label">Total Tenants</span>
+        <span class="kpi-card__icon kpi-card__icon--blue">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3.75h6V21h-7.5V4.5a.75.75 0 0 1 .75-.75Zm9 4.5h6V21h-7.5V9a.75.75 0 0 1 .75-.75Z"/></svg>
+        </span>
+      </div>
+      <div class="kpi-card__value">{{ stats.total | number }}</div>
+    </article>
 
-    <div class="flex justify-end mb-2">
-      <button
-        type="button"
-        class="btn btn--cancel"
-        (click)="resetDemo()">
-        Reset Tenant
-      </button>
+    <article class="kpi-card">
+      <div class="kpi-card__top">
+        <span class="kpi-card__label">Active Tenants</span>
+        <span class="kpi-card__icon kpi-card__icon--green">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
+        </span>
+      </div>
+      <div class="kpi-card__value">{{ stats.active | number }}</div>
+    </article>
+
+    <article class="kpi-card">
+      <div class="kpi-card__top">
+        <span class="kpi-card__label">Trial Tenants</span>
+        <span class="kpi-card__icon kpi-card__icon--orange">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
+        </span>
+      </div>
+      <div class="kpi-card__value">{{ stats.trial | number }}</div>
+    </article>
+
+    <article class="kpi-card">
+      <div class="kpi-card__top">
+        <span class="kpi-card__label">Suspended Tenants</span>
+        <span class="kpi-card__icon kpi-card__icon--red">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+        </span>
+      </div>
+      <div class="kpi-card__value">{{ stats.suspended | number }}</div>
+    </article>
+  </section>
+
+  <div class="toolbar">
+    <div class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35m0 0A7.5 7.5 0 1 0 6 6a7.5 7.5 0 0 0 10.65 10.65Z"/></svg>
+      <input
+        type="text"
+        [(ngModel)]="search"
+        placeholder="Search tenants by name, domain, email..."
+        (keyup.enter)="applyFilters()"
+      />
+    </div>
+    <select [(ngModel)]="status" (ngModelChange)="applyFilters()">
+      <option *ngFor="let opt of statusOptions" [ngValue]="opt.value">{{ opt.label }}</option>
+    </select>
+    <button type="button" class="btn-outline" (click)="applyFilters()">Filters</button>
+    <button type="button" class="btn-ghost" (click)="clearFilters()">Clear</button>
+    <button type="button" class="btn-primary" (click)="addTenant()">+ Add Tenant</button>
+  </div>
+
+  <section class="platform-card">
+    <div class="platform-state" *ngIf="loading">
+      <div class="platform-spinner"></div>
+      <p>Loading tenants…</p>
     </div>
 
-    <app-top-header
-      [title]="'Tenants Management'"
-      [buttonLabel]="' + Create Tenant'"
-      (buttonClick)="addTenant()">
-    </app-top-header>
+    <div class="table-wrap" *ngIf="!loading">
+      <table class="platform-table">
+        <thead>
+          <tr>
+            <th>Tenant Name</th>
+            <th>Domain</th>
+            <th>Plan</th>
+            <th>Status</th>
+            <th>Users</th>
+            <th>Joined On</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let t of tenants">
+            <td>
+              <div class="tenant-name-cell">
+                <span class="tenant-avatar">{{ initials(t.name) }}</span>
+                <strong>{{ t.name }}</strong>
+              </div>
+            </td>
+            <td class="muted">{{ domainOf(t) }}</td>
+            <td>
+              <span class="plan-badge" [ngClass]="planBadgeClass(t)">{{ planName(t) }}</span>
+            </td>
+            <td>
+              <span class="status-pill" [ngClass]="statusClass(t)">
+                <i class="dot"></i>{{ statusOf(t) }}
+              </span>
+            </td>
+            <td>{{ usersOf(t) }}</td>
+            <td class="muted">{{ joinedOn(t) }}</td>
+            <td class="actions">
+              <div class="plan-card__menu" style="display:inline-block" (click)="$event.stopPropagation()">
+                <button type="button" class="icon-btn" (click)="toggleMenu(t.id, $event)" aria-label="Actions">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>
+                </button>
+                <div class="menu-pop" *ngIf="openMenuId === t.id">
+                  <button type="button" (click)="editTenant(t.id)">Edit</button>
+                  <button type="button" class="danger" (click)="openDeleteModal(t.id)">Delete</button>
+                </div>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="!tenants.length">
+            <td colspan="7" class="muted" style="text-align:center;padding:2.5rem 1rem">No tenants found.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
-    <app-global-filter
-      [fields]="filterFields"
-      (search)="onFilterSearch($event)"
-      (clear)="onFilterClear()">
-    </app-global-filter>
-
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mt-5">
-      <div class="overflow-x-auto" *ngIf="!loading">
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50 text-gray-600 text-sm">
-                <tr>
-                    <th class="px-4 py-3 text-left w-12">#</th>
-                    <th class="px-4 py-3 text-left">Name</th>
-                    <th class="px-4 py-3 text-left">Database</th>
-                    <th class="px-4 py-3 text-left">Subdomain</th>
-                    <th class="px-4 py-3 text-left">Custom Domain</th>
-                    <th class="px-4 py-3 text-left">Created at</th>
-                    <th class="px-4 py-3 text-right w-32">Actions</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100 text-sm text-gray-700">
-                <tr *ngFor="let t of tenants; index as i" class="hover:bg-gray-50 transition duration-150">
-                    <td class="px-4 py-3">{{ (page - 1) * 15 + i + 1 }}</td>
-                    <td class="px-4 py-3 font-medium">{{ t.name }}</td>
-                    <td class="px-4 py-3">{{ t.dbName }}</td>
-                    <td class="px-4 py-3">
-                        <span class="bg-indigo-100 text-indigo-700 px-2 py-1 rounded text-xs">{{ t.subdomain }}</span>
-                    </td>
-                    <td class="px-4 py-3">{{ t.customDomain || '—' }}</td>
-                    <td class="px-4 py-3">{{ t.createdAt | date: 'medium' }}</td>
-
-                    <td class="px-4 py-3 text-right">
-                        <div class="flex justify-end gap-2">
-                            <button class="text-blue-600 hover:text-blue-900 transition duration-150" (click)="editTenant(t.id)" title="Edit tenant">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                                    stroke="currentColor" class="w-5 h-5">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
-                                </svg>
-                            </button>
-                            <button class="text-red-600 hover:text-red-900 transition duration-150" (click)="openDeleteModal(t.id)" title="Delete tenant">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                                    stroke="currentColor" class="w-5 h-5">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                                </svg>
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-
-                <tr *ngIf="!tenants.length">
-                    <td colspan="7" class="px-4 py-10 text-center text-sm text-gray-500">No data found.</td>
-                </tr>
-            </tbody>
-        </table>
-      </div>
-
-      <div class="flex justify-between items-center px-4 py-3 border-t border-gray-100 bg-white">
-          <span class="text-sm text-gray-500">Page {{ page }} of {{ lastPage }}</span>
-          <div class="flex items-center gap-2">
-              <button class="px-3 py-1.5 rounded-lg text-sm font-medium border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 hover:border-indigo-300 transition duration-150 disabled:opacity-40 disabled:cursor-not-allowed" [disabled]="page === 1" (click)="prevPage()">←
-                  Prev</button>
-              <button class="px-3 py-1.5 rounded-lg text-sm font-medium border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 hover:border-indigo-300 transition duration-150 disabled:opacity-40 disabled:cursor-not-allowed" [disabled]="page === lastPage"
-                  (click)="nextPage()">Next →</button>
-          </div>
+    <div class="pagination" *ngIf="!loading && lastPage > 0">
+      <span>Page {{ page }} of {{ lastPage }} · {{ total }} total</span>
+      <div class="pages">
+        <button type="button" [disabled]="page === 1" (click)="allTenants(page - 1)">←</button>
+        <button type="button" *ngFor="let p of pages()" [class.active]="p === page" (click)="allTenants(p)">{{ p }}</button>
+        <button type="button" [disabled]="page === lastPage" (click)="allTenants(page + 1)">→</button>
       </div>
     </div>
+  </section>
 </div>
 
-<div *ngIf="showDeleteModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-  <div class="bg-white rounded-xl shadow-xl p-6 w-full max-w-sm mx-4">
-    <div class="flex items-center gap-3 mb-4">
-      <div class="flex-shrink-0 w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-red-600">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
-        </svg>
-      </div>
-      <div>
-        <h3 class="text-base font-semibold text-gray-900">Delete Tenant</h3>
-        <p class="text-sm text-gray-500">This action cannot be undone.</p>
-      </div>
-    </div>
-    <p class="text-sm text-gray-600 mb-6">Are you sure you want to delete this tenant?</p>
-    <div class="flex justify-end gap-3">
-      <button (click)="cancelDelete()" class="px-4 py-2 text-sm font-medium rounded-lg border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 transition duration-150">
-        Cancel
-      </button>
-      <button (click)="confirmDelete()" class="px-4 py-2 text-sm font-medium rounded-lg bg-red-600 text-white hover:bg-red-700 transition duration-150">
-        Delete
-      </button>
+<div class="modal-backdrop" *ngIf="showDeleteModal">
+  <div class="modal-card">
+    <h3>Delete Tenant</h3>
+    <p>Are you sure you want to delete this tenant? This action cannot be undone.</p>
+    <div class="modal-actions">
+      <button type="button" class="btn-ghost" (click)="cancelDelete()">Cancel</button>
+      <button type="button" class="btn-danger" (click)="confirmDelete()">Delete</button>
     </div>
   </div>
 </div>

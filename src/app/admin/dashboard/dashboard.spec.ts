@@ -51,7 +51,7 @@ describe('Dashboard', () => {
                       changeLabel: '+0.0% this month',
                       trend: [0],
                       available: false,
-                      currency: 'EUR',
+                      currency: 'USD',
                     },
                     activeSubscriptions: {
                       value: 0,
@@ -68,7 +68,7 @@ describe('Dashboard', () => {
                       changeLabel: '+0.0% this month',
                       trend: [0],
                       available: false,
-                      currency: 'EUR',
+                      currency: 'USD',
                     },
                   },
                   tenantsOverview: {

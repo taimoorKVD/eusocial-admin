@@ -8,7 +8,7 @@ export interface DashboardKpi {
   changeLabel: string;
   trend: number[];
   available: boolean;
-  currency?: 'EUR' | string;
+  currency?: 'USD' | string;
 }
 
 export interface TenantsOverviewPoint {

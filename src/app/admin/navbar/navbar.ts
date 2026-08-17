@@ -32,7 +32,11 @@ export class Navbar implements OnInit, OnDestroy {
     },
     '/tenants': {
       title: 'Tenants',
-      subtitle: 'Manage organizations across your platform.',
+      subtitle: 'Manage all tenant organizations on the platform.',
+    },
+    '/tenants/create': {
+      title: 'Create Tenant',
+      subtitle: 'Set up a new tenant organization, plan, and admin user.',
     },
     '/users': {
       title: 'Users',
@@ -53,6 +57,18 @@ export class Navbar implements OnInit, OnDestroy {
     '/products': {
       title: 'Products',
       subtitle: 'Manage product catalog entries.',
+    },
+    '/subscriptions': {
+      title: 'Subscriptions',
+      subtitle: 'Monitor and manage tenant subscriptions.',
+    },
+    '/plans': {
+      title: 'Plan Management',
+      subtitle: 'Create and manage subscription plans.',
+    },
+    '/invoices': {
+      title: 'Billing & Invoices',
+      subtitle: 'Track invoices, payments, and platform revenue.',
     },
   };
 

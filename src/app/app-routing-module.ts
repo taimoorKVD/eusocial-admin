@@ -20,6 +20,10 @@ import { Tenants } from './admin/tenants/tenants';
 import { TenantForm } from './admin/tenants/tenant-form/tenant-form';
 import { PermissionsComponent } from './admin/permissions/permissions.component';
 import { PermissionsFormComponent } from './admin/permissions/permissions-form/permissions-form.component';
+import { Plans } from './admin/plans/plans';
+import { PlanForm } from './admin/plans/plan-form/plan-form';
+import { Subscriptions } from './admin/subscriptions/subscriptions';
+import { Invoices } from './admin/invoices/invoices';
 
 const routes: Routes = [
   // ✅ Protected root (dashboard)
@@ -60,6 +64,17 @@ const routes: Routes = [
           { path: ':id/edit', component: TenantForm },
         ],
       },
+      {
+        path: 'plans',
+        children: [
+          { path: '', component: Plans },
+          { path: 'create', component: PlanForm },
+          { path: ':id/edit', component: PlanForm },
+        ],
+      },
+      { path: 'subscriptions', component: Subscriptions },
+      { path: 'invoices', component: Invoices },
+      { path: 'billing', redirectTo: 'invoices', pathMatch: 'full' },
     ],
   },
 

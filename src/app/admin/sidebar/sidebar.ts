@@ -35,9 +35,9 @@ export class Sidebar implements OnInit, OnDestroy {
       title: 'Platform',
       links: [
         { label: 'Tenants', icon: 'tenants', route: '/tenants' },
-        { label: 'Subscriptions', icon: 'subscriptions', comingSoon: true },
-        { label: 'Plan Management', icon: 'plans', comingSoon: true },
-        { label: 'Billing & Invoices', icon: 'billing', comingSoon: true },
+        { label: 'Subscriptions', icon: 'subscriptions', route: '/subscriptions' },
+        { label: 'Plan Management', icon: 'plans', route: '/plans' },
+        { label: 'Billing & Invoices', icon: 'billing', route: '/invoices' },
       ],
     },
     {
@@ -93,5 +93,9 @@ export class Sidebar implements OnInit, OnDestroy {
     if (!parts.length) return 'SA';
     if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
     return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  }
+
+  isLinkEnabled(link: SidebarLink): boolean {
+    return !!link.route && !link.comingSoon;
   }
 }

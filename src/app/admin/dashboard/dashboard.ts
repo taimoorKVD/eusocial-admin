@@ -11,6 +11,7 @@ import {
   SystemHealthItem,
 } from '../../interfaces/master-dashboard';
 import { User } from '../../interfaces/user';
+import { displayMoney } from '../../shared/utils/money.util';
 
 interface KpiCardView {
   key: string;
@@ -121,12 +122,7 @@ export class Dashboard implements OnInit, OnDestroy {
     const kpi = card.kpi;
     if (!kpi || kpi.available === false) return '—';
     if (card.format === 'currency') {
-      const currency = kpi.currency || 'EUR';
-      return new Intl.NumberFormat('en-IE', {
-        style: 'currency',
-        currency,
-        maximumFractionDigits: 0,
-      }).format(kpi.value ?? 0);
+      return displayMoney(null, kpi.value ?? 0, '$0');
     }
     return new Intl.NumberFormat('en-US').format(kpi.value ?? 0);
   }
@@ -172,6 +168,15 @@ export class Dashboard implements OnInit, OnDestroy {
     if (key.includes('basic')) return 'plan-badge--basic';
     if (key.includes('trial')) return 'plan-badge--trial';
     return 'plan-badge--na';
+  }
+
+  formatStatus(status?: string | null): string {
+    const raw = (status || '—').toString().trim().replace(/[_-]+/g, ' ');
+    if (!raw || raw === '—') return '—';
+    return raw
+      .split(/\s+/)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+      .join(' ');
   }
 
   statusDotClass(status: string | null | undefined): string {
