@@ -34,6 +34,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Verify Docker build output path
+        run: test -d dist/eusocial-admin/browser
+
   deploy:
     name: Deploy Frontend to Plesk
     runs-on: ubuntu-latest
@@ -58,8 +61,11 @@ jobs:
 
             APP_DIR="/opt/apps/eusocial/frontend"
             CONTAINER="eusocial-frontend"
-            IMAGE="eusocial-frontend:latest"
+            IMAGE_NAME="eusocial-frontend"
+            IMAGE_LATEST="${IMAGE_NAME}:latest"
             HEALTH_URL="http://127.0.0.1:8080"
+            EXPECTED_SHA="${{ github.sha }}"
+            CONTAINER_REPLACED=false
 
             cd "$APP_DIR"
 
@@ -67,20 +73,35 @@ jobs:
             echo "Starting frontend deployment"
             echo "========================================="
 
+            docker network inspect eusocial >/dev/null
+
             PREVIOUS_COMMIT=$(git rev-parse HEAD)
+            PREVIOUS_IMAGE="${IMAGE_NAME}:${PREVIOUS_COMMIT}"
 
             echo "Previous commit: $PREVIOUS_COMMIT"
+            echo "Expected commit: $EXPECTED_SHA"
 
-            git fetch origin master
-            git checkout master
-            git reset --hard origin/master
+            if docker image inspect "$IMAGE_LATEST" >/dev/null 2>&1; then
+              docker tag "$IMAGE_LATEST" "$PREVIOUS_IMAGE"
+            fi
+
+            git fetch --unshallow origin master 2>/dev/null || git fetch origin master
+            git checkout -B master origin/master
+            git reset --hard "$EXPECTED_SHA"
+            git clean -fd
 
             NEW_COMMIT=$(git rev-parse HEAD)
 
             echo "New commit: $NEW_COMMIT"
 
+            if [ "$NEW_COMMIT" != "$EXPECTED_SHA" ]; then
+              echo "Checked-out commit does not match GitHub SHA."
+              exit 1
+            fi
+
             rollback() {
               trap - ERR
+              set +e
 
               echo "========================================="
               echo "DEPLOYMENT FAILED"
@@ -88,20 +109,31 @@ jobs:
               echo "========================================="
 
               git reset --hard "$PREVIOUS_COMMIT"
+              git clean -fd
 
               echo "Restored commit: $(git rev-parse HEAD)"
 
-              echo "Rebuilding previous frontend image..."
-
-              docker build -t "$IMAGE" .
+              if [ "$CONTAINER_REPLACED" != "true" ]; then
+                echo "New container was never started. Leaving the current container running."
+                exit 1
+              fi
 
               docker rm -f "$CONTAINER" 2>/dev/null || true
 
+              if docker image inspect "$PREVIOUS_IMAGE" >/dev/null 2>&1; then
+                echo "Restarting previous frontend image..."
+                docker tag "$PREVIOUS_IMAGE" "$IMAGE_LATEST"
+              else
+                echo "Previous image not found. Rebuilding..."
+                docker build -t "$IMAGE_LATEST" .
+              fi
+
               docker run -d \
                 --name "$CONTAINER" \
+                --restart unless-stopped \
                 --network eusocial \
                 -p 8080:80 \
-                "$IMAGE"
+                "$IMAGE_LATEST"
 
               echo "Waiting for rollback..."
 
@@ -123,19 +155,21 @@ jobs:
 
             echo "Building frontend Docker image..."
 
-            docker build -t "$IMAGE" .
+            docker build -t "$IMAGE_LATEST" -t "${IMAGE_NAME}:${NEW_COMMIT}" .
 
             echo "Stopping previous frontend container..."
 
             docker rm -f "$CONTAINER" 2>/dev/null || true
+            CONTAINER_REPLACED=true
 
             echo "Starting new frontend container..."
 
             docker run -d \
               --name "$CONTAINER" \
+              --restart unless-stopped \
               --network eusocial \
               -p 8080:80 \
-              "$IMAGE"
+              "$IMAGE_LATEST"
 
             echo "Waiting for frontend startup..."
 
@@ -156,7 +190,8 @@ jobs:
 
             HEALTH_OK=false
 
-            for i in {1..12}; do
+            i=1
+            while [ "$i" -le 12 ]; do
               if curl -fsS "$HEALTH_URL" >/dev/null 2>&1; then
                 HEALTH_OK=true
                 echo "Health check passed on attempt $i."
@@ -164,6 +199,7 @@ jobs:
               fi
 
               echo "Health check attempt $i failed."
+              i=$((i + 1))
               sleep 5
             done
 
