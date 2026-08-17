@@ -1,26 +1,62 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { Observable, tap } from 'rxjs';
+import { environment } from '../../environments/environment';
 import {
   ReportingGroup,
   ReportingGroupAssignedItem,
   ReportingGroupCategory,
   ReportingGroupOption,
 } from '../interfaces/reporting-group';
-import { TenantSessionService } from './tenant-session.service';
 
-/**
- * Tenant-scoped Reporting Groups data access.
- * Persists to localStorage for Phase 1; swap persist/load for API later.
- */
+interface ReportingGroupApiResponse {
+  id: number;
+  name: string;
+  description?: string;
+  isActive?: boolean;
+  reportingCategories?: ReportingCategoryApiResponse[];
+  createdAt?: string;
+  updatedAt?: string;
+  [key: string]: unknown;
+}
+
+interface ReportingCategoryApiResponse {
+  id: number;
+  name: string;
+  description?: string;
+  reportingGroupId?: number;
+  items?: ReportingGroupAssignedItem[];
+  createdAt?: string;
+  updatedAt?: string;
+  [key: string]: unknown;
+}
+
+interface ApiResponse<T> {
+  data?: T[];
+  reportingGroups?: T[];
+  [key: string]: unknown;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ReportingGroupService {
-  private readonly session = inject(TenantSessionService);
-  private readonly STORAGE_PREFIX = 'tenant_reporting_groups';
+  private readonly http = inject(HttpClient);
+  private readonly baseUrl = `${environment.tenantApiUrl}/reporting-groups`;
+  private readonly categoriesBaseUrl = `${environment.tenantApiUrl}/reporting-categories`;
 
-  /** In-memory mirror so consumers can react without re-reading storage. */
-  private readonly groupsSignal = signal<ReportingGroup[]>(this.loadFromStorage());
+  private readonly groupsSignal = signal<ReportingGroup[]>([]);
 
   readonly groups = this.groupsSignal.asReadonly();
+
+  /** Fetch all reporting groups from the API. */
+  loadGroups(page = 1, limit = 500): Observable<unknown> {
+    return this.http.get(`${this.baseUrl}?page=${page}&limit=${limit}`).pipe(
+      tap((response) => {
+        const raw = this.extractGroups(response);
+        const normalized = raw.map((g) => this.normalizeGroup(g));
+        this.groupsSignal.set(normalized);
+      })
+    );
+  }
 
   getGroups(): ReportingGroup[] {
     return this.groupsSignal();
@@ -30,142 +66,43 @@ export class ReportingGroupService {
     return this.groupsSignal().find((group) => group.id === id);
   }
 
-  createGroup(name: string): ReportingGroup {
-    const trimmed = name.trim();
-    if (!trimmed) {
-      throw new Error('Reporting group name is required');
-    }
-
-    const now = new Date().toISOString();
-    const group: ReportingGroup = {
-      id: this.createId('rg'),
-      name: trimmed,
-      categories: [],
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    this.persist([...this.groupsSignal(), group]);
-    return group;
+  createGroup(name: string): Observable<unknown> {
+    return this.http.post(this.baseUrl, { name });
   }
 
-  updateGroup(id: string, name: string): ReportingGroup {
-    const trimmed = name.trim();
-    if (!trimmed) {
-      throw new Error('Reporting group name is required');
-    }
-
-    const groups = this.groupsSignal().map((group) =>
-      group.id === id
-        ? { ...group, name: trimmed, updatedAt: new Date().toISOString() }
-        : group
-    );
-
-    if (!groups.some((group) => group.id === id)) {
-      throw new Error('Reporting group not found');
-    }
-
-    this.persist(groups);
-    return groups.find((group) => group.id === id)!;
+  updateGroup(id: string, name: string): Observable<unknown> {
+    return this.http.put(`${this.baseUrl}/${id}`, { name });
   }
 
-  deleteGroup(id: string): void {
-    this.persist(this.groupsSignal().filter((group) => group.id !== id));
+  deleteGroup(id: string): Observable<unknown> {
+    return this.http.delete(`${this.baseUrl}/${id}`);
   }
 
-  addCategory(groupId: string, name: string): ReportingGroupCategory {
-    const trimmed = name.trim();
-    if (!trimmed) {
-      throw new Error('Category name is required');
-    }
-
-    const category: ReportingGroupCategory = {
-      id: this.createId('cat'),
-      name: trimmed,
-      items: [],
-    };
-
-    this.mutateGroup(groupId, (group) => ({
-      ...group,
-      categories: [...group.categories, category],
-      updatedAt: new Date().toISOString(),
-    }));
-
-    return category;
+  addCategory(reportingGroupId: string, name: string): Observable<unknown> {
+    return this.http.post(this.categoriesBaseUrl, {
+      reportingGroupId: Number(reportingGroupId),
+      name,
+    });
   }
 
-  updateCategory(
-    groupId: string,
-    categoryId: string,
-    name: string
-  ): ReportingGroupCategory {
-    const trimmed = name.trim();
-    if (!trimmed) {
-      throw new Error('Category name is required');
-    }
-
-    let updated: ReportingGroupCategory | null = null;
-
-    this.mutateGroup(groupId, (group) => ({
-      ...group,
-      categories: group.categories.map((category) => {
-        if (category.id !== categoryId) {
-          return category;
-        }
-        updated = { ...category, name: trimmed };
-        return updated;
-      }),
-      updatedAt: new Date().toISOString(),
-    }));
-
-    if (!updated) {
-      throw new Error('Category not found');
-    }
-
-    return updated;
+  updateCategory(categoryId: string, name: string): Observable<unknown> {
+    return this.http.put(`${this.categoriesBaseUrl}/${categoryId}`, { name });
   }
 
-  deleteCategory(groupId: string, categoryId: string): void {
-    this.mutateGroup(groupId, (group) => ({
-      ...group,
-      categories: group.categories.filter((category) => category.id !== categoryId),
-      updatedAt: new Date().toISOString(),
-    }));
+  deleteCategory(categoryId: string): Observable<unknown> {
+    return this.http.delete(`${this.categoriesBaseUrl}/${categoryId}`);
   }
 
-  setCategoryItems(
-    groupId: string,
-    categoryId: string,
-    items: ReportingGroupAssignedItem[]
-  ): void {
-    const unique = this.uniqueItems(items);
-
-    this.mutateGroup(groupId, (group) => ({
-      ...group,
-      categories: group.categories.map((category) =>
-        category.id === categoryId ? { ...category, items: unique } : category
-      ),
-      updatedAt: new Date().toISOString(),
-    }));
+  assignItemsToCategory(categoryId: string, itemIds: (number | string)[]): Observable<unknown> {
+    return this.http.post(`${this.categoriesBaseUrl}/${categoryId}/items`, {
+      itemIds: itemIds.map(Number),
+    });
   }
 
-  removeItemFromCategory(
-    groupId: string,
-    categoryId: string,
-    itemId: number | string
-  ): void {
-    this.mutateGroup(groupId, (group) => ({
-      ...group,
-      categories: group.categories.map((category) =>
-        category.id === categoryId
-          ? {
-              ...category,
-              items: category.items.filter((item) => String(item.id) !== String(itemId)),
-            }
-          : category
-      ),
-      updatedAt: new Date().toISOString(),
-    }));
+  removeItemsFromCategory(categoryId: string, itemIds: (number | string)[]): Observable<unknown> {
+    return this.http.delete(`${this.categoriesBaseUrl}/${categoryId}/items`, {
+      body: { itemIds: itemIds.map(Number) },
+    });
   }
 
   /** Flattened categories for Item form multi-select (value = category id). */
@@ -202,7 +139,11 @@ export class ReportingGroupService {
 
   /** Observable wrapper for form option loaders (API-shaped). */
   getApiResponse$(endpoint?: string | null): Observable<{ data: ReportingGroupOption[] } | null> {
-    return of(this.tryGetApiResponse(endpoint));
+    const result = this.tryGetApiResponse(endpoint);
+    return new Observable((subscriber) => {
+      subscriber.next(result);
+      subscriber.complete();
+    });
   }
 
   /** Records shaped for DynamicModuleOptionsService. */
@@ -219,7 +160,7 @@ export class ReportingGroupService {
 
   /** Re-hydrate after slug changes (e.g. login as another tenant). */
   reload(): void {
-    this.groupsSignal.set(this.loadFromStorage());
+    this.loadGroups().subscribe();
   }
 
   isReportingGroupsEndpoint(endpoint?: string | null): boolean {
@@ -242,71 +183,42 @@ export class ReportingGroupService {
     );
   }
 
-  private mutateGroup(
-    groupId: string,
-    updater: (group: ReportingGroup) => ReportingGroup
-  ): void {
-    let found = false;
-    const groups = this.groupsSignal().map((group) => {
-      if (group.id !== groupId) {
-        return group;
-      }
-      found = true;
-      return updater(group);
-    });
-
-    if (!found) {
-      throw new Error('Reporting group not found');
+  private extractGroups(response: unknown): ReportingGroupApiResponse[] {
+    if (Array.isArray(response)) {
+      return response as ReportingGroupApiResponse[];
     }
 
-    this.persist(groups);
-  }
-
-  private persist(groups: ReportingGroup[]): void {
-    this.groupsSignal.set(groups);
-    try {
-      localStorage.setItem(this.storageKey(), JSON.stringify(groups));
-    } catch {
-      // Storage unavailable — in-memory state still works for the session.
-    }
-  }
-
-  private loadFromStorage(): ReportingGroup[] {
-    try {
-      const raw = localStorage.getItem(this.storageKey());
-      if (!raw) {
-        return [];
-      }
-
-      const parsed = JSON.parse(raw);
-      if (!Array.isArray(parsed)) {
-        return [];
-      }
-
-      return parsed
-        .filter((entry) => entry && typeof entry === 'object')
-        .map((entry) => this.normalizeGroup(entry as Partial<ReportingGroup>));
-    } catch {
+    if (!response || typeof response !== 'object') {
       return [];
     }
+
+    const record = response as ApiResponse<ReportingGroupApiResponse>;
+
+    for (const key of ['reportingGroups', 'data', 'results', 'items']) {
+      const nested = record[key];
+      if (Array.isArray(nested)) {
+        return nested as ReportingGroupApiResponse[];
+      }
+    }
+
+    return [];
   }
 
-  private normalizeGroup(raw: Partial<ReportingGroup>): ReportingGroup {
-    const now = new Date().toISOString();
+  private normalizeGroup(raw: ReportingGroupApiResponse): ReportingGroup {
     return {
-      id: String(raw.id || this.createId('rg')),
+      id: String(raw.id ?? ''),
       name: String(raw.name || 'Untitled Group'),
-      categories: Array.isArray(raw.categories)
-        ? raw.categories.map((category) => this.normalizeCategory(category))
+      categories: Array.isArray(raw.reportingCategories)
+        ? raw.reportingCategories.map((c) => this.normalizeCategory(c))
         : [],
-      createdAt: raw.createdAt || now,
-      updatedAt: raw.updatedAt || now,
+      createdAt: raw.createdAt || '',
+      updatedAt: raw.updatedAt || '',
     };
   }
 
-  private normalizeCategory(raw: Partial<ReportingGroupCategory>): ReportingGroupCategory {
+  private normalizeCategory(raw: ReportingCategoryApiResponse): ReportingGroupCategory {
     return {
-      id: String(raw.id || this.createId('cat')),
+      id: String(raw.id ?? ''),
       name: String(raw.name || 'Untitled Category'),
       items: Array.isArray(raw.items)
         ? this.uniqueItems(
@@ -333,14 +245,5 @@ export class ReportingGroupService {
     }
 
     return result;
-  }
-
-  private storageKey(): string {
-    const slug = this.session.getSlug() || 'default';
-    return `${this.STORAGE_PREFIX}_${slug}`;
-  }
-
-  private createId(prefix: string): string {
-    return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
   }
 }
