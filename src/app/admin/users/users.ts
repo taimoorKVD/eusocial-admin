@@ -22,7 +22,6 @@ export class Users {
   page: number = 1;
   lastPage: number = 1;
   total: number = 0;
-  message = '';
   showDeleteModal = false;
   deleteTargetId: number | null = null;
 
@@ -79,7 +78,6 @@ export class Users {
 
   allUsers(page: number = 1): void {
     this.loading = true;
-    this.message = '';
     const activeFilters = Object.fromEntries(
       Object.entries(this.filters).filter(([_, value]) => value)
     );

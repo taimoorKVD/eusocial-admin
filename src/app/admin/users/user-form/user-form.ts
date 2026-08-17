@@ -27,8 +27,6 @@ export class UserForm {
   id: number | null = null;
   isEditMode = false;
   saving = false;
-  message = '';
-
   // 👁️ password visibility flags
   showPassword = false;
   showConfirmPassword = false;
@@ -110,7 +108,6 @@ export class UserForm {
       return;
     }
     this.saving = true;
-    this.message = '';
 
     const payload = this.form.value;
     console.log('Sending user payload:', payload);
@@ -128,9 +125,9 @@ export class UserForm {
         this.saving = false;
         setTimeout(() => this.router.navigate(['/users']), 1000);
       },
-      error: () => {
-        this.message = 'User email is Already Exist ❌';
+      error: (err) => {
         this.saving = false;
+        this.toastr.error(this.extractErrorMessage(err) || 'User email already exists');
       },
     });
   }
@@ -160,7 +157,7 @@ export class UserForm {
 
   deleteUser(): void {
     if (!this.isEditMode || !this.id) {
-      this.message = 'No user selected for deletion ❌';
+      this.toastr.error('No user selected for deletion');
       return;
     }
 
@@ -168,7 +165,6 @@ export class UserForm {
     if (!confirmDelete) return;
 
     this.saving = true;
-    this.message = '';
 
     this.userService.deleteUser(this.id).subscribe({
       next: () => {

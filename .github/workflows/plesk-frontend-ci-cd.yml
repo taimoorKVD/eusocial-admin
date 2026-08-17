@@ -1,0 +1,219 @@
+name: Plesk Frontend CI/CD
+
+on:
+  push:
+    branches:
+      - master
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: Build Frontend
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Verify Docker build output path
+        run: test -d dist/eusocial-admin/browser
+
+  deploy:
+    name: Deploy Frontend to Plesk
+    runs-on: ubuntu-latest
+    needs: ci
+    timeout-minutes: 30
+
+    concurrency:
+      group: plesk-frontend-production
+      cancel-in-progress: false
+
+    steps:
+      - name: Deploy with automatic rollback
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.PROD_HOST }}
+          username: ${{ secrets.PROD_USER }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          command_timeout: 25m
+
+          script: |
+            set -Eeuo pipefail
+
+            APP_DIR="/opt/apps/eusocial/frontend"
+            CONTAINER="eusocial-frontend"
+            IMAGE_NAME="eusocial-frontend"
+            IMAGE_LATEST="${IMAGE_NAME}:latest"
+            HEALTH_URL="http://127.0.0.1:8080"
+            EXPECTED_SHA="${{ github.sha }}"
+            CONTAINER_REPLACED=false
+
+            cd "$APP_DIR"
+
+            echo "========================================="
+            echo "Starting frontend deployment"
+            echo "========================================="
+
+            docker network inspect eusocial >/dev/null
+
+            PREVIOUS_COMMIT=$(git rev-parse HEAD)
+            PREVIOUS_IMAGE="${IMAGE_NAME}:${PREVIOUS_COMMIT}"
+
+            echo "Previous commit: $PREVIOUS_COMMIT"
+            echo "Expected commit: $EXPECTED_SHA"
+
+            if docker image inspect "$IMAGE_LATEST" >/dev/null 2>&1; then
+              docker tag "$IMAGE_LATEST" "$PREVIOUS_IMAGE"
+            fi
+
+            git fetch --unshallow origin master 2>/dev/null || git fetch origin master
+            git checkout -B master origin/master
+            git reset --hard "$EXPECTED_SHA"
+            git clean -fd
+
+            NEW_COMMIT=$(git rev-parse HEAD)
+
+            echo "New commit: $NEW_COMMIT"
+
+            if [ "$NEW_COMMIT" != "$EXPECTED_SHA" ]; then
+              echo "Checked-out commit does not match GitHub SHA."
+              exit 1
+            fi
+
+            rollback() {
+              trap - ERR
+              set +e
+
+              echo "========================================="
+              echo "DEPLOYMENT FAILED"
+              echo "ROLLING BACK"
+              echo "========================================="
+
+              git reset --hard "$PREVIOUS_COMMIT"
+              git clean -fd
+
+              echo "Restored commit: $(git rev-parse HEAD)"
+
+              if [ "$CONTAINER_REPLACED" != "true" ]; then
+                echo "New container was never started. Leaving the current container running."
+                exit 1
+              fi
+
+              docker rm -f "$CONTAINER" 2>/dev/null || true
+
+              if docker image inspect "$PREVIOUS_IMAGE" >/dev/null 2>&1; then
+                echo "Restarting previous frontend image..."
+                docker tag "$PREVIOUS_IMAGE" "$IMAGE_LATEST"
+              else
+                echo "Previous image not found. Rebuilding..."
+                docker build -t "$IMAGE_LATEST" .
+              fi
+
+              docker run -d \
+                --name "$CONTAINER" \
+                --restart unless-stopped \
+                --network eusocial \
+                -p 8080:80 \
+                "$IMAGE_LATEST"
+
+              echo "Waiting for rollback..."
+
+              sleep 10
+
+              if curl -fsS "$HEALTH_URL" >/dev/null 2>&1; then
+                echo "Rollback health check passed."
+              else
+                echo "CRITICAL: Rollback health check failed."
+                docker logs --tail 100 "$CONTAINER" || true
+                exit 1
+              fi
+
+              echo "Rollback completed."
+              exit 1
+            }
+
+            trap rollback ERR
+
+            echo "Building frontend Docker image..."
+
+            docker build -t "$IMAGE_LATEST" -t "${IMAGE_NAME}:${NEW_COMMIT}" .
+
+            echo "Stopping previous frontend container..."
+
+            docker rm -f "$CONTAINER" 2>/dev/null || true
+            CONTAINER_REPLACED=true
+
+            echo "Starting new frontend container..."
+
+            docker run -d \
+              --name "$CONTAINER" \
+              --restart unless-stopped \
+              --network eusocial \
+              -p 8080:80 \
+              "$IMAGE_LATEST"
+
+            echo "Waiting for frontend startup..."
+
+            sleep 10
+
+            echo "Checking container..."
+
+            RUNNING="$(docker inspect "$CONTAINER" \
+              --format='{{.State.Running}}' 2>/dev/null || echo false)"
+
+            if [ "$RUNNING" != "true" ]; then
+              echo "Frontend container is not running."
+              docker logs --tail 100 "$CONTAINER" || true
+              rollback
+            fi
+
+            echo "Checking HTTP endpoint..."
+
+            HEALTH_OK=false
+
+            i=1
+            while [ "$i" -le 12 ]; do
+              if curl -fsS "$HEALTH_URL" >/dev/null 2>&1; then
+                HEALTH_OK=true
+                echo "Health check passed on attempt $i."
+                break
+              fi
+
+              echo "Health check attempt $i failed."
+              i=$((i + 1))
+              sleep 5
+            done
+
+            if [ "$HEALTH_OK" != "true" ]; then
+              echo "Frontend health check failed."
+              docker logs --tail 100 "$CONTAINER" || true
+              rollback
+            fi
+
+            trap - ERR
+
+            echo "========================================="
+            echo "FRONTEND DEPLOYMENT SUCCESSFUL"
+            echo "Commit: $NEW_COMMIT"
+            echo "========================================="
+
+            docker ps --filter "name=$CONTAINER"

@@ -55,11 +55,7 @@ export class TenantTopbarComponent implements OnInit, OnDestroy {
 
   goToProfile() {
     this.closeDropdown();
-    const slug = this.tenantSession.getSlug();
-    if (!slug) {
-      return;
-    }
-    this.router.navigate(['/tenant', slug, 'profile']);
+    this.router.navigate(['/profile']);
   }
 
   logout() {

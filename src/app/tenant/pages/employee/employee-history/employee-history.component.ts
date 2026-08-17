@@ -5,7 +5,6 @@ import { Router } from '@angular/router';
 import { finalize } from 'rxjs';
 import { environment } from '../../../../../environments/environment';
 import { SharedModule } from '../../../../shared/shared.module';
-import { TenantSessionService } from '../../../../services/tenant-session.service';
 import { EmployeeAssignmentsService } from '../../../../services/employee-assignments.service';
 import {
   EmployeeAssignmentListItem,
@@ -20,7 +19,6 @@ import {
 })
 export class EmployeeHistoryComponent implements OnInit {
   private readonly assignmentsService = inject(EmployeeAssignmentsService);
-  private readonly session = inject(TenantSessionService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -60,7 +58,7 @@ export class EmployeeHistoryComponent implements OnInit {
   }
 
   openAssignment(item: EmployeeAssignmentListItem): void {
-    this.router.navigate(['/tenant', this.session.getSlug(), 'my-forms', item.id]);
+    this.router.navigate(['/my-forms', item.id]);
   }
 
   statusLabel(status: string): string {

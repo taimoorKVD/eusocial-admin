@@ -15,7 +15,6 @@ export class Roles {
   roles: Role[] = [];
   total = 0;
   loading = true;
-  message = '';
   page = 1;
   lastPage = 1;
   showDeleteModal = false;
@@ -40,7 +39,6 @@ export class Roles {
 
   allRoles(page: number = 1): void {
     this.loading = true;
-    this.message = '';
 
      const activeFilters = Object.fromEntries(
       Object.entries(this.filters).filter(([_, value]) => value)

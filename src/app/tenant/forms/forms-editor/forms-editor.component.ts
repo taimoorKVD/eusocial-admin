@@ -96,11 +96,10 @@ export class FormsEditorComponent
     }
 
     if (this.pendingModule) {
-      const slug = this.getTenantSlug();
       const nextModule = this.pendingModule;
       this.pendingModule = null;
       this.allowModuleNavigation = true;
-      this.router.navigate(['/tenant', slug, 'forms', nextModule]);
+      this.router.navigate(['/forms', nextModule]);
     }
   }
 
@@ -321,29 +320,13 @@ export class FormsEditorComponent
   }
 
   private revertModuleRoute(): void {
-    const slug = this.getTenantSlug();
-
-    if (!slug || !this.moduleName) {
+    if (!this.moduleName) {
       return;
     }
 
-    this.router.navigate(['/tenant', slug, 'forms', this.moduleName], {
+    this.router.navigate(['/forms', this.moduleName], {
       replaceUrl: true,
     });
-  }
-
-  private getTenantSlug(): string {
-    let route: ActivatedRoute | null = this.route;
-
-    while (route) {
-      const slug = route.snapshot.paramMap.get('slug');
-      if (slug) {
-        return slug;
-      }
-      route = route.parent;
-    }
-
-    return '';
   }
 
   private setLoadingState(key: string, active: boolean): void {

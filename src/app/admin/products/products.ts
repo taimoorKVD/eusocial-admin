@@ -3,6 +3,7 @@ import { Product } from '../../interfaces/product';
 import { ProductService } from '../../services/product.service';
 import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-products',
@@ -15,11 +16,14 @@ export class Products {
   products: Product[] = [];
   total = 0;
   loading = true;
-  message = '';
   page = 1;
   lastPage = 1;
 
-  constructor(private productService: ProductService, private router: Router) { }
+  constructor(
+    private productService: ProductService,
+    private router: Router,
+    private toastr: ToastrService
+  ) { }
 
   ngOnInit(): void {
     this.loadProducts();
@@ -36,7 +40,7 @@ export class Products {
         this.loading = false;
       },
       error: () => {
-        this.message = 'Failed to load products ❌';
+        this.toastr.error('Failed to load products');
         this.loading = false;
       },
     });
@@ -50,11 +54,11 @@ export class Products {
     if (!confirm('Are you sure you want to delete this product?')) return;
     this.productService.deleteProduct(id).subscribe({
       next: () => {
-        this.message = 'Product deleted successfully ✅';
+        this.toastr.success('Product deleted successfully');
         this.loadProducts(this.page);
       },
       error: () => {
-        this.message = 'Failed to delete product ❌';
+        this.toastr.error('Failed to delete product');
       },
     });
   }

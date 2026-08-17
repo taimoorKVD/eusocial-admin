@@ -137,7 +137,7 @@ export class TenantResetPasswordComponent {
   }
 
   goToLogin(): void {
-    this.router.navigate(['/tenant/login']);
+    this.router.navigate(['/login']);
   }
 
   private extractErrorMessage(err: any): string {

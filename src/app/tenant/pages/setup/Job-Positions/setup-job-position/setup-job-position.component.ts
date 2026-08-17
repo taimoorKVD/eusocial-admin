@@ -1,7 +1,6 @@
 import { Component, signal } from '@angular/core';
 import { TenantJobPositionService } from '../../../../../services/tenant-job-position.service';
 import { ActivatedRoute, Router } from '@angular/router';
-import { TenantSessionService } from '../../../../../services/tenant-session.service';
 import { ToastrService } from 'ngx-toastr';
 
 @Component({
@@ -16,7 +15,6 @@ export class SetupJobPositionComponent {
     private tenantJobPosition: TenantJobPositionService,
     private router: Router,
     private route: ActivatedRoute,
-    private tenantSession: TenantSessionService,
     private toastr: ToastrService,
   ) {}
   jobPositions: any[] = [];
@@ -129,8 +127,7 @@ export class SetupJobPositionComponent {
   }
 
   redirectToListing() {
-    const slug = this.tenantSession.getSlug();
-    this.router.navigate(['/tenant', slug, 'job-position']);
+    this.router.navigate(['/job-position']);
   }
 
   // 🔹 Save (Create / Update)
@@ -244,7 +241,6 @@ export class SetupJobPositionComponent {
   }
 
   goToJobListing() {
-    const slug = this.tenantSession.getSlug();
-    this.router.navigate(['/tenant', slug, 'job-position']);
+    this.router.navigate(['/job-position']);
   }
 }

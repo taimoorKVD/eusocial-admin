@@ -2,7 +2,6 @@ import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { TenantJobPositionService } from '../../../../../services/tenant-job-position.service';
 import { ToastrService } from 'ngx-toastr';
-import { TenantSessionService } from '../../../../../services/tenant-session.service';
 import { environment } from '../../../../../../environments/environment.prod';
 import { BulkSelectionState, toNumericIds } from '../../../../../shared/dynamic-listing/bulk-selection.state';
 
@@ -38,7 +37,7 @@ export class SetupJobPositionListingComponent {
     return `Delete ${count} selected job position${count === 1 ? '' : 's'}? This action cannot be undone.`;
   }
 
-  constructor( private tenantJobPosition: TenantJobPositionService, private router: Router, private toastr: ToastrService, public session: TenantSessionService) {}
+  constructor( private tenantJobPosition: TenantJobPositionService, private router: Router, private toastr: ToastrService) {}
 
   ngOnInit(): void {
     this.loadJobPositions();
@@ -259,24 +258,13 @@ deleteJob(id: number) {
   }
 
   goToCreate() {
-    this.router.navigate([
-      '/tenant',
-      this.session.getSlug(),
-      'job-position',
-      'create'
-    ]);
+    this.router.navigate(['/job-position', 'create']);
   }
 
   // 🔹 Navigate to Edit
   goToEdit(id: number) {
     // this.router.navigate(['/tenant/eusocial/job-position/edit', id]);
-    this.router.navigate([
-    '/tenant',
-    this.session.getSlug(),
-    'job-position',
-    'edit',
-    id
-  ]);
+    this.router.navigate(['/job-position', 'edit', id]);
   }
 
   getDescription(job: any): string {

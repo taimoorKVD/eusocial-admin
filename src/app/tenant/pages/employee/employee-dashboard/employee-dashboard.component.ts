@@ -1,7 +1,6 @@
 import { Component, Input, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { TenantSessionService } from '../../../../services/tenant-session.service';
 import {
   EmployeeDashboardData,
   EmployeeStatValue,
@@ -22,7 +21,6 @@ interface EmployeeStatCardView {
   templateUrl: './employee-dashboard.component.html',
 })
 export class EmployeeDashboardComponent {
-  private readonly session = inject(TenantSessionService);
   private readonly router = inject(Router);
 
   @Input({ required: true }) data!: EmployeeDashboardData;
@@ -88,18 +86,18 @@ export class EmployeeDashboardComponent {
   }
 
   goToMyForms(): void {
-    this.router.navigate(['/tenant', this.session.getSlug(), 'my-forms']);
+    this.router.navigate(['/my-forms']);
   }
 
   goToHistory(): void {
-    this.router.navigate(['/tenant', this.session.getSlug(), 'history']);
+    this.router.navigate(['/history']);
   }
 
   openAssignment(item: TodaysAssignment): void {
     if (!item.id) {
       return;
     }
-    this.router.navigate(['/tenant', this.session.getSlug(), 'my-forms', item.id]);
+    this.router.navigate(['/my-forms', item.id]);
   }
 
   statusLabel(status: string): string {

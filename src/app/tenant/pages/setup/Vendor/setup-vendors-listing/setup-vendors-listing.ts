@@ -10,7 +10,6 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { finalize } from 'rxjs';
 import { TenantVendorService } from '../../../../../services/tenant-vendor.service';
-import { TenantSessionService } from '../../../../../services/tenant-session.service';
 import { environment } from '../../../../../../environments/environment.prod';
 import { FormStorageService } from '../../../../forms/services/form-storage.service';
 import { normalizeFieldOrder } from '../../../../form-builder/utils/form-field.factory';
@@ -37,7 +36,6 @@ const VENDORS_LISTING_FILTER_EXCLUDE_TYPES: DynamicFieldType[] = ['image'];
 export class SetupVendorsListing {
   private readonly vendorService = inject(TenantVendorService);
   private readonly toastr = inject(ToastrService);
-  readonly session = inject(TenantSessionService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly formStorageService = inject(FormStorageService);
@@ -96,7 +94,7 @@ export class SetupVendorsListing {
   }
 
   goToCreate(): void {
-    this.router.navigate(['/tenant', this.session.getSlug(), 'vendors', 'create']);
+    this.router.navigate(['/vendors', 'create']);
   }
 
   goToEdit(record: Record<string, unknown>): void {

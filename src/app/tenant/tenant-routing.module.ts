@@ -1,23 +1,31 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
+
 import { TenantLayoutComponent } from './tenant-layout/tenant-layout.component';
 import { HomeComponent } from './pages/home/home.component';
 import { UserDashboardComponent } from './pages/user-dashboard/user-dashboard.component';
+
 import { EmployeeMyFormsComponent } from './pages/employee/employee-my-forms/employee-my-forms.component';
 import { EmployeeAssignmentComponent } from './pages/employee/employee-assignment/employee-assignment.component';
 import { EmployeeHistoryComponent } from './pages/employee/employee-history/employee-history.component';
 // import { SetupUserComponent } from './pages/setup/setup-user/setup-user.component';
 import { SetupJobPositionComponent } from './pages/setup/Job-Positions/setup-job-position/setup-job-position.component';
 import { TenantLoginComponent } from './tenant-login/tenant-login.component';
+
 import { SetupVendorComponent } from './pages/setup/Vendor/setup-vendor/setup-vendor.component';
 import { SetupReportingGroup } from './pages/setup/setup-reporting-group/setup-reporting-group';
+
 import { SetupItemsListing } from './pages/setup/Items/setup-items-listing/setup-items-listing';
 import { SetupItemComponent } from './pages/setup/Items/setup-item/setup-item.component';
+
 import { SetupUserComponent } from './pages/setup/Users/setup-user/setup-user.component';
 import { SetupUsersListing } from './pages/setup/Users/setup-users-listing/setup-users-listing';
+
 import { SetupJobPositionListingComponent } from './pages/setup/Job-Positions/setup-job-position-listing/setup-job-position-listing.component';
+
 import { LocationComponent } from './pages/extra-management/location/location.component';
 import { LocationListingComponent } from './pages/extra-management/location-listing/location-listing.component';
+
 import { tenantAuthGuard } from '../guards/tenant-auth-guard';
 import {
   tenantAdminGuard,
@@ -25,25 +33,66 @@ import {
   tenantHomeRedirectGuard,
 } from '../guards/tenant-role.guard';
 import { SetupVendorsListing } from './pages/setup/Vendor/setup-vendors-listing/setup-vendors-listing';
+
 import { TenantForgotPasswordComponent } from './tenant-forgot-password/tenant-forgot-password.component';
 import { TenantResetPasswordComponent } from './tenant-reset-password/tenant-reset-password.component';
+
 import { RoleComponent } from './pages/setup/Roles/role/role.component';
 import { RoleListingComponent } from './pages/setup/Roles/role-listing/role-listing.component';
 import { TenantProfileComponent } from './pages/profile/tenant-profile.component';
 
 const routes: Routes = [
 
-  // ✅ /tenant/login
-  { path: 'login', component: TenantLoginComponent },
-  { path: 'forgot-password', component: TenantForgotPasswordComponent },
-  { path: 'reset-password', component: TenantResetPasswordComponent },
-  // ✅ legacy URL support: /tenant/:slug/login -> /tenant/login
-  { path: ':slug/login', redirectTo: '/tenant/login', pathMatch: 'full' },
+  /*
+   * ============================================================
+   * TENANT PUBLIC ROUTES
+   *
+   * tenant1.eusocial.thebetawebsite.com/login
+   * folio3.eusocial.thebetawebsite.com/login
+   *
+   * ============================================================
+   */
+
   {
-    path: ':slug',
+    path: 'login',
+    component: TenantLoginComponent,
+  },
+
+  {
+    path: 'forgot-password',
+    component: TenantForgotPasswordComponent,
+  },
+
+  {
+    path: 'reset-password',
+    component: TenantResetPasswordComponent,
+  },
+
+  /*
+   * ============================================================
+   * TENANT APPLICATION
+   *
+   * The tenant slug is NOT part of the URL anymore.
+   *
+   * It comes from PortalService.tenantSlug.
+   *
+   * Example:
+   *
+   * tenant1.eusocial.thebetawebsite.com
+   *                         ↓
+   *                    tenantSlug
+   *                         ↓
+   *                       tenant1
+   *
+   * ============================================================
+   */
+
+  {
+    path: '',
     component: TenantLayoutComponent,
     canActivate: [tenantAuthGuard],
     canActivateChild: [tenantAuthGuard],
+
     children: [
       {
         path: '',
@@ -103,7 +152,6 @@ const routes: Routes = [
           },
         ],
       },
-
       {
         path: '',
         canActivate: [tenantEmployeeGuard],
@@ -113,14 +161,23 @@ const routes: Routes = [
           { path: 'history', component: EmployeeHistoryComponent },
         ],
       },
-    ]
+    ],
   },
-    // fallback
-  { path: '**', redirectTo: '/tenant/login' }
+  /*
+   * Tenant fallback
+   */
+  {
+    path: '**',
+    redirectTo: 'login',
+  },
 ];
 
 @NgModule({
-  imports: [RouterModule.forChild(routes)],
-  exports: [RouterModule]
+  imports: [
+    RouterModule.forChild(routes),
+  ],
+  exports: [
+    RouterModule,
+  ],
 })
-export class TenantRoutingModule { }
+export class TenantRoutingModule {}
