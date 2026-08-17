@@ -20,12 +20,19 @@ interface ReportingGroupApiResponse {
   [key: string]: unknown;
 }
 
+interface ReportingItemApiResponse {
+  id: number;
+  itemName?: string;
+  name?: string;
+  [key: string]: unknown;
+}
+
 interface ReportingCategoryApiResponse {
   id: number;
   name: string;
   description?: string;
   reportingGroupId?: number;
-  items?: ReportingGroupAssignedItem[];
+  items?: ReportingItemApiResponse[];
   createdAt?: string;
   updatedAt?: string;
   [key: string]: unknown;
@@ -224,7 +231,7 @@ export class ReportingGroupService {
         ? this.uniqueItems(
             raw.items.map((item) => ({
               id: item.id,
-              name: String(item.name || `Item ${item.id}`),
+              name: String(item.itemName || item.name || `Item ${item.id}`),
             }))
           )
         : [],

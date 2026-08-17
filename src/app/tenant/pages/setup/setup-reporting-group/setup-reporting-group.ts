@@ -99,6 +99,7 @@ export class SetupReportingGroup implements OnInit {
 
   ngOnInit(): void {
     this.loadReportingGroups();
+    this.loadCatalogItems();
   }
 
   isGroupExpanded(groupId: string): boolean {
@@ -473,6 +474,10 @@ export class SetupReportingGroup implements OnInit {
   }
 
   private loadCatalogItems(): void {
+    if (this.catalogItems().length > 0) {
+      return;
+    }
+
     this.catalogLoading.set(true);
 
     const schema$ = this.formStorageService.loadForm('items').pipe(
