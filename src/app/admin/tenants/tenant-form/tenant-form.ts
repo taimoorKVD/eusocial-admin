@@ -10,6 +10,7 @@ import {
 import { ActivatedRoute, Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { Subject, takeUntil } from 'rxjs';
+import { environment } from '../../../../environments/environment';
 import { MasterPlan } from '../../../interfaces/master-billing';
 import { Tenant } from '../../../interfaces/tenant';
 import { MasterPlanService } from '../../../services/master-plan.service';
@@ -58,6 +59,7 @@ export class TenantForm implements OnInit, OnDestroy {
 
   showPassword = false;
   showConfirmPassword = false;
+  readonly baseDomain = environment.baseDomain || 'eusocial.thebetawebsite.com';
 
   readonly trialOptions = [
     { value: 0, label: 'No trial' },
@@ -67,8 +69,10 @@ export class TenantForm implements OnInit, OnDestroy {
   ];
 
   private readonly destroy$ = new Subject<void>();
-  private readonly domainPattern =
-    /^(?=.{1,253}$)(?!-)(?:[a-zA-Z0-9-]{1,63}\.)+[a-zA-Z]{2,63}$/;
+  /** Letters, numbers, spaces, hyphens only — no @ or other special characters. */
+  private readonly tenantNamePattern = /^[A-Za-z0-9]+(?:[ A-Za-z0-9\-]*[A-Za-z0-9])?$/;
+  private autoAdminEmail = '';
+  private existingDomain = '';
 
   constructor(
     private fb: FormBuilder,
@@ -82,6 +86,11 @@ export class TenantForm implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.buildForm();
     this.loadLookups();
+
+    this.form
+      .get('name')
+      ?.valueChanges.pipe(takeUntil(this.destroy$))
+      .subscribe((name) => this.onTenantNameChanged(String(name || '')));
 
     this.form
       .get('countryId')
@@ -124,11 +133,18 @@ export class TenantForm implements OnInit, OnDestroy {
     return this.form.controls;
   }
 
-  get subdomainPreview(): string {
-    const domain = String(this.form?.value?.domain || '').trim().toLowerCase();
-    if (!domain) return 'acme.eusocial.com';
-    const slug = domain.split('.')[0] || 'acme';
-    return `${slug}.eusocial.com`;
+  get tenantSlug(): string {
+    return this.slugifyTenantName(this.form?.value?.name || '');
+  }
+
+  get adminEmailPlaceholder(): string {
+    const slug = this.tenantSlug || 'folio3';
+    return `admin@${slug}.com`;
+  }
+
+  get businessEmailPlaceholder(): string {
+    const slug = this.tenantSlug || 'folio3';
+    return `hello@${slug}.com`;
   }
 
   get descriptionCount(): number {
@@ -152,8 +168,10 @@ export class TenantForm implements OnInit, OnDestroy {
   buildForm(): void {
     this.form = this.fb.group(
       {
-        name: ['', Validators.required],
-        domain: ['', [Validators.required, Validators.pattern(this.domainPattern)]],
+        name: [
+          '',
+          [Validators.required, Validators.pattern(this.tenantNamePattern), this.tenantSlugValidator()],
+        ],
         email: ['', [Validators.required, Validators.email]],
         phoneNumber: [''],
         industry: [''],
@@ -199,8 +217,12 @@ export class TenantForm implements OnInit, OnDestroy {
     this.tenantService.getCountries().subscribe({
       next: (res) => {
         this.countries = this.asOptions(res);
+        if (!this.countries.length) {
+          this.toastr.warning('No countries returned from the server');
+        }
       },
-      error: () => this.toastr.error('Failed to load countries'),
+      error: (err) =>
+        this.toastr.error(this.extractError(err, 'Failed to load countries')),
     });
 
     this.planService.getPlans().subscribe({
@@ -254,10 +276,16 @@ export class TenantForm implements OnInit, OnDestroy {
           t.plan_id ??
           (typeof t.plan === 'object' && t.plan ? t.plan.id : null);
 
+        this.existingDomain =
+          t.domain ||
+          t.customDomain ||
+          t.custom_domain ||
+          (t.subdomain ? `${t.subdomain}.com` : '') ||
+          '';
+
         this.form.patchValue(
           {
             name: t.name || '',
-            domain: t.domain || t.customDomain || t.custom_domain || '',
             email: t.email || '',
             phoneNumber: this.formatPhone(t),
             industry: t.industry || '',
@@ -290,6 +318,11 @@ export class TenantForm implements OnInit, OnDestroy {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       this.toastr.error('Please fill in all required fields correctly');
+      return;
+    }
+
+    if (!this.isEditMode && !this.tenantSlug) {
+      this.toastr.error('Tenant name must produce a valid subdomain');
       return;
     }
 
@@ -362,11 +395,27 @@ export class TenantForm implements OnInit, OnDestroy {
     this.router.navigate(['/tenants']);
   }
 
+  private onTenantNameChanged(name: string): void {
+    if (this.isEditMode) return;
+
+    const slug = this.slugifyTenantName(name);
+    if (!slug) return;
+
+    const suggested = `admin@${slug}.com`;
+    const currentAdminEmail = String(this.form.get('adminEmail')?.value || '').trim();
+    if (!currentAdminEmail || currentAdminEmail === this.autoAdminEmail) {
+      this.form.patchValue({ adminEmail: suggested }, { emitEvent: false });
+      this.autoAdminEmail = suggested;
+    }
+  }
+
   private buildCreatePayload(): TenantCreatePayload {
     const v = this.form.getRawValue();
+    const slug = this.slugifyTenantName(v.name);
     return {
       name: String(v.name || '').trim(),
-      domain: String(v.domain || '').trim().toLowerCase(),
+      // Backend derives subdomain from domain (e.g. folio3.com → folio3.eusocial...).
+      domain: `${slug}.com`,
       email: String(v.email || '').trim(),
       phoneNumber: String(v.phoneNumber || '').trim() || undefined,
       industry: v.industry || undefined,
@@ -390,9 +439,8 @@ export class TenantForm implements OnInit, OnDestroy {
 
   private buildUpdatePayload(): TenantUpdatePayload {
     const v = this.form.getRawValue();
-    return {
+    const payload: TenantUpdatePayload = {
       name: String(v.name || '').trim(),
-      domain: String(v.domain || '').trim().toLowerCase(),
       email: String(v.email || '').trim(),
       phoneNumber: String(v.phoneNumber || '').trim() || undefined,
       industry: v.industry || undefined,
@@ -402,6 +450,30 @@ export class TenantForm implements OnInit, OnDestroy {
       city: v.city ? String(v.city).trim() : undefined,
       address: String(v.address || '').trim() || undefined,
       postalCode: String(v.postalCode || '').trim() || undefined,
+    };
+
+    if (this.existingDomain) {
+      payload.domain = this.existingDomain;
+    }
+
+    return payload;
+  }
+
+  /** folio3 / Acme Corp → folio3 / acmecorp (subdomain slug). */
+  private slugifyTenantName(name: string): string {
+    return String(name || '')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '')
+      .slice(0, 40);
+  }
+
+  private tenantSlugValidator(): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      const value = String(control.value || '').trim();
+      if (!value) return null;
+      const slug = this.slugifyTenantName(value);
+      return slug.length >= 2 ? null : { invalidSlug: true };
     };
   }
 
@@ -456,13 +528,17 @@ export class TenantForm implements OnInit, OnDestroy {
   }
 
   private asOptions(res: any): SelectOption[] {
-    const rows = Array.isArray(res) ? res : res?.data || res?.items || [];
+    const rows = Array.isArray(res)
+      ? res
+      : res?.data || res?.items || res?.results || res?.countries || res?.states || res?.cities || [];
     return (rows || [])
       .map((row: any) => ({
-        id: Number(row.id ?? row.value),
-        name: String(row.name ?? row.label ?? row.title ?? ''),
+        id: Number(row.id ?? row.value ?? row.country_id ?? row.state_id ?? row.city_id),
+        name: String(
+          row.name ?? row.label ?? row.title ?? row.country_name ?? row.state_name ?? row.city_name ?? ''
+        ),
       }))
-      .filter((row: SelectOption) => row.id && row.name)
+      .filter((row: SelectOption) => Number.isFinite(row.id) && row.id > 0 && !!row.name)
       .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
   }
 
