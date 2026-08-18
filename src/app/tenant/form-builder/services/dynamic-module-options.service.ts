@@ -24,9 +24,14 @@ const MODULE_API_PATHS: Record<string, string> = {
   'reporting-groups': '/reporting-groups',
 };
 
-interface ModuleDataCache {
+export interface ModuleColumnOption {
+  id: string;
+  label: string;
+}
+
+export interface ModuleDataCache {
   records: Record<string, unknown>[];
-  columns: string[];
+  columns: ModuleColumnOption[];
 }
 
 @Injectable({
@@ -36,7 +41,7 @@ export class DynamicModuleOptionsService {
   private readonly modulesCache = new Map<string, Observable<FormModuleListItem[]>>();
   private readonly recordsCache = new Map<string, Observable<Record<string, unknown>[]>>();
   private readonly moduleDataCache = new Map<string, Observable<ModuleDataCache>>();
-  private readonly schemaColumnsCache = new Map<string, Observable<string[]>>();
+  private readonly schemaFieldsCache = new Map<string, Observable<FormField[]>>();
 
   constructor(
     private http: HttpClient,
@@ -89,8 +94,11 @@ export class DynamicModuleOptionsService {
       const request = this.getModuleRecords(moduleSlug).pipe(
         switchMap(records => this.resolveModuleData(moduleSlug, records)),
         catchError(() =>
-          this.getModuleSchemaColumns(moduleSlug).pipe(
-            map(columns => ({ records: [], columns }))
+          this.getModuleSchemaFields(moduleSlug).pipe(
+            map(fields => ({
+              records: [],
+              columns: this.buildModuleColumns([], fields),
+            }))
           )
         ),
         shareReplay(1)
@@ -106,7 +114,7 @@ export class DynamicModuleOptionsService {
   ): ModuleDataCache {
     return {
       records,
-      columns: this.extractColumnNamesFromRecords(records),
+      columns: this.buildModuleColumns(records, []),
     };
   }
 
@@ -160,29 +168,21 @@ export class DynamicModuleOptionsService {
   }
 
   extractColumnNamesFromSchemaFields(fields: FormField[]): string[] {
-    const columns = new Set<string>(['id']);
-
-    for (const field of fields) {
-      const name = String(field.name ?? '').trim();
-
-      if (name) {
-        columns.add(name);
-      }
-    }
-
-    return this.sortColumnNames(columns);
+    return this.buildModuleColumns([], fields).map(column => column.id);
   }
 
-  getDefaultDisplayColumn(columns: string[]): string {
-    if (columns.includes('name')) {
+  getDefaultDisplayColumn(columns: ModuleColumnOption[]): string {
+    const ids = columns.map(column => column.id);
+
+    if (ids.includes('name')) {
       return 'name';
     }
 
-    if (columns.includes('title')) {
+    if (ids.includes('title')) {
       return 'title';
     }
 
-    return columns[0] ?? '';
+    return columns[0]?.id ?? '';
   }
 
   getModuleSlug(form: FormModuleListItem): string {
@@ -197,40 +197,113 @@ export class DynamicModuleOptionsService {
     moduleSlug: string,
     records: Record<string, unknown>[]
   ): Observable<ModuleDataCache> {
-    const columnsFromRecords = this.extractColumnNamesFromRecords(records);
-
-    if (columnsFromRecords.length > 0) {
-      return of({ records, columns: columnsFromRecords });
-    }
-
-    return this.getModuleSchemaColumns(moduleSlug).pipe(
-      map(columns => ({ records, columns }))
+    return this.getModuleSchemaFields(moduleSlug).pipe(
+      map(fields => ({
+        records,
+        columns: this.buildModuleColumns(records, fields),
+      }))
     );
   }
 
-  private getModuleSchemaColumns(moduleSlug: string): Observable<string[]> {
+  private getModuleSchemaFields(moduleSlug: string): Observable<FormField[]> {
     const cacheKey = this.normalizeSlug(moduleSlug);
 
-    if (!this.schemaColumnsCache.has(cacheKey)) {
+    if (!this.schemaFieldsCache.has(cacheKey)) {
       const request = this.formStorageService.loadForm(moduleSlug).pipe(
-        map(schema => {
-          if (!schema?.fields?.length) {
-            return this.getFallbackColumnNames();
-          }
-
-          return this.extractColumnNamesFromSchemaFields(schema.fields);
-        }),
-        catchError(() => of(this.getFallbackColumnNames())),
+        map(schema => schema?.fields ?? []),
+        catchError(() => of([])),
         shareReplay(1)
       );
-      this.schemaColumnsCache.set(cacheKey, request);
+      this.schemaFieldsCache.set(cacheKey, request);
     }
 
-    return this.schemaColumnsCache.get(cacheKey)!;
+    return this.schemaFieldsCache.get(cacheKey)!;
   }
 
-  private getFallbackColumnNames(): string[] {
-    return ['id', 'name', 'title', 'email', 'phone', 'status'];
+  private buildModuleColumns(
+    records: Record<string, unknown>[],
+    fields: FormField[]
+  ): ModuleColumnOption[] {
+    const labelByKey = this.buildSchemaColumnLabelMap(fields);
+    const columnIds = new Set<string>();
+
+    for (const field of fields) {
+      const id = String(field.id ?? '').trim();
+      if (id) {
+        columnIds.add(id);
+      }
+    }
+
+    for (const columnId of this.extractColumnNamesFromRecords(records)) {
+      columnIds.add(columnId);
+    }
+
+    if (!columnIds.size) {
+      return this.getFallbackColumns();
+    }
+
+    const columns: ModuleColumnOption[] = Array.from(columnIds).map(id => ({
+      id,
+      label: labelByKey.get(id) || this.formatColumnLabel(id),
+    }));
+
+    return this.sortModuleColumns(columns);
+  }
+
+  private buildSchemaColumnLabelMap(fields: FormField[]): Map<string, string> {
+    const labels = new Map<string, string>();
+
+    for (const field of fields) {
+      const label = String(field.label ?? '').trim();
+      if (!label) {
+        continue;
+      }
+
+      const id = String(field.id ?? '').trim();
+      const name = String(field.name ?? '').trim();
+
+      if (id) {
+        labels.set(id, label);
+      }
+
+      if (name) {
+        labels.set(name, label);
+      }
+    }
+
+    return labels;
+  }
+
+  private formatColumnLabel(columnId: string): string {
+    const normalized = String(columnId ?? '').trim();
+
+    if (!normalized || /^fld_/i.test(normalized)) {
+      return normalized;
+    }
+
+    return normalized
+      .replace(/[_-]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/\b\w/g, character => character.toUpperCase());
+  }
+
+  private getFallbackColumns(): ModuleColumnOption[] {
+    return ['id', 'name', 'title', 'email', 'phone', 'status'].map(id => ({
+      id,
+      label: this.formatColumnLabel(id),
+    }));
+  }
+
+  private sortModuleColumns(columns: ModuleColumnOption[]): ModuleColumnOption[] {
+    const orderedIds = this.sortColumnNames(
+      new Set(columns.map(column => column.id))
+    );
+    const columnsById = new Map(columns.map(column => [column.id, column]));
+
+    return orderedIds
+      .map(id => columnsById.get(id))
+      .filter((column): column is ModuleColumnOption => !!column);
   }
 
   private resolveModuleEndpoint(moduleSlug: string): string {

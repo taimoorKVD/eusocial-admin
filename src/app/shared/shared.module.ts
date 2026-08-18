@@ -22,6 +22,6 @@ import { DropdownPanelDirective } from './directives/dropdown-panel/dropdown-pan
     DropdownPanelDirective,
   ],
   imports: [CommonModule, FormsModule, DragDropModule, ReactiveFormsModule ],
-  exports: [GlobalFilterComponent, TopHeaderComponent, ConfirmModalComponent, EuLoaderComponent, DragDropModule, DynamicFormComponent, DynamicListingComponent],
+  exports: [GlobalFilterComponent, TopHeaderComponent, ConfirmModalComponent, EuLoaderComponent, DragDropModule, DynamicFormComponent, DynamicListingComponent, DropdownPanelDirective],
 })
 export class SharedModule {}
