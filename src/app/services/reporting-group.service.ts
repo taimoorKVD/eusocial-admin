@@ -167,7 +167,11 @@ export class ReportingGroupService {
 
   /** Re-hydrate after slug changes (e.g. login as another tenant). */
   reload(): void {
-    this.loadGroups().subscribe();
+    this.loadGroups().subscribe({
+      error: () => {
+        this.groupsSignal.set([]);
+      },
+    });
   }
 
   isReportingGroupsEndpoint(endpoint?: string | null): boolean {
