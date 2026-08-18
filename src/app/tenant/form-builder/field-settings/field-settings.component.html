@@ -205,17 +205,24 @@
             {{ getModuleLabel(module) }}
           </option>
         </select> -->
-        <div class="module-select">
+        <div
+          class="module-select"
+          appDropdownPanel
+          #moduleDropdown="dropdownPanel"
+          dropdownId="select-module"
+          [dropdownGroup]="dynamicOptionsDropdownGroup"
+        >
           <button
             type="button"
             class="field-settings-select"
-            (click)="toggleModuleDropdown()"
+            (click)="moduleDropdown.toggle($event)"
             [disabled]="!isFieldEditable"
+            [attr.aria-expanded]="moduleDropdown.isOpen"
           >
             <span>{{ getSelectedModuleLabel() }}</span>
 
              <span class="dropdown-arrow">
-                @if (isDisplayColumnDropdownOpen()) {
+                @if (moduleDropdown.isOpen) {
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                     <path
                       d="M18 15L12 9L6 15"
@@ -239,7 +246,7 @@
               </span>
           </button>
 
-          @if (isModuleDropdownOpen()) {
+          @if (moduleDropdown.isOpen) {
             <div class="module-select__menu">
               <button
                 type="button"
@@ -286,17 +293,24 @@
             {{ column }}
           </option>
         </select> -->
-         <div class="module-select">
+         <div
+            class="module-select"
+            appDropdownPanel
+            #displayColumnDropdown="dropdownPanel"
+            dropdownId="select-display-column"
+            [dropdownGroup]="dynamicOptionsDropdownGroup"
+          >
             <button
               type="button"
               class="field-settings-select"
-              (click)="toggleDisplayColumnDropdown()"
+              (click)="displayColumnDropdown.toggle($event)"
               [disabled]="!isFieldEditable"
+              [attr.aria-expanded]="displayColumnDropdown.isOpen"
             >
               <span>{{ getSelectedDisplayColumnLabel() }}</span>
 
               <span class="dropdown-arrow">
-                @if (isDisplayColumnDropdownOpen()) {
+                @if (displayColumnDropdown.isOpen) {
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                     <path
                       d="M18 15L12 9L6 15"
@@ -320,7 +334,7 @@
               </span>
             </button>
 
-            @if (isDisplayColumnDropdownOpen()) {
+            @if (displayColumnDropdown.isOpen) {
               <div class="module-select__menu">
                 <button
                   type="button"
@@ -330,16 +344,16 @@
                   Select a column
                 </button>
 
-                @for (column of moduleColumns; track column) {
+                @for (column of moduleColumns; track column.id) {
                   <button
                     type="button"
                     class="module-select__option"
                     [class.module-select__option--selected]="
-                      selectedDisplayColumn === column
+                      selectedDisplayColumn === column.id
                     "
-                    (click)="selectDisplayColumn(column)"
+                    (click)="selectDisplayColumn(column.id)"
                   >
-                    {{ column }}
+                    {{ column.label }}
                   </button>
                 }
               </div>
