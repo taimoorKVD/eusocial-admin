@@ -11,21 +11,31 @@
 
         <div class="field">
           <label>Tenant Name <span>*</span></label>
-          <input type="text" formControlName="name" placeholder="Acme Corporation" />
+          <input
+            type="text"
+            formControlName="name"
+            placeholder="Folio3"
+            maxlength="80"
+            autocomplete="organization"
+          />
+          <small class="hint" *ngIf="tenantSlug">
+            Login URL: https://{{ tenantSlug }}.{{ baseDomain }}/login
+          </small>
+          <small class="hint" *ngIf="!tenantSlug">
+            Letters, numbers, spaces and hyphens only. Domain is created automatically.
+          </small>
           <small class="error" *ngIf="f['name'].touched && f['name'].errors?.['required']">Tenant name is required.</small>
-        </div>
-
-        <div class="field">
-          <label>Domain <span>*</span></label>
-          <input type="text" formControlName="domain" placeholder="acme.com" />
-          <small class="hint">This will be used as a subdomain: {{ subdomainPreview }}</small>
-          <small class="error" *ngIf="f['domain'].touched && f['domain'].errors?.['required']">Domain is required.</small>
-          <small class="error" *ngIf="f['domain'].touched && f['domain'].errors?.['pattern']">Enter a valid domain (e.g. acme.com).</small>
+          <small class="error" *ngIf="f['name'].touched && f['name'].errors?.['pattern']">
+            Use only letters, numbers, spaces or hyphens (no @ or special characters).
+          </small>
+          <small class="error" *ngIf="f['name'].touched && f['name'].errors?.['invalidSlug']">
+            Name must produce a valid subdomain (at least 2 letters/numbers).
+          </small>
         </div>
 
         <div class="field">
           <label>Business Email <span>*</span></label>
-          <input type="email" formControlName="email" placeholder="hello@acme.com" />
+          <input type="email" formControlName="email" [placeholder]="businessEmailPlaceholder" />
           <small class="error" *ngIf="f['email'].touched && f['email'].errors?.['required']">Business email is required.</small>
           <small class="error" *ngIf="f['email'].touched && f['email'].errors?.['email']">Enter a valid email.</small>
         </div>
@@ -206,7 +216,8 @@
 
         <div class="field">
           <label>Admin Email <span>*</span></label>
-          <input type="email" formControlName="adminEmail" placeholder="jane@acme.com" />
+          <input type="email" formControlName="adminEmail" [placeholder]="adminEmailPlaceholder" />
+          <small class="hint" *ngIf="tenantSlug">Suggested: {{ adminEmailPlaceholder }}</small>
           <small class="error" *ngIf="f['adminEmail'].touched && f['adminEmail'].errors?.['required']">Admin email is required.</small>
           <small class="error" *ngIf="f['adminEmail'].touched && f['adminEmail'].errors?.['email']">Enter a valid email.</small>
         </div>
