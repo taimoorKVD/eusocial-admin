@@ -36,15 +36,11 @@ import {
   schemaHasLocationKind,
 } from '../utils/location-field-dependencies.utils';
 import { isUniqueDynamicModuleOptionDisabled } from '../utils/unique-dynamic-modules.utils';
-import { DynamicModuleOptionsService } from '../services/dynamic-module-options.service';
+import { DynamicModuleOptionsService, ModuleColumnOption, ModuleDataCache } from '../services/dynamic-module-options.service';
 import { FormModuleListItem } from '../../forms/models/form-module.model';
+import { DropdownOverlayService } from '../../../shared/directives/dropdown-panel/dropdown-overlay.service';
 
 type SelectOptionsMode = 'static' | 'dynamic';
-
-interface ModuleDataCache {
-  records: Record<string, unknown>[];
-  columns: string[];
-}
 
 interface LoadModuleDataOptions {
   preserveDisplayColumn?: boolean;
@@ -59,8 +55,10 @@ interface LoadModuleDataOptions {
 })
 export class FieldSettingsComponent {
   private readonly toastr = inject(ToastrService);
+  private readonly overlayService = inject(DropdownOverlayService);
   private readonly schemaSignal = signal<FormField[]>([]);
   private readonly selectedFieldIdSignal = signal<string | null>(null);
+  readonly dynamicOptionsDropdownGroup = 'form-builder-dynamic-options';
 
   @Input() activeModuleName = '';
 
@@ -92,6 +90,10 @@ export class FieldSettingsComponent {
     this.selectedFieldIdSignal.set(value.id);
 
     const isSameField = this._field?.id === value.id;
+
+    if (!isSameField) {
+      this.overlayService.close();
+    }
 
     if (this.skipFieldReinitialize && isSameField) {
       this.skipFieldReinitialize = false;
@@ -130,7 +132,7 @@ export class FieldSettingsComponent {
   selectedModuleSlug = '';
   selectedDisplayColumn = '';
   moduleRecords: Record<string, unknown>[] = [];
-  moduleColumns: string[] = [];
+  moduleColumns: ModuleColumnOption[] = [];
 
   modulesLoading = false;
   modulesError: string | null = null;
@@ -462,6 +464,7 @@ export class FieldSettingsComponent {
     }
 
     this.optionsMode = mode;
+    this.overlayService.close();
 
     if (mode === 'dynamic') {
       this.selectedModuleSlug = '';
@@ -893,7 +896,7 @@ export class FieldSettingsComponent {
     if (
       !preserveDisplayColumn ||
       !this.selectedDisplayColumn ||
-      !this.moduleColumns.includes(this.selectedDisplayColumn)
+      !this.moduleColumns.some(column => column.id === this.selectedDisplayColumn)
     ) {
       this.selectedDisplayColumn =
         this.dynamicModuleOptionsService.getDefaultDisplayColumn(
@@ -959,16 +962,6 @@ export class FieldSettingsComponent {
       };
     }
 
-    readonly isModuleDropdownOpen = signal(false);
-
-  toggleModuleDropdown(): void {
-    this.isModuleDropdownOpen.update(value => !value);
-  }
-
-  closeModuleDropdown(): void {
-    this.isModuleDropdownOpen.set(false);
-  }
-
   selectModule(slug: string): void {
     if (!this.isFieldEditable || this.isModuleSlugDisabled(slug)) {
       return;
@@ -976,7 +969,7 @@ export class FieldSettingsComponent {
 
     this.selectedModuleSlug = slug;
     this.onModuleChange(slug);
-    this.closeModuleDropdown();
+    this.overlayService.close();
   }
 
   getSelectedModuleLabel(): string {
@@ -989,16 +982,6 @@ export class FieldSettingsComponent {
       : 'Select a module';
   }
 
-  readonly isDisplayColumnDropdownOpen = signal(false);
-
-  toggleDisplayColumnDropdown(): void {
-    this.isDisplayColumnDropdownOpen.update(value => !value);
-  }
-
-  closeDisplayColumnDropdown(): void {
-    this.isDisplayColumnDropdownOpen.set(false);
-  }
-
   selectDisplayColumn(column: string): void {
     if (!this.isFieldEditable) {
       return;
@@ -1006,11 +989,15 @@ export class FieldSettingsComponent {
 
     this.selectedDisplayColumn = column;
     this.onDisplayColumnChange(column);
-    this.closeDisplayColumnDropdown();
+    this.overlayService.close();
   }
 
   getSelectedDisplayColumnLabel(): string {
-    return this.selectedDisplayColumn || 'Select a column';
+    const selected = this.moduleColumns.find(
+      column => column.id === this.selectedDisplayColumn
+    );
+
+    return selected?.label || this.selectedDisplayColumn || 'Select a column';
   }
 
 }
