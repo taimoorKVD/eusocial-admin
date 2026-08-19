@@ -42,9 +42,7 @@ import { PortalService } from '../../services/portal.service';
 
       if (token && slug) {
         // Ensure location cache is ready for an already-authenticated session.
-        this.locationCache.warmCache();
-        this.reportingGroupService.reload();
-        this.profileService.refresh();
+        this.prepareAuthenticatedTenantSession();
         this.router.navigate(this.session.getHomeCommands());
       }
     }
@@ -95,8 +93,7 @@ import { PortalService } from '../../services/portal.service';
       }
 
       this.session.setSession(token, slug, user);
-      this.reportingGroupService.reload();
-      this.profileService.refresh();
+      this.prepareAuthenticatedTenantSession();
       this.toastr.success('Login successful');
       this.router.navigate(this.session.getHomeCommands());
       this.loading = false;
@@ -113,6 +110,17 @@ import { PortalService } from '../../services/portal.service';
       this.loading = false;
     }
   });
+}
+
+private prepareAuthenticatedTenantSession(): void {
+  this.locationCache.warmCache();
+  this.profileService.refresh();
+
+  // Reporting Groups is a tenant-admin module. Preloading it for tenant_user
+  // hits GET /reporting-groups, receives 403, and must not be retried.
+  if (this.session.isTenantAdmin()) {
+    this.reportingGroupService.reload();
+  }
 }
 
 private extractTenantSlugFromEmail(email: string): string | null {
