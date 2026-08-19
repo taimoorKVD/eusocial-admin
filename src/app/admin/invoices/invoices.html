@@ -68,7 +68,6 @@
             <th>Invoice #</th>
             <th>Tenant</th>
             <th>Invoice Date</th>
-            <th>Due Date</th>
             <th>Amount</th>
             <th>Status</th>
             <th></th>
@@ -79,7 +78,6 @@
             <td><strong>{{ invoice.invoiceNumber }}</strong></td>
             <td>{{ invoice.tenant?.name || '—' }}</td>
             <td class="muted">{{ formatDate(invoice.invoiceDate) }}</td>
-            <td class="muted">{{ formatDate(invoice.dueDate) }}</td>
             <td>{{ money(invoice.formattedAmount, invoice.amount) }}</td>
             <td>
               <span class="status-pill" [ngClass]="statusClass(invoice.status)">{{ formatStatus(invoice.status) }}</span>
@@ -94,7 +92,7 @@
             </td>
           </tr>
           <tr *ngIf="!invoices.length">
-            <td colspan="7" class="muted" style="text-align:center;padding:2.5rem 1rem">No invoices found.</td>
+            <td colspan="6" class="muted" style="text-align:center;padding:2.5rem 1rem">No invoices found.</td>
           </tr>
         </tbody>
       </table>
