@@ -73,7 +73,6 @@
             <th>Domain</th>
             <th>Plan</th>
             <th>Status</th>
-            <th>Users</th>
             <th>Joined On</th>
             <th></th>
           </tr>
@@ -95,7 +94,6 @@
                 <i class="dot"></i>{{ statusOf(t) }}
               </span>
             </td>
-            <td>{{ usersOf(t) }}</td>
             <td class="muted">{{ joinedOn(t) }}</td>
             <td class="actions">
               <div class="plan-card__menu" style="display:inline-block" (click)="$event.stopPropagation()">

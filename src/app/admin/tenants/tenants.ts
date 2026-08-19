@@ -195,10 +195,6 @@ export class Tenants implements OnInit {
     return 'is-draft';
   }
 
-  usersOf(t: Tenant): string {
-    return t.users == null ? '—' : String(t.users);
-  }
-
   joinedOn(t: Tenant): string {
     const raw = t.joinedOn || t.joined_on || t.createdAt || t.created_at;
     if (!raw) return '—';
