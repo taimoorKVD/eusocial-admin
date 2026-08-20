@@ -218,7 +218,7 @@
                     <span>{{ tenant.name }}</span>
                   </div>
                 </td>
-                <td class="muted">{{ tenant.domain || '—' }}</td>
+                <td class="muted">{{ tenantDomain(tenant) }}</td>
                 <td>
                   <span class="plan-badge" [ngClass]="planBadgeClass(tenant.plan)">{{ planLabel(tenant.plan) }}</span>
                 </td>

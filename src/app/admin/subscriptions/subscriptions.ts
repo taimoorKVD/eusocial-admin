@@ -206,6 +206,30 @@ export class Subscriptions implements OnInit {
       .join(' ');
   }
 
+  tenantDomain(sub: MasterSubscription): string {
+    const base = environment.baseDomain || 'eusocial.thebetawebsite.com';
+    const t = sub.tenant;
+    if (!t) return '—';
+
+    const slug =
+      (t.subdomain || '').trim() ||
+      this.slugFromStoredDomain(t.domain || '');
+
+    if (slug) return `${slug}.${base}`;
+
+    const raw = (t.domain || '').trim();
+    if (!raw) return '—';
+    return raw.replace(/\.eusocial\.com$/i, `.${base}`);
+  }
+
+  private slugFromStoredDomain(domain: string): string {
+    const d = (domain || '').trim().toLowerCase();
+    if (!d) return '';
+    const host = d.replace(/^https?:\/\//, '').split('/')[0];
+    const first = host.split('.')[0];
+    return first && first !== 'www' ? first : '';
+  }
+
   statusClass(status: string): string {
     return `is-${(status || 'draft').toLowerCase()}`;
   }

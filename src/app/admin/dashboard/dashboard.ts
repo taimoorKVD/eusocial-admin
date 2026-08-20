@@ -12,6 +12,7 @@ import {
 } from '../../interfaces/master-dashboard';
 import { User } from '../../interfaces/user';
 import { displayMoney } from '../../shared/utils/money.util';
+import { environment } from '../../../environments/environment';
 
 interface KpiCardView {
   key: string;
@@ -213,6 +214,27 @@ export class Dashboard implements OnInit, OnDestroy {
     const parts = name.trim().split(/\s+/).filter(Boolean);
     if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
     return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  }
+
+  tenantDomain(tenant: RecentTenant): string {
+    const base = environment.baseDomain || 'eusocial.thebetawebsite.com';
+    const slug =
+      (tenant.subdomain || '').trim() ||
+      this.slugFromStoredDomain(tenant.domain || tenant.customDomain || '');
+
+    if (slug) return `${slug}.${base}`;
+
+    const raw = (tenant.domain || tenant.customDomain || '').trim();
+    if (!raw) return '—';
+    return raw.replace(/\.eusocial\.com$/i, `.${base}`);
+  }
+
+  private slugFromStoredDomain(domain: string): string {
+    const d = (domain || '').trim().toLowerCase();
+    if (!d) return '';
+    const host = d.replace(/^https?:\/\//, '').split('/')[0];
+    const first = host.split('.')[0];
+    return first && first !== 'www' ? first : '';
   }
 
   changeTone(kpi: DashboardKpi | null): 'up' | 'down' | 'flat' {

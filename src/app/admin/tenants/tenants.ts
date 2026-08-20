@@ -151,12 +151,29 @@ export class Tenants implements OnInit {
   }
 
   domainOf(t: Tenant): string {
-    return (
-      t.domain ||
-      t.customDomain ||
-      t.custom_domain ||
-      (t.subdomain ? `${t.subdomain}.eusocial.com` : '—')
-    );
+    const base = environment.baseDomain || 'eusocial.thebetawebsite.com';
+    const slug =
+      (t.subdomain || '').trim() ||
+      this.slugFromStoredDomain(t.domain || t.customDomain || t.custom_domain || '');
+
+    if (slug) return `${slug}.${base}`;
+
+    const raw = (t.domain || t.customDomain || t.custom_domain || '').trim();
+    if (!raw) return '—';
+
+    // Rewrite legacy hosts like folio3.eusocial.com → folio3.{baseDomain}
+    return raw
+      .replace(/\.eusocial\.com$/i, `.${base}`)
+      .replace(/\.eusocial\.thebetawebsite\.com$/i, `.${base}`);
+  }
+
+  /** folio3.com / folio3.eusocial.com → folio3 */
+  private slugFromStoredDomain(domain: string): string {
+    const d = (domain || '').trim().toLowerCase();
+    if (!d) return '';
+    const host = d.replace(/^https?:\/\//, '').split('/')[0];
+    const first = host.split('.')[0];
+    return first && first !== 'www' ? first : '';
   }
 
   planName(t: Tenant): string {

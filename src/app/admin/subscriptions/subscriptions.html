@@ -81,7 +81,7 @@
             <td>
               <div class="tenant-cell">
                 <strong>{{ sub.tenant?.name || '—' }}</strong>
-                <span>{{ sub.tenant?.domain || sub.tenant?.subdomain || '—' }}</span>
+                <span>{{ tenantDomain(sub) }}</span>
               </div>
             </td>
             <td>
