@@ -40,25 +40,11 @@ export class TenantForm implements OnInit, OnDestroy {
   loading = false;
   saving = false;
 
-  industries: string[] = [
-    'Bakery',
-    'Bar',
-    'Cafe',
-    'Catering',
-    'Cloud Kitchen',
-    'Food Truck',
-    'Hotel',
-    'Other',
-    'QSR',
-    'Restaurant',
-  ];
   countries: SelectOption[] = [];
   states: SelectOption[] = [];
   cities: SelectOption[] = [];
   plans: MasterPlan[] = [];
 
-  showPassword = false;
-  showConfirmPassword = false;
   readonly baseDomain = environment.baseDomain || 'eusocial.thebetawebsite.com';
 
   readonly trialOptions = [
@@ -71,7 +57,6 @@ export class TenantForm implements OnInit, OnDestroy {
   private readonly destroy$ = new Subject<void>();
   /** Letters, numbers, spaces, hyphens only — no @ or other special characters. */
   private readonly tenantNamePattern = /^[A-Za-z0-9]+(?:[ A-Za-z0-9\-]*[A-Za-z0-9])?$/;
-  private autoAdminEmail = '';
   private existingDomain = '';
 
   constructor(
@@ -86,11 +71,6 @@ export class TenantForm implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.buildForm();
     this.loadLookups();
-
-    this.form
-      .get('name')
-      ?.valueChanges.pipe(takeUntil(this.destroy$))
-      .subscribe((name) => this.onTenantNameChanged(String(name || '')));
 
     this.form
       .get('countryId')
@@ -137,11 +117,6 @@ export class TenantForm implements OnInit, OnDestroy {
     return this.slugifyTenantName(this.form?.value?.name || '');
   }
 
-  get adminEmailPlaceholder(): string {
-    const slug = this.tenantSlug || 'folio3';
-    return `admin@${slug}.com`;
-  }
-
   get businessEmailPlaceholder(): string {
     const slug = this.tenantSlug || 'folio3';
     return `hello@${slug}.com`;
@@ -166,54 +141,34 @@ export class TenantForm implements OnInit, OnDestroy {
   }
 
   buildForm(): void {
-    this.form = this.fb.group(
-      {
-        name: [
-          '',
-          [Validators.required, Validators.pattern(this.tenantNamePattern), this.tenantSlugValidator()],
-        ],
-        email: ['', [Validators.required, Validators.email]],
-        phoneNumber: [''],
-        industry: [''],
-        description: ['', Validators.maxLength(500)],
-        countryId: [null as number | null],
-        stateId: [{ value: null as number | null, disabled: true }],
-        city: [{ value: null as string | null, disabled: true }],
-        address: ['', Validators.maxLength(200)],
-        postalCode: [''],
-        planId: [null as number | null, Validators.required],
-        billingCycle: ['monthly', Validators.required],
-        trialDays: [14],
-        adminName: ['', Validators.required],
-        adminEmail: ['', [Validators.required, Validators.email]],
-        adminPassword: ['', [Validators.required, Validators.minLength(8)]],
-        adminConfirmPassword: ['', Validators.required],
-      },
-      { validators: this.passwordsMatchValidator() }
-    );
+    this.form = this.fb.group({
+      name: [
+        '',
+        [Validators.required, Validators.pattern(this.tenantNamePattern), this.tenantSlugValidator()],
+      ],
+      email: ['', [Validators.required, Validators.email]],
+      phoneNumber: [''],
+      description: ['', Validators.maxLength(500)],
+      countryId: [null as number | null],
+      stateId: [{ value: null as number | null, disabled: true }],
+      city: [{ value: null as string | null, disabled: true }],
+      address: ['', Validators.maxLength(200)],
+      postalCode: [''],
+      planId: [null as number | null, Validators.required],
+      billingCycle: ['monthly', Validators.required],
+      trialDays: [14],
+    });
   }
 
   applyEditModeValidators(): void {
-    ['adminName', 'adminEmail', 'adminPassword', 'adminConfirmPassword', 'planId', 'billingCycle'].forEach(
-      (key) => {
-        const control = this.form.get(key);
-        control?.clearValidators();
-        control?.updateValueAndValidity({ emitEvent: false });
-      }
-    );
-    this.form.setValidators(null);
-    this.form.updateValueAndValidity({ emitEvent: false });
+    ['planId', 'billingCycle'].forEach((key) => {
+      const control = this.form.get(key);
+      control?.clearValidators();
+      control?.updateValueAndValidity({ emitEvent: false });
+    });
   }
 
   loadLookups(): void {
-    this.tenantService.getIndustries().subscribe({
-      next: (res) => {
-        const list = this.asStringList(res);
-        if (list.length) this.industries = list;
-      },
-      error: () => undefined,
-    });
-
     this.tenantService.getCountries().subscribe({
       next: (res) => {
         this.countries = this.asOptions(res);
@@ -288,7 +243,6 @@ export class TenantForm implements OnInit, OnDestroy {
             name: t.name || '',
             email: t.email || '',
             phoneNumber: this.formatPhone(t),
-            industry: t.industry || '',
             description: t.description || '',
             countryId: countryId ?? null,
             stateId: stateId ?? null,
@@ -358,24 +312,6 @@ export class TenantForm implements OnInit, OnDestroy {
     });
   }
 
-  generatePassword(): void {
-    const password = this.createRandomPassword();
-    this.form.patchValue({
-      adminPassword: password,
-      adminConfirmPassword: password,
-    });
-    this.showPassword = true;
-    this.showConfirmPassword = true;
-  }
-
-  togglePassword(): void {
-    this.showPassword = !this.showPassword;
-  }
-
-  toggleConfirmPassword(): void {
-    this.showConfirmPassword = !this.showConfirmPassword;
-  }
-
   planLabel(plan?: MasterPlan | null): string {
     if (!plan) return '—';
     return `${plan.name} — ${displayMoney(plan.formattedPrice, plan.price)} / ${plan.billingCycle}`;
@@ -395,30 +331,19 @@ export class TenantForm implements OnInit, OnDestroy {
     this.router.navigate(['/tenants']);
   }
 
-  private onTenantNameChanged(name: string): void {
-    if (this.isEditMode) return;
-
-    const slug = this.slugifyTenantName(name);
-    if (!slug) return;
-
-    const suggested = `admin@${slug}.com`;
-    const currentAdminEmail = String(this.form.get('adminEmail')?.value || '').trim();
-    if (!currentAdminEmail || currentAdminEmail === this.autoAdminEmail) {
-      this.form.patchValue({ adminEmail: suggested }, { emitEvent: false });
-      this.autoAdminEmail = suggested;
-    }
-  }
-
   private buildCreatePayload(): TenantCreatePayload {
     const v = this.form.getRawValue();
     const slug = this.slugifyTenantName(v.name);
+    const email = String(v.email || '').trim();
+    const name = String(v.name || '').trim();
+    const password = this.createRandomPassword();
+
     return {
-      name: String(v.name || '').trim(),
+      name,
       // Backend derives subdomain from domain (e.g. folio3.com → folio3.eusocial...).
       domain: `${slug}.com`,
-      email: String(v.email || '').trim(),
+      email,
       phoneNumber: String(v.phoneNumber || '').trim() || undefined,
-      industry: v.industry || undefined,
       description: String(v.description || '').trim() || undefined,
       countryId: v.countryId != null ? Number(v.countryId) : null,
       stateId: v.stateId != null ? Number(v.stateId) : null,
@@ -429,10 +354,10 @@ export class TenantForm implements OnInit, OnDestroy {
       billingCycle: v.billingCycle,
       trialDays: Number(v.trialDays ?? 0),
       admin: {
-        name: String(v.adminName || '').trim(),
-        email: String(v.adminEmail || '').trim(),
-        password: String(v.adminPassword || ''),
-        confirmPassword: String(v.adminConfirmPassword || ''),
+        name,
+        email,
+        password,
+        confirmPassword: password,
       },
     };
   }
@@ -443,7 +368,6 @@ export class TenantForm implements OnInit, OnDestroy {
       name: String(v.name || '').trim(),
       email: String(v.email || '').trim(),
       phoneNumber: String(v.phoneNumber || '').trim() || undefined,
-      industry: v.industry || undefined,
       description: String(v.description || '').trim() || undefined,
       countryId: v.countryId != null ? Number(v.countryId) : null,
       stateId: v.stateId != null ? Number(v.stateId) : null,
@@ -474,15 +398,6 @@ export class TenantForm implements OnInit, OnDestroy {
       if (!value) return null;
       const slug = this.slugifyTenantName(value);
       return slug.length >= 2 ? null : { invalidSlug: true };
-    };
-  }
-
-  private passwordsMatchValidator(): ValidatorFn {
-    return (group: AbstractControl): ValidationErrors | null => {
-      const password = group.get('adminPassword')?.value;
-      const confirm = group.get('adminConfirmPassword')?.value;
-      if (!password && !confirm) return null;
-      return password === confirm ? null : { passwordsMismatch: true };
     };
   }
 
@@ -540,15 +455,6 @@ export class TenantForm implements OnInit, OnDestroy {
       }))
       .filter((row: SelectOption) => Number.isFinite(row.id) && row.id > 0 && !!row.name)
       .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
-  }
-
-  private asStringList(res: any): string[] {
-    const rows = Array.isArray(res) ? res : res?.data || [];
-    return (rows || [])
-      .map((row: any) => (typeof row === 'string' ? row : row?.name || row?.label || row?.value))
-      .filter(Boolean)
-      .map((v: string) => String(v))
-      .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
   }
 
   private extractError(err: any, fallback: string): string {

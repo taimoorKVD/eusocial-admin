@@ -36,6 +36,7 @@
         <div class="field">
           <label>Business Email <span>*</span></label>
           <input type="email" formControlName="email" [placeholder]="businessEmailPlaceholder" />
+          <small class="hint" *ngIf="!isEditMode">Tenant logs in with this email. Password is generated automatically.</small>
           <small class="error" *ngIf="f['email'].touched && f['email'].errors?.['required']">Business email is required.</small>
           <small class="error" *ngIf="f['email'].touched && f['email'].errors?.['email']">Enter a valid email.</small>
         </div>
@@ -43,14 +44,6 @@
         <div class="field">
           <label>Phone Number</label>
           <input type="text" formControlName="phoneNumber" placeholder="+1 2025550147" />
-        </div>
-
-        <div class="field">
-          <label>Industry</label>
-          <select formControlName="industry">
-            <option value="">Select industry</option>
-            <option *ngFor="let item of industries" [ngValue]="item">{{ item }}</option>
-          </select>
         </div>
 
         <div class="field">
@@ -202,53 +195,6 @@
         <div class="field">
           <label>Current Plan</label>
           <input type="text" [value]="currentPlanLabel" readonly />
-        </div>
-      </section>
-
-      <section class="form-card" *ngIf="!isEditMode">
-        <h3>Admin User</h3>
-
-        <div class="field">
-          <label>Admin Name <span>*</span></label>
-          <input type="text" formControlName="adminName" placeholder="Jane Doe" />
-          <small class="error" *ngIf="f['adminName'].touched && f['adminName'].errors?.['required']">Admin name is required.</small>
-        </div>
-
-        <div class="field">
-          <label>Admin Email <span>*</span></label>
-          <input type="email" formControlName="adminEmail" [placeholder]="adminEmailPlaceholder" />
-          <small class="hint" *ngIf="tenantSlug">Suggested: {{ adminEmailPlaceholder }}</small>
-          <small class="error" *ngIf="f['adminEmail'].touched && f['adminEmail'].errors?.['required']">Admin email is required.</small>
-          <small class="error" *ngIf="f['adminEmail'].touched && f['adminEmail'].errors?.['email']">Enter a valid email.</small>
-        </div>
-
-        <div class="field">
-          <div class="label-row">
-            <label>Admin Password <span>*</span></label>
-            <button type="button" class="generate-link" (click)="generatePassword()">Generate Password</button>
-          </div>
-          <div class="password-wrap">
-            <input [type]="showPassword ? 'text' : 'password'" formControlName="adminPassword" placeholder="Enter password" autocomplete="new-password" />
-            <button type="button" class="eye-btn" (click)="togglePassword()" [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'">
-              <svg *ngIf="!showPassword" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7s-8.268-2.943-9.542-7z"/><circle cx="12" cy="12" r="3"/></svg>
-              <svg *ngIf="showPassword" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3l18 18M10.584 10.587A2 2 0 0012 14a2 2 0 001.414-.586M9.88 5.09A9.77 9.77 0 0112 5c4.478 0 8.268 2.943 9.542 7a9.956 9.956 0 01-4.293 5.132M6.228 6.228A9.956 9.956 0 002.458 12c1.274 4.057 5.064 7 9.542 7a9.77 9.77 0 003.09-.495"/></svg>
-            </button>
-          </div>
-          <small class="error" *ngIf="f['adminPassword'].touched && f['adminPassword'].errors?.['required']">Password is required.</small>
-          <small class="error" *ngIf="f['adminPassword'].touched && f['adminPassword'].errors?.['minlength']">Password must be at least 8 characters.</small>
-        </div>
-
-        <div class="field">
-          <label>Confirm Password <span>*</span></label>
-          <div class="password-wrap">
-            <input [type]="showConfirmPassword ? 'text' : 'password'" formControlName="adminConfirmPassword" placeholder="Re-enter password" autocomplete="new-password" />
-            <button type="button" class="eye-btn" (click)="toggleConfirmPassword()" [attr.aria-label]="showConfirmPassword ? 'Hide password' : 'Show password'">
-              <svg *ngIf="!showConfirmPassword" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7s-8.268-2.943-9.542-7z"/><circle cx="12" cy="12" r="3"/></svg>
-              <svg *ngIf="showConfirmPassword" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3l18 18M10.584 10.587A2 2 0 0012 14a2 2 0 001.414-.586M9.88 5.09A9.77 9.77 0 0112 5c4.478 0 8.268 2.943 9.542 7a9.956 9.956 0 01-4.293 5.132M6.228 6.228A9.956 9.956 0 002.458 12c1.274 4.057 5.064 7 9.542 7a9.77 9.77 0 003.09-.495"/></svg>
-            </button>
-          </div>
-          <small class="error" *ngIf="f['adminConfirmPassword'].touched && f['adminConfirmPassword'].errors?.['required']">Confirm password is required.</small>
-          <small class="error" *ngIf="form.errors?.['passwordsMismatch'] && f['adminConfirmPassword'].touched">Passwords do not match.</small>
         </div>
       </section>
     </div>
