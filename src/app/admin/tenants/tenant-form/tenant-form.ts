@@ -314,7 +314,19 @@ export class TenantForm implements OnInit, OnDestroy {
 
   planLabel(plan?: MasterPlan | null): string {
     if (!plan) return '—';
-    return `${plan.name} — ${displayMoney(plan.formattedPrice, plan.price)} / ${plan.billingCycle}`;
+    const cycle = this.form?.value?.billingCycle || plan.billingCycle || 'monthly';
+    if (cycle === 'yearly') {
+      const yearly = displayMoney(
+        plan.prices?.yearly?.formatted || plan.formattedYearlyPrice,
+        plan.prices?.yearly?.amount ?? plan.yearlyPrice
+      );
+      return `${plan.name} — ${yearly} / yearly`;
+    }
+    const monthly = displayMoney(
+      plan.prices?.monthly?.formatted || plan.formattedPrice,
+      plan.prices?.monthly?.amount ?? plan.price
+    );
+    return `${plan.name} — ${monthly} / monthly`;
   }
 
   onClearMouseDown(event: Event, controlName: 'countryId' | 'stateId' | 'city'): void {

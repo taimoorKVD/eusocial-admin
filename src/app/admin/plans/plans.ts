@@ -111,11 +111,6 @@ export class Plans implements OnInit {
     return plan.usersLimit == null ? 'Unlimited' : String(plan.usersLimit);
   }
 
-  cycleLabel(cycle: string | undefined): string {
-    if (!cycle) return '—';
-    return cycle.charAt(0).toUpperCase() + cycle.slice(1);
-  }
-
   featureList(plan: MasterPlan): string[] {
     if (plan.features?.length) return plan.features.slice(0, 6);
     const items: string[] = [];
@@ -127,7 +122,15 @@ export class Plans implements OnInit {
   }
 
   money(plan: MasterPlan): string {
-    return displayMoney(plan.formattedPrice, plan.price);
+    const formatted = plan.prices?.monthly?.formatted || plan.formattedPrice;
+    const amount = plan.prices?.monthly?.amount ?? plan.price;
+    return displayMoney(formatted, amount);
+  }
+
+  yearlyMoney(plan: MasterPlan): string {
+    const formatted = plan.prices?.yearly?.formatted || plan.formattedYearlyPrice;
+    const amount = plan.prices?.yearly?.amount ?? plan.yearlyPrice;
+    return displayMoney(formatted, amount);
   }
 
   planBadgeClass(name: string | undefined): string {

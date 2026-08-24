@@ -36,16 +36,22 @@
       </section>
 
       <section class="form-card">
-        <h3>Pricing & Limits</h3>
+        <h3>Pricing</h3>
         <div class="detail-grid">
           <div class="detail-item">
-            <span class="label">Price</span>
-            <div class="value">{{ money(p) }}</div>
+            <span class="label">Monthly Price</span>
+            <div class="value">{{ monthlyMoney(p) }}</div>
           </div>
           <div class="detail-item">
-            <span class="label">Billing Cycle</span>
-            <div class="value">{{ cycleLabel(p.billingCycle) }}</div>
+            <span class="label">Yearly Price</span>
+            <div class="value">{{ yearlyMoney(p) }}</div>
           </div>
+        </div>
+      </section>
+
+      <section class="form-card">
+        <h3>Limits</h3>
+        <div class="detail-grid">
           <div class="detail-item">
             <span class="label">Users Limit</span>
             <div class="value">{{ usersLimitLabel(p) }}</div>

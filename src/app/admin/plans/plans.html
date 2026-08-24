@@ -31,8 +31,11 @@
         <h3>{{ plan.name }}</h3>
         <div class="plan-card__price">
           <strong>{{ money(plan) }}</strong>
-          <span>/ {{ plan.billingCycle || 'month' }}</span>
+          <span>/ month</span>
         </div>
+        <p class="plan-card__yearly" *ngIf="yearlyMoney(plan) !== '—'">
+          or {{ yearlyMoney(plan) }} / year
+        </p>
         <p class="plan-card__desc">{{ plan.description || 'Subscription plan' }}</p>
 
         <ul>
@@ -64,10 +67,10 @@
           <thead>
             <tr>
               <th>Plan Name</th>
-              <th>Price</th>
+              <th>Monthly</th>
+              <th>Yearly</th>
               <th>Users Limit</th>
               <th>Storage</th>
-              <th>Billing Cycle</th>
               <th>Status</th>
               <th></th>
             </tr>
@@ -78,9 +81,9 @@
                 <span class="plan-badge" [ngClass]="planBadgeClass(plan.name)">{{ plan.name }}</span>
               </td>
               <td>{{ money(plan) }}</td>
+              <td>{{ yearlyMoney(plan) }}</td>
               <td>{{ usersLimitLabel(plan) }}</td>
               <td>{{ plan.storage || (plan.storageGb != null ? plan.storageGb + ' GB' : '—') }}</td>
-              <td>{{ cycleLabel(plan.billingCycle) }}</td>
               <td>
                 <span class="status-pill" [class.is-active]="plan.status === 'active'" [class.is-inactive]="plan.status !== 'active'">
                   {{ plan.status === 'active' ? 'Active' : 'Inactive' }}

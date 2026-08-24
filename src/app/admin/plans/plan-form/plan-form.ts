@@ -40,8 +40,8 @@ export class PlanForm implements OnInit {
       name: ['', Validators.required],
       description: [''],
       price: [0, [Validators.required, Validators.min(0)]],
+      yearlyPrice: [0, [Validators.required, Validators.min(0)]],
       currency: ['USD'],
-      billingCycle: ['monthly', Validators.required],
       usersLimit: [null as number | null],
       unlimitedUsers: [false],
       storageGb: [20, [Validators.min(0)]],
@@ -91,9 +91,9 @@ export class PlanForm implements OnInit {
         this.form.patchValue({
           name: plan.name,
           description: plan.description || '',
-          price: plan.price,
+          price: this.resolveMonthlyPrice(plan),
+          yearlyPrice: this.resolveYearlyPrice(plan),
           currency: plan.currency === 'EUR' ? 'USD' : plan.currency || 'USD',
-          billingCycle: plan.billingCycle || 'monthly',
           usersLimit: unlimited ? null : plan.usersLimit,
           unlimitedUsers: unlimited,
           storageGb: plan.storageGb ?? null,
@@ -166,8 +166,8 @@ export class PlanForm implements OnInit {
       this.toastr.error('Plan name is required');
       return;
     }
-    if (Number.isNaN(payload.price)) {
-      this.toastr.error('Enter a valid price');
+    if (Number.isNaN(payload.price) || Number.isNaN(payload.yearlyPrice as number)) {
+      this.toastr.error('Enter valid monthly and yearly prices');
       return;
     }
 
@@ -215,8 +215,8 @@ export class PlanForm implements OnInit {
       name,
       slug,
       price: Number(raw.price),
+      yearlyPrice: Number(raw.yearlyPrice),
       currency: 'USD',
-      billingCycle: raw.billingCycle,
       features,
       modules,
       status: raw.status || 'active',
@@ -243,6 +243,29 @@ export class PlanForm implements OnInit {
     }
 
     return payload;
+  }
+
+  private resolveMonthlyPrice(plan: {
+    price?: number | null;
+    prices?: { monthly?: { amount?: number | null } };
+  }): number {
+    const fromPrices = plan.prices?.monthly?.amount;
+    if (fromPrices != null && !Number.isNaN(Number(fromPrices))) return Number(fromPrices);
+    return Number(plan.price ?? 0);
+  }
+
+  private resolveYearlyPrice(plan: {
+    yearlyPrice?: number | null;
+    price?: number | null;
+    prices?: { yearly?: { amount?: number | null } };
+  }): number {
+    const fromPrices = plan.prices?.yearly?.amount;
+    if (fromPrices != null && !Number.isNaN(Number(fromPrices))) return Number(fromPrices);
+    if (plan.yearlyPrice != null && !Number.isNaN(Number(plan.yearlyPrice))) {
+      return Number(plan.yearlyPrice);
+    }
+    // Fallback: 12x monthly if yearly is missing
+    return Number(plan.price ?? 0) * 12;
   }
 
   private syncUsersLimitControl(unlimited: boolean): void {

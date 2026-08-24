@@ -26,6 +26,18 @@ export interface PlanModuleState extends PlanModuleCatalogItem {
   enabled: boolean;
 }
 
+export interface PlanPriceInterval {
+  amount: number;
+  amountCents?: number;
+  formatted: string;
+  interval: 'month' | 'year' | string;
+}
+
+export interface PlanPrices {
+  monthly?: PlanPriceInterval;
+  yearly?: PlanPriceInterval;
+}
+
 export interface MasterPlan {
   id: number;
   name: string;
@@ -34,8 +46,12 @@ export interface MasterPlan {
   price: number;
   priceCents?: number;
   formattedPrice: string;
+  yearlyPrice?: number | null;
+  yearlyPriceCents?: number | null;
+  formattedYearlyPrice?: string | null;
   currency: string;
   billingCycle: BillingCycle;
+  prices?: PlanPrices;
   usersLimit: number | null;
   storageGb?: number | null;
   storage?: string;
@@ -57,8 +73,9 @@ export interface PlanWritePayload {
   slug?: string;
   description?: string;
   price: number;
+  yearlyPrice?: number;
   currency?: string;
-  billingCycle: BillingCycle;
+  billingCycle?: BillingCycle;
   usersLimit?: number | null;
   storageGb?: number | null;
   supportLevel?: string;
