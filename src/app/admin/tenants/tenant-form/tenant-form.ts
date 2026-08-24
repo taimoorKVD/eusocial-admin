@@ -11,7 +11,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { Subject, takeUntil } from 'rxjs';
 import { environment } from '../../../../environments/environment';
-import { MasterPlan } from '../../../interfaces/master-billing';
+import { BillingCycle, MasterPlan } from '../../../interfaces/master-billing';
 import { Tenant } from '../../../interfaces/tenant';
 import { MasterPlanService } from '../../../services/master-plan.service';
 import {
@@ -314,19 +314,42 @@ export class TenantForm implements OnInit, OnDestroy {
 
   planLabel(plan?: MasterPlan | null): string {
     if (!plan) return '—';
-    const cycle = this.form?.value?.billingCycle || plan.billingCycle || 'monthly';
-    if (cycle === 'yearly') {
-      const yearly = displayMoney(
+    return `${plan.name} — ${this.planPrice(plan)} / ${this.selectedBillingCycle}`;
+  }
+
+  get selectedBillingCycle(): BillingCycle {
+    return (this.form?.value?.billingCycle as BillingCycle) || 'monthly';
+  }
+
+  setBillingCycle(cycle: BillingCycle): void {
+    this.form.patchValue({ billingCycle: cycle });
+  }
+
+  selectPlan(planId: number): void {
+    this.form.patchValue({ planId });
+    this.form.get('planId')?.markAsTouched();
+  }
+
+  planPrice(plan: MasterPlan): string {
+    if (this.selectedBillingCycle === 'yearly') {
+      return displayMoney(
         plan.prices?.yearly?.formatted || plan.formattedYearlyPrice,
         plan.prices?.yearly?.amount ?? plan.yearlyPrice
       );
-      return `${plan.name} — ${yearly} / yearly`;
     }
-    const monthly = displayMoney(
+    return displayMoney(
       plan.prices?.monthly?.formatted || plan.formattedPrice,
       plan.prices?.monthly?.amount ?? plan.price
     );
-    return `${plan.name} — ${monthly} / monthly`;
+  }
+
+  planBadgeClass(name: string | undefined): string {
+    const key = (name || '').toLowerCase();
+    if (key.includes('enterprise')) return 'plan-badge--enterprise';
+    if (key.includes('professional')) return 'plan-badge--professional';
+    if (key.includes('standard')) return 'plan-badge--standard';
+    if (key.includes('basic')) return 'plan-badge--basic';
+    return 'plan-badge--default';
   }
 
   onClearMouseDown(event: Event, controlName: 'countryId' | 'stateId' | 'city'): void {
