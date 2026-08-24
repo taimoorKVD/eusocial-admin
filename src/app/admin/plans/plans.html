@@ -1,5 +1,25 @@
 <div class="platform-page" (click)="closeMenus()">
   <div class="platform-page__actions">
+    <div class="price-cycle-tabs" role="tablist" aria-label="Billing cycle">
+      <button
+        type="button"
+        role="tab"
+        [attr.aria-selected]="priceCycle === 'monthly'"
+        [class.is-active]="priceCycle === 'monthly'"
+        (click)="setPriceCycle('monthly', $event)"
+      >
+        Monthly
+      </button>
+      <button
+        type="button"
+        role="tab"
+        [attr.aria-selected]="priceCycle === 'yearly'"
+        [class.is-active]="priceCycle === 'yearly'"
+        (click)="setPriceCycle('yearly', $event)"
+      >
+        Yearly
+      </button>
+    </div>
     <button type="button" class="btn-primary" (click)="createPlan()">+ Create Plan</button>
   </div>
 
@@ -30,12 +50,9 @@
 
         <h3>{{ plan.name }}</h3>
         <div class="plan-card__price">
-          <strong>{{ money(plan) }}</strong>
-          <span>/ month</span>
+          <strong>{{ displayPrice(plan) }}</strong>
+          <span>/ {{ priceCycle === 'yearly' ? 'year' : 'month' }}</span>
         </div>
-        <p class="plan-card__yearly" *ngIf="yearlyMoney(plan) !== '—'">
-          or {{ yearlyMoney(plan) }} / year
-        </p>
         <p class="plan-card__desc">{{ plan.description || 'Subscription plan' }}</p>
 
         <ul>
@@ -61,14 +78,14 @@
     <section class="platform-card" *ngIf="plans.length">
       <div class="platform-card__header">
         <h3>All Plans</h3>
+        <span class="platform-card__meta">Showing {{ priceCycle === 'yearly' ? 'yearly' : 'monthly' }} pricing</span>
       </div>
       <div class="table-wrap">
         <table class="platform-table">
           <thead>
             <tr>
               <th>Plan Name</th>
-              <th>Monthly</th>
-              <th>Yearly</th>
+              <th>Price</th>
               <th>Users Limit</th>
               <th>Storage</th>
               <th>Status</th>
@@ -80,8 +97,10 @@
               <td>
                 <span class="plan-badge" [ngClass]="planBadgeClass(plan.name)">{{ plan.name }}</span>
               </td>
-              <td>{{ money(plan) }}</td>
-              <td>{{ yearlyMoney(plan) }}</td>
+              <td>
+                <strong>{{ displayPrice(plan) }}</strong>
+                <span class="muted-cycle">/ {{ priceCycle === 'yearly' ? 'year' : 'month' }}</span>
+              </td>
               <td>{{ usersLimitLabel(plan) }}</td>
               <td>{{ plan.storage || (plan.storageGb != null ? plan.storageGb + ' GB' : '—') }}</td>
               <td>

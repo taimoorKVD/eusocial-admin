@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
-import { MasterPlan } from '../../interfaces/master-billing';
+import { BillingCycle, MasterPlan } from '../../interfaces/master-billing';
 import { MasterPlanService } from '../../services/master-plan.service';
 import { displayMoney } from '../../shared/utils/money.util';
 
@@ -17,6 +17,7 @@ export class Plans implements OnInit {
   showDeleteModal = false;
   deleteTargetId: number | null = null;
   openMenuId: number | null = null;
+  priceCycle: BillingCycle = 'monthly';
 
   constructor(
     private planService: MasterPlanService,
@@ -42,6 +43,11 @@ export class Plans implements OnInit {
         this.toastr.error(err?.error?.message || 'Failed to load plans');
       },
     });
+  }
+
+  setPriceCycle(cycle: BillingCycle, event?: Event): void {
+    event?.stopPropagation();
+    this.priceCycle = cycle;
   }
 
   createPlan(): void {
@@ -121,7 +127,11 @@ export class Plans implements OnInit {
     return items;
   }
 
-  money(plan: MasterPlan): string {
+  displayPrice(plan: MasterPlan): string {
+    return this.priceCycle === 'yearly' ? this.yearlyMoney(plan) : this.monthlyMoney(plan);
+  }
+
+  monthlyMoney(plan: MasterPlan): string {
     const formatted = plan.prices?.monthly?.formatted || plan.formattedPrice;
     const amount = plan.prices?.monthly?.amount ?? plan.price;
     return displayMoney(formatted, amount);
