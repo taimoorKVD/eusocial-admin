@@ -39,6 +39,11 @@ import {
   resolveCollectionConditionalEffects,
 } from '../../../../../shared/conditional-logic';
 import { resolveCharacterLimit } from '../../../../../shared/dynamic-form/character-limit.utils';
+import {
+  DEFAULT_RANGE_STEP,
+  normalizeRangeTimeFormat,
+  normalizeRangeType,
+} from '../../../../../shared/dynamic-form/range-field.utils';
 import { getLocationFieldDeleteBlockReason } from '../../../../form-builder/utils/location-field-dependencies.utils';
 import { FormEditorCoreModule } from '../../../../forms/form-editor-core.module';
 import { FormBuilderTab } from '../../../../forms/components/form-builder-workspace/form-builder-workspace.component';
@@ -666,10 +671,29 @@ export class CreateFormComponent implements OnInit {
       label: field?.label ?? '',
       name: field?.name ?? '',
       required: field?.required ?? false,
-      allowDecimal: type === 'number' ? field?.allowDecimal === true : undefined,
+      allowDecimal: type === 'number' || (type === 'range' && normalizeRangeType((field as any)?.rangeType) === 'number')
+        ? (field as any)?.allowDecimal === true
+        : undefined,
       characterLimit: type === 'text' || type === 'textarea'
         ? resolveCharacterLimit(type, (field as { characterLimit?: number })?.characterLimit)
         : undefined,
+      rangeType: type === 'range' ? normalizeRangeType((field as any)?.rangeType) : undefined,
+      rangeMin: (field as any)?.rangeMin,
+      rangeMax: (field as any)?.rangeMax,
+      rangeStep:
+        type === 'range' && normalizeRangeType((field as any)?.rangeType) === 'number'
+          ? (Number((field as any)?.rangeStep) > 0
+              ? Number((field as any)?.rangeStep)
+              : DEFAULT_RANGE_STEP)
+          : undefined,
+      rangeMinDate: (field as any)?.rangeMinDate,
+      rangeMaxDate: (field as any)?.rangeMaxDate,
+      rangePlaceholderFrom: (field as any)?.rangePlaceholderFrom,
+      rangePlaceholderTo: (field as any)?.rangePlaceholderTo,
+      timeFormat:
+        type === 'range' && normalizeRangeType((field as any)?.rangeType) === 'time'
+          ? normalizeRangeTimeFormat((field as any)?.timeFormat)
+          : undefined,
     };
   }
 

@@ -22,6 +22,30 @@ export function getDynamicFieldErrorMessage(
     return `${field.label} must be a whole number.`;
   }
 
+  if (control.errors['rangeIncomplete']) {
+    return `${field.label} requires both From and To values.`;
+  }
+
+  if (control.errors['rangeOrder']) {
+    return 'Start value cannot be greater than end value.';
+  }
+
+  if (control.errors['rangeInvalid']) {
+    return `${field.label} contains an invalid value.`;
+  }
+
+  if (control.errors['rangeBelowMin']) {
+    return `${field.label} must be at least ${control.errors['rangeBelowMin'].min}.`;
+  }
+
+  if (control.errors['rangeAboveMax']) {
+    return `${field.label} must be at most ${control.errors['rangeAboveMax'].max}.`;
+  }
+
+  if (control.errors['rangeStep']) {
+    return `${field.label} must use step ${control.errors['rangeStep'].step}.`;
+  }
+
   if (control.errors['maxlength']) {
     const requiredLength = control.errors['maxlength'].requiredLength;
     return `${field.label} must be at most ${requiredLength} characters.`;

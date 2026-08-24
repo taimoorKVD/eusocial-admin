@@ -48,6 +48,20 @@ import {
   sanitizeNumberFieldInput,
 } from './number-field.utils';
 import { getFieldCharacterLimit } from './character-limit.utils';
+import {
+  earlierIsoDate,
+  getRangePlaceholderFrom as resolveRangePlaceholderFrom,
+  getRangePlaceholderTo as resolveRangePlaceholderTo,
+  laterIsoDate,
+  normalizeRangeTimeFormat,
+  normalizeRangeType,
+  normalizeRangeValue,
+  normalizeTimeTo24h,
+  parseRangeNumber,
+  RangeFieldValue,
+  resolveRangeStep,
+  sanitizeRangeNumberInput,
+} from './range-field.utils';
 import { DropdownOverlayService } from '../directives/dropdown-panel/dropdown-overlay.service';
 
 @Component({
@@ -288,6 +302,119 @@ export class DynamicFormComponent implements OnDestroy {
     return getFieldCharacterLimit(field);
   }
 
+  getRangeType(field: DynamicField): 'number' | 'date' | 'time' {
+    return normalizeRangeType(field.rangeType);
+  }
+
+  getRangeStep(field: DynamicField): number {
+    return resolveRangeStep(field);
+  }
+
+  getRangeTimeFormat(field: DynamicField): '12' | '24' {
+    return normalizeRangeTimeFormat(field.timeFormat);
+  }
+
+  getRangePlaceholderFrom(field: DynamicField): string {
+    return resolveRangePlaceholderFrom(field);
+  }
+
+  getRangePlaceholderTo(field: DynamicField): string {
+    return resolveRangePlaceholderTo(field);
+  }
+
+  getRangeFromMinDate(field: DynamicField): string | null {
+    return field.rangeMinDate || null;
+  }
+
+  getRangeFromMaxDate(field: DynamicField): string | null {
+    return earlierIsoDate(field.rangeMaxDate, this.getRangeSideValue(field, 'to')) || null;
+  }
+
+  getRangeToMinDate(field: DynamicField): string | null {
+    return laterIsoDate(field.rangeMinDate, this.getRangeSideValue(field, 'from')) || null;
+  }
+
+  getRangeToMaxDate(field: DynamicField): string | null {
+    return field.rangeMaxDate || null;
+  }
+
+  getRangeSideValue(field: DynamicField, side: 'from' | 'to'): string {
+    const value = normalizeRangeValue(this.form?.get(field.name)?.value);
+    const raw = value[side];
+    if (raw == null || raw === '') {
+      return '';
+    }
+
+    if (this.getRangeType(field) === 'time') {
+      return normalizeTimeTo24h(raw) ?? '';
+    }
+
+    return String(raw);
+  }
+
+  onRangeDateChange(
+    dateStr: string | null,
+    field: DynamicField,
+    side: 'from' | 'to',
+  ): void {
+    const control = this.form?.get(field.name);
+    if (!control || control.disabled) {
+      return;
+    }
+
+    const current = normalizeRangeValue(control.value);
+    const nextValue: RangeFieldValue = {
+      ...current,
+      [side]: dateStr || null,
+    };
+
+    control.setValue(nextValue);
+    control.markAsDirty();
+    control.markAsTouched();
+    this.emitNormalizedValue();
+    this.cdr.markForCheck();
+  }
+
+  onRangeSideInput(event: Event, field: DynamicField, side: 'from' | 'to'): void {
+    const control = this.form?.get(field.name);
+    if (!control || control.disabled) {
+      return;
+    }
+
+    const input = event.target as HTMLInputElement;
+    const rangeType = this.getRangeType(field);
+    const current = normalizeRangeValue(control.value);
+    let nextSide: string | number | null = input.value;
+
+    if (rangeType === 'number') {
+      const sanitized = sanitizeRangeNumberInput(
+        input.value,
+        allowsDecimalPoint(field),
+      );
+      if (input.value !== sanitized) {
+        input.value = sanitized;
+      }
+      nextSide = sanitized === '' || sanitized === '-' || sanitized === '.' || sanitized === '-.'
+        ? null
+        : (parseRangeNumber(sanitized) ?? sanitized);
+    } else if (rangeType === 'time') {
+      nextSide = normalizeTimeTo24h(input.value);
+    } else if (rangeType === 'date') {
+      nextSide = input.value || null;
+    }
+
+    const nextValue: RangeFieldValue = {
+      ...current,
+      [side]: nextSide,
+    };
+
+    control.setValue(nextValue);
+    control.markAsDirty();
+    control.markAsTouched();
+    this.emitNormalizedValue();
+    this.cdr.markForCheck();
+  }
+
   onNumberInput(event: Event, field: DynamicField): void {
     const input = event.target as HTMLInputElement;
     const control = this.form?.get(field.name);
@@ -516,6 +643,7 @@ export class DynamicFormComponent implements OnDestroy {
     return (
       field.type === 'image' ||
       field.type === 'textarea' ||
+      field.type === 'range' ||
       field.label === 'Availability Days'
     );
   }

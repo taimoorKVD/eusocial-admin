@@ -122,6 +122,96 @@
               />
             }
 
+            @case ('range') {
+              <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
+                <div class="flex-1">
+                  <label class="mb-1 block text-xs font-medium text-slate-500" [attr.for]="field.id + '-from'">
+                    {{ getRangePlaceholderFrom(field) }}
+                  </label>
+                  @if (getRangeType(field) === 'number') {
+                    <input
+                      class="dynamic-control"
+                      type="number"
+                      [id]="field.id + '-from'"
+                      [placeholder]="getRangePlaceholderFrom(field)"
+                      [attr.min]="field.rangeMin ?? null"
+                      [attr.max]="field.rangeMax ?? null"
+                      [attr.step]="getRangeStep(field)"
+                      [value]="getRangeSideValue(field, 'from')"
+                      [disabled]="isFieldDisabled(field)"
+                      (input)="onRangeSideInput($event, field, 'from')"
+                    />
+                  } @else if (getRangeType(field) === 'date') {
+                    <input
+                      class="dynamic-control"
+                      type="text"
+                      appFlatpickr
+                      [id]="field.id + '-from'"
+                      [placeholder]="getRangePlaceholderFrom(field)"
+                      [fpValue]="getRangeSideValue(field, 'from') || null"
+                      [fpMinDate]="getRangeFromMinDate(field)"
+                      [fpMaxDate]="getRangeFromMaxDate(field)"
+                      [fpDisabled]="isFieldDisabled(field)"
+                      (fpChange)="onRangeDateChange($event, field, 'from')"
+                    />
+                  } @else {
+                    <input
+                      class="dynamic-control"
+                      type="time"
+                      [id]="field.id + '-from'"
+                      [placeholder]="getRangePlaceholderFrom(field)"
+                      [value]="getRangeSideValue(field, 'from')"
+                      [disabled]="isFieldDisabled(field)"
+                      (input)="onRangeSideInput($event, field, 'from')"
+                    />
+                  }
+                </div>
+                <div class="hidden pb-3 text-slate-400 sm:block">–</div>
+                <div class="flex-1">
+                  <label class="mb-1 block text-xs font-medium text-slate-500" [attr.for]="field.id + '-to'">
+                    {{ getRangePlaceholderTo(field) }}
+                  </label>
+                  @if (getRangeType(field) === 'number') {
+                    <input
+                      class="dynamic-control"
+                      type="number"
+                      [id]="field.id + '-to'"
+                      [placeholder]="getRangePlaceholderTo(field)"
+                      [attr.min]="field.rangeMin ?? null"
+                      [attr.max]="field.rangeMax ?? null"
+                      [attr.step]="getRangeStep(field)"
+                      [value]="getRangeSideValue(field, 'to')"
+                      [disabled]="isFieldDisabled(field)"
+                      (input)="onRangeSideInput($event, field, 'to')"
+                    />
+                  } @else if (getRangeType(field) === 'date') {
+                    <input
+                      class="dynamic-control"
+                      type="text"
+                      appFlatpickr
+                      [id]="field.id + '-to'"
+                      [placeholder]="getRangePlaceholderTo(field)"
+                      [fpValue]="getRangeSideValue(field, 'to') || null"
+                      [fpMinDate]="getRangeToMinDate(field)"
+                      [fpMaxDate]="getRangeToMaxDate(field)"
+                      [fpDisabled]="isFieldDisabled(field)"
+                      (fpChange)="onRangeDateChange($event, field, 'to')"
+                    />
+                  } @else {
+                    <input
+                      class="dynamic-control"
+                      type="time"
+                      [id]="field.id + '-to'"
+                      [placeholder]="getRangePlaceholderTo(field)"
+                      [value]="getRangeSideValue(field, 'to')"
+                      [disabled]="isFieldDisabled(field)"
+                      (input)="onRangeSideInput($event, field, 'to')"
+                    />
+                  }
+                </div>
+              </div>
+            }
+
             @case ('textarea') {
               <textarea
                 class="dynamic-control min-h-[120px] resize-none"

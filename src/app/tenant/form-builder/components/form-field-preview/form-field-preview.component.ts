@@ -25,6 +25,10 @@ import {
   normalizeStaticSelectFieldOptions,
 } from '../../utils/field-options.utils';
 import { resolveFieldOptionSource } from '../../utils/option-source.utils';
+import {
+  getRangePlaceholderFrom,
+  getRangePlaceholderTo,
+} from '../../../../shared/dynamic-form/range-field.utils';
 
 @Component({
   selector: 'app-form-field-preview',
@@ -50,6 +54,14 @@ export class FormFieldPreviewComponent implements OnChanges {
 
   get previewValue(): unknown {
     return this.field?.defaultValue ?? this.field?.value ?? '';
+  }
+
+  get rangePlaceholderFrom(): string {
+    return getRangePlaceholderFrom(this.field);
+  }
+
+  get rangePlaceholderTo(): string {
+    return getRangePlaceholderTo(this.field);
   }
 
   private readonly destroyRef = inject(DestroyRef);

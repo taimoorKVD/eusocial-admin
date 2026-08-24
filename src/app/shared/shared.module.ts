@@ -10,6 +10,7 @@ import { DragDropModule } from '@angular/cdk/drag-drop';
 import { DynamicFormComponent } from './dynamic-form/dynamic-form.component';
 import { DynamicListingComponent } from './dynamic-listing/dynamic-listing.component';
 import { DropdownPanelDirective } from './directives/dropdown-panel/dropdown-panel.directive';
+import { FlatpickrDirective } from './directives/flatpickr/flatpickr.directive';
 
 @NgModule({
   declarations: [
@@ -21,7 +22,17 @@ import { DropdownPanelDirective } from './directives/dropdown-panel/dropdown-pan
     DynamicListingComponent,
     DropdownPanelDirective,
   ],
-  imports: [CommonModule, FormsModule, DragDropModule, ReactiveFormsModule ],
-  exports: [GlobalFilterComponent, TopHeaderComponent, ConfirmModalComponent, EuLoaderComponent, DragDropModule, DynamicFormComponent, DynamicListingComponent, DropdownPanelDirective],
+  imports: [CommonModule, FormsModule, DragDropModule, ReactiveFormsModule, FlatpickrDirective],
+  exports: [
+    GlobalFilterComponent,
+    TopHeaderComponent,
+    ConfirmModalComponent,
+    EuLoaderComponent,
+    DragDropModule,
+    DynamicFormComponent,
+    DynamicListingComponent,
+    DropdownPanelDirective,
+    FlatpickrDirective,
+  ],
 })
 export class SharedModule {}
