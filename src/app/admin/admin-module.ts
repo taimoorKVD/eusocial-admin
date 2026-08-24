@@ -18,11 +18,14 @@ import { Products } from './products/products';
 import { ProductForm } from './products/product-form/product-form';
 import { Tenants } from './tenants/tenants';
 import { TenantForm } from './tenants/tenant-form/tenant-form';
+import { TenantView } from './tenants/tenant-view/tenant-view';
 import { PermissionsComponent } from './permissions/permissions.component';
 import { PermissionsFormComponent } from './permissions/permissions-form/permissions-form.component';
 import { Plans } from './plans/plans';
 import { PlanForm } from './plans/plan-form/plan-form';
+import { PlanView } from './plans/plan-view/plan-view';
 import { Subscriptions } from './subscriptions/subscriptions';
+import { SubscriptionView } from './subscriptions/subscription-view/subscription-view';
 import { Invoices } from './invoices/invoices';
 
 @NgModule({
@@ -40,11 +43,14 @@ import { Invoices } from './invoices/invoices';
     ProductForm,
     Tenants,
     TenantForm,
+    TenantView,
     PermissionsComponent,
     PermissionsFormComponent,
     Plans,
     PlanForm,
+    PlanView,
     Subscriptions,
+    SubscriptionView,
     Invoices,
   ],
   imports: [

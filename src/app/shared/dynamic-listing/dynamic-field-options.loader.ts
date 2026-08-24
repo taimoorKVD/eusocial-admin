@@ -3,6 +3,21 @@ import { catchError, map } from 'rxjs/operators';
 import { DynamicField } from '../../interfaces/dynamic-field';
 import { FormStorageService } from '../../tenant/forms/services/form-storage.service';
 
+function isLazyLocationEndpoint(endpoint?: string | null): boolean {
+  if (!endpoint) {
+    return false;
+  }
+
+  const normalized = endpoint
+    .trim()
+    .toLowerCase()
+    .replace(/^\/+/, '')
+    .split('?')[0]
+    .replace(/\/+$/, '');
+
+  return normalized === 'states' || normalized === 'cities';
+}
+
 export function normalizeStaticSelectOptions(fields: DynamicField[]): void {
   for (const field of fields) {
     if (field.type === 'select' && !field.optionSource && Array.isArray(field.options)) {
@@ -53,7 +68,8 @@ export function loadDynamicDropdownOptions(
       (field) =>
         field.type === 'select' &&
         (field.optionSource?.type === 'api' || field.optionSource?.type === 'dynamic') &&
-        field.optionSource?.endpoint,
+        field.optionSource?.endpoint &&
+        !isLazyLocationEndpoint(field.optionSource.endpoint),
     )
     .map((field) =>
       formStorageService.getEndpointApi<Record<string, unknown>>(field.optionSource!.endpoint!).pipe(

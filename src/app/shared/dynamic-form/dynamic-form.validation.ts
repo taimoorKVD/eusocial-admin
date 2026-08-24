@@ -14,8 +14,17 @@ export function getDynamicFieldErrorMessage(
     return `${field.label} is required.`;
   }
 
-  if (control.errors['email']) {
+  if (control.errors['email'] || (field.type === 'email' && control.errors['pattern'])) {
     return 'Please enter a valid email address.';
+  }
+
+  if (control.errors['integerOnly']) {
+    return `${field.label} must be a whole number.`;
+  }
+
+  if (control.errors['maxlength']) {
+    const requiredLength = control.errors['maxlength'].requiredLength;
+    return `${field.label} must be at most ${requiredLength} characters.`;
   }
 
   if (control.errors['min']) {

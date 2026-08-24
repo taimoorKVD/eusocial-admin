@@ -3,6 +3,10 @@ import {
   normalizeFieldOrder,
   toFieldName,
 } from '../../form-builder/utils/form-field.factory';
+import {
+  resolveCharacterLimit,
+  supportsCharacterLimit,
+} from '../../../shared/dynamic-form/character-limit.utils';
 
 export function buildFormSchemaPayload(fields: FormField[]) {
   const orderedFields = normalizeFieldOrder([...fields]);
@@ -22,6 +26,10 @@ export function buildFormSchemaPayload(fields: FormField[]) {
         isShow: field.isShow !== false,
         optionSource: field.optionSource,
         selectionType: field.type === 'select' ? field.selectionType || 'single' : undefined,
+        allowDecimal: field.type === 'number' ? field.allowDecimal === true : undefined,
+        characterLimit: supportsCharacterLimit(field.type)
+          ? resolveCharacterLimit(field.type, field.characterLimit)
+          : undefined,
         isReadonly: field.isReadonly === true,
         isSystemField: true,
         isEditable: field.isEditable !== false,

@@ -44,7 +44,7 @@
   <div class="toolbar">
     <div class="search">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35m0 0A7.5 7.5 0 1 0 6 6a7.5 7.5 0 0 0 10.65 10.65Z"/></svg>
-      <input type="text" [(ngModel)]="search" placeholder="Search by tenant or domain..." (keyup.enter)="applyFilters()" />
+      <input type="text" [(ngModel)]="search" placeholder="Search by organization or domain..." (keyup.enter)="applyFilters()" />
     </div>
     <select [(ngModel)]="planId">
       <option value="">All Plans</option>
@@ -67,7 +67,7 @@
       <table class="platform-table">
         <thead>
           <tr>
-            <th>Tenant</th>
+            <th>Organization</th>
             <th>Plan</th>
             <th>Status</th>
             <th>Billing Cycle</th>
@@ -81,7 +81,7 @@
             <td>
               <div class="tenant-cell">
                 <strong>{{ sub.tenant?.name || '—' }}</strong>
-                <span>{{ sub.tenant?.domain || sub.tenant?.subdomain || '—' }}</span>
+                <span>{{ tenantDomain(sub) }}</span>
               </div>
             </td>
             <td>
@@ -101,6 +101,7 @@
                   <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>
                 </button>
                 <div class="menu-pop" *ngIf="openMenuId === sub.id" (click)="$event.stopPropagation()">
+                  <button type="button" (click)="viewSubscription(sub.id)">View</button>
                   <button type="button" (click)="openChangePlan(sub)">Change Plan</button>
                   <button type="button" class="danger" (click)="openCancel(sub)" [disabled]="sub.status === 'cancelled'">Cancel</button>
                 </div>

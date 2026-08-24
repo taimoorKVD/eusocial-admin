@@ -62,6 +62,16 @@ export interface FormFieldConfig {
   rangeMin?: number;
   /** Range field maximum / to value. */
   rangeMax?: number;
+  /**
+   * Number field only. When true, decimal values are allowed.
+   * Missing/undefined is treated as false for backward compatibility.
+   */
+  allowDecimal?: boolean;
+  /**
+   * Text / Text Area only. Maximum allowed characters.
+   * Missing/undefined uses 255 (text) or 5000 (textarea).
+   */
+  characterLimit?: number;
 }
 
 export interface FormRow {

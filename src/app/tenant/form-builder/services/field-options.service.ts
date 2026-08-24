@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
@@ -6,12 +6,14 @@ import { environment } from '../../../../environments/environment';
 import { FieldOption, OptionSource } from '../models/form-field.model';
 import { normalizeFieldOptions } from '../utils/field-options.utils';
 import { normalizeEndpoint } from '../utils/option-source.utils';
+import { LocationCacheService } from '../../../services/location-cache.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class FieldOptionsService {
   private readonly cache = new Map<string, FieldOption[]>();
+  private readonly locationCache = inject(LocationCacheService);
 
   constructor(private http: HttpClient) {}
 
@@ -26,6 +28,22 @@ export class FieldOptionsService {
 
     if (optionSource.type !== 'api' || !optionSource.endpoint) {
       return of([]);
+    }
+
+    const locationKind = this.locationCache.resolveKind(optionSource.endpoint);
+    if (locationKind === 'states' || locationKind === 'cities') {
+      return of([]);
+    }
+
+    if (locationKind === 'countries') {
+      const records = this.locationCache.countries();
+      const labelKey = optionSource.response?.labelKey || 'name';
+      const valueKey = optionSource.response?.valueKey || 'id';
+      return of(
+        records
+          .map((item) => this.mapItemToOption(item, labelKey, valueKey))
+          .filter((option): option is FieldOption => option !== null),
+      );
     }
 
     const cacheKey = this.buildCacheKey(optionSource);

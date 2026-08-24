@@ -13,6 +13,15 @@ import {
   getSelectOptionValue,
   isDependentLocationSelectLocked,
 } from '../../utils/row-location-dependencies.utils';
+import {
+  allowsDecimalPoint,
+  getNumberFieldStep,
+  sanitizeNumberFieldInput,
+} from '../../../../../../shared/dynamic-form/number-field.utils';
+import {
+  getFieldCharacterLimit,
+  truncateToCharacterLimit,
+} from '../../../../../../shared/dynamic-form/character-limit.utils';
 
 /**
  * Editable FormFieldConfig control — matches section input styling.
@@ -155,6 +164,49 @@ export class SectionFieldPreviewComponent {
     }
 
     this.valueChange.emit((event.target as HTMLInputElement | HTMLTextAreaElement).value);
+  }
+
+  onTextInput(event: Event): void {
+    if (this.isInteractionDisabled) {
+      return;
+    }
+
+    const input = event.target as HTMLInputElement | HTMLTextAreaElement;
+    const limit = this.characterLimit;
+    const nextValue =
+      limit != null
+        ? truncateToCharacterLimit(input.value, limit)
+        : input.value;
+
+    if (input.value !== nextValue) {
+      input.value = nextValue;
+    }
+
+    this.valueChange.emit(nextValue);
+  }
+
+  get characterLimit(): number | null {
+    return getFieldCharacterLimit(this.field);
+  }
+
+  get numberStep(): string {
+    return getNumberFieldStep(this.field);
+  }
+
+  onNumberInput(event: Event): void {
+    if (this.isInteractionDisabled) {
+      return;
+    }
+
+    const input = event.target as HTMLInputElement;
+    const allowDecimal = allowsDecimalPoint(this.field);
+    const sanitized = sanitizeNumberFieldInput(input.value, allowDecimal);
+
+    if (input.value !== sanitized) {
+      input.value = sanitized;
+    }
+
+    this.valueChange.emit(sanitized);
   }
 
   onParameterValueChange(event: Event): void {

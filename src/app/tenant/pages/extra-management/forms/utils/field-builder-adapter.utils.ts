@@ -1,4 +1,9 @@
 import { cloneConditionalLogic, serializeConditionalLogic } from '../../../../../shared/conditional-logic';
+import {
+  getDefaultCharacterLimit,
+  resolveCharacterLimit,
+  supportsCharacterLimit,
+} from '../../../../../shared/dynamic-form/character-limit.utils';
 import { FormField, FieldOption } from '../../../../form-builder/models/form-field.model';
 import {
   cloneOptionSource,
@@ -102,6 +107,10 @@ export function mapConfigFieldToBuilder(field: FormFieldConfig): FormField {
     maxRating: field.maxRating,
     rangeMin: field.rangeMin,
     rangeMax: field.rangeMax,
+    allowDecimal: field.allowDecimal === true,
+    characterLimit: supportsCharacterLimit(formFieldType)
+      ? resolveCharacterLimit(formFieldType, field.characterLimit)
+      : undefined,
   };
 }
 
@@ -138,6 +147,11 @@ export function mapBuilderFieldToConfig(
     maxRating: field.maxRating,
     rangeMin: field.rangeMin,
     rangeMax: field.rangeMax,
+    allowDecimal: field.type === 'number' ? field.allowDecimal === true : undefined,
+    characterLimit: supportsCharacterLimit(type)
+      ? (resolveCharacterLimit(type, field.characterLimit) ??
+        getDefaultCharacterLimit(type))
+      : undefined,
   };
 }
 

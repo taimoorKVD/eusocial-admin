@@ -54,6 +54,18 @@
       <label for="field-required" class="text-sm text-slate-700">Required field</label>
     </div>
 
+    <div *ngIf="isNumberField" class="flex items-center gap-2">
+      <input
+        id="field-allow-decimal"
+        type="checkbox"
+        [ngModel]="field.allowDecimal === true"
+        (ngModelChange)="onAllowDecimalChange($event)"
+        [disabled]="!isFieldEditable"
+        class="field-settings-checkbox"
+      />
+      <label for="field-allow-decimal" class="text-sm text-slate-700">Allow Decimal Point</label>
+    </div>
+
     <!-- <div class="flex items-center gap-2">
       <input
         id="field-is-show"
@@ -75,6 +87,26 @@
       />
       <label for="field-is-readonly" class="text-sm text-slate-700">Readonly field</label>
     </div> -->
+  </div>
+
+  <div *ngIf="supportsCharacterLimit" class="space-y-1.5">
+    <label for="field-character-limit" class="mb-1.5 block text-xs font-medium text-slate-600">
+      Character Limit
+    </label>
+    <input
+      id="field-character-limit"
+      type="number"
+      min="1"
+      [attr.max]="defaultCharacterLimit"
+      step="1"
+      [ngModel]="characterLimitValue"
+      (ngModelChange)="onCharacterLimitChange($event)"
+      [disabled]="!isFieldEditable"
+      class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+    />
+    <p class="text-[11px] text-slate-500">
+      Maximum {{ defaultCharacterLimit }} characters for this field type.
+    </p>
   </div>
 
   <div *ngIf="isParameterField" class="space-y-3">

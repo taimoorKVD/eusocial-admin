@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
-import { MasterPlan } from '../../interfaces/master-billing';
+import { BillingCycle, MasterPlan } from '../../interfaces/master-billing';
 import { MasterPlanService } from '../../services/master-plan.service';
 import { displayMoney } from '../../shared/utils/money.util';
 
@@ -17,6 +17,7 @@ export class Plans implements OnInit {
   showDeleteModal = false;
   deleteTargetId: number | null = null;
   openMenuId: number | null = null;
+  priceCycle: BillingCycle = 'monthly';
 
   constructor(
     private planService: MasterPlanService,
@@ -44,6 +45,11 @@ export class Plans implements OnInit {
     });
   }
 
+  setPriceCycle(cycle: BillingCycle, event?: Event): void {
+    event?.stopPropagation();
+    this.priceCycle = cycle;
+  }
+
   createPlan(): void {
     this.router.navigate(['/plans/create']);
   }
@@ -51,6 +57,11 @@ export class Plans implements OnInit {
   editPlan(id: number): void {
     this.openMenuId = null;
     this.router.navigate(['/plans', id, 'edit']);
+  }
+
+  viewPlan(id: number): void {
+    this.openMenuId = null;
+    this.router.navigate(['/plans', id, 'view']);
   }
 
   toggleMenu(id: number, event: Event): void {
@@ -106,11 +117,6 @@ export class Plans implements OnInit {
     return plan.usersLimit == null ? 'Unlimited' : String(plan.usersLimit);
   }
 
-  cycleLabel(cycle: string | undefined): string {
-    if (!cycle) return '—';
-    return cycle.charAt(0).toUpperCase() + cycle.slice(1);
-  }
-
   featureList(plan: MasterPlan): string[] {
     if (plan.features?.length) return plan.features.slice(0, 6);
     const items: string[] = [];
@@ -121,8 +127,20 @@ export class Plans implements OnInit {
     return items;
   }
 
-  money(plan: MasterPlan): string {
-    return displayMoney(plan.formattedPrice, plan.price);
+  displayPrice(plan: MasterPlan): string {
+    return this.priceCycle === 'yearly' ? this.yearlyMoney(plan) : this.monthlyMoney(plan);
+  }
+
+  monthlyMoney(plan: MasterPlan): string {
+    const formatted = plan.prices?.monthly?.formatted || plan.formattedPrice;
+    const amount = plan.prices?.monthly?.amount ?? plan.price;
+    return displayMoney(formatted, amount);
+  }
+
+  yearlyMoney(plan: MasterPlan): string {
+    const formatted = plan.prices?.yearly?.formatted || plan.formattedYearlyPrice;
+    const amount = plan.prices?.yearly?.amount ?? plan.yearlyPrice;
+    return displayMoney(formatted, amount);
   }
 
   planBadgeClass(name: string | undefined): string {

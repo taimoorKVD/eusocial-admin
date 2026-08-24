@@ -18,11 +18,14 @@ import { Products } from './admin/products/products';
 import { ProductForm } from './admin/products/product-form/product-form';
 import { Tenants } from './admin/tenants/tenants';
 import { TenantForm } from './admin/tenants/tenant-form/tenant-form';
+import { TenantView } from './admin/tenants/tenant-view/tenant-view';
 import { PermissionsComponent } from './admin/permissions/permissions.component';
 import { PermissionsFormComponent } from './admin/permissions/permissions-form/permissions-form.component';
 import { Plans } from './admin/plans/plans';
 import { PlanForm } from './admin/plans/plan-form/plan-form';
+import { PlanView } from './admin/plans/plan-view/plan-view';
 import { Subscriptions } from './admin/subscriptions/subscriptions';
+import { SubscriptionView } from './admin/subscriptions/subscription-view/subscription-view';
 import { Invoices } from './admin/invoices/invoices';
 
 import { TenantPortalGuard } from './guards/tenant-portal.guard';
@@ -187,6 +190,10 @@ const routes: Routes = [
                 component: TenantForm,
               },
               {
+                path: ':id/view',
+                component: TenantView,
+              },
+              {
                 path: ':id/edit',
                 component: TenantForm,
               },
@@ -201,6 +208,7 @@ const routes: Routes = [
             children: [
               { path: '', component: Plans },
               { path: 'create', component: PlanForm },
+              { path: ':id/view', component: PlanView },
               { path: ':id/edit', component: PlanForm },
             ],
           },
@@ -208,7 +216,13 @@ const routes: Routes = [
           /*
            * Subscriptions / Billing
            */
-          { path: 'subscriptions', component: Subscriptions },
+          {
+            path: 'subscriptions',
+            children: [
+              { path: '', component: Subscriptions },
+              { path: ':id/view', component: SubscriptionView },
+            ],
+          },
           { path: 'invoices', component: Invoices },
           { path: 'billing', redirectTo: 'invoices', pathMatch: 'full' },
 

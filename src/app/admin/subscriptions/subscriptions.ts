@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { forkJoin } from 'rxjs';
 import {
@@ -53,7 +54,8 @@ export class Subscriptions implements OnInit {
   constructor(
     private subscriptionService: MasterSubscriptionService,
     private planService: MasterPlanService,
-    private toastr: ToastrService
+    private toastr: ToastrService,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -124,6 +126,11 @@ export class Subscriptions implements OnInit {
 
   closeMenus(): void {
     this.openMenuId = null;
+  }
+
+  viewSubscription(id: number): void {
+    this.openMenuId = null;
+    this.router.navigate(['/subscriptions', id, 'view']);
   }
 
   openCancel(sub: MasterSubscription): void {
@@ -204,6 +211,30 @@ export class Subscriptions implements OnInit {
       .split(/\s+/)
       .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
       .join(' ');
+  }
+
+  tenantDomain(sub: MasterSubscription): string {
+    const base = environment.baseDomain || 'eusocial.thebetawebsite.com';
+    const t = sub.tenant;
+    if (!t) return '—';
+
+    const slug =
+      (t.subdomain || '').trim() ||
+      this.slugFromStoredDomain(t.domain || '');
+
+    if (slug) return `${slug}.${base}`;
+
+    const raw = (t.domain || '').trim();
+    if (!raw) return '—';
+    return raw.replace(/\.eusocial\.com$/i, `.${base}`);
+  }
+
+  private slugFromStoredDomain(domain: string): string {
+    const d = (domain || '').trim().toLowerCase();
+    if (!d) return '';
+    const host = d.replace(/^https?:\/\//, '').split('/')[0];
+    const first = host.split('.')[0];
+    return first && first !== 'www' ? first : '';
   }
 
   statusClass(status: string): string {

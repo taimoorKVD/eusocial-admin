@@ -1,81 +1,127 @@
 <div class="platform-page plan-form-page">
-  <div class="platform-page__actions">
-    <button type="button" class="btn-ghost" (click)="back()">Back</button>
-  </div>
-
   <div class="platform-state" *ngIf="loading">
     <div class="platform-spinner"></div>
     <p>Loading…</p>
   </div>
 
-  <form *ngIf="!loading" [formGroup]="form" (ngSubmit)="save()" class="platform-card form-card">
-    <div class="form-grid">
-      <div>
-        <label>Plan Name</label>
+  <form *ngIf="!loading" [formGroup]="form" (ngSubmit)="save()" class="plan-form-stack">
+    <section class="form-card">
+      <h3>Basic Details</h3>
+      <div class="field">
+        <label>Plan Name <span>*</span></label>
         <input type="text" formControlName="name" placeholder="e.g. Professional" />
         <small class="error" *ngIf="f['name'].touched && f['name'].errors?.['required']">Name is required.</small>
       </div>
-      <div>
-        <label>Slug</label>
-        <input type="text" formControlName="slug" placeholder="professional" />
-      </div>
-      <div class="full">
+      <div class="field">
         <label>Description</label>
-        <textarea rows="2" formControlName="description" placeholder="Short plan description"></textarea>
+        <textarea rows="3" formControlName="description" placeholder="Short plan description"></textarea>
       </div>
-      <div>
-        <label>Price ($)</label>
-        <input type="number" formControlName="price" min="0" step="0.01" />
-      </div>
-      <div>
-        <label>Billing Cycle</label>
-        <select formControlName="billingCycle">
-          <option value="monthly">Monthly</option>
-          <option value="yearly">Yearly</option>
-        </select>
-      </div>
-      <div>
-        <label>Users Limit</label>
-        <input type="number" formControlName="usersLimit" min="0" />
-        <label class="checkbox mt">
-          <input type="checkbox" formControlName="unlimitedUsers" (change)="onUnlimitedChange()" />
-          Unlimited users
-        </label>
-      </div>
-      <div>
-        <label>Storage (GB)</label>
-        <input type="number" formControlName="storageGb" min="0" />
-      </div>
-      <div>
-        <label>Support Level</label>
-        <input type="text" formControlName="supportLevel" placeholder="Email support" />
-      </div>
-      <div>
-        <label>Trial Days</label>
-        <input type="number" formControlName="trialDays" min="0" />
-      </div>
-      <div>
-        <label>Sort Order</label>
-        <input type="number" formControlName="sortOrder" min="0" />
-      </div>
-      <div>
-        <label>Status</label>
-        <select formControlName="status">
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-        </select>
-      </div>
-      <div class="full">
-        <label>Features (one per line)</label>
-        <textarea rows="4" [(ngModel)]="featuresText" [ngModelOptions]="{standalone: true}" placeholder="50 users&#10;100 GB storage&#10;Priority support"></textarea>
-      </div>
-    </div>
+    </section>
 
-    <div class="modules-block">
-      <h3>Allowed Modules</h3>
-      <p>Select modules tenants on this plan can access. Dashboard is always included.</p>
+    <section class="form-card">
+      <h3>Pricing</h3>
+      <p class="section-hint">Set both monthly and yearly prices for this plan.</p>
+      <div class="form-grid">
+        <div class="field">
+          <label>Monthly Price ($) <span>*</span></label>
+          <input type="number" formControlName="price" min="0" step="0.01" placeholder="e.g. 250" />
+          <small class="error" *ngIf="f['price'].touched && f['price'].errors">Enter a valid monthly price.</small>
+        </div>
+        <div class="field">
+          <label>Yearly Price ($) <span>*</span></label>
+          <input type="number" formControlName="yearlyPrice" min="0" step="0.01" placeholder="e.g. 3000" />
+          <small class="error" *ngIf="f['yearlyPrice'].touched && f['yearlyPrice'].errors">Enter a valid yearly price.</small>
+        </div>
+      </div>
+    </section>
+
+    <section class="form-card">
+      <h3>Limits</h3>
+      <div class="form-grid">
+        <div class="field">
+          <label>Users Limit</label>
+          <input type="number" formControlName="usersLimit" min="0" placeholder="e.g. 50" />
+          <label class="checkbox mt">
+            <input type="checkbox" formControlName="unlimitedUsers" (change)="onUnlimitedChange()" />
+            Unlimited users
+          </label>
+        </div>
+        <div class="field">
+          <label>Storage (GB)</label>
+          <input type="number" formControlName="storageGb" min="0" placeholder="e.g. 100" />
+        </div>
+        <div class="field">
+          <label>Trial Days</label>
+          <input type="number" formControlName="trialDays" min="0" />
+        </div>
+      </div>
+    </section>
+
+    <section class="form-card">
+      <h3>Plan Settings</h3>
+      <div class="form-grid">
+        <div class="field">
+          <label>Sort Order</label>
+          <input type="number" formControlName="sortOrder" min="0" />
+        </div>
+        <div class="field">
+          <label>Status</label>
+          <select formControlName="status">
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <section class="form-card">
+      <div class="section-header">
+        <div>
+          <h3>Features</h3>
+          <p class="section-hint">Add plan features and toggle which ones are included.</p>
+        </div>
+        <button type="button" class="btn-outline btn-sm" (click)="addFeature()">+ Add Feature</button>
+      </div>
+
+      <div class="features-list" *ngIf="features.length; else emptyFeatures">
+        <div class="feature-row" *ngFor="let feature of features; let i = index; trackBy: trackByFeatureIndex">
+          <label class="feature-toggle" [class.is-on]="feature.enabled">
+            <input
+              type="checkbox"
+              [checked]="feature.enabled"
+              (change)="toggleFeature(i, $any($event.target).checked)"
+            />
+            <span class="feature-toggle__track" aria-hidden="true">
+              <span class="feature-toggle__thumb"></span>
+            </span>
+          </label>
+          <input
+            type="text"
+            class="feature-input"
+            [(ngModel)]="feature.text"
+            [ngModelOptions]="{standalone: true}"
+            placeholder="e.g. Priority support"
+          />
+          <button type="button" class="icon-btn danger" (click)="removeFeature(i)" title="Remove feature" aria-label="Remove feature">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <ng-template #emptyFeatures>
+        <div class="features-empty">
+          <p>No features yet. Add features to highlight what this plan includes.</p>
+          <button type="button" class="btn-ghost btn-sm" (click)="addFeature()">+ Add Feature</button>
+        </div>
+      </ng-template>
+    </section>
+
+    <section class="form-card">
+      <h3>Accessibility</h3>
+      <p class="section-hint">Select modules organizations on this plan can access. Dashboard is always included.</p>
       <div class="modules-grid">
-        <label class="module-item" *ngFor="let mod of modules" [class.is-locked]="mod.key === 'dashboard'">
+        <label class="module-item" *ngFor="let mod of modules" [class.is-locked]="mod.key === 'dashboard'" [class.is-checked]="isModuleChecked(mod.key)">
           <input
             type="checkbox"
             [checked]="isModuleChecked(mod.key)"
@@ -88,7 +134,7 @@
           </span>
         </label>
       </div>
-    </div>
+    </section>
 
     <div class="form-actions">
       <button type="button" class="btn-ghost" (click)="back()">Cancel</button>

@@ -42,6 +42,12 @@ import {
   serializeDynamicFieldsSchema,
   sortDynamicFields,
 } from './dynamic-form.builder';
+import {
+  allowsDecimalPoint,
+  getNumberFieldStep,
+  sanitizeNumberFieldInput,
+} from './number-field.utils';
+import { getFieldCharacterLimit } from './character-limit.utils';
 import { DropdownOverlayService } from '../directives/dropdown-panel/dropdown-overlay.service';
 
 @Component({
@@ -62,8 +68,8 @@ export class DynamicFormComponent implements OnDestroy {
   readonly fields = input.required<DynamicField[]>();
   /**
    * Enables Country → State → City dependency handling. Only Create/Edit pages
-   * opt in; filter screens and the builder preview leave it off so every
-   * location dropdown keeps showing the full cached list.
+   * opt in. Child lists are loaded lazily from /states and /cities when a parent
+   * is selected; they are not preloaded.
    */
   readonly enableLocationDependencies = input(false);
   readonly valueChange = output<DynamicFormValue>();
@@ -125,7 +131,8 @@ export class DynamicFormComponent implements OnDestroy {
   }
 
   get value(): DynamicFormValue {
-    return this.form?.getRawValue() ?? {};
+    const raw = this.form?.getRawValue() ?? {};
+    return this.toLocationSubmitValues(raw);
   }
 
   get invalid(): boolean {
@@ -271,6 +278,40 @@ export class DynamicFormComponent implements OnDestroy {
   onSelectSearch(fieldName: string, event: Event): void {
     const value = (event.target as HTMLInputElement).value;
     this.selectSearchQueries.update((queries) => ({ ...queries, [fieldName]: value }));
+  }
+
+  getNumberStep(field: DynamicField): string {
+    return getNumberFieldStep(field);
+  }
+
+  getCharacterLimit(field: DynamicField): number | null {
+    return getFieldCharacterLimit(field);
+  }
+
+  onNumberInput(event: Event, field: DynamicField): void {
+    const input = event.target as HTMLInputElement;
+    const control = this.form?.get(field.name);
+    if (!control || control.disabled) {
+      return;
+    }
+
+    const allowDecimal = allowsDecimalPoint(field);
+    const sanitized = sanitizeNumberFieldInput(input.value, allowDecimal);
+
+    if (input.value !== sanitized) {
+      input.value = sanitized;
+    }
+
+    const nextValue =
+      sanitized === '' || sanitized === '-' || sanitized === '.' || sanitized === '-.'
+        ? null
+        : Number(sanitized);
+
+    if (control.value !== nextValue) {
+      control.setValue(Number.isFinite(nextValue as number) ? nextValue : null);
+      control.markAsDirty();
+      control.markAsTouched();
+    }
   }
 
   getSelectDisplayLabel(field: DynamicField): string {
@@ -685,14 +726,11 @@ export class DynamicFormComponent implements OnDestroy {
 
     if (state && country) {
       this.loadStateOptions(this.controlValue(country));
+      return;
     }
 
-    if (city) {
-      if (state) {
-        this.loadCityOptionsForState(this.controlValue(state));
-      } else if (country) {
-        this.loadCityOptionsForCountry(this.controlValue(country));
-      }
+    if (city && country) {
+      this.loadCityOptionsForCountry(this.controlValue(country));
     }
   }
 
@@ -737,6 +775,10 @@ export class DynamicFormComponent implements OnDestroy {
 
     if (this.isEmptyValue(countryValue)) {
       this.setOverride(stateField, []);
+      const cityField = this.locationFields.cities;
+      if (cityField) {
+        this.setOverride(cityField, []);
+      }
       return;
     }
 
@@ -745,6 +787,12 @@ export class DynamicFormComponent implements OnDestroy {
       .pipe(take(1))
       .subscribe((records) => {
         this.setOverride(stateField, this.mapRecordsToOptions(stateField, records));
+
+        const cityField = this.locationFields.cities;
+        if (cityField) {
+          this.loadCityOptionsForState(this.controlValue(stateField));
+        }
+
         this.cdr.markForCheck();
       });
   }
@@ -761,7 +809,7 @@ export class DynamicFormComponent implements OnDestroy {
     }
 
     this.locationCache
-      .getCitiesForState(stateValue)
+      .getCitiesForState(this.resolveLocationParentId(this.locationFields.states, stateValue))
       .pipe(take(1))
       .subscribe((records) => {
         this.setOverride(cityField, this.mapRecordsToOptions(cityField, records));
@@ -807,6 +855,115 @@ export class DynamicFormComponent implements OnDestroy {
       ...prev,
       [field.name]: options,
     }));
+    this.alignControlValueToOptions(field, options);
+  }
+
+  /**
+   * Country stays as an ID in the payload. State and City selections are
+   * converted to their display names when reading `value` for submit.
+   */
+  private toLocationSubmitValues(raw: DynamicFormValue): DynamicFormValue {
+    const next: DynamicFormValue = { ...raw };
+    const kinds: LocationKind[] = ['states', 'cities'];
+
+    for (const kind of kinds) {
+      const field = this.locationFields[kind];
+      if (!field) {
+        continue;
+      }
+
+      const key = Object.prototype.hasOwnProperty.call(next, field.name)
+        ? field.name
+        : field.id;
+      if (!Object.prototype.hasOwnProperty.call(next, key)) {
+        continue;
+      }
+
+      next[key] = this.mapLocationValueToNames(next[key], this.getFieldOptions(field));
+    }
+
+    return next;
+  }
+
+  private mapLocationValueToNames(
+    value: unknown,
+    options: (string | DynamicFieldOption)[],
+  ): unknown {
+    if (this.isEmptyValue(value)) {
+      return value;
+    }
+
+    const isArray = Array.isArray(value);
+    const items = isArray ? value : [value];
+    const names = items.map((item) => {
+      const raw =
+        item && typeof item === 'object' && 'id' in (item as object)
+          ? (item as { id: unknown }).id
+          : item;
+      const match = options.find((option, index) => {
+        const optionValue = getOptionValue(option, index);
+        const optionLabel = this.getOptionLabel(option);
+        return String(optionValue) === String(raw) || String(optionLabel) === String(raw);
+      });
+
+      return match ? this.getOptionLabel(match) : raw;
+    });
+
+    return isArray ? names : names[0];
+  }
+
+  private alignControlValueToOptions(
+    field: DynamicField,
+    options: DynamicFieldOption[],
+  ): void {
+    const control = this.form?.get(field.name);
+    if (!control || !options.length) {
+      return;
+    }
+
+    const value = control.value;
+    if (this.isEmptyValue(value)) {
+      return;
+    }
+
+    const isArray = Array.isArray(value);
+    const items = isArray ? value : [value];
+    const mapped = items.map((item) => {
+      const raw =
+        item && typeof item === 'object' && 'id' in (item as object)
+          ? (item as { id: unknown }).id
+          : item;
+      const byValue = options.find((option) => String(option.value) === String(raw));
+      if (byValue) {
+        return byValue.value;
+      }
+
+      const byLabel = options.find(
+        (option) => String(option.label).toLowerCase() === String(raw).toLowerCase(),
+      );
+      return byLabel?.value ?? raw;
+    });
+
+    const next = isArray ? mapped : mapped[0];
+    if (JSON.stringify(next) !== JSON.stringify(value)) {
+      control.setValue(next, { emitEvent: false });
+    }
+  }
+
+  private resolveLocationParentId(field: DynamicField | undefined, value: unknown): unknown {
+    if (!field || this.isEmptyValue(value)) {
+      return value;
+    }
+
+    const raw = Array.isArray(value) ? value[0] : value;
+    const options = this.getFieldOptions(field);
+    const match = options.find((option, index) => {
+      const optionValue = getOptionValue(option, index);
+      const optionLabel = this.getOptionLabel(option);
+      return String(optionValue) === String(raw) || String(optionLabel) === String(raw);
+    });
+
+    return match ? getOptionValue(match) : raw;
   }
 
   private controlValue(field: DynamicField): unknown {

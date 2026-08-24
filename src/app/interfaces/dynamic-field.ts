@@ -53,6 +53,16 @@ export interface DynamicField {
   optionSource?: DynamicFieldOptionSource;
   /** Select field only. Defaults to `single` when missing. */
   selectionType?: DynamicSelectSelectionType;
+  /**
+   * Number field only. When true, decimal values are allowed.
+   * Missing/undefined is treated as false for backward compatibility.
+   */
+  allowDecimal?: boolean;
+  /**
+   * Text / Text Area only. Maximum allowed characters.
+   * Missing/undefined uses 255 (text) or 5000 (textarea).
+   */
+  characterLimit?: number;
   condition?: FieldCondition;
 }
 
