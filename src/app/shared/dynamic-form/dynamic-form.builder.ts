@@ -5,6 +5,7 @@ import {
   DynamicFormValue,
 } from '../../interfaces/dynamic-field';
 import { allowsDecimalPoint, integerNumberValidator } from './number-field.utils';
+import { emailFieldPatternValidator } from './email-field.utils';
 
 export function sortDynamicFields(fields: DynamicField[]): DynamicField[] {
   return [...fields]
@@ -124,7 +125,7 @@ export function getFieldValidators(
   }
 
   if (field.type === 'email') {
-    validators.push(Validators.email);
+    validators.push(emailFieldPatternValidator);
   }
 
   if (field.type === 'number' && !allowsDecimalPoint(field)) {

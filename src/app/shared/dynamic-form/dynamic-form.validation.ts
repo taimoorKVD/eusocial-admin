@@ -14,7 +14,7 @@ export function getDynamicFieldErrorMessage(
     return `${field.label} is required.`;
   }
 
-  if (control.errors['email']) {
+  if (control.errors['email'] || (field.type === 'email' && control.errors['pattern'])) {
     return 'Please enter a valid email address.';
   }
 
