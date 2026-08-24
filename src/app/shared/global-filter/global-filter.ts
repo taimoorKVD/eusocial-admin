@@ -125,7 +125,7 @@ export class GlobalFilterComponent {
   }
 
   onSearch(): void {
-    this.search.emit(this.filters());
+    this.search.emit(this.toSearchPayload(this.filters()));
   }
 
   getEffectiveOptions(field: GlobalFilterField): GlobalFilterOption[] {
@@ -388,6 +388,45 @@ export class GlobalFilterComponent {
     }
 
     this.resetOptionVisibleLimit(city.key);
+  }
+
+  /**
+   * Filters keep Country/State/City IDs internally for cascading fetches.
+   * Search payload sends Country ID and State/City names.
+   */
+  private toSearchPayload(filters: GlobalFilterValue): GlobalFilterValue {
+    const next = { ...filters };
+    const { state, city } = this.locationFields();
+
+    if (state) {
+      next[state.key] = this.locationFilterValueToName(state, next[state.key]);
+    }
+
+    if (city) {
+      next[city.key] = this.locationFilterValueToName(city, next[city.key]);
+    }
+
+    return next;
+  }
+
+  private locationFilterValueToName(
+    field: GlobalFilterField,
+    value: unknown,
+  ): unknown {
+    if (isEmptyFilterValue(value)) {
+      return value;
+    }
+
+    const options = this.getEffectiveOptions(field);
+    const match = options.find(
+      (option) =>
+        String(option.id) === String(value) ||
+        String(option.value) === String(value) ||
+        String(option.name) === String(value) ||
+        String(option.label) === String(value),
+    );
+
+    return match?.name ?? match?.label ?? value;
   }
 
   private loadStateOptions(stateField: GlobalFilterField, countryValue: unknown): void {

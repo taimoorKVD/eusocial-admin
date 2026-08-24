@@ -341,11 +341,83 @@ export function getRecordFieldValue(record: Record<string, unknown>, field: Dyna
   return record[fieldName];
 }
 
-export function formatListingCellValue(record: Record<string, unknown>, field: DynamicField): string {
+function formatDirectLocationName(rawValue: unknown): string {
+  const values = normalizeSelectListingValues(rawValue);
+
+  if (!values.length) {
+    return '—';
+  }
+
+  const labels = values
+    .map((item) => {
+      if (typeof item === 'object' && item !== null) {
+        const obj = item as Record<string, unknown>;
+        return String(obj['name'] ?? obj['label'] ?? obj['id'] ?? '');
+      }
+
+      return String(item);
+    })
+    .filter((label) => label.trim().length > 0);
+
+  return labels.length ? labels.join(', ') : '—';
+}
+
+function formatCountryListingValue(
+  rawValue: unknown,
+  field: DynamicField,
+  countries: readonly any[],
+): string {
+  const values = normalizeSelectListingValues(rawValue);
+
+  if (!values.length) {
+    return '—';
+  }
+
+  const labels = values
+    .map((item) => {
+      if (typeof item === 'object' && item !== null) {
+        const obj = item as Record<string, unknown>;
+        return String(obj['name'] ?? obj['label'] ?? obj['id'] ?? '');
+      }
+
+      const countryMatch = countries.find(
+        (country) =>
+          String(country?.id) === String(item) ||
+          String(country?.country_id) === String(item),
+      );
+      if (countryMatch) {
+        return String(countryMatch.name ?? countryMatch.label ?? item);
+      }
+
+      const optionMatch = field.options?.find(
+        (option) => String(getOptionValue(option)) === String(item),
+      );
+      return optionMatch ? getOptionLabel(optionMatch) : String(item);
+    })
+    .filter((label) => label.trim().length > 0);
+
+  return labels.length ? labels.join(', ') : '—';
+}
+
+export function formatListingCellValue(
+  record: Record<string, unknown>,
+  field: DynamicField,
+  countries: readonly any[] = [],
+): string {
   const rawValue = getRecordFieldValue(record, field);
 
   if (rawValue === undefined || rawValue === null || rawValue === '') {
     return '—';
+  }
+
+  const locationKind = getListingFieldLocationKind(field);
+
+  if (locationKind === 'states' || locationKind === 'cities') {
+    return formatDirectLocationName(rawValue);
+  }
+
+  if (locationKind === 'countries') {
+    return formatCountryListingValue(rawValue, field, countries);
   }
 
   switch (field.type) {
