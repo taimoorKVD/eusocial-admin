@@ -263,7 +263,7 @@ export class TenantForm implements OnInit, OnDestroy {
       },
       error: () => {
         this.loading = false;
-        this.toastr.error('Failed to load tenant');
+        this.toastr.error('Failed to load organization');
       },
     });
   }
@@ -276,7 +276,7 @@ export class TenantForm implements OnInit, OnDestroy {
     }
 
     if (!this.isEditMode && !this.tenantSlug) {
-      this.toastr.error('Tenant name must produce a valid subdomain');
+      this.toastr.error('Organization name must produce a valid subdomain');
       return;
     }
 
@@ -287,12 +287,12 @@ export class TenantForm implements OnInit, OnDestroy {
       this.tenantService.update(this.tenantId, payload).subscribe({
         next: (res) => {
           this.saving = false;
-          this.toastr.success(res?.message || 'Tenant updated successfully');
+          this.toastr.success(res?.message || 'Organization updated successfully');
           this.router.navigate(['/tenants']);
         },
         error: (err) => {
           this.saving = false;
-          this.toastr.error(this.extractError(err, 'Failed to update tenant'));
+          this.toastr.error(this.extractError(err, 'Failed to update organization'));
         },
       });
       return;
@@ -302,12 +302,12 @@ export class TenantForm implements OnInit, OnDestroy {
     this.tenantService.create(payload).subscribe({
       next: (res) => {
         this.saving = false;
-        this.toastr.success(res?.message || 'Tenant created successfully');
+        this.toastr.success(res?.message || 'Organization created successfully');
         this.router.navigate(['/tenants']);
       },
       error: (err) => {
         this.saving = false;
-        this.toastr.error(this.extractError(err, 'Failed to create tenant'));
+        this.toastr.error(this.extractError(err, 'Failed to create organization'));
       },
     });
   }

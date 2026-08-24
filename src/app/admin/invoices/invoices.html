@@ -44,7 +44,7 @@
   <div class="toolbar">
     <div class="search">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35m0 0A7.5 7.5 0 1 0 6 6a7.5 7.5 0 0 0 10.65 10.65Z"/></svg>
-      <input type="text" [(ngModel)]="search" placeholder="Search by tenant..." (keyup.enter)="applyFilters()" />
+      <input type="text" [(ngModel)]="search" placeholder="Search by organization..." (keyup.enter)="applyFilters()" />
     </div>
     <select [(ngModel)]="status">
       <option *ngFor="let opt of statusOptions" [ngValue]="opt.value">{{ opt.label }}</option>
@@ -66,7 +66,7 @@
         <thead>
           <tr>
             <th>Invoice #</th>
-            <th>Tenant</th>
+            <th>Organization</th>
             <th>Invoice Date</th>
             <th>Amount</th>
             <th>Status</th>

@@ -20,7 +20,7 @@ export class Navbar implements OnInit, OnDestroy {
   dropdownOpen = false;
   page: PageMeta = {
     title: 'Super Admin Dashboard',
-    subtitle: 'Overview of your multi-tenant SaaS platform.',
+    subtitle: 'Overview of your multi-organization SaaS platform.',
   };
 
   private readonly destroy$ = new Subject<void>();
@@ -28,15 +28,15 @@ export class Navbar implements OnInit, OnDestroy {
   private readonly pageMap: Record<string, PageMeta> = {
     '/dashboard': {
       title: 'Super Admin Dashboard',
-      subtitle: 'Overview of your multi-tenant SaaS platform.',
+      subtitle: 'Overview of your multi-organization SaaS platform.',
     },
     '/tenants': {
-      title: 'Tenants',
-      subtitle: 'Manage all tenant organizations on the platform.',
+      title: 'Organizations',
+      subtitle: 'Manage all organizations on the platform.',
     },
     '/tenants/create': {
-      title: 'Create Tenant',
-      subtitle: 'Set up a new tenant organization, plan, and admin user.',
+      title: 'Create Organization',
+      subtitle: 'Set up a new organization, plan, and admin user.',
     },
     '/users': {
       title: 'Users',
@@ -60,7 +60,7 @@ export class Navbar implements OnInit, OnDestroy {
     },
     '/subscriptions': {
       title: 'Subscriptions',
-      subtitle: 'Monitor and manage tenant subscriptions.',
+      subtitle: 'Monitor and manage organization subscriptions.',
     },
     '/plans': {
       title: 'Plan Management',
@@ -70,6 +70,36 @@ export class Navbar implements OnInit, OnDestroy {
       title: 'Billing & Invoices',
       subtitle: 'Track invoices, payments, and platform revenue.',
     },
+  };
+
+  private readonly editOrganizationPage: PageMeta = {
+    title: 'Edit Organization',
+    subtitle: 'Update organization details and contact information.',
+  };
+
+  private readonly viewOrganizationPage: PageMeta = {
+    title: 'View Organization',
+    subtitle: 'Organization details and subscription information.',
+  };
+
+  private readonly viewSubscriptionPage: PageMeta = {
+    title: 'View Subscription',
+    subtitle: 'Subscription details for this organization.',
+  };
+
+  private readonly viewPlanPage: PageMeta = {
+    title: 'View Plan',
+    subtitle: 'Plan details, features, and accessibility.',
+  };
+
+  private readonly editPlanPage: PageMeta = {
+    title: 'Edit Plan',
+    subtitle: 'Update plan pricing, features, and accessibility.',
+  };
+
+  private readonly createPlanPage: PageMeta = {
+    title: 'Create Plan',
+    subtitle: 'Set up a new subscription plan.',
   };
 
   constructor(private auth: Auth, private router: Router) {}
@@ -131,6 +161,37 @@ export class Navbar implements OnInit, OnDestroy {
 
   private updatePage(url: string): void {
     const path = url.split('?')[0];
+
+    if (/^\/tenants\/\d+\/view$/.test(path)) {
+      this.page = this.viewOrganizationPage;
+      return;
+    }
+
+    if (/^\/tenants\/\d+\/edit$/.test(path)) {
+      this.page = this.editOrganizationPage;
+      return;
+    }
+
+    if (/^\/subscriptions\/\d+\/view$/.test(path)) {
+      this.page = this.viewSubscriptionPage;
+      return;
+    }
+
+    if (/^\/plans\/create$/.test(path)) {
+      this.page = this.createPlanPage;
+      return;
+    }
+
+    if (/^\/plans\/\d+\/view$/.test(path)) {
+      this.page = this.viewPlanPage;
+      return;
+    }
+
+    if (/^\/plans\/\d+\/edit$/.test(path)) {
+      this.page = this.editPlanPage;
+      return;
+    }
+
     const match = Object.keys(this.pageMap)
       .sort((a, b) => b.length - a.length)
       .find((key) => path === key || path.startsWith(`${key}/`));

@@ -1,22 +1,23 @@
 <div class="platform-page tenant-form-page">
   <div class="platform-state" *ngIf="loading">
     <div class="platform-spinner"></div>
-    <p>Loading tenant…</p>
+    <p>Loading organization…</p>
   </div>
 
   <form *ngIf="!loading" [formGroup]="form" (ngSubmit)="saveTenant()" class="tenant-form-grid">
     <div class="tenant-form-col">
       <section class="form-card">
-        <h3>Tenant Information</h3>
+        <h3>Organization Information</h3>
 
         <div class="field">
-          <label>Tenant Name <span>*</span></label>
+          <label>Organization Name <span>*</span></label>
           <input
             type="text"
             formControlName="name"
             placeholder="Folio3"
             maxlength="80"
             autocomplete="organization"
+            [readonly]="isEditMode"
           />
           <small class="hint" *ngIf="tenantSlug">
             Login URL: https://{{ tenantSlug }}.{{ baseDomain }}/login
@@ -24,7 +25,7 @@
           <small class="hint" *ngIf="!tenantSlug">
             Letters, numbers, spaces and hyphens only. Domain is created automatically.
           </small>
-          <small class="error" *ngIf="f['name'].touched && f['name'].errors?.['required']">Tenant name is required.</small>
+          <small class="error" *ngIf="f['name'].touched && f['name'].errors?.['required']">Organization name is required.</small>
           <small class="error" *ngIf="f['name'].touched && f['name'].errors?.['pattern']">
             Use only letters, numbers, spaces or hyphens (no @ or special characters).
           </small>
@@ -35,8 +36,8 @@
 
         <div class="field">
           <label>Business Email <span>*</span></label>
-          <input type="email" formControlName="email" [placeholder]="businessEmailPlaceholder" />
-          <small class="hint" *ngIf="!isEditMode">Tenant logs in with this email. Password is generated automatically.</small>
+          <input type="email" formControlName="email" [placeholder]="businessEmailPlaceholder" [readonly]="isEditMode" />
+          <small class="hint" *ngIf="!isEditMode">Organization logs in with this email. Password is generated automatically.</small>
           <small class="error" *ngIf="f['email'].touched && f['email'].errors?.['required']">Business email is required.</small>
           <small class="error" *ngIf="f['email'].touched && f['email'].errors?.['email']">Enter a valid email.</small>
         </div>
@@ -203,7 +204,7 @@
       <button type="button" class="btn-ghost" (click)="backToList()">Cancel</button>
       <button type="submit" class="btn-primary" [disabled]="saving">
         <svg *ngIf="!isEditMode" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="save-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-4-4z"/><path stroke-linecap="round" stroke-linejoin="round" d="M17 3v4H7V3M7 21v-8h10v8"/></svg>
-        {{ saving ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Tenant' : 'Create Tenant') }}
+        {{ saving ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Organization' : 'Create Organization') }}
       </button>
     </div>
   </form>

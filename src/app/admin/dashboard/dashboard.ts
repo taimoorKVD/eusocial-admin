@@ -255,8 +255,8 @@ export class Dashboard implements OnInit, OnDestroy {
   private buildViews(): void {
     const kpis = this.data?.kpis;
     this.kpiCards = [
-      { key: 'totalTenants', title: 'Total Tenants', icon: 'buildings', format: 'number', kpi: kpis?.totalTenants ?? null },
-      { key: 'activeTenants', title: 'Active Tenants', icon: 'users', format: 'number', kpi: kpis?.activeTenants ?? null },
+      { key: 'totalTenants', title: 'Total Organizations', icon: 'buildings', format: 'number', kpi: kpis?.totalTenants ?? null },
+      { key: 'activeTenants', title: 'Active Organizations', icon: 'users', format: 'number', kpi: kpis?.activeTenants ?? null },
       { key: 'totalUsers', title: 'Total Users', icon: 'user', format: 'number', kpi: kpis?.totalUsers ?? null },
       { key: 'mrr', title: 'MRR', icon: 'currency', format: 'currency', kpi: kpis?.mrr ?? null },
       { key: 'activeSubscriptions', title: 'Active Subscriptions', icon: 'card', format: 'number', kpi: kpis?.activeSubscriptions ?? null },

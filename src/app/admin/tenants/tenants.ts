@@ -75,7 +75,7 @@ export class Tenants implements OnInit {
         this.tenants = [];
         this.total = 0;
         this.loading = false;
-        this.toastr.error('Failed to load tenants');
+        this.toastr.error('Failed to load organizations');
       },
     });
   }
@@ -93,7 +93,7 @@ export class Tenants implements OnInit {
         this.tenants = [];
         this.total = 0;
         this.loading = false;
-        this.toastr.error('Failed to load tenants');
+        this.toastr.error('Failed to load organizations');
       },
     });
   }
@@ -115,6 +115,11 @@ export class Tenants implements OnInit {
   editTenant(id: number): void {
     this.openMenuId = null;
     this.router.navigate(['/tenants', id, 'edit']);
+  }
+
+  viewTenant(id: number): void {
+    this.openMenuId = null;
+    this.router.navigate(['/tenants', id, 'view']);
   }
 
   toggleMenu(id: number, event: Event): void {
@@ -141,11 +146,11 @@ export class Tenants implements OnInit {
 
     this.tenantService.delete(id).subscribe({
       next: () => {
-        this.toastr.success('Tenant deleted successfully');
+        this.toastr.success('Organization deleted successfully');
         this.allTenants(this.page);
       },
       error: (err) => {
-        this.toastr.error(err?.error?.message || 'Failed to delete tenant');
+        this.toastr.error(err?.error?.message || 'Failed to delete organization');
       },
     });
   }

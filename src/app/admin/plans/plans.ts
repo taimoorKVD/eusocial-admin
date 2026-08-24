@@ -53,6 +53,11 @@ export class Plans implements OnInit {
     this.router.navigate(['/plans', id, 'edit']);
   }
 
+  viewPlan(id: number): void {
+    this.openMenuId = null;
+    this.router.navigate(['/plans', id, 'view']);
+  }
+
   toggleMenu(id: number, event: Event): void {
     event.stopPropagation();
     this.openMenuId = this.openMenuId === id ? null : id;

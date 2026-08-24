@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { forkJoin } from 'rxjs';
 import {
@@ -53,7 +54,8 @@ export class Subscriptions implements OnInit {
   constructor(
     private subscriptionService: MasterSubscriptionService,
     private planService: MasterPlanService,
-    private toastr: ToastrService
+    private toastr: ToastrService,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -124,6 +126,11 @@ export class Subscriptions implements OnInit {
 
   closeMenus(): void {
     this.openMenuId = null;
+  }
+
+  viewSubscription(id: number): void {
+    this.openMenuId = null;
+    this.router.navigate(['/subscriptions', id, 'view']);
   }
 
   openCancel(sub: MasterSubscription): void {

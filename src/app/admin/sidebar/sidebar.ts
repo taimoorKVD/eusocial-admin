@@ -34,7 +34,7 @@ export class Sidebar implements OnInit, OnDestroy {
     {
       title: 'Platform',
       links: [
-        { label: 'Tenants', icon: 'tenants', route: '/tenants' },
+        { label: 'Organizations', icon: 'tenants', route: '/tenants' },
         { label: 'Subscriptions', icon: 'subscriptions', route: '/subscriptions' },
         { label: 'Plan Management', icon: 'plans', route: '/plans' },
         { label: 'Billing & Invoices', icon: 'billing', route: '/invoices' },

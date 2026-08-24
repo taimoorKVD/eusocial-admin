@@ -87,7 +87,7 @@
     <section class="sa-charts">
       <article class="sa-card sa-card--chart">
         <div class="sa-card__header">
-          <h3>Tenants Overview</h3>
+          <h3>Organizations Overview</h3>
           <div class="sa-period">This Month</div>
         </div>
 
@@ -121,17 +121,17 @@
           </svg>
 
           <div class="sa-line-chart__legend">
-            <span><i class="dot dot--new"></i> New Tenants</span>
-            <span><i class="dot dot--active"></i> Active Tenants</span>
+            <span><i class="dot dot--new"></i> New Organizations</span>
+            <span><i class="dot dot--active"></i> Active Organizations</span>
           </div>
         </div>
         <ng-template #emptyLine>
-          <div class="sa-empty">No tenant activity for this period.</div>
+          <div class="sa-empty">No organization activity for this period.</div>
         </ng-template>
 
         <div class="sa-summary">
           <div>
-            <span class="sa-summary__label">New Tenants</span>
+            <span class="sa-summary__label">New Organizations</span>
             <strong>{{ data?.tenantsOverview?.summary?.newTenants ?? 0 }}</strong>
           </div>
           <div>
@@ -170,7 +170,7 @@
             </svg>
             <div class="sa-donut__center">
               <strong>{{ plans.total }}</strong>
-              <span>Total Tenants</span>
+              <span>Total Organizations</span>
             </div>
           </div>
 
@@ -184,7 +184,7 @@
             </li>
           </ul>
 
-          <p class="sa-hint" *ngIf="!plans.available">Plan billing is coming soon — tenants are currently unassigned.</p>
+          <p class="sa-hint" *ngIf="!plans.available">Plan billing is coming soon — organizations are currently unassigned.</p>
         </div>
       </article>
     </section>
@@ -193,15 +193,15 @@
     <section class="sa-bottom">
       <article class="sa-card sa-card--table">
         <div class="sa-card__header">
-          <h3>Recent Tenants</h3>
-          <a routerLink="/tenants" class="sa-btn sa-btn--outline">View All Tenants</a>
+          <h3>Recent Organizations</h3>
+          <a routerLink="/tenants" class="sa-btn sa-btn--outline">View All Organizations</a>
         </div>
 
         <div class="sa-table-wrap" *ngIf="data?.recentTenants?.length; else emptyTenants">
           <table class="sa-table">
             <thead>
               <tr>
-                <th>Tenant Name</th>
+                <th>Organization Name</th>
                 <th>Domain</th>
                 <th>Plan</th>
                 <th>Status</th>
@@ -231,7 +231,7 @@
                 <td>{{ tenant.users ?? '—' }}</td>
                 <td class="muted">{{ formatJoinedOn(tenant.joinedOn) }}</td>
                 <td class="sa-actions">
-                  <a [routerLink]="['/tenants', tenant.id, 'edit']" class="sa-icon-btn" title="Manage tenant" aria-label="Manage tenant">
+                  <a [routerLink]="['/tenants', tenant.id, 'edit']" class="sa-icon-btn" title="Manage organization" aria-label="Manage organization">
                     <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>
                   </a>
                 </td>
@@ -240,7 +240,7 @@
           </table>
         </div>
         <ng-template #emptyTenants>
-          <div class="sa-empty">No recent tenants yet.</div>
+          <div class="sa-empty">No recent organizations yet.</div>
         </ng-template>
       </article>
 
