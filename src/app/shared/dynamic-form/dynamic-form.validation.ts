@@ -1,5 +1,6 @@
 import { AbstractControl } from '@angular/forms';
 import { DynamicField } from '../../interfaces/dynamic-field';
+import { normalizeRangeType } from './range-field.utils';
 
 export function getDynamicFieldErrorMessage(
   field: DynamicField,
@@ -20,6 +21,33 @@ export function getDynamicFieldErrorMessage(
 
   if (control.errors['integerOnly']) {
     return `${field.label} must be a whole number.`;
+  }
+
+  if (control.errors['rangeIncomplete']) {
+    return `${field.label} requires both From and To values.`;
+  }
+
+  if (control.errors['rangeOrder']) {
+    if (field.type === 'range' && normalizeRangeType(field.rangeType) === 'date') {
+      return 'From date cannot be later than To date.';
+    }
+    return 'Start value cannot be greater than end value.';
+  }
+
+  if (control.errors['rangeInvalid']) {
+    return `${field.label} contains an invalid value.`;
+  }
+
+  if (control.errors['rangeBelowMin']) {
+    return `${field.label} must be at least ${control.errors['rangeBelowMin'].min}.`;
+  }
+
+  if (control.errors['rangeAboveMax']) {
+    return `${field.label} must be at most ${control.errors['rangeAboveMax'].max}.`;
+  }
+
+  if (control.errors['rangeStep']) {
+    return `${field.label} must use step ${control.errors['rangeStep'].step}.`;
   }
 
   if (control.errors['maxlength']) {

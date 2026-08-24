@@ -7,6 +7,11 @@ import {
   resolveCharacterLimit,
   supportsCharacterLimit,
 } from '../../../shared/dynamic-form/character-limit.utils';
+import {
+  DEFAULT_RANGE_STEP,
+  normalizeRangeTimeFormat,
+  normalizeRangeType,
+} from '../../../shared/dynamic-form/range-field.utils';
 
 export function buildFormSchemaPayload(fields: FormField[]) {
   const orderedFields = normalizeFieldOrder([...fields]);
@@ -26,10 +31,29 @@ export function buildFormSchemaPayload(fields: FormField[]) {
         isShow: field.isShow !== false,
         optionSource: field.optionSource,
         selectionType: field.type === 'select' ? field.selectionType || 'single' : undefined,
-        allowDecimal: field.type === 'number' ? field.allowDecimal === true : undefined,
+        allowDecimal:
+          field.type === 'number' ||
+          (field.type === 'range' && normalizeRangeType(field.rangeType) === 'number')
+            ? field.allowDecimal === true
+            : undefined,
         characterLimit: supportsCharacterLimit(field.type)
           ? resolveCharacterLimit(field.type, field.characterLimit)
           : undefined,
+        rangeType: field.type === 'range' ? normalizeRangeType(field.rangeType) : undefined,
+        rangeMin: field.rangeMin,
+        rangeMax: field.rangeMax,
+        rangeStep:
+          field.type === 'range' && normalizeRangeType(field.rangeType) === 'number'
+            ? (Number(field.rangeStep) > 0 ? Number(field.rangeStep) : DEFAULT_RANGE_STEP)
+            : undefined,
+        rangeMinDate: field.rangeMinDate,
+        rangeMaxDate: field.rangeMaxDate,
+        rangePlaceholderFrom: field.rangePlaceholderFrom,
+        rangePlaceholderTo: field.rangePlaceholderTo,
+        timeFormat:
+          field.type === 'range' && normalizeRangeType(field.rangeType) === 'time'
+            ? normalizeRangeTimeFormat(field.timeFormat)
+            : undefined,
         isReadonly: field.isReadonly === true,
         isSystemField: true,
         isEditable: field.isEditable !== false,

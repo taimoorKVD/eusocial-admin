@@ -1,5 +1,6 @@
 import { DynamicField, DynamicFieldOption, DynamicFieldType } from '../../interfaces/dynamic-field';
 import { GlobalFilterField } from '../global-filter/global-filter';
+import { formatRangeDisplayValue } from '../dynamic-form/range-field.utils';
 
 const DEFAULT_NON_FILTERABLE_TYPES = new Set<DynamicFieldType>(['image']);
 
@@ -418,6 +419,10 @@ export function formatListingCellValue(
 
   if (locationKind === 'countries') {
     return formatCountryListingValue(rawValue, field, countries);
+  }
+
+  if (field.type === 'range') {
+    return formatRangeDisplayValue(rawValue, field);
   }
 
   switch (field.type) {

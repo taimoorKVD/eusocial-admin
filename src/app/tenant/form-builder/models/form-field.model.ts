@@ -19,6 +19,11 @@ export type FieldType =
 
 export type SelectSelectionType = 'single' | 'multi';
 
+/** Range Field value kind selected in Form Builder. */
+export type RangeFieldType = 'number' | 'date' | 'time';
+
+export type RangeTimeFormat = '12' | '24';
+
 export interface FieldOption {
   id?: number;
   label: string;
@@ -70,12 +75,28 @@ export interface FormField {
   parameterUnit?: string;
   /** Maximum rating value (default 5). */
   maxRating?: number;
-  /** Range field minimum / from value. */
-  rangeMin?: number;
-  /** Range field maximum / to value. */
-  rangeMax?: number;
   /**
-   * Number field only. When true, decimal values are allowed.
+   * Range field value type. Defaults to `number` when missing.
+   */
+  rangeType?: RangeFieldType;
+  /** Number range absolute minimum bound. */
+  rangeMin?: number;
+  /** Number range absolute maximum bound. */
+  rangeMax?: number;
+  /** Number range step increment. */
+  rangeStep?: number;
+  /** Date range minimum bound (YYYY-MM-DD). */
+  rangeMinDate?: string;
+  /** Date range maximum bound (YYYY-MM-DD). */
+  rangeMaxDate?: string;
+  /** Placeholder for the Range From / first input. */
+  rangePlaceholderFrom?: string;
+  /** Placeholder for the Range To / second input. */
+  rangePlaceholderTo?: string;
+  /** Time range display preference. Values are stored as HH:mm (24h). */
+  timeFormat?: RangeTimeFormat;
+  /**
+   * Number field / Number range. When true, decimal values are allowed.
    * Missing/undefined is treated as false for backward compatibility.
    */
   allowDecimal?: boolean;

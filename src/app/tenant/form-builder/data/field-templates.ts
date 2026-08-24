@@ -105,6 +105,11 @@ export const FIELD_TEMPLATES: Omit<FormField, 'id'>[] = [
     label: 'Range',
     placeholder: '',
     required: false,
+    rangeType: 'number',
+    rangeStep: 1,
+    allowDecimal: false,
+    rangePlaceholderFrom: 'From',
+    rangePlaceholderTo: 'To',
     options: []
   },
 

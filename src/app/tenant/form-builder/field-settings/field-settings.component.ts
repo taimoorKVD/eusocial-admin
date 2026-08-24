@@ -27,7 +27,7 @@ import {
   setPrimaryPredicate,
   wouldCreateCircularDependency,
 } from '../../../shared/conditional-logic';
-import { FormField, OptionSource } from '../models/form-field.model';
+import { FormField, OptionSource, RangeFieldType, RangeTimeFormat } from '../models/form-field.model';
 import { normalizeFieldOption, normalizeStaticSelectFieldOptions } from '../utils/field-options.utils';
 import { buildPlaceholderFromLabel, supportsPlaceholderAutoGeneration } from '../utils/form-field.factory';
 import {
@@ -37,6 +37,16 @@ import {
   resolveCharacterLimit,
   supportsCharacterLimit as fieldSupportsCharacterLimit,
 } from '../../../shared/dynamic-form/character-limit.utils';
+import {
+  DEFAULT_RANGE_PLACEHOLDER_FROM,
+  DEFAULT_RANGE_PLACEHOLDER_TO,
+  DEFAULT_RANGE_STEP,
+  normalizeRangeTimeFormat,
+  normalizeRangeType,
+  resetRangeTypeSpecificConfig,
+  sanitizeDateBounds,
+  sanitizeRangeBounds,
+} from '../../../shared/dynamic-form/range-field.utils';
 import {
   getLocationFieldDeleteBlockReason,
   resolveBuilderLocationKind,
@@ -305,6 +315,147 @@ export class FieldSettingsComponent {
 
   get isRangeField(): boolean {
     return this._field?.type === 'range';
+  }
+
+  get rangeTypeValue(): RangeFieldType {
+    return normalizeRangeType(this._field?.rangeType);
+  }
+
+  get isNumberRange(): boolean {
+    return this.isRangeField && this.rangeTypeValue === 'number';
+  }
+
+  get isDateRange(): boolean {
+    return this.isRangeField && this.rangeTypeValue === 'date';
+  }
+
+  get isTimeRange(): boolean {
+    return this.isRangeField && this.rangeTypeValue === 'time';
+  }
+
+  get rangeStepValue(): number {
+    const step = Number(this._field?.rangeStep);
+    return Number.isFinite(step) && step > 0 ? step : DEFAULT_RANGE_STEP;
+  }
+
+  get timeFormatValue(): RangeTimeFormat {
+    return normalizeRangeTimeFormat(this._field?.timeFormat);
+  }
+
+  onRangeTypeChange(type: string): void {
+    if (!this._field || !this.isFieldEditable || !this.isRangeField) {
+      return;
+    }
+
+    resetRangeTypeSpecificConfig(this._field, normalizeRangeType(type));
+    this.onChange();
+  }
+
+  onRangeMinChange(value: unknown): void {
+    if (!this._field || !this.isFieldEditable || !this.isNumberRange) {
+      return;
+    }
+
+    const bounds = sanitizeRangeBounds(value, this._field.rangeMax);
+    if (bounds.swapped) {
+      this.toastr.warning('Minimum value cannot be greater than Maximum value.');
+    }
+    this._field.rangeMin = bounds.rangeMin;
+    this._field.rangeMax = bounds.rangeMax;
+    this.onChange();
+  }
+
+  onRangeMaxChange(value: unknown): void {
+    if (!this._field || !this.isFieldEditable || !this.isNumberRange) {
+      return;
+    }
+
+    const bounds = sanitizeRangeBounds(this._field.rangeMin, value);
+    if (bounds.swapped) {
+      this.toastr.warning('Minimum value cannot be greater than Maximum value.');
+    }
+    this._field.rangeMin = bounds.rangeMin;
+    this._field.rangeMax = bounds.rangeMax;
+    this.onChange();
+  }
+
+  onRangeStepChange(value: unknown): void {
+    if (!this._field || !this.isFieldEditable || !this.isNumberRange) {
+      return;
+    }
+
+    const step = Number(value);
+    if (!Number.isFinite(step) || step <= 0) {
+      this.toastr.warning('Step must be a positive number.');
+      this._field.rangeStep = DEFAULT_RANGE_STEP;
+    } else {
+      this._field.rangeStep = step;
+    }
+    this.onChange();
+  }
+
+  onRangeAllowDecimalChange(allow: boolean): void {
+    if (!this._field || !this.isFieldEditable || !this.isNumberRange) {
+      return;
+    }
+
+    this._field.allowDecimal = allow === true;
+    this.onChange();
+  }
+
+  onRangePlaceholderFromChange(value: string): void {
+    if (!this._field || !this.isFieldEditable || !this.isRangeField) {
+      return;
+    }
+
+    this._field.rangePlaceholderFrom = value ?? '';
+    this.onChange();
+  }
+
+  onRangePlaceholderToChange(value: string): void {
+    if (!this._field || !this.isFieldEditable || !this.isRangeField) {
+      return;
+    }
+
+    this._field.rangePlaceholderTo = value ?? '';
+    this.onChange();
+  }
+
+  onRangeMinDateChange(value: string): void {
+    if (!this._field || !this.isFieldEditable || !this.isDateRange) {
+      return;
+    }
+
+    const bounds = sanitizeDateBounds(value || undefined, this._field.rangeMaxDate);
+    if (bounds.swapped) {
+      this.toastr.warning('Minimum date cannot be later than maximum date.');
+    }
+    this._field.rangeMinDate = bounds.rangeMinDate;
+    this._field.rangeMaxDate = bounds.rangeMaxDate;
+    this.onChange();
+  }
+
+  onRangeMaxDateChange(value: string): void {
+    if (!this._field || !this.isFieldEditable || !this.isDateRange) {
+      return;
+    }
+
+    const bounds = sanitizeDateBounds(this._field.rangeMinDate, value || undefined);
+    if (bounds.swapped) {
+      this.toastr.warning('Minimum date cannot be later than maximum date.');
+    }
+    this._field.rangeMinDate = bounds.rangeMinDate;
+    this._field.rangeMaxDate = bounds.rangeMaxDate;
+    this.onChange();
+  }
+
+  onTimeFormatChange(value: string): void {
+    if (!this._field || !this.isFieldEditable || !this.isTimeRange) {
+      return;
+    }
+
+    this._field.timeFormat = normalizeRangeTimeFormat(value);
+    this.onChange();
   }
 
   readonly conditionOperators = CONDITION_OPERATORS.map(value => ({
@@ -739,10 +890,38 @@ export class FieldSettingsComponent {
       isShow: value.isShow !== false,
       isReadonly: value.isReadonly === true,
       allowDecimal:
-        value.type === 'number' ? value.allowDecimal === true : undefined,
+        value.type === 'number' ||
+        (value.type === 'range' && normalizeRangeType(value.rangeType) === 'number')
+          ? value.allowDecimal === true
+          : undefined,
       characterLimit: fieldSupportsCharacterLimit(value.type)
         ? resolveCharacterLimit(value.type, value.characterLimit)
         : undefined,
+      rangeType: value.type === 'range' ? normalizeRangeType(value.rangeType) : undefined,
+      rangeMin: value.rangeMin,
+      rangeMax: value.rangeMax,
+      rangeStep:
+        value.type === 'range' && normalizeRangeType(value.rangeType) === 'number'
+          ? (Number(value.rangeStep) > 0 ? Number(value.rangeStep) : DEFAULT_RANGE_STEP)
+          : undefined,
+      rangeMinDate: value.rangeMinDate,
+      rangeMaxDate: value.rangeMaxDate,
+      rangePlaceholderFrom:
+        value.type === 'range'
+          ? (typeof value.rangePlaceholderFrom === 'string'
+              ? value.rangePlaceholderFrom
+              : DEFAULT_RANGE_PLACEHOLDER_FROM)
+          : undefined,
+      rangePlaceholderTo:
+        value.type === 'range'
+          ? (typeof value.rangePlaceholderTo === 'string'
+              ? value.rangePlaceholderTo
+              : DEFAULT_RANGE_PLACEHOLDER_TO)
+          : undefined,
+      timeFormat:
+        value.type === 'range' && normalizeRangeType(value.rangeType) === 'time'
+          ? normalizeRangeTimeFormat(value.timeFormat)
+          : undefined,
     };
 
     this.placeholderManuallyEdited = !this.isAutoGeneratedPlaceholder(this._field);
