@@ -16,7 +16,6 @@ export interface TenantCreatePayload {
   domain: string;
   email: string;
   phoneNumber?: string;
-  industry?: string;
   description?: string;
   countryId?: number | null;
   stateId?: number | null;
@@ -34,7 +33,6 @@ export interface TenantUpdatePayload {
   domain?: string;
   email?: string;
   phoneNumber?: string;
-  industry?: string;
   description?: string;
   countryId?: number | null;
   stateId?: number | null;

@@ -1,0 +1,97 @@
+<div class="platform-page view-page">
+  <div class="platform-state" *ngIf="loading">
+    <div class="platform-spinner"></div>
+    <p>Loading plan…</p>
+  </div>
+
+  <ng-container *ngIf="!loading && plan as p">
+    <div class="view-header">
+      <button type="button" class="btn-ghost" (click)="back()">← Back</button>
+      <div class="view-header__actions">
+        <button type="button" class="btn-primary" (click)="edit()">Edit Plan</button>
+      </div>
+    </div>
+
+    <div class="view-stack">
+      <section class="form-card">
+        <h3>Basic Details</h3>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span class="label">Plan Name</span>
+            <div class="value">{{ p.name || '—' }}</div>
+          </div>
+          <div class="detail-item">
+            <span class="label">Status</span>
+            <div class="value">
+              <span class="status-pill" [class.is-active]="p.status === 'active'" [class.is-inactive]="p.status !== 'active'">
+                {{ statusLabel(p) }}
+              </span>
+            </div>
+          </div>
+          <div class="detail-item detail-item--full">
+            <span class="label">Description</span>
+            <div class="value">{{ p.description || '—' }}</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="form-card">
+        <h3>Pricing</h3>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span class="label">Monthly Price</span>
+            <div class="value">{{ monthlyMoney(p) }}</div>
+          </div>
+          <div class="detail-item">
+            <span class="label">Yearly Price</span>
+            <div class="value">{{ yearlyMoney(p) }}</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="form-card">
+        <h3>Limits</h3>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span class="label">Users Limit</span>
+            <div class="value">{{ usersLimitLabel(p) }}</div>
+          </div>
+          <div class="detail-item">
+            <span class="label">Storage</span>
+            <div class="value">{{ storageLabel(p) }}</div>
+          </div>
+          <div class="detail-item">
+            <span class="label">Trial Days</span>
+            <div class="value">{{ p.trialDays ?? '—' }}</div>
+          </div>
+          <div class="detail-item">
+            <span class="label">Sort Order</span>
+            <div class="value">{{ p.sortOrder ?? '—' }}</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="form-card">
+        <h3>Features</h3>
+        <div class="feature-chips" *ngIf="p.features?.length; else noFeatures">
+          <span class="chip" *ngFor="let feature of p.features">{{ feature }}</span>
+        </div>
+        <ng-template #noFeatures>
+          <p class="empty-note">No features configured for this plan.</p>
+        </ng-template>
+      </section>
+
+      <section class="form-card">
+        <h3>Accessibility</h3>
+        <div class="module-chips" *ngIf="accessibleModules(p).length; else noModules">
+          <span class="chip chip--accent" *ngFor="let mod of accessibleModules(p)">
+            {{ moduleLabel(mod, p) }}
+          </span>
+        </div>
+        <ng-template #noModules>
+          <p class="empty-note">No modules assigned.</p>
+        </ng-template>
+      </section>
+    </div>
+  </ng-container>
+</div>

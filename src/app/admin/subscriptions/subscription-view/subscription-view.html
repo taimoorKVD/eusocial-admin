@@ -1,0 +1,82 @@
+<div class="platform-page view-page">
+  <div class="platform-state" *ngIf="loading">
+    <div class="platform-spinner"></div>
+    <p>Loading subscription…</p>
+  </div>
+
+  <ng-container *ngIf="!loading && subscription as sub">
+    <div class="view-header">
+      <button type="button" class="btn-ghost" (click)="back()">← Back</button>
+    </div>
+
+    <div class="view-stack">
+      <section class="form-card">
+        <h3>Organization</h3>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span class="label">Organization Name</span>
+            <div class="value">{{ sub.tenant?.name || '—' }}</div>
+          </div>
+          <div class="detail-item">
+            <span class="label">Domain</span>
+            <div class="value">{{ tenantDomain(sub) }}</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="form-card">
+        <h3>Subscription Details</h3>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span class="label">Plan</span>
+            <div class="value">{{ sub.plan?.name || '—' }}</div>
+          </div>
+          <div class="detail-item">
+            <span class="label">Status</span>
+            <div class="value">
+              <span class="status-pill" [ngClass]="statusClass(sub.status)">
+                <i class="dot"></i>{{ formatStatus(sub.status) }}
+              </span>
+            </div>
+          </div>
+          <div class="detail-item">
+            <span class="label">Billing Cycle</span>
+            <div class="value">{{ cycleLabel(sub.billingCycle) }}</div>
+          </div>
+          <div class="detail-item">
+            <span class="label">Amount</span>
+            <div class="value">{{ money(sub.formattedAmount, sub.amount) }}</div>
+          </div>
+          <div class="detail-item">
+            <span class="label">Current Period Start</span>
+            <div class="value">{{ formatDate(sub.currentPeriodStart) }}</div>
+          </div>
+          <div class="detail-item">
+            <span class="label">Current Period End</span>
+            <div class="value">{{ formatDate(sub.currentPeriodEnd) }}</div>
+          </div>
+          <div class="detail-item">
+            <span class="label">Next Billing</span>
+            <div class="value">{{ formatDate(sub.nextBilling) }}</div>
+          </div>
+          <div class="detail-item">
+            <span class="label">Trial Ends</span>
+            <div class="value">{{ formatDate(sub.trialEndsAt) }}</div>
+          </div>
+          <div class="detail-item">
+            <span class="label">Cancel at Period End</span>
+            <div class="value">{{ sub.cancelAtPeriodEnd ? 'Yes' : 'No' }}</div>
+          </div>
+          <div class="detail-item">
+            <span class="label">Cancelled At</span>
+            <div class="value">{{ formatDate(sub.cancelledAt) }}</div>
+          </div>
+          <div class="detail-item">
+            <span class="label">Created At</span>
+            <div class="value">{{ formatDate(sub.createdAt) }}</div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </ng-container>
+</div>

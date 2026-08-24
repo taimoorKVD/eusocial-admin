@@ -5,6 +5,11 @@ import { ToastrService } from 'ngx-toastr';
 import { PlanModuleCatalogItem, PlanWritePayload } from '../../../interfaces/master-billing';
 import { MasterPlanService } from '../../../services/master-plan.service';
 
+interface PlanFeatureItem {
+  text: string;
+  enabled: boolean;
+}
+
 @Component({
   selector: 'app-plan-form',
   standalone: false,
@@ -15,11 +20,12 @@ export class PlanForm implements OnInit {
   form!: FormGroup;
   modules: PlanModuleCatalogItem[] = [];
   selectedModules = new Set<string>(['dashboard']);
+  features: PlanFeatureItem[] = [];
   isEditMode = false;
   planId!: number;
   loading = true;
   saving = false;
-  featuresText = '';
+  private existingSlug = '';
 
   constructor(
     private fb: FormBuilder,
@@ -32,15 +38,13 @@ export class PlanForm implements OnInit {
   ngOnInit(): void {
     this.form = this.fb.group({
       name: ['', Validators.required],
-      slug: [''],
       description: [''],
       price: [0, [Validators.required, Validators.min(0)]],
+      yearlyPrice: [0, [Validators.required, Validators.min(0)]],
       currency: ['USD'],
-      billingCycle: ['monthly', Validators.required],
       usersLimit: [null as number | null],
       unlimitedUsers: [false],
       storageGb: [20, [Validators.min(0)]],
-      supportLevel: ['Email support'],
       trialDays: [14, [Validators.min(0)]],
       sortOrder: [1, [Validators.min(0)]],
       status: ['active'],
@@ -83,22 +87,24 @@ export class PlanForm implements OnInit {
       next: (res) => {
         const plan = res.data;
         const unlimited = plan.usersLimit == null;
+        this.existingSlug = plan.slug || '';
         this.form.patchValue({
           name: plan.name,
-          slug: plan.slug,
           description: plan.description || '',
-          price: plan.price,
+          price: this.resolveMonthlyPrice(plan),
+          yearlyPrice: this.resolveYearlyPrice(plan),
           currency: plan.currency === 'EUR' ? 'USD' : plan.currency || 'USD',
-          billingCycle: plan.billingCycle || 'monthly',
           usersLimit: unlimited ? null : plan.usersLimit,
           unlimitedUsers: unlimited,
           storageGb: plan.storageGb ?? null,
-          supportLevel: plan.supportLevel || '',
           trialDays: plan.trialDays ?? 0,
           sortOrder: plan.sortOrder ?? 1,
           status: plan.status || 'active',
         });
-        this.featuresText = (plan.features || []).join('\n');
+        this.features = (plan.features || []).map((text) => ({
+          text,
+          enabled: true,
+        }));
         const enabled = plan.allowedModules?.length
           ? plan.allowedModules
           : (plan.modules || []).filter((m) => m.enabled).map((m) => m.key);
@@ -112,6 +118,24 @@ export class PlanForm implements OnInit {
         this.toastr.error(this.extractError(err, 'Failed to load plan'));
       },
     });
+  }
+
+  addFeature(): void {
+    this.features.push({ text: '', enabled: true });
+  }
+
+  removeFeature(index: number): void {
+    this.features.splice(index, 1);
+  }
+
+  toggleFeature(index: number, enabled: boolean): void {
+    const feature = this.features[index];
+    if (!feature) return;
+    feature.enabled = enabled;
+  }
+
+  trackByFeatureIndex(index: number): number {
+    return index;
   }
 
   toggleModule(key: string, checked: boolean): void {
@@ -142,8 +166,8 @@ export class PlanForm implements OnInit {
       this.toastr.error('Plan name is required');
       return;
     }
-    if (Number.isNaN(payload.price)) {
-      this.toastr.error('Enter a valid price');
+    if (Number.isNaN(payload.price) || Number.isNaN(payload.yearlyPrice as number)) {
+      this.toastr.error('Enter valid monthly and yearly prices');
       return;
     }
 
@@ -173,32 +197,32 @@ export class PlanForm implements OnInit {
 
   private buildPayload(): PlanWritePayload {
     const raw = this.form.getRawValue();
-    const features = this.featuresText
-      .split(/\r?\n|,/)
-      .map((f) => f.trim())
+    const features = this.features
+      .filter((f) => f.enabled)
+      .map((f) => f.text.trim())
       .filter(Boolean);
 
     const modules = Array.from(this.selectedModules);
     if (!modules.includes('dashboard')) modules.unshift('dashboard');
 
     const name = String(raw.name || '').trim();
-    const slug = String(raw.slug || '').trim() || this.slugify(name);
     const description = String(raw.description || '').trim();
-    const supportLevel = String(raw.supportLevel || '').trim();
+    const slug = this.isEditMode && this.existingSlug
+      ? this.existingSlug
+      : this.slugify(name);
 
     const payload: PlanWritePayload = {
       name,
       slug,
       price: Number(raw.price),
+      yearlyPrice: Number(raw.yearlyPrice),
       currency: 'USD',
-      billingCycle: raw.billingCycle,
       features,
       modules,
       status: raw.status || 'active',
     };
 
     if (description) payload.description = description;
-    if (supportLevel) payload.supportLevel = supportLevel;
 
     if (raw.unlimitedUsers) {
       payload.usersLimit = null;
@@ -219,6 +243,29 @@ export class PlanForm implements OnInit {
     }
 
     return payload;
+  }
+
+  private resolveMonthlyPrice(plan: {
+    price?: number | null;
+    prices?: { monthly?: { amount?: number | null } };
+  }): number {
+    const fromPrices = plan.prices?.monthly?.amount;
+    if (fromPrices != null && !Number.isNaN(Number(fromPrices))) return Number(fromPrices);
+    return Number(plan.price ?? 0);
+  }
+
+  private resolveYearlyPrice(plan: {
+    yearlyPrice?: number | null;
+    price?: number | null;
+    prices?: { yearly?: { amount?: number | null } };
+  }): number {
+    const fromPrices = plan.prices?.yearly?.amount;
+    if (fromPrices != null && !Number.isNaN(Number(fromPrices))) return Number(fromPrices);
+    if (plan.yearlyPrice != null && !Number.isNaN(Number(plan.yearlyPrice))) {
+      return Number(plan.yearlyPrice);
+    }
+    // Fallback: 12x monthly if yearly is missing
+    return Number(plan.price ?? 0) * 12;
   }
 
   private syncUsersLimitControl(unlimited: boolean): void {

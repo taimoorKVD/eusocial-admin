@@ -75,7 +75,7 @@ export class Tenants implements OnInit {
         this.tenants = [];
         this.total = 0;
         this.loading = false;
-        this.toastr.error('Failed to load tenants');
+        this.toastr.error('Failed to load organizations');
       },
     });
   }
@@ -93,7 +93,7 @@ export class Tenants implements OnInit {
         this.tenants = [];
         this.total = 0;
         this.loading = false;
-        this.toastr.error('Failed to load tenants');
+        this.toastr.error('Failed to load organizations');
       },
     });
   }
@@ -115,6 +115,11 @@ export class Tenants implements OnInit {
   editTenant(id: number): void {
     this.openMenuId = null;
     this.router.navigate(['/tenants', id, 'edit']);
+  }
+
+  viewTenant(id: number): void {
+    this.openMenuId = null;
+    this.router.navigate(['/tenants', id, 'view']);
   }
 
   toggleMenu(id: number, event: Event): void {
@@ -141,22 +146,39 @@ export class Tenants implements OnInit {
 
     this.tenantService.delete(id).subscribe({
       next: () => {
-        this.toastr.success('Tenant deleted successfully');
+        this.toastr.success('Organization deleted successfully');
         this.allTenants(this.page);
       },
       error: (err) => {
-        this.toastr.error(err?.error?.message || 'Failed to delete tenant');
+        this.toastr.error(err?.error?.message || 'Failed to delete organization');
       },
     });
   }
 
   domainOf(t: Tenant): string {
-    return (
-      t.domain ||
-      t.customDomain ||
-      t.custom_domain ||
-      (t.subdomain ? `${t.subdomain}.eusocial.com` : '—')
-    );
+    const base = environment.baseDomain || 'eusocial.thebetawebsite.com';
+    const slug =
+      (t.subdomain || '').trim() ||
+      this.slugFromStoredDomain(t.domain || t.customDomain || t.custom_domain || '');
+
+    if (slug) return `${slug}.${base}`;
+
+    const raw = (t.domain || t.customDomain || t.custom_domain || '').trim();
+    if (!raw) return '—';
+
+    // Rewrite legacy hosts like folio3.eusocial.com → folio3.{baseDomain}
+    return raw
+      .replace(/\.eusocial\.com$/i, `.${base}`)
+      .replace(/\.eusocial\.thebetawebsite\.com$/i, `.${base}`);
+  }
+
+  /** folio3.com / folio3.eusocial.com → folio3 */
+  private slugFromStoredDomain(domain: string): string {
+    const d = (domain || '').trim().toLowerCase();
+    if (!d) return '';
+    const host = d.replace(/^https?:\/\//, '').split('/')[0];
+    const first = host.split('.')[0];
+    return first && first !== 'www' ? first : '';
   }
 
   planName(t: Tenant): string {
@@ -193,10 +215,6 @@ export class Tenants implements OnInit {
     if (value === 'trial') return 'is-trial';
     if (value === 'suspended' || value === 'inactive') return 'is-cancelled';
     return 'is-draft';
-  }
-
-  usersOf(t: Tenant): string {
-    return t.users == null ? '—' : String(t.users);
   }
 
   joinedOn(t: Tenant): string {

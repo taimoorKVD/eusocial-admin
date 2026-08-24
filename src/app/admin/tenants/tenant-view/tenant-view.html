@@ -1,0 +1,95 @@
+<div class="platform-page view-page">
+  <div class="platform-state" *ngIf="loading">
+    <div class="platform-spinner"></div>
+    <p>Loading organization…</p>
+  </div>
+
+  <ng-container *ngIf="!loading && tenant as t">
+    <div class="view-header">
+      <button type="button" class="btn-ghost" (click)="back()">← Back</button>
+      <div class="view-header__actions">
+        <button type="button" class="btn-primary" (click)="edit()">Edit Organization</button>
+      </div>
+    </div>
+
+    <div class="view-stack">
+      <section class="form-card">
+        <h3>Organization Information</h3>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span class="label">Organization Name</span>
+            <div class="value">{{ t.name || '—' }}</div>
+          </div>
+          <div class="detail-item">
+            <span class="label">Business Email</span>
+            <div class="value">{{ t.email || '—' }}</div>
+          </div>
+          <div class="detail-item">
+            <span class="label">Domain</span>
+            <div class="value">{{ domainOf(t) }}</div>
+          </div>
+          <div class="detail-item">
+            <span class="label">Phone Number</span>
+            <div class="value">{{ phoneOf(t) }}</div>
+          </div>
+          <div class="detail-item">
+            <span class="label">Status</span>
+            <div class="value">
+              <span class="status-pill" [ngClass]="statusClass(t)">
+                <i class="dot"></i>{{ statusOf(t) }}
+              </span>
+            </div>
+          </div>
+          <div class="detail-item">
+            <span class="label">Joined On</span>
+            <div class="value">{{ joinedOn(t) }}</div>
+          </div>
+          <div class="detail-item detail-item--full">
+            <span class="label">Description</span>
+            <div class="value">{{ t.description || '—' }}</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="form-card">
+        <h3>Address</h3>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span class="label">Country</span>
+            <div class="value">{{ locationName(t.country) }}</div>
+          </div>
+          <div class="detail-item">
+            <span class="label">State / Province</span>
+            <div class="value">{{ locationName(t.state) }}</div>
+          </div>
+          <div class="detail-item">
+            <span class="label">City</span>
+            <div class="value">{{ t.city || '—' }}</div>
+          </div>
+          <div class="detail-item">
+            <span class="label">Postal Code</span>
+            <div class="value">{{ t.postalCode || t.postal_code || '—' }}</div>
+          </div>
+          <div class="detail-item detail-item--full">
+            <span class="label">Address</span>
+            <div class="value">{{ t.address || '—' }}</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="form-card">
+        <h3>Subscription & Plan</h3>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span class="label">Current Plan</span>
+            <div class="value">{{ planName(t) }}</div>
+          </div>
+          <div class="detail-item">
+            <span class="label">Billing Cycle</span>
+            <div class="value">{{ t.billingCycle || t.billing_cycle || '—' }}</div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </ng-container>
+</div>

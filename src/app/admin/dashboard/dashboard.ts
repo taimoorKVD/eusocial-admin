@@ -12,6 +12,7 @@ import {
 } from '../../interfaces/master-dashboard';
 import { User } from '../../interfaces/user';
 import { displayMoney } from '../../shared/utils/money.util';
+import { environment } from '../../../environments/environment';
 
 interface KpiCardView {
   key: string;
@@ -215,6 +216,27 @@ export class Dashboard implements OnInit, OnDestroy {
     return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
   }
 
+  tenantDomain(tenant: RecentTenant): string {
+    const base = environment.baseDomain || 'eusocial.thebetawebsite.com';
+    const slug =
+      (tenant.subdomain || '').trim() ||
+      this.slugFromStoredDomain(tenant.domain || tenant.customDomain || '');
+
+    if (slug) return `${slug}.${base}`;
+
+    const raw = (tenant.domain || tenant.customDomain || '').trim();
+    if (!raw) return '—';
+    return raw.replace(/\.eusocial\.com$/i, `.${base}`);
+  }
+
+  private slugFromStoredDomain(domain: string): string {
+    const d = (domain || '').trim().toLowerCase();
+    if (!d) return '';
+    const host = d.replace(/^https?:\/\//, '').split('/')[0];
+    const first = host.split('.')[0];
+    return first && first !== 'www' ? first : '';
+  }
+
   changeTone(kpi: DashboardKpi | null): 'up' | 'down' | 'flat' {
     if (!kpi || kpi.available === false) return 'flat';
     if (kpi.change > 0) return 'up';
@@ -233,8 +255,8 @@ export class Dashboard implements OnInit, OnDestroy {
   private buildViews(): void {
     const kpis = this.data?.kpis;
     this.kpiCards = [
-      { key: 'totalTenants', title: 'Total Tenants', icon: 'buildings', format: 'number', kpi: kpis?.totalTenants ?? null },
-      { key: 'activeTenants', title: 'Active Tenants', icon: 'users', format: 'number', kpi: kpis?.activeTenants ?? null },
+      { key: 'totalTenants', title: 'Total Organizations', icon: 'buildings', format: 'number', kpi: kpis?.totalTenants ?? null },
+      { key: 'activeTenants', title: 'Active Organizations', icon: 'users', format: 'number', kpi: kpis?.activeTenants ?? null },
       { key: 'totalUsers', title: 'Total Users', icon: 'user', format: 'number', kpi: kpis?.totalUsers ?? null },
       { key: 'mrr', title: 'MRR', icon: 'currency', format: 'currency', kpi: kpis?.mrr ?? null },
       { key: 'activeSubscriptions', title: 'Active Subscriptions', icon: 'card', format: 'number', kpi: kpis?.activeSubscriptions ?? null },
