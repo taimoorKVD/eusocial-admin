@@ -327,31 +327,40 @@
       </div>
     }
     @case ('range') {
-      <div class="flex items-center gap-2">
+      <div
+        class="range-field-preview"
+        [class.range-field-preview--date]="rangeType === 'date'"
+      >
         @if (rangeType === 'date') {
-          <input
-            class="section-input font-ibm w-full"
-            type="text"
-            appFlatpickr
-            [placeholder]="rangePlaceholderFrom"
-            [fpValue]="rangeFromValue || null"
-            [fpMinDate]="rangeFromMinDate"
-            [fpMaxDate]="rangeFromMaxDate"
-            [fpDisabled]="!!isInteractionDisabled"
-            (fpChange)="onRangeDateChange($event, 'from')"
-          />
-          <span class="text-[#A0A0A0]">–</span>
-          <input
-            class="section-input font-ibm w-full"
-            type="text"
-            appFlatpickr
-            [placeholder]="rangePlaceholderTo"
-            [fpValue]="rangeToValue || null"
-            [fpMinDate]="rangeToMinDate"
-            [fpMaxDate]="rangeToMaxDate"
-            [fpDisabled]="!!isInteractionDisabled"
-            (fpChange)="onRangeDateChange($event, 'to')"
-          />
+          <div class="range-field-preview__side">
+            <label class="range-field-preview__label">{{ rangeLabelFrom }}</label>
+            <input
+              class="section-input font-ibm w-full"
+              type="text"
+              appFlatpickr
+              [placeholder]="rangeLabelFrom"
+              [fpValue]="rangeFromValue || null"
+              [fpMinDate]="rangeFromMinDate"
+              [fpMaxDate]="rangeFromMaxDate"
+              [fpDisabled]="!!isInteractionDisabled"
+              (fpChange)="onRangeDateChange($event, 'from')"
+            />
+          </div>
+          <div class="range-field-preview__connector" aria-hidden="true">→</div>
+          <div class="range-field-preview__side">
+            <label class="range-field-preview__label">{{ rangeLabelTo }}</label>
+            <input
+              class="section-input font-ibm w-full"
+              type="text"
+              appFlatpickr
+              [placeholder]="rangeLabelTo"
+              [fpValue]="rangeToValue || null"
+              [fpMinDate]="rangeToMinDate"
+              [fpMaxDate]="rangeToMaxDate"
+              [fpDisabled]="!!isInteractionDisabled"
+              (fpChange)="onRangeDateChange($event, 'to')"
+            />
+          </div>
         } @else if (rangeType === 'time') {
           <input
             class="section-input font-ibm w-full"

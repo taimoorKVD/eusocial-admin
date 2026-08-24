@@ -26,6 +26,7 @@ import {
   earlierIsoDate,
   getRangePlaceholderFrom,
   getRangePlaceholderTo,
+  getRangeSideLabel,
   laterIsoDate,
   normalizeRangeType,
   normalizeRangeValue,
@@ -394,6 +395,14 @@ export class SectionFieldPreviewComponent {
 
   get rangePlaceholderTo(): string {
     return getRangePlaceholderTo(this.field);
+  }
+
+  get rangeLabelFrom(): string {
+    return getRangeSideLabel(this.field, 'from');
+  }
+
+  get rangeLabelTo(): string {
+    return getRangeSideLabel(this.field, 'to');
   }
 
   get rangeFromMinDate(): string | null {

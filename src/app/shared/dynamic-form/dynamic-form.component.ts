@@ -52,6 +52,7 @@ import {
   earlierIsoDate,
   getRangePlaceholderFrom as resolveRangePlaceholderFrom,
   getRangePlaceholderTo as resolveRangePlaceholderTo,
+  getRangeSideLabel as resolveRangeSideLabel,
   laterIsoDate,
   normalizeRangeTimeFormat,
   normalizeRangeType,
@@ -322,6 +323,10 @@ export class DynamicFormComponent implements OnDestroy {
     return resolveRangePlaceholderTo(field);
   }
 
+  getRangeSideLabel(field: DynamicField, side: 'from' | 'to'): string {
+    return resolveRangeSideLabel(field, side);
+  }
+
   getRangeFromMinDate(field: DynamicField): string | null {
     return field.rangeMinDate || null;
   }
@@ -372,7 +377,9 @@ export class DynamicFormComponent implements OnDestroy {
     control.markAsDirty();
     control.markAsTouched();
     this.emitNormalizedValue();
-    this.cdr.markForCheck();
+    // Force immediate rebinding so the opposite Flatpickr receives
+    // updated minDate/maxDate before the user opens it.
+    this.cdr.detectChanges();
   }
 
   onRangeSideInput(event: Event, field: DynamicField, side: 'from' | 'to'): void {

@@ -51,8 +51,18 @@ export class FlatpickrDirective implements AfterViewInit, OnChanges, OnDestroy {
     }
 
     if (changes['fpMinDate'] || changes['fpMaxDate']) {
+      // Keep the current selection so Angular validators can surface
+      // From/To order errors instead of silently clearing the input.
+      const retained = this.fpValue || this.instance.input.value || '';
       this.instance.set('minDate', this.fpMinDate || undefined);
       this.instance.set('maxDate', this.fpMaxDate || undefined);
+      if (retained) {
+        const current = this.instance.input.value || '';
+        if (current !== retained) {
+          this.instance.setDate(retained, false);
+        }
+      }
+      this.instance.redraw();
     }
 
     if (changes['fpValue'] && !changes['fpValue'].firstChange) {

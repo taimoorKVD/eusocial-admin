@@ -123,10 +123,14 @@
             }
 
             @case ('range') {
-              <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
-                <div class="flex-1">
-                  <label class="mb-1 block text-xs font-medium text-slate-500" [attr.for]="field.id + '-from'">
-                    {{ getRangePlaceholderFrom(field) }}
+              <div
+                class="range-field"
+                [class.range-field--date]="getRangeType(field) === 'date'"
+                [class.range-field--invalid]="!!getErrorMessage(field)"
+              >
+                <div class="range-field__side">
+                  <label class="range-field__label" [attr.for]="field.id + '-from'">
+                    {{ getRangeSideLabel(field, 'from') }}
                   </label>
                   @if (getRangeType(field) === 'number') {
                     <input
@@ -147,7 +151,7 @@
                       type="text"
                       appFlatpickr
                       [id]="field.id + '-from'"
-                      [placeholder]="getRangePlaceholderFrom(field)"
+                      [placeholder]="getRangeSideLabel(field, 'from')"
                       [fpValue]="getRangeSideValue(field, 'from') || null"
                       [fpMinDate]="getRangeFromMinDate(field)"
                       [fpMaxDate]="getRangeFromMaxDate(field)"
@@ -166,10 +170,14 @@
                     />
                   }
                 </div>
-                <div class="hidden pb-3 text-slate-400 sm:block">–</div>
-                <div class="flex-1">
-                  <label class="mb-1 block text-xs font-medium text-slate-500" [attr.for]="field.id + '-to'">
-                    {{ getRangePlaceholderTo(field) }}
+
+                <div class="range-field__connector" aria-hidden="true">
+                  <span class="range-field__connector-text">{{ getRangeType(field) === 'date' ? '→' : '–' }}</span>
+                </div>
+
+                <div class="range-field__side">
+                  <label class="range-field__label" [attr.for]="field.id + '-to'">
+                    {{ getRangeSideLabel(field, 'to') }}
                   </label>
                   @if (getRangeType(field) === 'number') {
                     <input
@@ -190,7 +198,7 @@
                       type="text"
                       appFlatpickr
                       [id]="field.id + '-to'"
-                      [placeholder]="getRangePlaceholderTo(field)"
+                      [placeholder]="getRangeSideLabel(field, 'to')"
                       [fpValue]="getRangeSideValue(field, 'to') || null"
                       [fpMinDate]="getRangeToMinDate(field)"
                       [fpMaxDate]="getRangeToMaxDate(field)"

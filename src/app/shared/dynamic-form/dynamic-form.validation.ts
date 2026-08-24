@@ -1,5 +1,6 @@
 import { AbstractControl } from '@angular/forms';
 import { DynamicField } from '../../interfaces/dynamic-field';
+import { normalizeRangeType } from './range-field.utils';
 
 export function getDynamicFieldErrorMessage(
   field: DynamicField,
@@ -27,6 +28,9 @@ export function getDynamicFieldErrorMessage(
   }
 
   if (control.errors['rangeOrder']) {
+    if (field.type === 'range' && normalizeRangeType(field.rangeType) === 'date') {
+      return 'From date cannot be later than To date.';
+    }
     return 'Start value cannot be greater than end value.';
   }
 

@@ -29,6 +29,8 @@ export const DEFAULT_RANGE_TIME_FORMAT: RangeTimeFormat = '24';
 export const DEFAULT_RANGE_STEP = 1;
 export const DEFAULT_RANGE_PLACEHOLDER_FROM = 'From';
 export const DEFAULT_RANGE_PLACEHOLDER_TO = 'To';
+export const DEFAULT_RANGE_DATE_LABEL_FROM = 'From Date';
+export const DEFAULT_RANGE_DATE_LABEL_TO = 'To Date';
 
 export function getRangePlaceholderFrom(
   field: RangeFieldConfigLike | null | undefined,
@@ -42,6 +44,30 @@ export function getRangePlaceholderTo(
 ): string {
   const custom = field?.rangePlaceholderTo?.trim();
   return custom || DEFAULT_RANGE_PLACEHOLDER_TO;
+}
+
+/** Visible side label for rendered range inputs (date uses From/To Date). */
+export function getRangeSideLabel(
+  field: RangeFieldConfigLike | null | undefined,
+  side: 'from' | 'to',
+): string {
+  const custom =
+    side === 'from'
+      ? field?.rangePlaceholderFrom?.trim()
+      : field?.rangePlaceholderTo?.trim();
+  if (custom) {
+    return custom;
+  }
+
+  if (normalizeRangeType(field?.rangeType) === 'date') {
+    return side === 'from'
+      ? DEFAULT_RANGE_DATE_LABEL_FROM
+      : DEFAULT_RANGE_DATE_LABEL_TO;
+  }
+
+  return side === 'from'
+    ? DEFAULT_RANGE_PLACEHOLDER_FROM
+    : DEFAULT_RANGE_PLACEHOLDER_TO;
 }
 
 /** Pick the later of two ISO `Y-m-d` dates (invalid/empty values ignored). */
@@ -289,12 +315,24 @@ export function isValidIsoDate(value: string | number | null | undefined): boole
   }
 
   const text = String(value).trim();
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text);
+  if (!match) {
     return false;
   }
 
-  const date = new Date(`${text}T00:00:00`);
-  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === text;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+
+  // Validate calendar components in UTC so local timezone offsets cannot
+  // shift the calendar day (e.g. UTC+5 turning local midnight into the
+  // previous UTC date when using toISOString()).
+  const utc = new Date(Date.UTC(year, month - 1, day));
+  return (
+    utc.getUTCFullYear() === year &&
+    utc.getUTCMonth() === month - 1 &&
+    utc.getUTCDate() === day
+  );
 }
 
 function isMultipleOfStep(value: number, step: number, allowDecimal: boolean): boolean {
