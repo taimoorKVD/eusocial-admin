@@ -18,6 +18,10 @@ export function getDynamicFieldErrorMessage(
     return 'Please enter a valid email address.';
   }
 
+  if (control.errors['integerOnly']) {
+    return `${field.label} must be a whole number.`;
+  }
+
   if (control.errors['min']) {
     return `Value must be at least ${control.errors['min'].min}.`;
   }

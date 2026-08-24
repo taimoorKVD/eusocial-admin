@@ -42,6 +42,11 @@ import {
   serializeDynamicFieldsSchema,
   sortDynamicFields,
 } from './dynamic-form.builder';
+import {
+  allowsDecimalPoint,
+  getNumberFieldStep,
+  sanitizeNumberFieldInput,
+} from './number-field.utils';
 import { DropdownOverlayService } from '../directives/dropdown-panel/dropdown-overlay.service';
 
 @Component({
@@ -272,6 +277,36 @@ export class DynamicFormComponent implements OnDestroy {
   onSelectSearch(fieldName: string, event: Event): void {
     const value = (event.target as HTMLInputElement).value;
     this.selectSearchQueries.update((queries) => ({ ...queries, [fieldName]: value }));
+  }
+
+  getNumberStep(field: DynamicField): string {
+    return getNumberFieldStep(field);
+  }
+
+  onNumberInput(event: Event, field: DynamicField): void {
+    const input = event.target as HTMLInputElement;
+    const control = this.form?.get(field.name);
+    if (!control || control.disabled) {
+      return;
+    }
+
+    const allowDecimal = allowsDecimalPoint(field);
+    const sanitized = sanitizeNumberFieldInput(input.value, allowDecimal);
+
+    if (input.value !== sanitized) {
+      input.value = sanitized;
+    }
+
+    const nextValue =
+      sanitized === '' || sanitized === '-' || sanitized === '.' || sanitized === '-.'
+        ? null
+        : Number(sanitized);
+
+    if (control.value !== nextValue) {
+      control.setValue(Number.isFinite(nextValue as number) ? nextValue : null);
+      control.markAsDirty();
+      control.markAsTouched();
+    }
   }
 
   getSelectDisplayLabel(field: DynamicField): string {

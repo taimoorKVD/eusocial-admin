@@ -54,6 +54,18 @@
       <label for="field-required" class="text-sm text-slate-700">Required field</label>
     </div>
 
+    <div *ngIf="isNumberField" class="flex items-center gap-2">
+      <input
+        id="field-allow-decimal"
+        type="checkbox"
+        [ngModel]="field.allowDecimal === true"
+        (ngModelChange)="onAllowDecimalChange($event)"
+        [disabled]="!isFieldEditable"
+        class="field-settings-checkbox"
+      />
+      <label for="field-allow-decimal" class="text-sm text-slate-700">Allow Decimal Point</label>
+    </div>
+
     <!-- <div class="flex items-center gap-2">
       <input
         id="field-is-show"

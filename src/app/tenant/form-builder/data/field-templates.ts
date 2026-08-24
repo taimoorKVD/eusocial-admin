@@ -22,6 +22,7 @@ export const FIELD_TEMPLATES: Omit<FormField, 'id'>[] = [
     label: 'Number Field',
     placeholder: 'Enter number',
     required: false,
+    allowDecimal: false,
     options: []
   },
 

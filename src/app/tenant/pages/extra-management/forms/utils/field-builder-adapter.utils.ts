@@ -102,6 +102,7 @@ export function mapConfigFieldToBuilder(field: FormFieldConfig): FormField {
     maxRating: field.maxRating,
     rangeMin: field.rangeMin,
     rangeMax: field.rangeMax,
+    allowDecimal: field.allowDecimal === true,
   };
 }
 
@@ -138,6 +139,7 @@ export function mapBuilderFieldToConfig(
     maxRating: field.maxRating,
     rangeMin: field.rangeMin,
     rangeMax: field.rangeMax,
+    allowDecimal: field.type === 'number' ? field.allowDecimal === true : undefined,
   };
 }
 

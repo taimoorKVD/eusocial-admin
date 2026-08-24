@@ -210,8 +210,9 @@
         type="number"
         [placeholder]="field.placeholder || field.label"
         [value]="field.value || ''"
+        [attr.step]="numberStep"
         [attr.readonly]="isInteractionDisabled || null"
-        (input)="onInput($event)"
+        (input)="onNumberInput($event)"
       />
     }
     @case ('email') {

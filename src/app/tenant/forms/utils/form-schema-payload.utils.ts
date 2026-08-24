@@ -22,6 +22,7 @@ export function buildFormSchemaPayload(fields: FormField[]) {
         isShow: field.isShow !== false,
         optionSource: field.optionSource,
         selectionType: field.type === 'select' ? field.selectionType || 'single' : undefined,
+        allowDecimal: field.type === 'number' ? field.allowDecimal === true : undefined,
         isReadonly: field.isReadonly === true,
         isSystemField: true,
         isEditable: field.isEditable !== false,

@@ -657,13 +657,15 @@ export class CreateFormComponent implements OnInit {
       id?: string;
     },
   ): FormFieldConfig {
+    const type = field?.type ?? 'text';
     return {
       ...field,
       id: field?.id ?? createId('field'),
-      type: field?.type ?? 'text',
+      type,
       label: field?.label ?? '',
       name: field?.name ?? '',
       required: field?.required ?? false,
+      allowDecimal: type === 'number' ? field?.allowDecimal === true : undefined,
     };
   }
 

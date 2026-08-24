@@ -195,6 +195,10 @@ export function sanitizeField(
     maxRating: field.maxRating,
     rangeMin: field.rangeMin,
     rangeMax: field.rangeMax,
+    allowDecimal:
+      type === 'number'
+        ? readBooleanFlag(field, 'allowDecimal', 'allow_decimal', false)
+        : undefined,
   };
 }
 

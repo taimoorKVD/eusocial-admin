@@ -13,6 +13,11 @@ import {
   getSelectOptionValue,
   isDependentLocationSelectLocked,
 } from '../../utils/row-location-dependencies.utils';
+import {
+  allowsDecimalPoint,
+  getNumberFieldStep,
+  sanitizeNumberFieldInput,
+} from '../../../../../../shared/dynamic-form/number-field.utils';
 
 /**
  * Editable FormFieldConfig control — matches section input styling.
@@ -155,6 +160,26 @@ export class SectionFieldPreviewComponent {
     }
 
     this.valueChange.emit((event.target as HTMLInputElement | HTMLTextAreaElement).value);
+  }
+
+  onNumberInput(event: Event): void {
+    if (this.isInteractionDisabled) {
+      return;
+    }
+
+    const input = event.target as HTMLInputElement;
+    const allowDecimal = allowsDecimalPoint(this.field);
+    const sanitized = sanitizeNumberFieldInput(input.value, allowDecimal);
+
+    if (input.value !== sanitized) {
+      input.value = sanitized;
+    }
+
+    this.valueChange.emit(sanitized);
+  }
+
+  get numberStep(): string {
+    return getNumberFieldStep(this.field);
   }
 
   onParameterValueChange(event: Event): void {

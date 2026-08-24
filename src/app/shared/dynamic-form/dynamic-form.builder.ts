@@ -4,6 +4,7 @@ import {
   DynamicFieldOption,
   DynamicFormValue,
 } from '../../interfaces/dynamic-field';
+import { allowsDecimalPoint, integerNumberValidator } from './number-field.utils';
 
 export function sortDynamicFields(fields: DynamicField[]): DynamicField[] {
   return [...fields]
@@ -23,7 +24,7 @@ export function serializeDynamicFieldsSchema(fields: DynamicField[]): string {
   return sortDynamicFields(fields)
     .map(
       (field) =>
-        `${field.id}:${field.name}:${field.type}:${Number(!!field.required)}:${field.selectionType || 'single'}:${Number(field.isShow !== false)}:${Number(!!field.isReadonly)}:${JSON.stringify(field.condition ?? null)}`,
+        `${field.id}:${field.name}:${field.type}:${Number(!!field.required)}:${field.selectionType || 'single'}:${Number(field.isShow !== false)}:${Number(!!field.isReadonly)}:${Number(allowsDecimalPoint(field))}:${JSON.stringify(field.condition ?? null)}`,
     )
     .join('|');
 }
@@ -124,6 +125,10 @@ export function getFieldValidators(
 
   if (field.type === 'email') {
     validators.push(Validators.email);
+  }
+
+  if (field.type === 'number' && !allowsDecimalPoint(field)) {
+    validators.push(integerNumberValidator());
   }
 
   return validators;

@@ -94,6 +94,7 @@ export class DynamicFormFieldMapperService {
       selectionType: type === 'select' ? field.selectionType || 'single' : undefined,
       isShow: field.isShow,
       isReadonly: field.isReadonly,
+      allowDecimal: type === 'number' ? field.allowDecimal === true : undefined,
       condition: field.condition,
     };
   }

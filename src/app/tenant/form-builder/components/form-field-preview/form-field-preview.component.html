@@ -33,6 +33,7 @@
   type="number"
   [placeholder]="field.placeholder"
   [value]="previewValue"
+  [attr.step]="field.allowDecimal === true ? 'any' : '1'"
   disabled
   readonly
   tabindex="-1"

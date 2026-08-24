@@ -53,6 +53,11 @@ export interface DynamicField {
   optionSource?: DynamicFieldOptionSource;
   /** Select field only. Defaults to `single` when missing. */
   selectionType?: DynamicSelectSelectionType;
+  /**
+   * Number field only. When true, decimal values are allowed.
+   * Missing/undefined is treated as false for backward compatibility.
+   */
+  allowDecimal?: boolean;
   condition?: FieldCondition;
 }
 
