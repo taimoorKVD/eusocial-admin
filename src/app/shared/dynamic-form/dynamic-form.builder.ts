@@ -4,6 +4,9 @@ import {
   DynamicFieldOption,
   DynamicFormValue,
 } from '../../interfaces/dynamic-field';
+import {
+  getFieldCharacterLimit,
+} from './character-limit.utils';
 import { allowsDecimalPoint, integerNumberValidator } from './number-field.utils';
 import { emailFieldPatternValidator } from './email-field.utils';
 
@@ -25,7 +28,7 @@ export function serializeDynamicFieldsSchema(fields: DynamicField[]): string {
   return sortDynamicFields(fields)
     .map(
       (field) =>
-        `${field.id}:${field.name}:${field.type}:${Number(!!field.required)}:${field.selectionType || 'single'}:${Number(field.isShow !== false)}:${Number(!!field.isReadonly)}:${Number(allowsDecimalPoint(field))}:${JSON.stringify(field.condition ?? null)}`,
+        `${field.id}:${field.name}:${field.type}:${Number(!!field.required)}:${field.selectionType || 'single'}:${Number(field.isShow !== false)}:${Number(!!field.isReadonly)}:${Number(allowsDecimalPoint(field))}:${getFieldCharacterLimit(field) ?? ''}:${JSON.stringify(field.condition ?? null)}`,
     )
     .join('|');
 }
@@ -130,6 +133,11 @@ export function getFieldValidators(
 
   if (field.type === 'number' && !allowsDecimalPoint(field)) {
     validators.push(integerNumberValidator());
+  }
+
+  const characterLimit = getFieldCharacterLimit(field);
+  if (characterLimit != null) {
+    validators.push(Validators.maxLength(characterLimit));
   }
 
   return validators;

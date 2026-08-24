@@ -6,6 +6,7 @@ export const FIELD_TEMPLATES: Omit<FormField, 'id'>[] = [
     label: 'Text Field',
     placeholder: 'Enter text',
     required: false,
+    characterLimit: 255,
     options: []
   },
 
@@ -31,6 +32,7 @@ export const FIELD_TEMPLATES: Omit<FormField, 'id'>[] = [
     label: 'Textarea Field',
     placeholder: 'Enter description',
     required: false,
+    characterLimit: 5000,
     options: []
   },
 

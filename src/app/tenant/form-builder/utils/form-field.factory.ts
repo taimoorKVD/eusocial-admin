@@ -6,6 +6,7 @@ import {
   SelectSelectionType,
 } from '../models/form-field.model';
 import { serializeConditionalLogic } from '../../../shared/conditional-logic';
+import { resolveCharacterLimit } from '../../../shared/dynamic-form/character-limit.utils';
 import {
   normalizeCheckboxFieldOptions,
   normalizeStaticSelectFieldOptions,
@@ -199,6 +200,13 @@ export function sanitizeField(
       type === 'number'
         ? readBooleanFlag(field, 'allowDecimal', 'allow_decimal', false)
         : undefined,
+    characterLimit: resolveCharacterLimit(
+      type,
+      field.characterLimit ??
+        field['character_limit'] ??
+        field['maxLength'] ??
+        field['max_length'],
+    ),
   };
 }
 

@@ -13,8 +13,9 @@
         [placeholder]="field.placeholder || field.label"
         rows="3"
         [value]="field.value || ''"
+        [attr.maxlength]="characterLimit"
         [attr.readonly]="isInteractionDisabled || null"
-        (input)="onInput($event)"
+        (input)="onTextInput($event)"
       ></textarea>
     }
     @case ('select') {
@@ -382,8 +383,9 @@
         type="text"
         [placeholder]="field.placeholder || field.label"
         [value]="field.value || ''"
+        [attr.maxlength]="characterLimit"
         [attr.readonly]="isInteractionDisabled || null"
-        (input)="onInput($event)"
+        (input)="onTextInput($event)"
       />
     }
   }

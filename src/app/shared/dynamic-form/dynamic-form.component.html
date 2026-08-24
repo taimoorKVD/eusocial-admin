@@ -30,6 +30,7 @@
                     [id]="field.id"
                     [formControlName]="field.name"
                     [placeholder]="field.placeholder ?? ''"
+                    [attr.maxlength]="getCharacterLimit(field)"
                   />
 
                   <button
@@ -85,6 +86,7 @@
                   [id]="field.id"
                   [formControlName]="field.name"
                   [placeholder]="field.placeholder ?? ''"
+                  [attr.maxlength]="getCharacterLimit(field)"
                 />
               }
             }
@@ -126,6 +128,7 @@
                 [id]="field.id"
                 [formControlName]="field.name"
                 [placeholder]="field.placeholder ?? ''"
+                [attr.maxlength]="getCharacterLimit(field)"
                 rows="3"
               ></textarea>
             }

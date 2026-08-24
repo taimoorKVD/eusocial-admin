@@ -22,6 +22,11 @@ export function getDynamicFieldErrorMessage(
     return `${field.label} must be a whole number.`;
   }
 
+  if (control.errors['maxlength']) {
+    const requiredLength = control.errors['maxlength'].requiredLength;
+    return `${field.label} must be at most ${requiredLength} characters.`;
+  }
+
   if (control.errors['min']) {
     return `Value must be at least ${control.errors['min'].min}.`;
   }

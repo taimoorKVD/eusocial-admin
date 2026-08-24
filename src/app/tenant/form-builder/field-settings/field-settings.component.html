@@ -89,6 +89,26 @@
     </div> -->
   </div>
 
+  <div *ngIf="supportsCharacterLimit" class="space-y-1.5">
+    <label for="field-character-limit" class="mb-1.5 block text-xs font-medium text-slate-600">
+      Character Limit
+    </label>
+    <input
+      id="field-character-limit"
+      type="number"
+      min="1"
+      [attr.max]="defaultCharacterLimit"
+      step="1"
+      [ngModel]="characterLimitValue"
+      (ngModelChange)="onCharacterLimitChange($event)"
+      [disabled]="!isFieldEditable"
+      class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+    />
+    <p class="text-[11px] text-slate-500">
+      Maximum {{ defaultCharacterLimit }} characters for this field type.
+    </p>
+  </div>
+
   <div *ngIf="isParameterField" class="space-y-3">
     <div>
       <label class="mb-1.5 block text-xs font-medium text-slate-600">Parameter Category</label>

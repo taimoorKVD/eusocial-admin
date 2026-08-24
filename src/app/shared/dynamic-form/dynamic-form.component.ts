@@ -47,6 +47,7 @@ import {
   getNumberFieldStep,
   sanitizeNumberFieldInput,
 } from './number-field.utils';
+import { getFieldCharacterLimit } from './character-limit.utils';
 import { DropdownOverlayService } from '../directives/dropdown-panel/dropdown-overlay.service';
 
 @Component({
@@ -281,6 +282,10 @@ export class DynamicFormComponent implements OnDestroy {
 
   getNumberStep(field: DynamicField): string {
     return getNumberFieldStep(field);
+  }
+
+  getCharacterLimit(field: DynamicField): number | null {
+    return getFieldCharacterLimit(field);
   }
 
   onNumberInput(event: Event, field: DynamicField): void {

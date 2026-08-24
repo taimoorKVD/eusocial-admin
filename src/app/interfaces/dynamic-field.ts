@@ -58,6 +58,11 @@ export interface DynamicField {
    * Missing/undefined is treated as false for backward compatibility.
    */
   allowDecimal?: boolean;
+  /**
+   * Text / Text Area only. Maximum allowed characters.
+   * Missing/undefined uses 255 (text) or 5000 (textarea).
+   */
+  characterLimit?: number;
   condition?: FieldCondition;
 }
 

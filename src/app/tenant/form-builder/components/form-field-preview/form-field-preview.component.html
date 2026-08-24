@@ -9,6 +9,7 @@
   type="text"
   [placeholder]="field.placeholder"
   [value]="previewValue"
+  [attr.maxlength]="field.characterLimit || 255"
   disabled
   readonly
   tabindex="-1"
@@ -45,6 +46,7 @@
   *ngIf="fieldType === 'textarea'"
   [placeholder]="field.placeholder"
   [value]="previewValue"
+  [attr.maxlength]="field.characterLimit || 5000"
   disabled
   readonly
   rows="3"

@@ -38,6 +38,7 @@ import {
   pruneConditionalLogicForDeletedFields,
   resolveCollectionConditionalEffects,
 } from '../../../../../shared/conditional-logic';
+import { resolveCharacterLimit } from '../../../../../shared/dynamic-form/character-limit.utils';
 import { getLocationFieldDeleteBlockReason } from '../../../../form-builder/utils/location-field-dependencies.utils';
 import { FormEditorCoreModule } from '../../../../forms/form-editor-core.module';
 import { FormBuilderTab } from '../../../../forms/components/form-builder-workspace/form-builder-workspace.component';
@@ -666,6 +667,9 @@ export class CreateFormComponent implements OnInit {
       name: field?.name ?? '',
       required: field?.required ?? false,
       allowDecimal: type === 'number' ? field?.allowDecimal === true : undefined,
+      characterLimit: type === 'text' || type === 'textarea'
+        ? resolveCharacterLimit(type, (field as { characterLimit?: number })?.characterLimit)
+        : undefined,
     };
   }
 
