@@ -1,1 +1,21 @@
 @import '../_platform-shared';
+
+.invoice-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.1rem;
+}
+
+.menu-pop--wide {
+  min-width: 13.75rem;
+}
+
+.menu-pop button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+
+  &:hover {
+    background: transparent;
+  }
+}

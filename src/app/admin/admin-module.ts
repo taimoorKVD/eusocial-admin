@@ -27,6 +27,7 @@ import { PlanView } from './plans/plan-view/plan-view';
 import { Subscriptions } from './subscriptions/subscriptions';
 import { SubscriptionView } from './subscriptions/subscription-view/subscription-view';
 import { Invoices } from './invoices/invoices';
+import { InvoiceView } from './invoices/invoice-view/invoice-view';
 
 @NgModule({
   declarations: [
@@ -52,6 +53,7 @@ import { Invoices } from './invoices/invoices';
     Subscriptions,
     SubscriptionView,
     Invoices,
+    InvoiceView,
   ],
   imports: [
     CommonModule,

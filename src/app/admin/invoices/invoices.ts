@@ -1,10 +1,17 @@
 import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { forkJoin } from 'rxjs';
 import { InvoiceStats, InvoiceStatus, MasterInvoice } from '../../interfaces/master-billing';
 import { MasterInvoiceService } from '../../services/master-invoice.service';
 import { environment } from '../../../environments/environment';
 import { displayMoney } from '../../shared/utils/money.util';
+import {
+  invoiceFileName,
+  isPdfBlob,
+  printSystemInvoice,
+  saveBlob,
+} from './invoice-print';
 
 @Component({
   selector: 'app-invoices',
@@ -25,6 +32,7 @@ export class Invoices implements OnInit {
   status: InvoiceStatus | '' = '';
   from = '';
   to = '';
+  openMenuId: number | null = null;
 
   readonly statusOptions: { value: InvoiceStatus | ''; label: string }[] = [
     { value: '', label: 'All Status' },
@@ -38,7 +46,8 @@ export class Invoices implements OnInit {
 
   constructor(
     private invoiceService: MasterInvoiceService,
-    private toastr: ToastrService
+    private toastr: ToastrService,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -99,7 +108,44 @@ export class Invoices implements OnInit {
     this.loadList(1);
   }
 
+  toggleMenu(id: number, event: Event): void {
+    event.stopPropagation();
+    this.openMenuId = this.openMenuId === id ? null : id;
+  }
+
+  closeMenus(): void {
+    this.openMenuId = null;
+  }
+
   viewInvoice(invoice: MasterInvoice): void {
+    this.closeMenus();
+    this.router.navigate(['/invoices', invoice.id, 'view']);
+  }
+
+  downloadInvoice(invoice: MasterInvoice): void {
+    this.closeMenus();
+    this.invoiceService.downloadPdf(invoice.id).subscribe({
+      next: (blob) => {
+        if (isPdfBlob(blob) && blob.size > 0) {
+          saveBlob(blob, invoiceFileName(invoice));
+          return;
+        }
+        printSystemInvoice(invoice);
+      },
+      error: () => printSystemInvoice(invoice),
+    });
+  }
+
+  canViewStripe(invoice: MasterInvoice): boolean {
+    return !!(invoice.hostedInvoiceUrl || invoice.stripeInvoiceId);
+  }
+
+  canDownloadStripe(invoice: MasterInvoice): boolean {
+    return !!(invoice.invoicePdfUrl || invoice.stripeInvoiceId);
+  }
+
+  viewStripeInvoice(invoice: MasterInvoice): void {
+    this.closeMenus();
     if (invoice.hostedInvoiceUrl) {
       window.open(invoice.hostedInvoiceUrl, '_blank', 'noopener');
       return;
@@ -108,13 +154,14 @@ export class Invoices implements OnInit {
       next: (res) => {
         const url = res?.data?.hostedInvoiceUrl;
         if (url) window.open(url, '_blank', 'noopener');
-        else this.toastr.error('Invoice view URL is not available');
+        else this.toastr.error('Stripe invoice is not available');
       },
-      error: (err) => this.toastr.error(err?.error?.message || 'Failed to open invoice'),
+      error: (err) => this.toastr.error(err?.error?.message || 'Failed to open Stripe invoice'),
     });
   }
 
-  downloadInvoice(invoice: MasterInvoice): void {
+  downloadStripeInvoice(invoice: MasterInvoice): void {
+    this.closeMenus();
     if (invoice.invoicePdfUrl) {
       window.open(invoice.invoicePdfUrl, '_blank', 'noopener');
       return;
@@ -123,9 +170,9 @@ export class Invoices implements OnInit {
       next: (res) => {
         const url = res?.data?.invoicePdfUrl;
         if (url) window.open(url, '_blank', 'noopener');
-        else this.toastr.error('Invoice PDF is not available');
+        else this.toastr.error('Stripe invoice PDF is not available');
       },
-      error: (err) => this.toastr.error(err?.error?.message || 'Failed to download invoice'),
+      error: (err) => this.toastr.error(err?.error?.message || 'Failed to download Stripe invoice'),
     });
   }
 
