@@ -201,6 +201,12 @@ export function sanitizeField(
     options: resolveFieldOptions(type, optionSource, field.options),
     optionSource: cloneOptionSource(optionSource),
     selectionType: type === 'select' ? readSelectionType(field) : undefined,
+    systemMappingKey: readOptionalString(
+      field,
+      'systemMappingKey',
+      'system_mapping_key',
+    ),
+    fieldKey: readOptionalString(field, 'fieldKey', 'field_key'),
     value: field.value ?? field.defaultValue ?? null,
     defaultValue: field.defaultValue ?? null,
     validations: field.validations ? { ...field.validations } : {},
@@ -265,6 +271,24 @@ function readSelectionType(
   }
 
   return 'single';
+}
+
+function readOptionalString(
+  field: Partial<FormField> & Record<string, unknown>,
+  camelKey: string,
+  snakeKey: string,
+): string | undefined {
+  const camel = field[camelKey];
+  if (typeof camel === 'string' && camel.trim()) {
+    return camel.trim();
+  }
+
+  const snake = field[snakeKey];
+  if (typeof snake === 'string' && snake.trim()) {
+    return snake.trim();
+  }
+
+  return undefined;
 }
 
 export function normalizeFieldOrder(schema: Array<Partial<FormField>>): FormField[] {

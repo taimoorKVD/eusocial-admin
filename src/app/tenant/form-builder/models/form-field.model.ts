@@ -60,6 +60,13 @@ export interface FormField {
   optionSource?: OptionSource;
   /** Select field only. Defaults to `single` for backward compatibility. */
   selectionType?: SelectSelectionType;
+  /**
+   * Backend system mapping key when present on module schema fields
+   * (e.g. `vendor_name`). Used for Dynamic Select display resolution.
+   */
+  systemMappingKey?: string;
+  /** Backend field key when present on module schema fields. */
+  fieldKey?: string;
 
   value?: unknown;
   defaultValue?: unknown;

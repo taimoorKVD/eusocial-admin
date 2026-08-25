@@ -147,12 +147,13 @@ export class FieldSettingsComponent {
   optionsMode: SelectOptionsMode = 'static';
   availableModules: FormModuleListItem[] = [];
   selectedModuleSlug = '';
-  /** Always `name` for Dynamic Select; kept for optionSource persistence. */
+  /** Resolved display label key (`name` or dynamic field id). */
   selectedDisplayColumn = DYNAMIC_SELECT_LABEL_KEY;
   moduleRecords: Record<string, unknown>[] = [];
   moduleColumns: ModuleColumnOption[] = [];
-  /** All records from the selected module (label = name, value = id). */
+  /** All records from the selected module with resolved display labels. */
   availableDynamicOptions: FieldOption[] = [];
+  dynamicOptionsSearchQuery = '';
 
   modulesLoading = false;
   modulesError: string | null = null;
@@ -664,13 +665,31 @@ export class FieldSettingsComponent {
     return this.optionsMode === 'dynamic' ? this._field?.options?.length ?? 0 : 0;
   }
 
-  /** Select Options UI — hidden for States/Cities location modules. */
+  /** Select Options UI — hidden for Countries/States/Cities location modules. */
   get showDynamicSelectOptions(): boolean {
     return (
       this.optionsMode === 'dynamic' &&
       !!this.selectedModuleSlug &&
       !isDynamicSelectOptionsHiddenForModule(this.selectedModuleSlug)
     );
+  }
+
+  get filteredAvailableDynamicOptions(): FieldOption[] {
+    const query = this.dynamicOptionsSearchQuery.trim().toLowerCase();
+    if (!query) {
+      return this.availableDynamicOptions;
+    }
+
+    return this.availableDynamicOptions.filter(option =>
+      String(option.label ?? '')
+        .toLowerCase()
+        .includes(query),
+    );
+  }
+
+  onDynamicOptionsSearch(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.dynamicOptionsSearchQuery = input.value ?? '';
   }
 
   setOptionsMode(mode: SelectOptionsMode): void {
@@ -687,6 +706,7 @@ export class FieldSettingsComponent {
       this.moduleRecords = [];
       this.moduleColumns = [];
       this.availableDynamicOptions = [];
+      this.dynamicOptionsSearchQuery = '';
       this._field.options = [];
       this._field.optionSource = undefined;
       this.ensureModulesLoaded();
@@ -707,6 +727,7 @@ export class FieldSettingsComponent {
       this.moduleRecords = [];
       this.moduleColumns = [];
       this.availableDynamicOptions = [];
+      this.dynamicOptionsSearchQuery = '';
       this._field.options = [];
       this._field.optionSource = undefined;
       this.onChange();
@@ -722,6 +743,7 @@ export class FieldSettingsComponent {
     this.moduleRecords = [];
     this.moduleColumns = [];
     this.availableDynamicOptions = [];
+    this.dynamicOptionsSearchQuery = '';
     // Changing module must not retain previous module's selected options.
     this._field.options = [];
     this._field.optionSource = this.buildDynamicOptionSource();
@@ -1038,13 +1060,18 @@ export class FieldSettingsComponent {
 
     if (preservedModuleSlug) {
       this.selectedModuleSlug = preservedModuleSlug;
+      this.selectedDisplayColumn =
+        dynamicConfig?.displayColumn || DYNAMIC_SELECT_LABEL_KEY;
     } else if (dynamicConfig) {
       this.selectedModuleSlug = dynamicConfig.moduleSlug;
+      this.selectedDisplayColumn =
+        dynamicConfig.displayColumn || DYNAMIC_SELECT_LABEL_KEY;
     } else {
       this.selectedModuleSlug = '';
+      this.selectedDisplayColumn = DYNAMIC_SELECT_LABEL_KEY;
     }
 
-    this.selectedDisplayColumn = DYNAMIC_SELECT_LABEL_KEY;
+    this.dynamicOptionsSearchQuery = '';
     this.restoreModuleDataFromCache();
 
     if (this.optionsMode === 'dynamic') {
@@ -1077,19 +1104,26 @@ export class FieldSettingsComponent {
     const cached = this.moduleDataBySlug.get(this.selectedModuleSlug);
 
     if (cached) {
-      this.moduleRecords = cached.records;
-      this.moduleColumns = cached.columns;
-      this.availableDynamicOptions =
-        this.dynamicModuleOptionsService.buildOptionsFromRecords(
-          cached.records,
-          DYNAMIC_SELECT_LABEL_KEY,
-        );
+      this.applyModuleDataToLocalState(cached);
       return;
     }
 
     this.moduleRecords = [];
     this.moduleColumns = [];
     this.availableDynamicOptions = [];
+  }
+
+  private applyModuleDataToLocalState(data: ModuleDataCache): void {
+    this.moduleRecords = data.records;
+    this.moduleColumns = data.columns;
+    this.selectedDisplayColumn =
+      data.displayLabelKey || DYNAMIC_SELECT_LABEL_KEY;
+    this.availableDynamicOptions = data.options?.length
+      ? [...data.options]
+      : this.dynamicModuleOptionsService.buildOptionsFromRecords(
+          data.records,
+          this.selectedDisplayColumn,
+        );
   }
 
   private resolveOptionsMode(field: FormField): SelectOptionsMode {
@@ -1204,14 +1238,7 @@ export class FieldSettingsComponent {
     preserveSelection: boolean,
     emitUpdate: boolean
   ): void {
-    this.moduleRecords = data.records;
-    this.moduleColumns = data.columns;
-    this.selectedDisplayColumn = DYNAMIC_SELECT_LABEL_KEY;
-    this.availableDynamicOptions =
-      this.dynamicModuleOptionsService.buildOptionsFromRecords(
-        data.records,
-        DYNAMIC_SELECT_LABEL_KEY,
-      );
+    this.applyModuleDataToLocalState(data);
 
     if (!this._field || !this.selectedModuleSlug) {
       return;
@@ -1219,7 +1246,7 @@ export class FieldSettingsComponent {
 
     this._field.optionSource = this.buildDynamicOptionSource();
 
-    // States/Cities: no Select Options filtering — bake all records (or keep saved).
+    // Countries/States/Cities: no Select Options filtering — bake all records.
     if (isDynamicSelectOptionsHiddenForModule(this.selectedModuleSlug)) {
       if (emitUpdate) {
         this._field.options = [...this.availableDynamicOptions];
@@ -1303,7 +1330,7 @@ export class FieldSettingsComponent {
       type: 'dynamic',
       endpoint: this.selectedModuleSlug,
       response: {
-        labelKey: DYNAMIC_SELECT_LABEL_KEY,
+        labelKey: this.selectedDisplayColumn || DYNAMIC_SELECT_LABEL_KEY,
         valueKey: 'id',
         dataPath: 'data',
       },
@@ -1319,7 +1346,8 @@ export class FieldSettingsComponent {
 
     return {
       moduleSlug: field.optionSource.endpoint,
-      displayColumn: DYNAMIC_SELECT_LABEL_KEY,
+      displayColumn:
+        field.optionSource.response?.labelKey || DYNAMIC_SELECT_LABEL_KEY,
     };
   }
 

@@ -48,18 +48,36 @@ export class FormsService {
       item.slug ??
       '';
 
+    const moduleType = this.normalizeModuleType(
+      item.module?.type ?? item.type,
+    );
+
     const module = {
       id: item.module?.id ?? item.id ?? 0,
       name: item.module?.name ?? item.name ?? moduleName,
       slug: item.module?.slug ?? moduleName,
       isActive: item.module?.isActive ?? true,
+      type: moduleType,
     };
 
     return {
       id: item.id,
       name: item.name ?? moduleName,
       moduleName,
+      type: moduleType,
       module,
     };
+  }
+
+  private normalizeModuleType(raw: unknown): 'static' | 'dynamic' | undefined {
+    const value = String(raw ?? '')
+      .trim()
+      .toLowerCase();
+
+    if (value === 'static' || value === 'dynamic') {
+      return value;
+    }
+
+    return undefined;
   }
 }

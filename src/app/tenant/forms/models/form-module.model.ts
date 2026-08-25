@@ -6,23 +6,30 @@ export interface FormModuleApiItem {
   module_name?: string;
   route?: string;
   slug?: string;
+  type?: string;
   module?: {
     id?: number;
     name?: string;
     slug?: string;
     isActive?: boolean;
+    type?: string;
   };
 }
+
+export type FormModuleKind = 'static' | 'dynamic';
 
 export interface FormModuleListItem {
   id?: number;
   name: string;
   moduleName: string;
-    module: {
+  /** Module kind from API (`static` | `dynamic`). */
+  type?: FormModuleKind | string;
+  module: {
     id: number;
     name: string;
     slug: string;
     isActive: boolean;
+    type?: FormModuleKind | string;
   };
 }
 

@@ -486,10 +486,23 @@
 
           @if (dynamicOptionsDropdown.isOpen && selectedModuleSlug) {
             <div class="module-select__menu module-select__menu--options">
+              <div class="module-select__search">
+                <input
+                  type="text"
+                  [value]="dynamicOptionsSearchQuery"
+                  (input)="onDynamicOptionsSearch($event)"
+                  (click)="$event.stopPropagation()"
+                  placeholder="Search options..."
+                  class="module-select__search-input"
+                />
+              </div>
+
               @if (!availableDynamicOptions.length) {
                 <div class="module-select__empty">No records found</div>
+              } @else if (!filteredAvailableDynamicOptions.length) {
+                <div class="module-select__empty">No results found</div>
               } @else {
-                @for (option of availableDynamicOptions; track option.value) {
+                @for (option of filteredAvailableDynamicOptions; track option.value) {
                   <button
                     type="button"
                     class="module-select__option module-select__option--multi"

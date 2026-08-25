@@ -147,6 +147,30 @@ $theme-text: #334155;
   overflow-y: auto;
 }
 
+.module-select__search {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 0.5rem;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.module-select__search-input {
+  width: 100%;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  padding: 0.45rem 0.65rem;
+  font-size: 0.8125rem;
+  color: #0f172a;
+  outline: none;
+
+  &:focus {
+    border-color: #0054ac;
+    box-shadow: 0 0 0 1px #0054ac;
+  }
+}
+
 .module-select__trigger-label {
   min-width: 0;
   flex: 1 1 auto;

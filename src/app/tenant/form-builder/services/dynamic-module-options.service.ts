@@ -3,9 +3,13 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, catchError, map, of, shareReplay, switchMap } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { FieldOption, FormField } from '../models/form-field.model';
-import { FormModuleListItem } from '../../forms/models/form-module.model';
+import {
+  FormModuleKind,
+  FormModuleListItem,
+} from '../../forms/models/form-module.model';
 import { FormsService } from '../../forms/services/forms.service';
 import { FormStorageService } from '../../forms/services/form-storage.service';
+
 const MODULE_API_PATHS: Record<string, string> = {
   users: '/users',
   user: '/users',
@@ -32,6 +36,11 @@ export interface ModuleColumnOption {
 export interface ModuleDataCache {
   records: Record<string, unknown>[];
   columns: ModuleColumnOption[];
+  /** Key used to read display labels from each record (`name` or field id). */
+  displayLabelKey: string;
+  moduleType: FormModuleKind;
+  /** Pre-built Select Options using the resolved display key. */
+  options: FieldOption[];
 }
 
 @Injectable({
@@ -42,6 +51,7 @@ export class DynamicModuleOptionsService {
   private readonly recordsCache = new Map<string, Observable<Record<string, unknown>[]>>();
   private readonly moduleDataCache = new Map<string, Observable<ModuleDataCache>>();
   private readonly schemaFieldsCache = new Map<string, Observable<FormField[]>>();
+  private readonly moduleTypeBySlug = new Map<string, FormModuleKind>();
 
   constructor(
     private http: HttpClient,
@@ -54,13 +64,15 @@ export class DynamicModuleOptionsService {
 
     if (!this.modulesCache.has(cacheKey)) {
       const request = this.formsService.getForms().pipe(
-        map(response =>
-          (response.data ?? []).filter(
+        map(response => {
+          const modules = (response.data ?? []).filter(
             form =>
               form.module?.isActive !== false &&
               !this.isSameModule(this.getModuleSlug(form), activeModuleSlug)
-          )
-        ),
+          );
+          this.rememberModuleTypes(modules);
+          return modules;
+        }),
         shareReplay(1)
       );
       this.modulesCache.set(cacheKey, request);
@@ -91,17 +103,20 @@ export class DynamicModuleOptionsService {
     const cacheKey = this.normalizeSlug(moduleSlug);
 
     if (!this.moduleDataCache.has(cacheKey)) {
-      const request = this.getModuleRecords(moduleSlug).pipe(
-        switchMap(records => this.resolveModuleData(moduleSlug, records)),
-        catchError(() =>
-          this.getModuleSchemaFields(moduleSlug).pipe(
-            map(fields => ({
-              records: [],
-              columns: this.buildModuleColumns([], fields),
-            }))
-          )
+      const request = this.resolveModuleType(moduleSlug).pipe(
+        switchMap(moduleType =>
+          this.getModuleRecords(moduleSlug).pipe(
+            switchMap(records => this.resolveModuleData(moduleSlug, records, moduleType)),
+            catchError(() =>
+              this.getModuleSchemaFields(moduleSlug).pipe(
+                map(fields =>
+                  this.buildModuleDataCache([], fields, moduleType, 'name'),
+                ),
+              )
+            ),
+          ),
         ),
-        shareReplay(1)
+        shareReplay(1),
       );
       this.moduleDataCache.set(cacheKey, request);
     }
@@ -112,10 +127,7 @@ export class DynamicModuleOptionsService {
   buildModuleDataFromRecords(
     records: Record<string, unknown>[]
   ): ModuleDataCache {
-    return {
-      records,
-      columns: this.buildModuleColumns(records, []),
-    };
+    return this.buildModuleDataCache(records, [], 'static', 'name');
   }
 
   buildDefaultOptionsFromRecords(
@@ -135,7 +147,7 @@ export class DynamicModuleOptionsService {
     }
 
     return records
-      .map(record => {
+      .map((record, index) => {
         const id = this.readRecordId(record);
         const labelValue = this.readScalarValue(record, normalizedLabelKey);
 
@@ -143,12 +155,36 @@ export class DynamicModuleOptionsService {
           return null;
         }
 
-        return {
+        const option: FieldOption = {
           label: String(labelValue),
           value: id,
+          sortOrder: index,
         };
+
+        if (typeof id === 'number') {
+          option.id = id;
+        }
+
+        return option;
       })
       .filter((option): option is FieldOption => option !== null);
+  }
+
+  /**
+   * Resolve which record property holds the human-readable name/label.
+   * Static modules: prefer `name` on the record.
+   * Dynamic modules: use module schema metadata (systemMappingKey / fieldKey / id).
+   */
+  resolveDisplayLabelKey(
+    moduleType: FormModuleKind,
+    fields: FormField[],
+    records: Record<string, unknown>[],
+  ): string {
+    if (moduleType === 'static') {
+      return this.resolveStaticDisplayLabelKey(records);
+    }
+
+    return this.resolveDynamicDisplayLabelKey(fields, records);
   }
 
   extractColumnNamesFromRecords(
@@ -193,16 +229,180 @@ export class DynamicModuleOptionsService {
     return form.module?.name || form.name || form.moduleName;
   }
 
+  getCachedModuleType(moduleSlug: string): FormModuleKind | undefined {
+    return this.moduleTypeBySlug.get(this.normalizeSlug(moduleSlug));
+  }
+
   private resolveModuleData(
     moduleSlug: string,
-    records: Record<string, unknown>[]
+    records: Record<string, unknown>[],
+    moduleType: FormModuleKind,
   ): Observable<ModuleDataCache> {
+    if (moduleType === 'static') {
+      const displayLabelKey = this.resolveStaticDisplayLabelKey(records);
+      return of(
+        this.buildModuleDataCache(records, [], moduleType, displayLabelKey),
+      );
+    }
+
     return this.getModuleSchemaFields(moduleSlug).pipe(
-      map(fields => ({
-        records,
-        columns: this.buildModuleColumns(records, fields),
-      }))
+      map(fields => {
+        const displayLabelKey = this.resolveDynamicDisplayLabelKey(fields, records);
+        return this.buildModuleDataCache(
+          records,
+          fields,
+          moduleType,
+          displayLabelKey,
+        );
+      }),
     );
+  }
+
+  private buildModuleDataCache(
+    records: Record<string, unknown>[],
+    fields: FormField[],
+    moduleType: FormModuleKind,
+    displayLabelKey: string,
+  ): ModuleDataCache {
+    const resolvedKey = displayLabelKey || 'name';
+    return {
+      records,
+      columns: this.buildModuleColumns(records, fields),
+      displayLabelKey: resolvedKey,
+      moduleType,
+      options: this.buildOptionsFromRecords(records, resolvedKey),
+    };
+  }
+
+  private resolveStaticDisplayLabelKey(
+    records: Record<string, unknown>[],
+  ): string {
+    if (records.some(record => this.hasNonEmptyValue(record, 'name'))) {
+      return 'name';
+    }
+    if (records.some(record => this.hasNonEmptyValue(record, 'title'))) {
+      return 'title';
+    }
+    return 'name';
+  }
+
+  private resolveDynamicDisplayLabelKey(
+    fields: FormField[],
+    records: Record<string, unknown>[],
+  ): string {
+    const candidates = fields.filter(field => String(field.id ?? '').trim());
+
+    const bySystemMapping = candidates.find(field =>
+      this.isNameLikeKey(field.systemMappingKey),
+    );
+    if (bySystemMapping?.id) {
+      return String(bySystemMapping.id);
+    }
+
+    const byFieldKey = candidates.find(field =>
+      this.isNameLikeKey(field.fieldKey) || this.isNameLikeKey(field.name),
+    );
+    if (byFieldKey?.id) {
+      return String(byFieldKey.id);
+    }
+
+    const byLabel = candidates.find(field => this.isNameLikeLabel(field.label));
+    if (byLabel?.id) {
+      return String(byLabel.id);
+    }
+
+    const presentOnRecords = candidates.find(field =>
+      records.some(record => this.hasNonEmptyValue(record, String(field.id))),
+    );
+    if (presentOnRecords?.id) {
+      return String(presentOnRecords.id);
+    }
+
+    // Fallbacks for legacy/partial schemas.
+    if (records.some(record => this.hasNonEmptyValue(record, 'name'))) {
+      return 'name';
+    }
+
+    return candidates[0]?.id ? String(candidates[0].id) : 'name';
+  }
+
+  private isNameLikeKey(raw: unknown): boolean {
+    const key = String(raw ?? '')
+      .trim()
+      .toLowerCase();
+    if (!key) {
+      return false;
+    }
+    return key === 'name' || key.endsWith('_name');
+  }
+
+  private isNameLikeLabel(raw: unknown): boolean {
+    const label = String(raw ?? '')
+      .trim()
+      .toLowerCase();
+    if (!label) {
+      return false;
+    }
+    return label === 'name' || label.endsWith(' name');
+  }
+
+  private hasNonEmptyValue(
+    record: Record<string, unknown>,
+    key: string,
+  ): boolean {
+    const value = this.readScalarValue(record, key);
+    return value != null && String(value).trim() !== '';
+  }
+
+  private resolveModuleType(moduleSlug: string): Observable<FormModuleKind> {
+    const cached = this.getCachedModuleType(moduleSlug);
+    if (cached) {
+      return of(cached);
+    }
+
+    return this.formsService.getForms().pipe(
+      map(response => {
+        this.rememberModuleTypes(response.data ?? []);
+        return (
+          this.getCachedModuleType(moduleSlug) ?? this.inferModuleType(moduleSlug)
+        );
+      }),
+    );
+  }
+
+  private inferModuleType(moduleSlug: string): FormModuleKind {
+    // Location catalogs and similar known static modules when type is missing.
+    const kind = this.normalizeSlug(moduleSlug);
+    if (
+      kind === 'countries' ||
+      kind === 'states' ||
+      kind === 'cities' ||
+      kind === 'roles' ||
+      kind === 'locations'
+    ) {
+      return 'static';
+    }
+    return 'dynamic';
+  }
+
+  private rememberModuleTypes(modules: FormModuleListItem[]): void {
+    for (const form of modules) {
+      const slug = this.normalizeSlug(this.getModuleSlug(form));
+      const type = this.normalizeModuleType(form.module?.type ?? form.type);
+      if (slug && type) {
+        this.moduleTypeBySlug.set(slug, type);
+      }
+    }
+  }
+
+  private normalizeModuleType(raw: unknown): FormModuleKind | undefined {
+    const value = String(raw ?? '')
+      .trim()
+      .toLowerCase();
+    if (value === 'static' || value === 'dynamic') {
+      return value;
+    }
+    return undefined;
   }
 
   private getModuleSchemaFields(moduleSlug: string): Observable<FormField[]> {
@@ -261,13 +461,20 @@ export class DynamicModuleOptionsService {
 
       const id = String(field.id ?? '').trim();
       const name = String(field.name ?? '').trim();
+      const fieldKey = String(field.fieldKey ?? '').trim();
+      const systemMappingKey = String(field.systemMappingKey ?? '').trim();
 
       if (id) {
         labels.set(id, label);
       }
-
       if (name) {
         labels.set(name, label);
+      }
+      if (fieldKey) {
+        labels.set(fieldKey, label);
+      }
+      if (systemMappingKey) {
+        labels.set(systemMappingKey, label);
       }
     }
 
