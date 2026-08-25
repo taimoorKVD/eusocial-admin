@@ -211,6 +211,131 @@
   }
 }
 
+.price-cycle-tabs {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  background: #f8fafc;
+  gap: 0.15rem;
+
+  button {
+    border: none;
+    background: transparent;
+    color: #64748b;
+    font-size: 0.82rem;
+    font-weight: 650;
+    padding: 0.45rem 0.95rem;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+
+    &:hover {
+      color: #0f172a;
+    }
+
+    &.is-active {
+      background: #fff;
+      color: #9a3412;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+    }
+  }
+}
+
+.plan-picker {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.65rem;
+}
+
+.plan-picker__item {
+  text-align: left;
+  border: 1px solid #eef0f3;
+  border-radius: 14px;
+  padding: 0.9rem 1rem;
+  background: #fcfcfd;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+
+  &:hover {
+    border-color: #fdba74;
+  }
+
+  &.is-selected {
+    border-color: #f97316;
+    background: #fff7ed;
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.12);
+  }
+}
+
+.plan-picker__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.45rem;
+
+  strong {
+    font-size: 0.95rem;
+    color: #0f172a;
+  }
+}
+
+.plan-picker__badge {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(145deg, #ffb04a, #ea580c);
+  flex-shrink: 0;
+
+  &.plan-badge--basic {
+    background: linear-gradient(145deg, #c084fc, #7e22ce);
+  }
+
+  &.plan-badge--standard {
+    background: linear-gradient(145deg, #4ade80, #166534);
+  }
+
+  &.plan-badge--professional {
+    background: linear-gradient(145deg, #fdba74, #9a3412);
+  }
+
+  &.plan-badge--enterprise {
+    background: linear-gradient(145deg, #fb923c, #c2410c);
+  }
+}
+
+.plan-picker__price {
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  margin-bottom: 0.35rem;
+
+  strong {
+    font-size: 1.2rem;
+    font-weight: 750;
+    color: #0f172a;
+  }
+
+  span {
+    color: #64748b;
+    font-size: 0.8rem;
+  }
+}
+
+.plan-picker__desc {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
 .password-wrap {
   position: relative;
 

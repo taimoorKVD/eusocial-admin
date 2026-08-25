@@ -159,26 +159,54 @@
         <h3>Subscription & Plan</h3>
 
         <div class="field">
-          <label>Select Plan <span>*</span></label>
-          <select formControlName="planId">
-            <option [ngValue]="null">Select a plan</option>
-            <option *ngFor="let plan of plans" [ngValue]="plan.id">{{ planLabel(plan) }}</option>
-          </select>
-          <small class="error" *ngIf="f['planId'].touched && f['planId'].errors?.['required']">Plan is required.</small>
+          <label>Billing Cycle <span>*</span></label>
+          <div class="price-cycle-tabs" role="tablist" aria-label="Billing cycle">
+            <button
+              type="button"
+              role="tab"
+              [attr.aria-selected]="f['billingCycle'].value === 'monthly'"
+              [class.is-active]="f['billingCycle'].value === 'monthly'"
+              (click)="setBillingCycle('monthly')"
+            >
+              Monthly
+            </button>
+            <button
+              type="button"
+              role="tab"
+              [attr.aria-selected]="f['billingCycle'].value === 'yearly'"
+              [class.is-active]="f['billingCycle'].value === 'yearly'"
+              (click)="setBillingCycle('yearly')"
+            >
+              Yearly
+            </button>
+          </div>
         </div>
 
         <div class="field">
-          <label>Billing Cycle <span>*</span></label>
-          <div class="radio-row">
-            <label class="radio">
-              <input type="radio" formControlName="billingCycle" value="monthly" />
-              <span>Monthly</span>
-            </label>
-            <label class="radio">
-              <input type="radio" formControlName="billingCycle" value="yearly" />
-              <span>Yearly</span>
-            </label>
+          <label>Select Plan <span>*</span></label>
+          <div class="plan-picker" *ngIf="plans.length; else noPlans">
+            <button
+              type="button"
+              class="plan-picker__item"
+              *ngFor="let plan of plans"
+              [class.is-selected]="f['planId'].value === plan.id"
+              (click)="selectPlan(plan.id)"
+            >
+              <div class="plan-picker__top">
+                <strong>{{ plan.name }}</strong>
+                <span class="plan-picker__badge" [ngClass]="planBadgeClass(plan.name)">{{ plan.name?.charAt(0) || 'P' }}</span>
+              </div>
+              <div class="plan-picker__price">
+                <strong>{{ planPrice(plan) }}</strong>
+                <span>/ {{ f['billingCycle'].value === 'yearly' ? 'year' : 'month' }}</span>
+              </div>
+              <p class="plan-picker__desc">{{ plan.description || 'Subscription plan' }}</p>
+            </button>
           </div>
+          <ng-template #noPlans>
+            <p class="hint">No active plans available.</p>
+          </ng-template>
+          <small class="error" *ngIf="f['planId'].touched && f['planId'].errors?.['required']">Plan is required.</small>
         </div>
 
         <div class="field">

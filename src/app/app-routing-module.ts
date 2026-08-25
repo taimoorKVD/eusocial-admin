@@ -27,6 +27,7 @@ import { PlanView } from './admin/plans/plan-view/plan-view';
 import { Subscriptions } from './admin/subscriptions/subscriptions';
 import { SubscriptionView } from './admin/subscriptions/subscription-view/subscription-view';
 import { Invoices } from './admin/invoices/invoices';
+import { InvoiceView } from './admin/invoices/invoice-view/invoice-view';
 
 import { TenantPortalGuard } from './guards/tenant-portal.guard';
 import { AdminPortalGuard } from './guards/admin-portal.guard';
@@ -223,7 +224,13 @@ const routes: Routes = [
               { path: ':id/view', component: SubscriptionView },
             ],
           },
-          { path: 'invoices', component: Invoices },
+          {
+            path: 'invoices',
+            children: [
+              { path: '', component: Invoices },
+              { path: ':id/view', component: InvoiceView },
+            ],
+          },
           { path: 'billing', redirectTo: 'invoices', pathMatch: 'full' },
 
         ],
