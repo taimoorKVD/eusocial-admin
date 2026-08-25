@@ -240,13 +240,35 @@ export class Tenants implements OnInit {
   private fetchList$(page: number) {
     const search = this.search.trim();
     const status = this.status;
+    const apiSearch = this.toApiSearch(search);
 
     return this.tenantService
       .getTenants(page, this.limit, {
-        search: search || undefined,
+        search: apiSearch || undefined,
         status: status || undefined,
       })
       .pipe(map((res) => this.ensureFiltered(res, search, status)));
+  }
+
+  /**
+   * UI shows google.eusocial.thebetawebsite.com, but the API stores slug / google.com.
+   * Strip the platform host so a domain-column search still hits the list endpoint.
+   */
+  private toApiSearch(search: string): string {
+    const raw = (search || '').trim();
+    if (!raw) return '';
+
+    const host = raw.toLowerCase().replace(/^https?:\/\//, '').split('/')[0];
+    const base = (environment.baseDomain || 'eusocial.thebetawebsite.com').toLowerCase();
+
+    for (const suffix of [`.${base}`, '.eusocial.com']) {
+      if (host.endsWith(suffix) && host.length > suffix.length) {
+        const slug = host.slice(0, -suffix.length).split('.').filter(Boolean)[0];
+        if (slug) return slug;
+      }
+    }
+
+    return raw;
   }
 
   /** Keep UI correct even if API ignores status/search on the list endpoint. */
@@ -271,6 +293,7 @@ export class Tenants implements OnInit {
           t?.subdomain,
           t?.customDomain,
           t?.custom_domain,
+          this.domainOf(t),
         ]
           .filter(Boolean)
           .join(' ')
