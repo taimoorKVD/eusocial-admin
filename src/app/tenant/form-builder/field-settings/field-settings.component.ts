@@ -50,6 +50,7 @@ import {
 import {
   getLocationFieldDeleteBlockReason,
   isDynamicSelectOptionsHiddenForModule,
+  isMultiSelectionTypeHiddenForModule,
   resolveBuilderLocationKind,
   schemaHasLocationKind,
 } from '../utils/location-field-dependencies.utils';
@@ -179,9 +180,7 @@ export class FieldSettingsComponent {
       optionSource: this.resolveEmittedOptionSource(),
       selectionType:
         this._field.type === 'select'
-          ? this._field.selectionType === 'multi'
-            ? 'multi'
-            : 'single'
+          ? this.resolveSelectSelectionType(this._field)
           : undefined,
       condition: serializeConditionalLogic(this.conditionEditor),
     });
@@ -292,8 +291,20 @@ export class FieldSettingsComponent {
     return moduleName === 'users' || moduleName === 'items' || moduleName === 'vendors';
   }
 
+  /** Countries / States / Cities: Multi is hidden; only Single is allowed. */
+  get isMultiSelectionTypeHidden(): boolean {
+    return (
+      this.optionsMode === 'dynamic' &&
+      isMultiSelectionTypeHiddenForModule(this.selectedModuleSlug)
+    );
+  }
+
   get selectionType(): 'single' | 'multi' {
-    return this._field?.selectionType === 'multi' ? 'multi' : 'single';
+    if (!this._field) {
+      return 'single';
+    }
+
+    return this.resolveSelectSelectionType(this._field);
   }
 
   setSelectionType(type: 'single' | 'multi'): void {
@@ -301,8 +312,30 @@ export class FieldSettingsComponent {
       return;
     }
 
+    if (type === 'multi' && this.isMultiSelectionTypeHidden) {
+      return;
+    }
+
     this._field.selectionType = type;
     this.onChange();
+  }
+
+  private resolveSelectSelectionType(
+    field: FormField
+  ): 'single' | 'multi' {
+    const moduleSlug =
+      field.optionSource?.type === 'dynamic'
+        ? field.optionSource.endpoint
+        : this.selectedModuleSlug;
+
+    if (
+      (this.optionsMode === 'dynamic' || field.optionSource?.type === 'dynamic') &&
+      isMultiSelectionTypeHiddenForModule(moduleSlug)
+    ) {
+      return 'single';
+    }
+
+    return field.selectionType === 'multi' ? 'multi' : 'single';
   }
 
   get isParameterField(): boolean {
@@ -748,6 +781,11 @@ export class FieldSettingsComponent {
     this._field.options = [];
     this._field.optionSource = this.buildDynamicOptionSource();
 
+    // Location modules only support Single — reset Multi if switching from Items/etc.
+    if (isMultiSelectionTypeHiddenForModule(moduleSlug)) {
+      this._field.selectionType = 'single';
+    }
+
     this.loadModuleData(moduleSlug, {
       preserveSelection: false,
       emitUpdate: true,
@@ -1047,9 +1085,7 @@ export class FieldSettingsComponent {
       optionSource: value.optionSource ? { ...value.optionSource } : undefined,
       selectionType:
         value.type === 'select'
-          ? value.selectionType === 'multi'
-            ? 'multi'
-            : 'single'
+          ? this.resolveSelectSelectionType(value)
           : undefined,
       isShow: value.isShow !== false,
       isReadonly: value.isReadonly === true,
@@ -1143,6 +1179,14 @@ export class FieldSettingsComponent {
 
     this.dynamicOptionsSearchQuery = '';
     this.restoreModuleDataFromCache();
+
+    if (
+      this.optionsMode === 'dynamic' &&
+      isMultiSelectionTypeHiddenForModule(this.selectedModuleSlug) &&
+      this._field.selectionType === 'multi'
+    ) {
+      this._field.selectionType = 'single';
+    }
 
     if (this.optionsMode === 'dynamic') {
       this.ensureModulesLoaded(() => {

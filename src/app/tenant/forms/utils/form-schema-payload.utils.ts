@@ -12,6 +12,7 @@ import {
   normalizeRangeTimeFormat,
   normalizeRangeType,
 } from '../../../shared/dynamic-form/range-field.utils';
+import { resolveBuilderLocationKind } from '../../form-builder/utils/location-field-dependencies.utils';
 
 export function buildFormSchemaPayload(fields: FormField[]) {
   const orderedFields = normalizeFieldOrder([...fields]);
@@ -30,7 +31,13 @@ export function buildFormSchemaPayload(fields: FormField[]) {
         isRequired: field.required,
         isShow: field.isShow !== false,
         optionSource: field.optionSource,
-        selectionType: field.type === 'select' ? field.selectionType || 'single' : undefined,
+        selectionType:
+          field.type === 'select'
+            ? field.optionSource?.type === 'dynamic' &&
+              resolveBuilderLocationKind(field.optionSource.endpoint) != null
+              ? 'single'
+              : field.selectionType || 'single'
+            : undefined,
         allowDecimal:
           field.type === 'number' ||
           (field.type === 'range' && normalizeRangeType(field.rangeType) === 'number')

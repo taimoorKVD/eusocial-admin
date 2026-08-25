@@ -87,6 +87,16 @@ export function isDynamicSelectOptionsHiddenForModule(
   return resolveBuilderLocationKind(moduleSlug) != null;
 }
 
+/**
+ * Location modules (Countries / States / Cities) only support Single selection.
+ * Multi must stay hidden in Form Builder for these modules.
+ */
+export function isMultiSelectionTypeHiddenForModule(
+  moduleSlug?: string | null
+): boolean {
+  return resolveBuilderLocationKind(moduleSlug) != null;
+}
+
 export function getLocationFieldDeleteBlockReason(
   field: FormField,
   schema: FormField[]

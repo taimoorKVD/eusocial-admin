@@ -13,6 +13,7 @@ import { FieldOption, FieldType, FormField } from '../../form-builder/models/for
 import { FieldOptionsService } from '../../form-builder/services/field-options.service';
 import { normalizeCheckboxFieldOptions, normalizeStaticSelectFieldOptions } from '../../form-builder/utils/field-options.utils';
 import { toFieldName } from '../../form-builder/utils/form-field.factory';
+import { resolveBuilderLocationKind } from '../../form-builder/utils/location-field-dependencies.utils';
 
 const SUPPORTED_TYPES = new Set<DynamicFieldType>([
   'text',
@@ -97,7 +98,13 @@ export class DynamicFormFieldMapperService {
             },
           }
         : undefined,
-      selectionType: type === 'select' ? field.selectionType || 'single' : undefined,
+      selectionType:
+        type === 'select'
+          ? field.optionSource?.type === 'dynamic' &&
+            resolveBuilderLocationKind(field.optionSource.endpoint) != null
+            ? 'single'
+            : field.selectionType || 'single'
+          : undefined,
       isShow: field.isShow,
       isReadonly: field.isReadonly,
       allowDecimal:
