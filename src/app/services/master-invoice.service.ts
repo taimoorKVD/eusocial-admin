@@ -45,4 +45,8 @@ export class MasterInvoiceService {
   getInvoice(id: number): Observable<{ success: boolean; data: MasterInvoice }> {
     return this.http.get<{ success: boolean; data: MasterInvoice }>(`${this.baseUrl}/${id}`);
   }
+
+  downloadPdf(id: number): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/${id}/pdf`, { responseType: 'blob' });
+  }
 }

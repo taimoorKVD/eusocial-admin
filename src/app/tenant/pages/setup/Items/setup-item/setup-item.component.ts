@@ -472,8 +472,12 @@ export class SetupItemComponent {
             .filter(
               (field) =>
                 field.type === 'select' &&
-                field.optionSource?.type === 'api' ||
-                (field.optionSource?.type === 'dynamic' && field.optionSource?.endpoint),
+                (
+                  field.optionSource?.type === 'api' ||
+                  (field.optionSource?.type === 'dynamic' &&
+                    !!field.optionSource?.endpoint &&
+                    !(Array.isArray(field.options) && field.options.length > 0))
+                ),
             )
             .map((field) =>
               this.formStorageService.getEndpointApi<Record<string, unknown>>(
@@ -669,6 +673,15 @@ export class SetupItemComponent {
     field: DynamicField,
     response: Record<string, unknown>,
   ): void {
+    // Form Builder selected dynamic options are the source of truth.
+    if (
+      field.optionSource?.type === 'dynamic' &&
+      Array.isArray(field.options) &&
+      field.options.length > 0
+    ) {
+      return;
+    }
+
     const dataPath = field.optionSource?.response?.dataPath ?? 'data';
     const labelKey = field.optionSource?.response?.labelKey ?? 'label';
     const valueKey = field.optionSource?.response?.valueKey ?? 'value';

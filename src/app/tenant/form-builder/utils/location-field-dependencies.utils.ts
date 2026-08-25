@@ -77,6 +77,26 @@ export function isLocationModuleOptionDisabled(
   return !schemaHasLocationKind(schema, 'countries', excludeFieldId);
 }
 
+/**
+ * Dynamic Select "Select Options" filtering is not used for location modules
+ * (Countries / States / Cities). Those keep the existing cascade behavior.
+ */
+export function isDynamicSelectOptionsHiddenForModule(
+  moduleSlug?: string | null
+): boolean {
+  return resolveBuilderLocationKind(moduleSlug) != null;
+}
+
+/**
+ * Location modules (Countries / States / Cities) only support Single selection.
+ * Multi must stay hidden in Form Builder for these modules.
+ */
+export function isMultiSelectionTypeHiddenForModule(
+  moduleSlug?: string | null
+): boolean {
+  return resolveBuilderLocationKind(moduleSlug) != null;
+}
+
 export function getLocationFieldDeleteBlockReason(
   field: FormField,
   schema: FormField[]
