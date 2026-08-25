@@ -1,4 +1,14 @@
 import { cloneConditionalLogic, serializeConditionalLogic } from '../../../../../shared/conditional-logic';
+import {
+  getDefaultCharacterLimit,
+  resolveCharacterLimit,
+  supportsCharacterLimit,
+} from '../../../../../shared/dynamic-form/character-limit.utils';
+import {
+  DEFAULT_RANGE_STEP,
+  normalizeRangeTimeFormat,
+  normalizeRangeType,
+} from '../../../../../shared/dynamic-form/range-field.utils';
 import { FormField, FieldOption } from '../../../../form-builder/models/form-field.model';
 import {
   cloneOptionSource,
@@ -100,8 +110,22 @@ export function mapConfigFieldToBuilder(field: FormFieldConfig): FormField {
     parameterCategory: field.parameterCategory,
     parameterUnit: field.parameterUnit,
     maxRating: field.maxRating,
+    rangeType: formFieldType === 'range' ? normalizeRangeType(field.rangeType) : undefined,
     rangeMin: field.rangeMin,
     rangeMax: field.rangeMax,
+    rangeStep: field.rangeStep,
+    rangeMinDate: field.rangeMinDate,
+    rangeMaxDate: field.rangeMaxDate,
+    rangePlaceholderFrom: field.rangePlaceholderFrom,
+    rangePlaceholderTo: field.rangePlaceholderTo,
+    timeFormat:
+      formFieldType === 'range' && normalizeRangeType(field.rangeType) === 'time'
+        ? normalizeRangeTimeFormat(field.timeFormat)
+        : undefined,
+    allowDecimal: field.allowDecimal === true,
+    characterLimit: supportsCharacterLimit(formFieldType)
+      ? resolveCharacterLimit(formFieldType, field.characterLimit)
+      : undefined,
   };
 }
 
@@ -136,8 +160,30 @@ export function mapBuilderFieldToConfig(
     parameterCategory: field.parameterCategory,
     parameterUnit: field.parameterUnit,
     maxRating: field.maxRating,
+    rangeType: type === 'range' ? normalizeRangeType(field.rangeType) : undefined,
     rangeMin: field.rangeMin,
     rangeMax: field.rangeMax,
+    rangeStep:
+      type === 'range' && normalizeRangeType(field.rangeType) === 'number'
+        ? (Number(field.rangeStep) > 0 ? Number(field.rangeStep) : DEFAULT_RANGE_STEP)
+        : undefined,
+    rangeMinDate: field.rangeMinDate,
+    rangeMaxDate: field.rangeMaxDate,
+    rangePlaceholderFrom: field.rangePlaceholderFrom,
+    rangePlaceholderTo: field.rangePlaceholderTo,
+    timeFormat:
+      type === 'range' && normalizeRangeType(field.rangeType) === 'time'
+        ? normalizeRangeTimeFormat(field.timeFormat)
+        : undefined,
+    allowDecimal:
+      field.type === 'number' ||
+      (field.type === 'range' && normalizeRangeType(field.rangeType) === 'number')
+        ? field.allowDecimal === true
+        : undefined,
+    characterLimit: supportsCharacterLimit(type)
+      ? (resolveCharacterLimit(type, field.characterLimit) ??
+        getDefaultCharacterLimit(type))
+      : undefined,
   };
 }
 

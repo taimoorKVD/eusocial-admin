@@ -30,7 +30,7 @@
     />
   </div>
 
-  <div>
+  <div *ngIf="!isRangeField">
     <label class="mb-1.5 block text-xs font-medium text-slate-600">Placeholder</label>
     <input
       type="text"
@@ -54,6 +54,18 @@
       <label for="field-required" class="text-sm text-slate-700">Required field</label>
     </div>
 
+    <div *ngIf="isNumberField" class="flex items-center gap-2">
+      <input
+        id="field-allow-decimal"
+        type="checkbox"
+        [ngModel]="field.allowDecimal === true"
+        (ngModelChange)="onAllowDecimalChange($event)"
+        [disabled]="!isFieldEditable"
+        class="field-settings-checkbox"
+      />
+      <label for="field-allow-decimal" class="text-sm text-slate-700">Allow Decimal Point</label>
+    </div>
+
     <!-- <div class="flex items-center gap-2">
       <input
         id="field-is-show"
@@ -75,6 +87,154 @@
       />
       <label for="field-is-readonly" class="text-sm text-slate-700">Readonly field</label>
     </div> -->
+  </div>
+
+  <div *ngIf="supportsCharacterLimit" class="space-y-1.5">
+    <label for="field-character-limit" class="mb-1.5 block text-xs font-medium text-slate-600">
+      Character Limit
+    </label>
+    <input
+      id="field-character-limit"
+      type="number"
+      min="1"
+      [attr.max]="defaultCharacterLimit"
+      step="1"
+      [ngModel]="characterLimitValue"
+      (ngModelChange)="onCharacterLimitChange($event)"
+      [disabled]="!isFieldEditable"
+      class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+    />
+    <p class="text-[11px] text-slate-500">
+      Maximum {{ defaultCharacterLimit }} characters for this field type.
+    </p>
+  </div>
+
+  <div *ngIf="isRangeField" class="space-y-3">
+    <div>
+      <label class="mb-1.5 block text-xs font-medium text-slate-600">Range Type</label>
+      <select
+        [ngModel]="rangeTypeValue"
+        (ngModelChange)="onRangeTypeChange($event)"
+        [disabled]="!isFieldEditable"
+        class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+      >
+        <option value="number">Number</option>
+        <option value="date">Date</option>
+        <option value="time">Time</option>
+      </select>
+    </div>
+
+    <div>
+      <label class="mb-1.5 block text-xs font-medium text-slate-600">Placeholder 1</label>
+      <input
+        type="text"
+        [ngModel]="field.rangePlaceholderFrom || ''"
+        (ngModelChange)="onRangePlaceholderFromChange($event)"
+        [disabled]="!isFieldEditable"
+        placeholder="From"
+        class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+      />
+    </div>
+    <div>
+      <label class="mb-1.5 block text-xs font-medium text-slate-600">Placeholder 2</label>
+      <input
+        type="text"
+        [ngModel]="field.rangePlaceholderTo || ''"
+        (ngModelChange)="onRangePlaceholderToChange($event)"
+        [disabled]="!isFieldEditable"
+        placeholder="To"
+        class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+      />
+    </div>
+
+    <ng-container *ngIf="isNumberRange">
+      <div>
+        <label class="mb-1.5 block text-xs font-medium text-slate-600">Minimum Value</label>
+        <input
+          type="number"
+          [ngModel]="field.rangeMin"
+          (ngModelChange)="onRangeMinChange($event)"
+          [disabled]="!isFieldEditable"
+          class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+        />
+      </div>
+      <div>
+        <label class="mb-1.5 block text-xs font-medium text-slate-600">Maximum Value</label>
+        <input
+          type="number"
+          [ngModel]="field.rangeMax"
+          (ngModelChange)="onRangeMaxChange($event)"
+          [disabled]="!isFieldEditable"
+          class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+        />
+      </div>
+      <div>
+        <label class="mb-1.5 block text-xs font-medium text-slate-600">Step</label>
+        <input
+          type="number"
+          min="0.000001"
+          [ngModel]="rangeStepValue"
+          (ngModelChange)="onRangeStepChange($event)"
+          [disabled]="!isFieldEditable"
+          class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+        />
+      </div>
+      <div class="flex items-center gap-2 rounded-md border border-slate-100 bg-slate-50 px-3 py-2.5">
+        <input
+          id="field-range-allow-decimal"
+          type="checkbox"
+          [ngModel]="field.allowDecimal === true"
+          (ngModelChange)="onRangeAllowDecimalChange($event)"
+          [disabled]="!isFieldEditable"
+          class="field-settings-checkbox"
+        />
+        <label for="field-range-allow-decimal" class="text-sm text-slate-700">Allow Decimal Point</label>
+      </div>
+    </ng-container>
+
+    <ng-container *ngIf="isDateRange">
+      <div>
+        <label class="mb-1.5 block text-xs font-medium text-slate-600">Minimum Date</label>
+        <input
+          type="text"
+          appFlatpickr
+          [fpValue]="field.rangeMinDate || null"
+          [fpMaxDate]="field.rangeMaxDate || null"
+          [fpDisabled]="!isFieldEditable"
+          (fpChange)="onRangeMinDateChange($event || '')"
+          placeholder="Select minimum date"
+          class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+        />
+      </div>
+      <div>
+        <label class="mb-1.5 block text-xs font-medium text-slate-600">Maximum Date</label>
+        <input
+          type="text"
+          appFlatpickr
+          [fpValue]="field.rangeMaxDate || null"
+          [fpMinDate]="field.rangeMinDate || null"
+          [fpDisabled]="!isFieldEditable"
+          (fpChange)="onRangeMaxDateChange($event || '')"
+          placeholder="Select maximum date"
+          class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+        />
+      </div>
+    </ng-container>
+
+    <ng-container *ngIf="isTimeRange">
+      <div>
+        <label class="mb-1.5 block text-xs font-medium text-slate-600">Time Format</label>
+        <select
+          [ngModel]="timeFormatValue"
+          (ngModelChange)="onTimeFormatChange($event)"
+          [disabled]="!isFieldEditable"
+          class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+        >
+          <option value="24">24 Hour</option>
+          <option value="12">12 Hour (AM/PM)</option>
+        </select>
+      </div>
+    </ng-container>
   </div>
 
   <div *ngIf="isParameterField" class="space-y-3">

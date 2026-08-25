@@ -6,6 +6,14 @@ import {
   SelectSelectionType,
 } from '../models/form-field.model';
 import { serializeConditionalLogic } from '../../../shared/conditional-logic';
+import { resolveCharacterLimit } from '../../../shared/dynamic-form/character-limit.utils';
+import {
+  DEFAULT_RANGE_STEP,
+  normalizeRangeTimeFormat,
+  normalizeRangeType,
+  sanitizeDateBounds,
+  sanitizeRangeBounds,
+} from '../../../shared/dynamic-form/range-field.utils';
 import {
   normalizeCheckboxFieldOptions,
   normalizeStaticSelectFieldOptions,
@@ -169,6 +177,15 @@ export function sanitizeField(
   const fieldTypeName = readFieldTypeName(field);
   const type = normalizeFieldTypeName(fieldTypeName, field.type);
   const optionSource = readOptionSourceFromField(field);
+  const rangeType = type === 'range' ? normalizeRangeType(field.rangeType) : undefined;
+  const numberBounds =
+    type === 'range' && rangeType === 'number'
+      ? sanitizeRangeBounds(field.rangeMin, field.rangeMax)
+      : {};
+  const dateBounds =
+    type === 'range' && rangeType === 'date'
+      ? sanitizeDateBounds(field.rangeMinDate, field.rangeMaxDate)
+      : {};
 
   return {
     id: readFieldIdentifier(field),
@@ -193,8 +210,45 @@ export function sanitizeField(
     parameterCategory: field.parameterCategory,
     parameterUnit: field.parameterUnit,
     maxRating: field.maxRating,
-    rangeMin: field.rangeMin,
-    rangeMax: field.rangeMax,
+    rangeType,
+    rangeMin: numberBounds.rangeMin,
+    rangeMax: numberBounds.rangeMax,
+    rangeStep:
+      type === 'range' && rangeType === 'number'
+        ? (() => {
+            const step = Number(field.rangeStep);
+            return Number.isFinite(step) && step > 0 ? step : DEFAULT_RANGE_STEP;
+          })()
+        : undefined,
+    rangeMinDate: dateBounds.rangeMinDate,
+    rangeMaxDate: dateBounds.rangeMaxDate,
+    rangePlaceholderFrom:
+      type === 'range'
+        ? (typeof field.rangePlaceholderFrom === 'string'
+            ? field.rangePlaceholderFrom
+            : undefined)
+        : undefined,
+    rangePlaceholderTo:
+      type === 'range'
+        ? (typeof field.rangePlaceholderTo === 'string'
+            ? field.rangePlaceholderTo
+            : undefined)
+        : undefined,
+    timeFormat:
+      type === 'range' && rangeType === 'time'
+        ? normalizeRangeTimeFormat(field.timeFormat)
+        : undefined,
+    allowDecimal:
+      type === 'number' || (type === 'range' && rangeType === 'number')
+        ? readBooleanFlag(field, 'allowDecimal', 'allow_decimal', false)
+        : undefined,
+    characterLimit: resolveCharacterLimit(
+      type,
+      field.characterLimit ??
+        field['character_limit'] ??
+        field['maxLength'] ??
+        field['max_length'],
+    ),
   };
 }
 

@@ -58,10 +58,36 @@ export interface FormFieldConfig {
   parameterUnit?: string;
   /** Maximum rating value (default 5). */
   maxRating?: number;
-  /** Range field minimum / from value. */
+  /**
+   * Range field value type. Defaults to `number` when missing.
+   */
+  rangeType?: 'number' | 'date' | 'time';
+  /** Number range absolute minimum bound. */
   rangeMin?: number;
-  /** Range field maximum / to value. */
+  /** Number range absolute maximum bound. */
   rangeMax?: number;
+  /** Number range step increment. */
+  rangeStep?: number;
+  /** Date range minimum bound (YYYY-MM-DD). */
+  rangeMinDate?: string;
+  /** Date range maximum bound (YYYY-MM-DD). */
+  rangeMaxDate?: string;
+  /** Placeholder for the Range From / first input. */
+  rangePlaceholderFrom?: string;
+  /** Placeholder for the Range To / second input. */
+  rangePlaceholderTo?: string;
+  /** Time range display preference. Values are stored as HH:mm (24h). */
+  timeFormat?: '12' | '24';
+  /**
+   * Number field / Number range. When true, decimal values are allowed.
+   * Missing/undefined is treated as false for backward compatibility.
+   */
+  allowDecimal?: boolean;
+  /**
+   * Text / Text Area only. Maximum allowed characters.
+   * Missing/undefined uses 255 (text) or 5000 (textarea).
+   */
+  characterLimit?: number;
 }
 
 export interface FormRow {

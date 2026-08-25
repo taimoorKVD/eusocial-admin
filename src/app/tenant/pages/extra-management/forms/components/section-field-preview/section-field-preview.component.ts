@@ -13,6 +13,29 @@ import {
   getSelectOptionValue,
   isDependentLocationSelectLocked,
 } from '../../utils/row-location-dependencies.utils';
+import {
+  getFieldCharacterLimit,
+  truncateToCharacterLimit,
+} from '../../../../../../shared/dynamic-form/character-limit.utils';
+import {
+  allowsDecimalPoint,
+  getNumberFieldStep,
+  sanitizeNumberFieldInput,
+} from '../../../../../../shared/dynamic-form/number-field.utils';
+import {
+  earlierIsoDate,
+  getRangePlaceholderFrom,
+  getRangePlaceholderTo,
+  getRangeSideLabel,
+  laterIsoDate,
+  normalizeRangeType,
+  normalizeRangeValue,
+  normalizeTimeTo24h,
+  parseRangeNumber,
+  resolveRangeStep,
+  sanitizeRangeNumberInput,
+} from '../../../../../../shared/dynamic-form/range-field.utils';
+import { FlatpickrDirective } from '../../../../../../shared/directives/flatpickr/flatpickr.directive';
 
 /**
  * Editable FormFieldConfig control — matches section input styling.
@@ -21,7 +44,7 @@ import {
 @Component({
   selector: 'app-section-field-preview',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FlatpickrDirective],
   templateUrl: './section-field-preview.component.html',
   styleUrl: './section-field-preview.component.scss',
 })
@@ -157,6 +180,49 @@ export class SectionFieldPreviewComponent {
     this.valueChange.emit((event.target as HTMLInputElement | HTMLTextAreaElement).value);
   }
 
+  onTextInput(event: Event): void {
+    if (this.isInteractionDisabled) {
+      return;
+    }
+
+    const input = event.target as HTMLInputElement | HTMLTextAreaElement;
+    const limit = this.characterLimit;
+    const nextValue =
+      limit != null
+        ? truncateToCharacterLimit(input.value, limit)
+        : input.value;
+
+    if (input.value !== nextValue) {
+      input.value = nextValue;
+    }
+
+    this.valueChange.emit(nextValue);
+  }
+
+  get characterLimit(): number | null {
+    return getFieldCharacterLimit(this.field);
+  }
+
+  get numberStep(): string {
+    return getNumberFieldStep(this.field);
+  }
+
+  onNumberInput(event: Event): void {
+    if (this.isInteractionDisabled) {
+      return;
+    }
+
+    const input = event.target as HTMLInputElement;
+    const allowDecimal = allowsDecimalPoint(this.field);
+    const sanitized = sanitizeNumberFieldInput(input.value, allowDecimal);
+
+    if (input.value !== sanitized) {
+      input.value = sanitized;
+    }
+
+    this.valueChange.emit(sanitized);
+  }
+
   onParameterValueChange(event: Event): void {
     const input = event.target as HTMLInputElement;
     this.valueChange.emit(input.value);
@@ -176,15 +242,61 @@ export class SectionFieldPreviewComponent {
   }
 
   onRangeFromChange(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const current = this.field.value?.toString().split('-') || ['', ''];
-    this.valueChange.emit(`${input.value}-${current[1] || ''}`);
+    this.onRangeSideInput(event, 'from');
   }
 
   onRangeToChange(event: Event): void {
+    this.onRangeSideInput(event, 'to');
+  }
+
+  onRangeDateChange(dateStr: string | null, side: 'from' | 'to'): void {
+    if (this.isInteractionDisabled) {
+      return;
+    }
+
+    const current = normalizeRangeValue(this.field.value);
+    this.valueChange.emit(
+      JSON.stringify({
+        ...current,
+        [side]: dateStr || null,
+      }),
+    );
+  }
+
+  onRangeSideInput(event: Event, side: 'from' | 'to'): void {
+    if (this.isInteractionDisabled) {
+      return;
+    }
+
     const input = event.target as HTMLInputElement;
-    const current = this.field.value?.toString().split('-') || ['', ''];
-    this.valueChange.emit(`${current[0] || ''}-${input.value}`);
+    const current = normalizeRangeValue(this.field.value);
+    const rangeType = this.rangeType;
+    let nextSide: string | number | null = input.value;
+
+    if (rangeType === 'number') {
+      const sanitized = sanitizeRangeNumberInput(
+        input.value,
+        allowsDecimalPoint(this.field),
+      );
+      if (input.value !== sanitized) {
+        input.value = sanitized;
+      }
+      nextSide =
+        sanitized === '' || sanitized === '-' || sanitized === '.' || sanitized === '-.'
+          ? null
+          : (parseRangeNumber(sanitized) ?? sanitized);
+    } else if (rangeType === 'time') {
+      nextSide = normalizeTimeTo24h(input.value);
+    } else {
+      nextSide = input.value || null;
+    }
+
+    this.valueChange.emit(
+      JSON.stringify({
+        ...current,
+        [side]: nextSide,
+      }),
+    );
   }
 
   readonly parameterCategories = [
@@ -252,11 +364,65 @@ export class SectionFieldPreviewComponent {
   }
 
   get rangeFromValue(): string {
-    return this.field.value?.toString().split('-')[0] || '';
+    const value = normalizeRangeValue(this.field.value);
+    if (value.from == null || value.from === '') {
+      return '';
+    }
+    if (this.rangeType === 'time') {
+      return normalizeTimeTo24h(value.from) ?? '';
+    }
+    return String(value.from);
   }
 
   get rangeToValue(): string {
-    return this.field.value?.toString().split('-')[1] || '';
+    const value = normalizeRangeValue(this.field.value);
+    if (value.to == null || value.to === '') {
+      return '';
+    }
+    if (this.rangeType === 'time') {
+      return normalizeTimeTo24h(value.to) ?? '';
+    }
+    return String(value.to);
+  }
+
+  get rangeType(): 'number' | 'date' | 'time' {
+    return normalizeRangeType(this.field.rangeType);
+  }
+
+  get rangePlaceholderFrom(): string {
+    return getRangePlaceholderFrom(this.field);
+  }
+
+  get rangePlaceholderTo(): string {
+    return getRangePlaceholderTo(this.field);
+  }
+
+  get rangeLabelFrom(): string {
+    return getRangeSideLabel(this.field, 'from');
+  }
+
+  get rangeLabelTo(): string {
+    return getRangeSideLabel(this.field, 'to');
+  }
+
+  get rangeFromMinDate(): string | null {
+    return this.field.rangeMinDate || null;
+  }
+
+  get rangeFromMaxDate(): string | null {
+    return earlierIsoDate(this.field.rangeMaxDate, this.rangeToValue) || null;
+  }
+
+  get rangeToMinDate(): string | null {
+    return laterIsoDate(this.field.rangeMinDate, this.rangeFromValue) || null;
+  }
+
+  get rangeToMaxDate(): string | null {
+    return this.field.rangeMaxDate || null;
+  }
+
+  get rangeStep(): number {
+    return resolveRangeStep(this.field);
   }
 
   get displayTimestamp(): string {

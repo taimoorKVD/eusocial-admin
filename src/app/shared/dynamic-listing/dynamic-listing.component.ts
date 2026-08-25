@@ -3,11 +3,13 @@ import {
   Component,
   computed,
   effect,
+  inject,
   input,
   output,
   signal,
 } from '@angular/core';
 import { DynamicField } from '../../interfaces/dynamic-field';
+import { LocationCacheService } from '../../services/location-cache.service';
 import {
   formatListingCellValue,
   getDependentLocationFieldIdsToClear,
@@ -31,6 +33,8 @@ import { BulkSelectionState, toNumericIds } from './bulk-selection.state';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DynamicListingComponent {
+  private readonly locationCache = inject(LocationCacheService);
+
   readonly getRecordTrackId = getRecordTrackId;
   readonly getListingBadgeClass = getListingBadgeClass;
   readonly splitCommaSeparatedValue = splitCommaSeparatedValue;
@@ -186,7 +190,7 @@ export class DynamicListingComponent {
   }
 
   getCellValue(record: Record<string, unknown>, field: DynamicField): string {
-    return formatListingCellValue(record, field);
+    return formatListingCellValue(record, field, this.locationCache.countries());
   }
 
   getImageSrc(record: Record<string, unknown>, field: DynamicField): string | null {

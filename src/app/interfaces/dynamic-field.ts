@@ -1,4 +1,8 @@
 import { FieldCondition } from '../shared/conditional-logic';
+import type {
+  RangeFieldType,
+  RangeTimeFormat,
+} from '../tenant/form-builder/models/form-field.model';
 
 export type DynamicFieldType =
   | 'text'
@@ -53,6 +57,26 @@ export interface DynamicField {
   optionSource?: DynamicFieldOptionSource;
   /** Select field only. Defaults to `single` when missing. */
   selectionType?: DynamicSelectSelectionType;
+  /**
+   * Number field / Number range. When true, decimal values are allowed.
+   * Missing/undefined is treated as false for backward compatibility.
+   */
+  allowDecimal?: boolean;
+  /**
+   * Text / Text Area only. Maximum allowed characters.
+   * Missing/undefined uses 255 (text) or 5000 (textarea).
+   */
+  characterLimit?: number;
+  /** Range field configuration. */
+  rangeType?: RangeFieldType;
+  rangeMin?: number;
+  rangeMax?: number;
+  rangeStep?: number;
+  rangeMinDate?: string;
+  rangeMaxDate?: string;
+  rangePlaceholderFrom?: string;
+  rangePlaceholderTo?: string;
+  timeFormat?: RangeTimeFormat;
   condition?: FieldCondition;
 }
 

@@ -4,6 +4,17 @@ import {
   DynamicFieldOption,
   DynamicFormValue,
 } from '../../interfaces/dynamic-field';
+import {
+  getFieldCharacterLimit,
+} from './character-limit.utils';
+import { allowsDecimalPoint, integerNumberValidator } from './number-field.utils';
+import { emailFieldPatternValidator } from './email-field.utils';
+import {
+  createEmptyRangeValue,
+  normalizeRangeType,
+  normalizeRangeValue,
+  rangeFieldValidator,
+} from './range-field.utils';
 
 export function sortDynamicFields(fields: DynamicField[]): DynamicField[] {
   return [...fields]
@@ -23,7 +34,7 @@ export function serializeDynamicFieldsSchema(fields: DynamicField[]): string {
   return sortDynamicFields(fields)
     .map(
       (field) =>
-        `${field.id}:${field.name}:${field.type}:${Number(!!field.required)}:${field.selectionType || 'single'}:${Number(field.isShow !== false)}:${Number(!!field.isReadonly)}:${JSON.stringify(field.condition ?? null)}`,
+        `${field.id}:${field.name}:${field.type}:${Number(!!field.required)}:${field.selectionType || 'single'}:${Number(field.isShow !== false)}:${Number(!!field.isReadonly)}:${Number(allowsDecimalPoint(field))}:${getFieldCharacterLimit(field) ?? ''}:${field.type === 'range' ? normalizeRangeType(field.rangeType) : ''}:${JSON.stringify(field.condition ?? null)}`,
     )
     .join('|');
 }
@@ -99,6 +110,8 @@ export function getInitialFieldValue(field: DynamicField): unknown {
     }
     case 'number':
       return field.defaultValue ?? field.value ?? null;
+    case 'range':
+      return normalizeRangeValue(field.defaultValue ?? field.value ?? createEmptyRangeValue());
     case 'image':
       return field.defaultValue ?? field.value ?? null;
     default:
@@ -118,12 +131,26 @@ export function getFieldValidators(
   const required = options?.required ?? !!field.required;
   const visible = options?.visible ?? true;
 
+  if (field.type === 'range') {
+    validators.push(rangeFieldValidator(field, { required, visible }));
+    return validators;
+  }
+
   if (visible && required && field.type !== 'checkbox') {
     validators.push(Validators.required);
   }
 
   if (field.type === 'email') {
-    validators.push(Validators.email);
+    validators.push(emailFieldPatternValidator);
+  }
+
+  if (field.type === 'number' && !allowsDecimalPoint(field)) {
+    validators.push(integerNumberValidator());
+  }
+
+  const characterLimit = getFieldCharacterLimit(field);
+  if (characterLimit != null) {
+    validators.push(Validators.maxLength(characterLimit));
   }
 
   return validators;

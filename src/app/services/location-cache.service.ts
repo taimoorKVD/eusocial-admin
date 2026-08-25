@@ -1,12 +1,12 @@
 import { Injectable, Signal, computed, inject, signal } from '@angular/core';
-import { Observable, of, EMPTY } from 'rxjs';
-import { catchError, map, switchMap, tap } from 'rxjs/operators';
+import { Observable, of } from 'rxjs';
+import { catchError, map, shareReplay, tap } from 'rxjs/operators';
 import { TenantLocationService } from './tenant-location.service';
 import { TenantSessionService } from './tenant-session.service';
-import { expand, reduce } from 'rxjs/operators';
+
 /**
- * The three location endpoints that are cached once after tenant login and
- * reused across every dynamic module instead of being re-fetched.
+ * Location endpoints. Only countries are persisted after login.
+ * States and cities are loaded on demand and kept in memory.
  */
 export type LocationKind = 'countries' | 'states' | 'cities';
 
@@ -16,20 +16,9 @@ interface LocationApiResponse {
 }
 
 /**
- * Candidate keys used when filtering cached child records by their parent id.
- * The API is not modified, so we defensively check the common naming variants.
- */
-const COUNTRY_KEYS = ['country_id', 'countryId', 'country'];
-const STATE_KEYS = ['state_id', 'stateId', 'state'];
-
-/**
- * Caches Countries / States / Cities after tenant login and serves them from
- * Local Storage (with an in-memory Signal mirror) so dynamic dropdowns for
- * these endpoints never hit the API again. Any other endpoint is untouched.
- *
- * Dependent lookups (states-by-country, cities-by-state, cities-by-country)
- * are resolved from the cache first and only fall back to the API when the
- * cache cannot answer the query.
+ * Caches Countries after tenant login in Local Storage (with an in-memory
+ * Signal mirror). States and cities are fetched lazily by parent id and
+ * never written to localStorage.
  */
 @Injectable({ providedIn: 'root' })
 export class LocationCacheService {
@@ -37,8 +26,6 @@ export class LocationCacheService {
   private readonly session = inject(TenantSessionService);
 
   private readonly STORAGE_PREFIX = 'tenant_location_cache';
-  private readonly CITY_PAGE_SIZE = 10000;
-
 
   private readonly responses: Record<LocationKind, ReturnType<typeof signal<LocationApiResponse | null>>> = {
     countries: signal<LocationApiResponse | null>(null),
@@ -46,19 +33,27 @@ export class LocationCacheService {
     cities: signal<LocationApiResponse | null>(null),
   };
 
-  /** In-flight guards so warm-up never triggers duplicate requests. */
+  /** In-flight guards so warm-up never triggers duplicate country requests. */
   private readonly inFlight: Record<LocationKind, boolean> = {
     countries: false,
     states: false,
     cities: false,
   };
 
+  private readonly statesByCountry = new Map<string, any[]>();
+  private readonly citiesByState = new Map<string, any[]>();
+  private readonly citiesByCountry = new Map<string, any[]>();
+  private readonly statesInFlight = new Map<string, Observable<any[]>>();
+  private readonly citiesByStateInFlight = new Map<string, Observable<any[]>>();
+  private readonly citiesByCountryInFlight = new Map<string, Observable<any[]>>();
+
   readonly countries: Signal<any[]> = computed(() => this.responses.countries()?.data ?? []);
   readonly states: Signal<any[]> = computed(() => this.responses.states()?.data ?? []);
   readonly cities: Signal<any[]> = computed(() => this.responses.cities()?.data ?? []);
 
   constructor() {
-    this.evictPersistedCities();
+    this.evictPersistedKind('states');
+    this.evictPersistedKind('cities');
     this.hydrateFromStorage();
   }
 
@@ -87,7 +82,10 @@ export class LocationCacheService {
   /**
    * Returns a cached response shaped like the API payload (`{ data: [...] }`)
    * for a location endpoint, or null when the endpoint is not a location one
-   * or the cache is not yet available (caller then falls back to the API).
+   * or the country cache is not yet available (caller then falls back to the API).
+   *
+   * States and cities are never served as a full catalog, so callers do not
+   * trigger GET /states or GET /cities.
    */
   getCachedResponse<T>(endpoint?: string | null): Observable<T> | null {
     const kind = this.resolveKind(endpoint);
@@ -95,7 +93,11 @@ export class LocationCacheService {
       return null;
     }
 
-    const response = this.responses[kind]();
+    if (kind === 'states' || kind === 'cities') {
+      return of({ data: [] } as unknown as T);
+    }
+
+    const response = this.responses.countries();
     if (response && Array.isArray(response.data) && response.data.length) {
       return of(response as unknown as T);
     }
@@ -104,71 +106,154 @@ export class LocationCacheService {
   }
 
   /**
-   * Fetches Countries, States and Cities once and stores them. Missing kinds
-   * are fetched; already-cached kinds are skipped unless `force` is true.
+   * Fetches Countries once and stores them in the tenant localStorage cache.
+   * States and cities are not loaded here.
    */
   warmCache(force = false): void {
-    (['countries', 'states', 'cities'] as LocationKind[]).forEach((kind) =>
-      this.fetchKind(kind, force),
-    );
+    this.fetchCountries(force);
   }
 
-  /** States belonging to a country, filtered from cache. */
+  /** States belonging to a country, from in-memory lazy loads only. */
   getStatesByCountry(countryId: unknown): any[] {
-    return this.filterByParent(this.states(), COUNTRY_KEYS, countryId);
+    const key = this.parentKey(countryId);
+    if (!key) {
+      return [];
+    }
+    return this.statesByCountry.get(key) ?? [];
   }
 
-  /** Cities belonging to a state, filtered from cache. */
+  /** Cities belonging to a state, from in-memory lazy loads only. */
   getCitiesByState(stateId: unknown): any[] {
-    return this.filterByParent(this.cities(), STATE_KEYS, stateId);
+    const key = this.parentKey(stateId);
+    if (!key) {
+      return [];
+    }
+    return this.citiesByState.get(key) ?? [];
   }
 
-  /** Cities belonging to a country, filtered from cache. */
+  /** Cities belonging to a country, from in-memory lazy loads only. */
   getCitiesByCountry(countryId: unknown): any[] {
-    return this.filterByParent(this.cities(), COUNTRY_KEYS, countryId);
+    const key = this.parentKey(countryId);
+    if (!key) {
+      return [];
+    }
+    return this.citiesByCountry.get(key) ?? [];
   }
 
-  /** Dependent states for a country: cache first, API fallback. */
+  /** Dependent states for a country: in-memory first, then GET /states?country_id=. */
   getStatesForCountry(countryId: unknown): Observable<any[]> {
-    const cached = this.getStatesByCountry(countryId);
-    if (cached.length) {
+    const key = this.parentKey(countryId);
+    if (!key) {
+      return of([]);
+    }
+
+    const cached = this.statesByCountry.get(key);
+    if (cached) {
       return of(cached);
     }
 
-    return this.locationService.getStates(Number(countryId)).pipe(
-      map((res) => res?.data ?? []),
-      catchError(() => of([])),
+    const pending = this.statesInFlight.get(key);
+    if (pending) {
+      return pending;
+    }
+
+    const request = this.locationService.getStates(Number(key)).pipe(
+      map((res) => (res?.data ?? []).map((record) => this.slimRecord('states', record))),
+      tap((records) => {
+        this.statesByCountry.set(key, records);
+        this.mergeMemory('states', records);
+        this.statesInFlight.delete(key);
+      }),
+      catchError(() => {
+        this.statesInFlight.delete(key);
+        return of([]);
+      }),
+      shareReplay(1),
     );
+
+    this.statesInFlight.set(key, request);
+    return request;
   }
 
-  /** Dependent cities for a state: cache first, API fallback. */
+  /** Dependent cities for a state: in-memory first, then GET /cities?state_id=. */
   getCitiesForState(stateId: unknown): Observable<any[]> {
-    const cached = this.getCitiesByState(stateId);
-    if (cached.length) {
+    const key = this.parentKey(stateId);
+    if (!key) {
+      return of([]);
+    }
+
+    const cached = this.citiesByState.get(key);
+    if (cached) {
       return of(cached);
     }
 
-    return this.locationService.getCities(Number(stateId)).pipe(
-      map((res) => res?.data ?? []),
-      catchError(() => of([])),
+    const pending = this.citiesByStateInFlight.get(key);
+    if (pending) {
+      return pending;
+    }
+
+    const request = this.locationService.getCities(Number(key)).pipe(
+      map((res) => (res?.data ?? []).map((record) => this.slimRecord('cities', record))),
+      tap((records) => {
+        this.citiesByState.set(key, records);
+        this.mergeMemory('cities', records);
+        this.citiesByStateInFlight.delete(key);
+      }),
+      catchError(() => {
+        this.citiesByStateInFlight.delete(key);
+        return of([]);
+      }),
+      shareReplay(1),
     );
+
+    this.citiesByStateInFlight.set(key, request);
+    return request;
   }
 
-  /** Dependent cities for a country (no State field): cache first, API fallback. */
+  /** Dependent cities for a country (no State field): GET /cities?country_id=. */
   getCitiesForCountry(countryId: unknown): Observable<any[]> {
-    const cached = this.getCitiesByCountry(countryId);
-    if (cached.length) {
+    const key = this.parentKey(countryId);
+    if (!key) {
+      return of([]);
+    }
+
+    const cached = this.citiesByCountry.get(key);
+    if (cached) {
       return of(cached);
     }
 
-    return this.locationService.getCitiesByCountry(Number(countryId)).pipe(
-      map((res) => res?.data ?? []),
-      catchError(() => of([])),
+    const pending = this.citiesByCountryInFlight.get(key);
+    if (pending) {
+      return pending;
+    }
+
+    const request = this.locationService.getCitiesByCountry(Number(key)).pipe(
+      map((res) => (res?.data ?? []).map((record) => this.slimRecord('cities', record))),
+      tap((records) => {
+        this.citiesByCountry.set(key, records);
+        this.mergeMemory('cities', records);
+        this.citiesByCountryInFlight.delete(key);
+      }),
+      catchError(() => {
+        this.citiesByCountryInFlight.delete(key);
+        return of([]);
+      }),
+      shareReplay(1),
     );
+
+    this.citiesByCountryInFlight.set(key, request);
+    return request;
   }
 
   /** Removes every persisted location cache entry (e.g. on logout). */
   clear(): void {
+    this.statesByCountry.clear();
+    this.citiesByState.clear();
+    this.citiesByCountry.clear();
+    this.statesInFlight.clear();
+    this.citiesByStateInFlight.clear();
+    this.citiesByCountryInFlight.clear();
+
     (['countries', 'states', 'cities'] as LocationKind[]).forEach((kind) => {
       this.responses[kind].set(null);
       try {
@@ -179,140 +264,99 @@ export class LocationCacheService {
     });
   }
 
-  private fetchKind(kind: LocationKind, force: boolean): void {
-    if (this.inFlight[kind]) {
+  private fetchCountries(force: boolean): void {
+    if (this.inFlight.countries) {
       return;
     }
 
-    if (!force && (this.responses[kind]()?.data?.length ?? 0) > 0) {
+    if (!force && (this.responses.countries()?.data?.length ?? 0) > 0) {
       return;
     }
 
-    this.inFlight[kind] = true;
+    this.inFlight.countries = true;
 
-    this.requestKind(kind)
+    this.locationService
+      .getCountries()
       .pipe(
         catchError(() => of(null)),
-        tap(() => (this.inFlight[kind] = false)),
+        tap(() => (this.inFlight.countries = false)),
       )
       .subscribe((response) => {
         if (!response || !Array.isArray(response.data)) {
           return;
         }
-        const slimmed = this.slimResponse(kind, response);
-        this.responses[kind].set(slimmed);
-        this.persist(kind, slimmed);
+        const slimmed = this.slimResponse('countries', response);
+        this.responses.countries.set(slimmed);
+        this.persistCountries(slimmed);
       });
   }
 
-  private requestKind(kind: LocationKind): Observable<LocationApiResponse> {
-    switch (kind) {
-      case 'countries':
-        return this.locationService.getCountries();
-      case 'states':
-        return this.locationService.getAllStates();
-      case 'cities':
-        // return this.locationService.getAllCities();
-       return this.getAllCitiesChunked();
-    }
-  }
+  private mergeMemory(kind: 'states' | 'cities', records: any[]): void {
+    const existing = this.responses[kind]()?.data ?? [];
+    const byId = new Map<string, any>();
 
-  private getAllCitiesChunked(): Observable<LocationApiResponse> {
-  const allCities: any[] = [];
-  const seen = new Set<any>();
-
-  const fetchPage = (page: number): Observable<LocationApiResponse> => {
-    return this.locationService.getCitiesChunk(page, this.CITY_PAGE_SIZE).pipe(
-
-      switchMap((response: any) => {
-        const cities = response?.data ?? [];
-
-        // Stop if no more records
-        if (!cities.length) {
-          return of({
-            data: allCities
-          });
-        }
-
-        // Merge without duplicates
-        for (const city of cities) {
-          const key =
-            city.id ??
-            city.city_id ??
-            city.uuid;
-
-          if (!seen.has(key)) {
-            seen.add(key);
-            allCities.push(city);
-          }
-        }
-
-        // If last page (< limit), stop
-        if (cities.length < this.CITY_PAGE_SIZE) {
-          return of({
-            data: allCities
-          });
-        }
-
-        // Fetch next page only AFTER current completes
-        return fetchPage(page + 1);
-      })
-    );
-  };
-
-  return fetchPage(1);
-  }
-
-  private filterByParent(records: any[], keys: string[], parentId: unknown): any[] {
-    if (parentId === null || parentId === undefined || parentId === '') {
-      return [];
+    for (const record of existing) {
+      const id = record?.id;
+      if (id !== undefined && id !== null) {
+        byId.set(String(id), record);
+      }
     }
 
-    const target = String(parentId);
+    for (const record of records) {
+      const id = record?.id;
+      if (id !== undefined && id !== null) {
+        byId.set(String(id), record);
+      }
+    }
 
-    return records.filter((record) =>
-      keys.some((key) => {
-        const value = record?.[key];
-        return value !== undefined && value !== null && String(value) === target;
-      }),
-    );
+    this.responses[kind].set({ data: [...byId.values()] });
+  }
+
+  private parentKey(parentId: unknown): string | null {
+    const raw = Array.isArray(parentId) ? parentId[0] : parentId;
+
+    if (raw === null || raw === undefined || raw === '') {
+      return null;
+    }
+
+    if (typeof raw === 'object') {
+      const id = (raw as { id?: unknown }).id;
+      if (id === null || id === undefined || id === '') {
+        return null;
+      }
+      return String(id);
+    }
+
+    return String(raw);
   }
 
   private hydrateFromStorage(): void {
-    (['countries', 'states'] as LocationKind[]).forEach((kind) => {
-      try {
-        const raw = localStorage.getItem(this.storageKey(kind));
-        if (!raw) {
-          return;
-        }
-        const parsed = JSON.parse(raw) as LocationApiResponse;
-        if (parsed && Array.isArray(parsed.data)) {
-          this.responses[kind].set(parsed);
-        }
-      } catch {
-        // Corrupt/unavailable storage — cache stays empty and API is used.
+    try {
+      const raw = localStorage.getItem(this.storageKey('countries'));
+      if (!raw) {
+        return;
       }
-    });
-  }
-
-  private persist(kind: LocationKind, response: LocationApiResponse): void {
-    // Full city catalogs exceed the browser localStorage quota (~5MB).
-    // Keep cities in memory for the session; persist only countries/states.
-    if (kind === 'cities') {
-      return;
-    }
-
-    try {
-      localStorage.setItem(this.storageKey(kind), JSON.stringify(response));
+      const parsed = JSON.parse(raw) as LocationApiResponse;
+      if (parsed && Array.isArray(parsed.data)) {
+        this.responses.countries.set(parsed);
+      }
     } catch {
-      this.evictPersistedCities();
+      // Corrupt/unavailable storage — cache stays empty and API is used.
     }
   }
 
-  /** Drops any previously saved city catalog so quota errors do not recur. */
-  private evictPersistedCities(): void {
+  private persistCountries(response: LocationApiResponse): void {
     try {
-      const prefix = `${this.STORAGE_PREFIX}_cities_`;
+      localStorage.setItem(this.storageKey('countries'), JSON.stringify(response));
+    } catch {
+      this.evictPersistedKind('states');
+      this.evictPersistedKind('cities');
+    }
+  }
+
+  private evictPersistedKind(kind: 'states' | 'cities'): void {
+    try {
+      const prefix = `${this.STORAGE_PREFIX}_${kind}_`;
       const keys: string[] = [];
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);

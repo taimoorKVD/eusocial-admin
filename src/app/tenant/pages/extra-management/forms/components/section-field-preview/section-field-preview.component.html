@@ -13,8 +13,9 @@
         [placeholder]="field.placeholder || field.label"
         rows="3"
         [value]="field.value || ''"
+        [attr.maxlength]="characterLimit"
         [attr.readonly]="isInteractionDisabled || null"
-        (input)="onInput($event)"
+        (input)="onTextInput($event)"
       ></textarea>
     }
     @case ('select') {
@@ -210,8 +211,9 @@
         type="number"
         [placeholder]="field.placeholder || field.label"
         [value]="field.value || ''"
+        [attr.step]="numberStep"
         [attr.readonly]="isInteractionDisabled || null"
-        (input)="onInput($event)"
+        (input)="onNumberInput($event)"
       />
     }
     @case ('email') {
@@ -325,24 +327,83 @@
       </div>
     }
     @case ('range') {
-      <div class="flex items-center gap-2">
-        <input
-          class="section-input font-ibm w-full"
-          type="number"
-          placeholder="From"
-          [value]="rangeFromValue"
-          [attr.readonly]="isInteractionDisabled || null"
-          (input)="onRangeFromChange($event)"
-        />
-        <span class="text-[#A0A0A0]">–</span>
-        <input
-          class="section-input font-ibm w-full"
-          type="number"
-          placeholder="To"
-          [value]="rangeToValue"
-          [attr.readonly]="isInteractionDisabled || null"
-          (input)="onRangeToChange($event)"
-        />
+      <div
+        class="range-field-preview"
+        [class.range-field-preview--date]="rangeType === 'date'"
+      >
+        @if (rangeType === 'date') {
+          <div class="range-field-preview__side">
+            <label class="range-field-preview__label">{{ rangeLabelFrom }}</label>
+            <input
+              class="section-input font-ibm w-full"
+              type="text"
+              appFlatpickr
+              [placeholder]="rangeLabelFrom"
+              [fpValue]="rangeFromValue || null"
+              [fpMinDate]="rangeFromMinDate"
+              [fpMaxDate]="rangeFromMaxDate"
+              [fpDisabled]="!!isInteractionDisabled"
+              (fpChange)="onRangeDateChange($event, 'from')"
+            />
+          </div>
+          <div class="range-field-preview__connector" aria-hidden="true">→</div>
+          <div class="range-field-preview__side">
+            <label class="range-field-preview__label">{{ rangeLabelTo }}</label>
+            <input
+              class="section-input font-ibm w-full"
+              type="text"
+              appFlatpickr
+              [placeholder]="rangeLabelTo"
+              [fpValue]="rangeToValue || null"
+              [fpMinDate]="rangeToMinDate"
+              [fpMaxDate]="rangeToMaxDate"
+              [fpDisabled]="!!isInteractionDisabled"
+              (fpChange)="onRangeDateChange($event, 'to')"
+            />
+          </div>
+        } @else if (rangeType === 'time') {
+          <input
+            class="section-input font-ibm w-full"
+            type="time"
+            [placeholder]="rangePlaceholderFrom"
+            [value]="rangeFromValue"
+            [attr.readonly]="isInteractionDisabled || null"
+            (input)="onRangeSideInput($event, 'from')"
+          />
+          <span class="text-[#A0A0A0]">–</span>
+          <input
+            class="section-input font-ibm w-full"
+            type="time"
+            [placeholder]="rangePlaceholderTo"
+            [value]="rangeToValue"
+            [attr.readonly]="isInteractionDisabled || null"
+            (input)="onRangeSideInput($event, 'to')"
+          />
+        } @else {
+          <input
+            class="section-input font-ibm w-full"
+            type="number"
+            [placeholder]="rangePlaceholderFrom"
+            [value]="rangeFromValue"
+            [attr.min]="field.rangeMin ?? null"
+            [attr.max]="field.rangeMax ?? null"
+            [attr.step]="rangeStep"
+            [attr.readonly]="isInteractionDisabled || null"
+            (input)="onRangeSideInput($event, 'from')"
+          />
+          <span class="text-[#A0A0A0]">–</span>
+          <input
+            class="section-input font-ibm w-full"
+            type="number"
+            [placeholder]="rangePlaceholderTo"
+            [value]="rangeToValue"
+            [attr.min]="field.rangeMin ?? null"
+            [attr.max]="field.rangeMax ?? null"
+            [attr.step]="rangeStep"
+            [attr.readonly]="isInteractionDisabled || null"
+            (input)="onRangeSideInput($event, 'to')"
+          />
+        }
       </div>
     }
     @case ('barcode') {
@@ -381,8 +442,9 @@
         type="text"
         [placeholder]="field.placeholder || field.label"
         [value]="field.value || ''"
+        [attr.maxlength]="characterLimit"
         [attr.readonly]="isInteractionDisabled || null"
-        (input)="onInput($event)"
+        (input)="onTextInput($event)"
       />
     }
   }

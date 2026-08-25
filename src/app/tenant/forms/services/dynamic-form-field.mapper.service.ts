@@ -2,6 +2,12 @@ import { Injectable } from '@angular/core';
 import { forkJoin, Observable, of } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { shouldIncludeFieldInRuntimeForm } from '../../../shared/conditional-logic';
+import { resolveCharacterLimit, supportsCharacterLimit } from '../../../shared/dynamic-form/character-limit.utils';
+import {
+  DEFAULT_RANGE_STEP,
+  normalizeRangeTimeFormat,
+  normalizeRangeType,
+} from '../../../shared/dynamic-form/range-field.utils';
 import { DynamicField, DynamicFieldType } from '../../../interfaces/dynamic-field';
 import { FieldOption, FieldType, FormField } from '../../form-builder/models/form-field.model';
 import { FieldOptionsService } from '../../form-builder/services/field-options.service';
@@ -94,6 +100,28 @@ export class DynamicFormFieldMapperService {
       selectionType: type === 'select' ? field.selectionType || 'single' : undefined,
       isShow: field.isShow,
       isReadonly: field.isReadonly,
+      allowDecimal:
+        type === 'number' || (type === 'range' && normalizeRangeType(field.rangeType) === 'number')
+          ? field.allowDecimal === true
+          : undefined,
+      characterLimit: supportsCharacterLimit(type)
+        ? resolveCharacterLimit(type, field.characterLimit)
+        : undefined,
+      rangeType: type === 'range' ? normalizeRangeType(field.rangeType) : undefined,
+      rangeMin: field.rangeMin,
+      rangeMax: field.rangeMax,
+      rangeStep:
+        type === 'range' && normalizeRangeType(field.rangeType) === 'number'
+          ? (Number(field.rangeStep) > 0 ? Number(field.rangeStep) : DEFAULT_RANGE_STEP)
+          : undefined,
+      rangeMinDate: field.rangeMinDate,
+      rangeMaxDate: field.rangeMaxDate,
+      rangePlaceholderFrom: field.rangePlaceholderFrom,
+      rangePlaceholderTo: field.rangePlaceholderTo,
+      timeFormat:
+        type === 'range' && normalizeRangeType(field.rangeType) === 'time'
+          ? normalizeRangeTimeFormat(field.timeFormat)
+          : undefined,
       condition: field.condition,
     };
   }

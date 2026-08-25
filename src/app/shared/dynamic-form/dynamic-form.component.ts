@@ -42,6 +42,27 @@ import {
   serializeDynamicFieldsSchema,
   sortDynamicFields,
 } from './dynamic-form.builder';
+import {
+  allowsDecimalPoint,
+  getNumberFieldStep,
+  sanitizeNumberFieldInput,
+} from './number-field.utils';
+import { getFieldCharacterLimit } from './character-limit.utils';
+import {
+  earlierIsoDate,
+  getRangePlaceholderFrom as resolveRangePlaceholderFrom,
+  getRangePlaceholderTo as resolveRangePlaceholderTo,
+  getRangeSideLabel as resolveRangeSideLabel,
+  laterIsoDate,
+  normalizeRangeTimeFormat,
+  normalizeRangeType,
+  normalizeRangeValue,
+  normalizeTimeTo24h,
+  parseRangeNumber,
+  RangeFieldValue,
+  resolveRangeStep,
+  sanitizeRangeNumberInput,
+} from './range-field.utils';
 import { DropdownOverlayService } from '../directives/dropdown-panel/dropdown-overlay.service';
 
 @Component({
@@ -62,8 +83,8 @@ export class DynamicFormComponent implements OnDestroy {
   readonly fields = input.required<DynamicField[]>();
   /**
    * Enables Country → State → City dependency handling. Only Create/Edit pages
-   * opt in; filter screens and the builder preview leave it off so every
-   * location dropdown keeps showing the full cached list.
+   * opt in. Child lists are loaded lazily from /states and /cities when a parent
+   * is selected; they are not preloaded.
    */
   readonly enableLocationDependencies = input(false);
   readonly valueChange = output<DynamicFormValue>();
@@ -125,7 +146,8 @@ export class DynamicFormComponent implements OnDestroy {
   }
 
   get value(): DynamicFormValue {
-    return this.form?.getRawValue() ?? {};
+    const raw = this.form?.getRawValue() ?? {};
+    return this.toLocationSubmitValues(raw);
   }
 
   get invalid(): boolean {
@@ -271,6 +293,159 @@ export class DynamicFormComponent implements OnDestroy {
   onSelectSearch(fieldName: string, event: Event): void {
     const value = (event.target as HTMLInputElement).value;
     this.selectSearchQueries.update((queries) => ({ ...queries, [fieldName]: value }));
+  }
+
+  getNumberStep(field: DynamicField): string {
+    return getNumberFieldStep(field);
+  }
+
+  getCharacterLimit(field: DynamicField): number | null {
+    return getFieldCharacterLimit(field);
+  }
+
+  getRangeType(field: DynamicField): 'number' | 'date' | 'time' {
+    return normalizeRangeType(field.rangeType);
+  }
+
+  getRangeStep(field: DynamicField): number {
+    return resolveRangeStep(field);
+  }
+
+  getRangeTimeFormat(field: DynamicField): '12' | '24' {
+    return normalizeRangeTimeFormat(field.timeFormat);
+  }
+
+  getRangePlaceholderFrom(field: DynamicField): string {
+    return resolveRangePlaceholderFrom(field);
+  }
+
+  getRangePlaceholderTo(field: DynamicField): string {
+    return resolveRangePlaceholderTo(field);
+  }
+
+  getRangeSideLabel(field: DynamicField, side: 'from' | 'to'): string {
+    return resolveRangeSideLabel(field, side);
+  }
+
+  getRangeFromMinDate(field: DynamicField): string | null {
+    return field.rangeMinDate || null;
+  }
+
+  getRangeFromMaxDate(field: DynamicField): string | null {
+    return earlierIsoDate(field.rangeMaxDate, this.getRangeSideValue(field, 'to')) || null;
+  }
+
+  getRangeToMinDate(field: DynamicField): string | null {
+    return laterIsoDate(field.rangeMinDate, this.getRangeSideValue(field, 'from')) || null;
+  }
+
+  getRangeToMaxDate(field: DynamicField): string | null {
+    return field.rangeMaxDate || null;
+  }
+
+  getRangeSideValue(field: DynamicField, side: 'from' | 'to'): string {
+    const value = normalizeRangeValue(this.form?.get(field.name)?.value);
+    const raw = value[side];
+    if (raw == null || raw === '') {
+      return '';
+    }
+
+    if (this.getRangeType(field) === 'time') {
+      return normalizeTimeTo24h(raw) ?? '';
+    }
+
+    return String(raw);
+  }
+
+  onRangeDateChange(
+    dateStr: string | null,
+    field: DynamicField,
+    side: 'from' | 'to',
+  ): void {
+    const control = this.form?.get(field.name);
+    if (!control || control.disabled) {
+      return;
+    }
+
+    const current = normalizeRangeValue(control.value);
+    const nextValue: RangeFieldValue = {
+      ...current,
+      [side]: dateStr || null,
+    };
+
+    control.setValue(nextValue);
+    control.markAsDirty();
+    control.markAsTouched();
+    this.emitNormalizedValue();
+    // Force immediate rebinding so the opposite Flatpickr receives
+    // updated minDate/maxDate before the user opens it.
+    this.cdr.detectChanges();
+  }
+
+  onRangeSideInput(event: Event, field: DynamicField, side: 'from' | 'to'): void {
+    const control = this.form?.get(field.name);
+    if (!control || control.disabled) {
+      return;
+    }
+
+    const input = event.target as HTMLInputElement;
+    const rangeType = this.getRangeType(field);
+    const current = normalizeRangeValue(control.value);
+    let nextSide: string | number | null = input.value;
+
+    if (rangeType === 'number') {
+      const sanitized = sanitizeRangeNumberInput(
+        input.value,
+        allowsDecimalPoint(field),
+      );
+      if (input.value !== sanitized) {
+        input.value = sanitized;
+      }
+      nextSide = sanitized === '' || sanitized === '-' || sanitized === '.' || sanitized === '-.'
+        ? null
+        : (parseRangeNumber(sanitized) ?? sanitized);
+    } else if (rangeType === 'time') {
+      nextSide = normalizeTimeTo24h(input.value);
+    } else if (rangeType === 'date') {
+      nextSide = input.value || null;
+    }
+
+    const nextValue: RangeFieldValue = {
+      ...current,
+      [side]: nextSide,
+    };
+
+    control.setValue(nextValue);
+    control.markAsDirty();
+    control.markAsTouched();
+    this.emitNormalizedValue();
+    this.cdr.markForCheck();
+  }
+
+  onNumberInput(event: Event, field: DynamicField): void {
+    const input = event.target as HTMLInputElement;
+    const control = this.form?.get(field.name);
+    if (!control || control.disabled) {
+      return;
+    }
+
+    const allowDecimal = allowsDecimalPoint(field);
+    const sanitized = sanitizeNumberFieldInput(input.value, allowDecimal);
+
+    if (input.value !== sanitized) {
+      input.value = sanitized;
+    }
+
+    const nextValue =
+      sanitized === '' || sanitized === '-' || sanitized === '.' || sanitized === '-.'
+        ? null
+        : Number(sanitized);
+
+    if (control.value !== nextValue) {
+      control.setValue(Number.isFinite(nextValue as number) ? nextValue : null);
+      control.markAsDirty();
+      control.markAsTouched();
+    }
   }
 
   getSelectDisplayLabel(field: DynamicField): string {
@@ -475,6 +650,7 @@ export class DynamicFormComponent implements OnDestroy {
     return (
       field.type === 'image' ||
       field.type === 'textarea' ||
+      field.type === 'range' ||
       field.label === 'Availability Days'
     );
   }
@@ -685,14 +861,11 @@ export class DynamicFormComponent implements OnDestroy {
 
     if (state && country) {
       this.loadStateOptions(this.controlValue(country));
+      return;
     }
 
-    if (city) {
-      if (state) {
-        this.loadCityOptionsForState(this.controlValue(state));
-      } else if (country) {
-        this.loadCityOptionsForCountry(this.controlValue(country));
-      }
+    if (city && country) {
+      this.loadCityOptionsForCountry(this.controlValue(country));
     }
   }
 
@@ -737,6 +910,10 @@ export class DynamicFormComponent implements OnDestroy {
 
     if (this.isEmptyValue(countryValue)) {
       this.setOverride(stateField, []);
+      const cityField = this.locationFields.cities;
+      if (cityField) {
+        this.setOverride(cityField, []);
+      }
       return;
     }
 
@@ -745,6 +922,12 @@ export class DynamicFormComponent implements OnDestroy {
       .pipe(take(1))
       .subscribe((records) => {
         this.setOverride(stateField, this.mapRecordsToOptions(stateField, records));
+
+        const cityField = this.locationFields.cities;
+        if (cityField) {
+          this.loadCityOptionsForState(this.controlValue(stateField));
+        }
+
         this.cdr.markForCheck();
       });
   }
@@ -761,7 +944,7 @@ export class DynamicFormComponent implements OnDestroy {
     }
 
     this.locationCache
-      .getCitiesForState(stateValue)
+      .getCitiesForState(this.resolveLocationParentId(this.locationFields.states, stateValue))
       .pipe(take(1))
       .subscribe((records) => {
         this.setOverride(cityField, this.mapRecordsToOptions(cityField, records));
@@ -807,6 +990,115 @@ export class DynamicFormComponent implements OnDestroy {
       ...prev,
       [field.name]: options,
     }));
+    this.alignControlValueToOptions(field, options);
+  }
+
+  /**
+   * Country stays as an ID in the payload. State and City selections are
+   * converted to their display names when reading `value` for submit.
+   */
+  private toLocationSubmitValues(raw: DynamicFormValue): DynamicFormValue {
+    const next: DynamicFormValue = { ...raw };
+    const kinds: LocationKind[] = ['states', 'cities'];
+
+    for (const kind of kinds) {
+      const field = this.locationFields[kind];
+      if (!field) {
+        continue;
+      }
+
+      const key = Object.prototype.hasOwnProperty.call(next, field.name)
+        ? field.name
+        : field.id;
+      if (!Object.prototype.hasOwnProperty.call(next, key)) {
+        continue;
+      }
+
+      next[key] = this.mapLocationValueToNames(next[key], this.getFieldOptions(field));
+    }
+
+    return next;
+  }
+
+  private mapLocationValueToNames(
+    value: unknown,
+    options: (string | DynamicFieldOption)[],
+  ): unknown {
+    if (this.isEmptyValue(value)) {
+      return value;
+    }
+
+    const isArray = Array.isArray(value);
+    const items = isArray ? value : [value];
+    const names = items.map((item) => {
+      const raw =
+        item && typeof item === 'object' && 'id' in (item as object)
+          ? (item as { id: unknown }).id
+          : item;
+      const match = options.find((option, index) => {
+        const optionValue = getOptionValue(option, index);
+        const optionLabel = this.getOptionLabel(option);
+        return String(optionValue) === String(raw) || String(optionLabel) === String(raw);
+      });
+
+      return match ? this.getOptionLabel(match) : raw;
+    });
+
+    return isArray ? names : names[0];
+  }
+
+  private alignControlValueToOptions(
+    field: DynamicField,
+    options: DynamicFieldOption[],
+  ): void {
+    const control = this.form?.get(field.name);
+    if (!control || !options.length) {
+      return;
+    }
+
+    const value = control.value;
+    if (this.isEmptyValue(value)) {
+      return;
+    }
+
+    const isArray = Array.isArray(value);
+    const items = isArray ? value : [value];
+    const mapped = items.map((item) => {
+      const raw =
+        item && typeof item === 'object' && 'id' in (item as object)
+          ? (item as { id: unknown }).id
+          : item;
+      const byValue = options.find((option) => String(option.value) === String(raw));
+      if (byValue) {
+        return byValue.value;
+      }
+
+      const byLabel = options.find(
+        (option) => String(option.label).toLowerCase() === String(raw).toLowerCase(),
+      );
+      return byLabel?.value ?? raw;
+    });
+
+    const next = isArray ? mapped : mapped[0];
+    if (JSON.stringify(next) !== JSON.stringify(value)) {
+      control.setValue(next, { emitEvent: false });
+    }
+  }
+
+  private resolveLocationParentId(field: DynamicField | undefined, value: unknown): unknown {
+    if (!field || this.isEmptyValue(value)) {
+      return value;
+    }
+
+    const raw = Array.isArray(value) ? value[0] : value;
+    const options = this.getFieldOptions(field);
+    const match = options.find((option, index) => {
+      const optionValue = getOptionValue(option, index);
+      const optionLabel = this.getOptionLabel(option);
+      return String(optionValue) === String(raw) || String(optionLabel) === String(raw);
+    });
+
+    return match ? getOptionValue(match) : raw;
   }
 
   private controlValue(field: DynamicField): unknown {

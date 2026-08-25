@@ -9,6 +9,7 @@
   type="text"
   [placeholder]="field.placeholder"
   [value]="previewValue"
+  [attr.maxlength]="field.characterLimit || 255"
   disabled
   readonly
   tabindex="-1"
@@ -33,6 +34,7 @@
   type="number"
   [placeholder]="field.placeholder"
   [value]="previewValue"
+  [attr.step]="field.allowDecimal === true ? 'any' : '1'"
   disabled
   readonly
   tabindex="-1"
@@ -44,6 +46,7 @@
   *ngIf="fieldType === 'textarea'"
   [placeholder]="field.placeholder"
   [value]="previewValue"
+  [attr.maxlength]="field.characterLimit || 5000"
   disabled
   readonly
   rows="3"
@@ -163,23 +166,67 @@
 </div>
 
 <div *ngIf="fieldType === 'range'" class="flex items-center gap-2">
-  <input
-    type="number"
-    placeholder="From"
-    disabled
-    tabindex="-1"
-    aria-disabled="true"
-    class="w-full border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none disabled:cursor-default disabled:text-slate-500"
-  />
-  <span class="text-slate-400">–</span>
-  <input
-    type="number"
-    placeholder="To"
-    disabled
-    tabindex="-1"
-    aria-disabled="true"
-    class="w-full border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none disabled:cursor-default disabled:text-slate-500"
-  />
+  <ng-container [ngSwitch]="field.rangeType || 'number'">
+    <ng-container *ngSwitchCase="'date'">
+      <input
+        type="text"
+        [placeholder]="rangePlaceholderFrom"
+        disabled
+        tabindex="-1"
+        aria-disabled="true"
+        class="w-full border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none disabled:cursor-default disabled:text-slate-500"
+      />
+      <span class="text-slate-400">–</span>
+      <input
+        type="text"
+        [placeholder]="rangePlaceholderTo"
+        disabled
+        tabindex="-1"
+        aria-disabled="true"
+        class="w-full border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none disabled:cursor-default disabled:text-slate-500"
+      />
+    </ng-container>
+    <ng-container *ngSwitchCase="'time'">
+      <input
+        type="time"
+        [placeholder]="rangePlaceholderFrom"
+        disabled
+        tabindex="-1"
+        aria-disabled="true"
+        class="w-full border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none disabled:cursor-default disabled:text-slate-500"
+      />
+      <span class="text-slate-400">–</span>
+      <input
+        type="time"
+        [placeholder]="rangePlaceholderTo"
+        disabled
+        tabindex="-1"
+        aria-disabled="true"
+        class="w-full border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none disabled:cursor-default disabled:text-slate-500"
+      />
+    </ng-container>
+    <ng-container *ngSwitchDefault>
+      <input
+        type="number"
+        [placeholder]="rangePlaceholderFrom"
+        [attr.step]="field.allowDecimal === true ? (field.rangeStep || 'any') : '1'"
+        disabled
+        tabindex="-1"
+        aria-disabled="true"
+        class="w-full border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none disabled:cursor-default disabled:text-slate-500"
+      />
+      <span class="text-slate-400">–</span>
+      <input
+        type="number"
+        [placeholder]="rangePlaceholderTo"
+        [attr.step]="field.allowDecimal === true ? (field.rangeStep || 'any') : '1'"
+        disabled
+        tabindex="-1"
+        aria-disabled="true"
+        class="w-full border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none disabled:cursor-default disabled:text-slate-500"
+      />
+    </ng-container>
+  </ng-container>
 </div>
 
 <div *ngIf="fieldType === 'barcode'" class="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
