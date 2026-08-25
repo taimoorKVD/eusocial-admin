@@ -441,88 +441,93 @@
         <p *ngIf="recordsLoading" class="mt-1 text-xs text-slate-400">Loading records...</p>
       </div>
 
-      <div *ngIf="selectedModuleSlug && moduleColumns.length">
-        <label class="mb-1.5 block text-xs font-medium text-slate-600">Select Display Column</label>
-        <!-- <select
-          [ngModel]="selectedDisplayColumn"
-          (ngModelChange)="onDisplayColumnChange($event)"
-          class="field-settings-select"
+      <div *ngIf="showDynamicSelectOptions">
+        <label class="mb-1.5 block text-xs font-medium text-slate-600">Select Options</label>
+        <div
+          class="module-select"
+          appDropdownPanel
+          #dynamicOptionsDropdown="dropdownPanel"
+          dropdownId="select-dynamic-options"
+          [dropdownGroup]="dynamicOptionsDropdownGroup"
         >
-          <option [ngValue]="''">Select a column</option>
-          <option *ngFor="let column of moduleColumns" [ngValue]="column">
-            {{ column }}
-          </option>
-        </select> -->
-         <div
-            class="module-select"
-            appDropdownPanel
-            #displayColumnDropdown="dropdownPanel"
-            dropdownId="select-display-column"
-            [dropdownGroup]="dynamicOptionsDropdownGroup"
+          <button
+            type="button"
+            class="field-settings-select"
+            (click)="selectedModuleSlug && !recordsLoading && dynamicOptionsDropdown.toggle($event)"
+            [disabled]="!isFieldEditable || !selectedModuleSlug || recordsLoading"
+            [attr.aria-expanded]="dynamicOptionsDropdown.isOpen"
           >
-            <button
-              type="button"
-              class="field-settings-select"
-              (click)="displayColumnDropdown.toggle($event)"
-              [disabled]="!isFieldEditable"
-              [attr.aria-expanded]="displayColumnDropdown.isOpen"
-            >
-              <span>{{ getSelectedDisplayColumnLabel() }}</span>
+            <span class="module-select__trigger-label">{{ getSelectedDynamicOptionsLabel() }}</span>
 
-              <span class="dropdown-arrow">
-                @if (displayColumnDropdown.isOpen) {
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                    <path
-                      d="M18 15L12 9L6 15"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
-                } @else {
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                    <path
-                      d="M6 9L12 15L18 9"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
-                }
-              </span>
-            </button>
+            <span class="dropdown-arrow">
+              @if (dynamicOptionsDropdown.isOpen) {
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M18 15L12 9L6 15"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              } @else {
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M6 9L12 15L18 9"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              }
+            </span>
+          </button>
 
-            @if (displayColumnDropdown.isOpen) {
-              <div class="module-select__menu">
-                <button
-                  type="button"
-                  class="module-select__option"
-                  (click)="selectDisplayColumn('')"
-                >
-                  Select a column
-                </button>
-
-                @for (column of moduleColumns; track column.id) {
+          @if (dynamicOptionsDropdown.isOpen && selectedModuleSlug) {
+            <div class="module-select__menu module-select__menu--options">
+              @if (!availableDynamicOptions.length) {
+                <div class="module-select__empty">No records found</div>
+              } @else {
+                @for (option of availableDynamicOptions; track option.value) {
                   <button
                     type="button"
-                    class="module-select__option"
-                    [class.module-select__option--selected]="
-                      selectedDisplayColumn === column.id
-                    "
-                    (click)="selectDisplayColumn(column.id)"
+                    class="module-select__option module-select__option--multi"
+                    [class.module-select__option--selected]="isDynamicOptionSelected(option)"
+                    (click)="toggleDynamicOption(option); $event.stopPropagation()"
                   >
-                    {{ column.label }}
+                    <span
+                      class="module-select__check"
+                      [class.module-select__check--on]="isDynamicOptionSelected(option)"
+                      aria-hidden="true"
+                    >
+                      @if (isDynamicOptionSelected(option)) {
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                          <path
+                            d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"
+                            fill="currentColor"
+                          />
+                        </svg>
+                      }
+                    </span>
+                    <span class="truncate">{{ option.label }}</span>
                   </button>
                 }
-              </div>
-            }
-          </div>
+              }
+            </div>
+          }
+        </div>
+
+        <p
+          *ngIf="!recordsLoading && dynamicOptionsCount === 0 && availableDynamicOptions.length > 0"
+          class="mt-1 text-xs text-amber-600"
+        >
+          Select at least one option for this field.
+        </p>
       </div>
 
       <p
-        *ngIf="dynamicOptionsCount > 0"
+        *ngIf="showDynamicSelectOptions && dynamicOptionsCount > 0"
         class="rounded-md border border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-600"
       >
         {{ dynamicOptionsCount }} options saved to this field.

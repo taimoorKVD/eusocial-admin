@@ -77,6 +77,17 @@ export function isLocationModuleOptionDisabled(
   return !schemaHasLocationKind(schema, 'countries', excludeFieldId);
 }
 
+/**
+ * Dynamic Select "Select Options" filtering is not used for States/Cities.
+ * Those modules keep the existing location-cascade option behavior.
+ */
+export function isDynamicSelectOptionsHiddenForModule(
+  moduleSlug?: string | null
+): boolean {
+  const kind = resolveBuilderLocationKind(moduleSlug);
+  return kind === 'states' || kind === 'cities';
+}
+
 export function getLocationFieldDeleteBlockReason(
   field: FormField,
   schema: FormField[]
