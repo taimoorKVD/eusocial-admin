@@ -224,6 +224,20 @@ $theme-text: #334155;
   background: #fff5eb;
 }
 
+.module-select__check--indeterminate {
+  border-color: #ff9015;
+  background: #fff5eb;
+  color: #ff9015;
+}
+
+.module-select__option--select-all {
+  border-bottom: 1px solid #e5e7eb;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #fff;
+}
+
 .module-select__option--selected {
   background: #fff3e7;
   font-weight: 500;

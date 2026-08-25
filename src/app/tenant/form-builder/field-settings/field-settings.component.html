@@ -502,6 +502,39 @@
               } @else if (!filteredAvailableDynamicOptions.length) {
                 <div class="module-select__empty">No results found</div>
               } @else {
+                <button
+                  type="button"
+                  class="module-select__option module-select__option--multi module-select__option--select-all"
+                  [class.module-select__option--selected]="isSelectAllChecked"
+                  (click)="toggleSelectAllDynamicOptions(); $event.stopPropagation()"
+                >
+                  <span
+                    class="module-select__check"
+                    [class.module-select__check--on]="isSelectAllChecked"
+                    [class.module-select__check--indeterminate]="isSelectAllIndeterminate"
+                    aria-hidden="true"
+                  >
+                    @if (isSelectAllChecked) {
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                        <path
+                          d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"
+                          fill="currentColor"
+                        />
+                      </svg>
+                    } @else if (isSelectAllIndeterminate) {
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                        <path
+                          d="M5 12h14"
+                          stroke="currentColor"
+                          stroke-width="2.5"
+                          stroke-linecap="round"
+                        />
+                      </svg>
+                    }
+                  </span>
+                  <span class="truncate font-medium">Select All</span>
+                </button>
+
                 @for (option of filteredAvailableDynamicOptions; track option.value) {
                   <button
                     type="button"

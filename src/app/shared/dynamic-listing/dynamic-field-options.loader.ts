@@ -18,6 +18,36 @@ function isLazyLocationEndpoint(endpoint?: string | null): boolean {
   return normalized === 'states' || normalized === 'cities';
 }
 
+/** Form Builder baked dynamic options are the runtime source of truth. */
+export function hasSavedDynamicSelectOptions(field: DynamicField): boolean {
+  return (
+    field.optionSource?.type === 'dynamic' &&
+    Array.isArray(field.options) &&
+    field.options.length > 0
+  );
+}
+
+export function shouldFetchSelectOptionsFromApi(field: DynamicField): boolean {
+  if (field.type !== 'select' || !field.optionSource?.endpoint) {
+    return false;
+  }
+
+  if (isLazyLocationEndpoint(field.optionSource.endpoint)) {
+    return false;
+  }
+
+  if (field.optionSource.type === 'api') {
+    return true;
+  }
+
+  if (field.optionSource.type === 'dynamic') {
+    // Keep Form Builder selected options; do not replace with full module list.
+    return !hasSavedDynamicSelectOptions(field);
+  }
+
+  return false;
+}
+
 export function normalizeStaticSelectOptions(fields: DynamicField[]): void {
   for (const field of fields) {
     if (field.type === 'select' && !field.optionSource && Array.isArray(field.options)) {
@@ -44,6 +74,10 @@ export function applyApiDropdownOptionsToField(
   field: DynamicField,
   response: Record<string, unknown>,
 ): void {
+  if (hasSavedDynamicSelectOptions(field)) {
+    return;
+  }
+
   const dataPath = field.optionSource?.response?.dataPath ?? 'data';
   const labelKey = field.optionSource?.response?.labelKey ?? 'label';
   const valueKey = field.optionSource?.response?.valueKey ?? 'value';
@@ -64,13 +98,7 @@ export function loadDynamicDropdownOptions(
   normalizeStaticSelectOptions(fields);
 
   const dropdownRequests = fields
-    .filter(
-      (field) =>
-        field.type === 'select' &&
-        (field.optionSource?.type === 'api' || field.optionSource?.type === 'dynamic') &&
-        field.optionSource?.endpoint &&
-        !isLazyLocationEndpoint(field.optionSource.endpoint),
-    )
+    .filter((field) => shouldFetchSelectOptionsFromApi(field))
     .map((field) =>
       formStorageService.getEndpointApi<Record<string, unknown>>(field.optionSource!.endpoint!).pipe(
         map((response) => ({ field, response })),

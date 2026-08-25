@@ -786,6 +786,76 @@ export class FieldSettingsComponent {
     );
   }
 
+  /** Select All reflects the currently visible (filtered) option list. */
+  get isSelectAllChecked(): boolean {
+    const targets = this.filteredAvailableDynamicOptions;
+    return (
+      targets.length > 0 &&
+      targets.every((option) => this.isDynamicOptionSelected(option))
+    );
+  }
+
+  get isSelectAllIndeterminate(): boolean {
+    const targets = this.filteredAvailableDynamicOptions;
+    if (!targets.length) {
+      return false;
+    }
+
+    const selectedCount = targets.filter((option) =>
+      this.isDynamicOptionSelected(option),
+    ).length;
+
+    return selectedCount > 0 && selectedCount < targets.length;
+  }
+
+  toggleSelectAllDynamicOptions(): void {
+    if (
+      !this._field ||
+      !this.isFieldEditable ||
+      !this.selectedModuleSlug ||
+      isDynamicSelectOptionsHiddenForModule(this.selectedModuleSlug)
+    ) {
+      return;
+    }
+
+    const targets = this.filteredAvailableDynamicOptions;
+    if (!targets.length) {
+      return;
+    }
+
+    const current = [...(this._field.options || [])];
+    const allTargetsSelected = targets.every((option) =>
+      this.isDynamicOptionSelected(option),
+    );
+
+    if (allTargetsSelected) {
+      // Deselect only currently visible options; keep hidden selections.
+      const removeValues = new Set(targets.map((option) => String(option.value)));
+      this._field.options = current.filter(
+        (item) => !removeValues.has(String(this.readOptionValue(item))),
+      );
+    } else {
+      // Select all visible options without clearing previously selected hidden ones.
+      for (const option of targets) {
+        const exists = current.some(
+          (item) => String(this.readOptionValue(item)) === String(option.value),
+        );
+        if (!exists) {
+          current.push({
+            id: typeof option.value === 'number' ? option.value : undefined,
+            label: option.label,
+            value: option.value,
+          });
+        }
+      }
+      this._field.options = current;
+    }
+
+    this._field.optionSource = this.buildDynamicOptionSource();
+    this.skipFieldReinitialize = true;
+    this.onChange();
+  }
+
   toggleDynamicOption(option: FieldOption): void {
     if (
       !this._field ||

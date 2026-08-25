@@ -184,8 +184,10 @@ export class FormPreviewModalComponent implements OnDestroy {
     return fields.some(
       (field) =>
         field.type === 'select' &&
-        (field.optionSource?.type === 'api' || field.optionSource?.type === 'dynamic') &&
-        !!field.optionSource?.endpoint,
+        !!field.optionSource?.endpoint &&
+        (field.optionSource?.type === 'api' ||
+          (field.optionSource?.type === 'dynamic' &&
+            !(Array.isArray(field.options) && field.options.length > 0))),
     );
   }
 
