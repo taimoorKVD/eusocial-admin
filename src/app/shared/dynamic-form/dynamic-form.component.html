@@ -450,78 +450,133 @@
             }
 
             @case ('image') {
-              <input
-                #imgInput
-                type="file"
-                [id]="field.id"
-                accept=".jpg,.jpeg,.png,.webp"
-                class="sr-only"
-                [disabled]="isFieldDisabled(field)"
-                (change)="onImageSelected($event, field.name)"
-              />
-
-              @if (!imagePreviews()[field.name]) {
-                <div
-                  (click)="imgInput.click()"
-                  (keydown.enter)="imgInput.click()"
-                  (keydown.space)="$event.preventDefault(); imgInput.click()"
-                  role="button"
-                  tabindex="0"
-                  class="upload-zone"
-                  [class.border-red-400]="getErrorMessage(field)"
-                  [class.bg-red-50]="getErrorMessage(field)"
-                >
-                  <svg class="upload-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                      d="M12 16.5v-9m0 0-3 3m3-3 3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.338-1.382A4.501 4.501 0 0 1 17.25 19.5H6.75Z" />
-                  </svg>
-                  <p class="upload-title">
+              <div class="image-field">
+                <div class="image-field-header">
+                  <p class="image-field-title">
                     {{ field.label }}
-                    @if (field.required) {
+                    @if (isFieldRequired(field)) {
                       <span class="field-required">*</span>
                     }
                   </p>
-                  <p class="upload-hint">Click to upload &mdash; JPG, JPEG, PNG, WEBP</p>
+                  @if (field.placeholder) {
+                    <p class="image-field-help">{{ field.placeholder }}</p>
+                  }
                 </div>
-              } @else {
-                <div class="image-preview-card">
-                  <div class="image-preview-thumb group">
-                    <img
-                      [src]="imagePreviews()[field.name]"
-                      [alt]="field.label + ' preview'"
-                      class="image-preview-img"
-                    />
 
-                    <div class="image-preview-overlay"></div>
+                @if (getReferenceImages(field).length) {
+                  <section class="image-reference-section" aria-label="Reference images">
+                    <div class="image-section-heading">
+                      <h4>Example / Reference Images</h4>
+                      <p>These images show what is expected.</p>
+                    </div>
+                    <div class="image-thumb-grid">
+                      @for (image of getReferenceImages(field); track image.url + image.fileName + image.key) {
+                        <button
+                          type="button"
+                          class="image-thumb image-thumb--reference"
+                          (click)="openImageLightbox(image)"
+                          [attr.aria-label]="'Preview reference ' + image.fileName"
+                        >
+                          <img [src]="getImageDisplayUrl(image)" [alt]="image.fileName" />
+                          <span class="image-thumb-badge">Example</span>
+                        </button>
+                      }
+                    </div>
+                  </section>
+                }
 
-                    <button
-                      type="button"
-                      (click)="removeImage(field.name, imgInput)"
-                      class="image-remove-button"
-                      aria-label="Remove image"
-                    >
-                      <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-                      </svg>
-                    </button>
+                <section class="image-answer-section" aria-label="Your upload">
+                  <div class="image-section-heading">
+                    <h4>Upload Your Image{{ isImageMultiple(field) ? 's' : '' }}</h4>
+                    <p>
+                      @if (isImageMultiple(field)) {
+                        Up to {{ getImageMaxFiles(field) }} images · JPG, JPEG, PNG, GIF, WEBP (max 5MB)
+                      } @else {
+                        Click to upload — JPG, JPEG, PNG, GIF, WEBP (max 5MB)
+                      }
+                    </p>
                   </div>
 
-                  <div class="image-preview-meta">
-                    <p class="image-preview-title">Image selected</p>
-                    <p class="image-preview-subtitle">JPG · JPEG · PNG · WEBP</p>
-                    <button
-                      type="button"
-                      (click)="imgInput.click()"
-                      class="image-preview-action"
+                  <input
+                    #imgInput
+                    type="file"
+                    [id]="field.id"
+                    [accept]="getImageAcceptAttribute()"
+                    [multiple]="isImageMultiple(field)"
+                    class="sr-only"
+                    [disabled]="!canAddAnswerImages(field)"
+                    (change)="onAnswerImagesSelected($event, field)"
+                  />
+
+                  @if (canAddAnswerImages(field) || !getAnswerImages(field).length) {
+                    <div
+                      (click)="canAddAnswerImages(field) && imgInput.click()"
+                      (keydown.enter)="canAddAnswerImages(field) && imgInput.click()"
+                      (keydown.space)="$event.preventDefault(); canAddAnswerImages(field) && imgInput.click()"
+                      role="button"
+                      tabindex="0"
+                      class="upload-zone"
+                      [class.upload-zone--disabled]="!canAddAnswerImages(field)"
+                      [class.border-red-400]="getErrorMessage(field)"
+                      [class.bg-red-50]="getErrorMessage(field)"
                     >
-                      <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125" />
+                      <svg class="upload-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M12 16.5v-9m0 0-3 3m3-3 3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.338-1.382A4.501 4.501 0 0 1 17.25 19.5H6.75Z" />
                       </svg>
-                      Change image
-                    </button>
-                  </div>
-                </div>
-              }
+                      <p class="upload-title">
+                        {{ imageUploading()[field.name] ? 'Uploading…' : 'Upload / Drag & Drop' }}
+                      </p>
+                      <p class="upload-hint">
+                        {{ getAnswerImages(field).length }} / {{ getImageMaxFiles(field) }} selected
+                      </p>
+                    </div>
+                  }
+
+                  @if (getAnswerImages(field).length) {
+                    <div class="image-answer-list">
+                      <p class="image-selected-label">Selected files</p>
+                      <div class="image-thumb-grid">
+                        @for (image of getAnswerImages(field); track image.url + image.key + $index; let i = $index) {
+                          <div class="image-thumb image-thumb--answer">
+                            <button
+                              type="button"
+                              class="image-thumb-preview"
+                              (click)="openImageLightbox(image)"
+                              [attr.aria-label]="'Preview ' + image.fileName"
+                            >
+                              <img [src]="getImageDisplayUrl(image)" [alt]="image.fileName" />
+                            </button>
+                            @if (!isFieldDisabled(field)) {
+                              <button
+                                type="button"
+                                class="image-remove-button"
+                                (click)="removeAnswerImage(field, i)"
+                                aria-label="Remove image"
+                              >
+                                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            }
+                            <p class="image-thumb-name" [title]="image.fileName">{{ image.fileName }}</p>
+                          </div>
+                        }
+                      </div>
+
+                      @if (canAddAnswerImages(field)) {
+                        <button
+                          type="button"
+                          class="image-preview-action"
+                          (click)="imgInput.click()"
+                        >
+                          Add another image
+                        </button>
+                      }
+                    </div>
+                  }
+                </section>
+              </div>
             }
           }
 
@@ -536,4 +591,21 @@
     }
   </div>
 </form>
+
+@if (imageLightboxUrl(); as previewUrl) {
+  <div
+    class="image-lightbox"
+    (click)="closeImageLightbox()"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Image preview"
+  >
+    <img
+      [src]="previewUrl"
+      alt="Preview"
+      class="image-lightbox-img"
+      (click)="$event.stopPropagation()"
+    />
+  </div>
+}
 }

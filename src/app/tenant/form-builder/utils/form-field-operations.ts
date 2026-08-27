@@ -96,6 +96,7 @@ export function duplicateFormField(
     optionSource: cloneOptionSource(field.optionSource),
     condition: serializeConditionalLogic(field.condition),
     validations: field.validations ? { ...field.validations } : {},
+    referenceImages: (field.referenceImages || []).map(image => ({ ...image })),
   });
 
   return {

@@ -130,6 +130,17 @@
   class="w-full border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 focus:outline-none disabled:cursor-default disabled:text-slate-500"
 />
 
+<div
+  *ngIf="fieldType === 'image' && field.referenceImages?.length"
+  class="mt-2 flex flex-wrap gap-2"
+>
+  <div
+    *ngFor="let image of field.referenceImages"
+    class="h-12 w-12 overflow-hidden rounded border border-slate-200 bg-slate-50"
+  >
+    <img [src]="getImageDisplayUrl(image)" [alt]="image.fileName" class="h-full w-full object-cover" />
+  </div>
+</div>
 <div *ngIf="fieldType === 'parameter'" class="flex items-center gap-2">
   <input
     type="number"

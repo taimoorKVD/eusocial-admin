@@ -28,8 +28,23 @@ import {
   wouldCreateCircularDependency,
 } from '../../../shared/conditional-logic';
 import { FormField, FieldOption, OptionSource, RangeFieldType, RangeTimeFormat } from '../models/form-field.model';
+import { ImageFile } from '../models/image-file.model';
 import { normalizeFieldOption, normalizeStaticSelectFieldOptions } from '../utils/field-options.utils';
 import { buildPlaceholderFromLabel, supportsPlaceholderAutoGeneration } from '../utils/form-field.factory';
+import {
+  cloneImageFiles,
+  getImageUploadRejectionReason,
+  IMAGE_ACCEPT_ATTRIBUTE,
+  IMAGE_TYPE_ERROR_MESSAGE,
+  readImageMultiple,
+  resolveImageDisplayUrl,
+  resolveMaxFiles,
+  resolveMinFiles,
+  sanitizeImageFieldConfig,
+} from '../utils/image-field.utils';
+import { FormImageUploadService } from '../services/form-image-upload.service';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import {
   getCharacterLimitExceededMessage,
   getDefaultCharacterLimit,
@@ -165,7 +180,13 @@ export class FieldSettingsComponent {
   @Output() delete = new EventEmitter<void>();
   @Output() loadingChange = new EventEmitter<boolean>();
 
-  constructor(private dynamicModuleOptionsService: DynamicModuleOptionsService) {}
+  constructor(
+    private dynamicModuleOptionsService: DynamicModuleOptionsService,
+    private formImageUploadService: FormImageUploadService,
+  ) {}
+
+  referenceImagesUploading = false;
+  referencePreviewUrl: string | null = null;
 
   onChange(): void {
     if (!this._field || !this.isFieldEditable) {
@@ -178,6 +199,13 @@ export class FieldSettingsComponent {
       isReadonly: this._field.isReadonly === true,
       options: [...(this._field.options || [])],
       optionSource: this.resolveEmittedOptionSource(),
+      referenceImages:
+        this._field.type === 'image'
+          ? cloneImageFiles(this._field.referenceImages)
+          : undefined,
+      multiple: this._field.type === 'image' ? this._field.multiple === true : undefined,
+      minFiles: this._field.type === 'image' ? this._field.minFiles : undefined,
+      maxFiles: this._field.type === 'image' ? this._field.maxFiles : undefined,
       selectionType:
         this._field.type === 'select'
           ? this.resolveSelectSelectionType(this._field)
@@ -279,6 +307,222 @@ export class FieldSettingsComponent {
 
   get isSelectField(): boolean {
     return this._field?.type === 'select';
+  }
+
+  get isImageField(): boolean {
+    return this._field?.type === 'image';
+  }
+
+  get imageAcceptAttribute(): string {
+    return IMAGE_ACCEPT_ATTRIBUTE;
+  }
+
+  get referenceImages(): ImageFile[] {
+    return this._field?.referenceImages || [];
+  }
+
+  get imageMultiple(): boolean {
+    return this._field ? readImageMultiple(this._field) : false;
+  }
+
+  get imageMinFiles(): number {
+    return this._field ? resolveMinFiles(this._field) : 0;
+  }
+
+  get imageMaxFiles(): number {
+    return this._field ? resolveMaxFiles(this._field) : 1;
+  }
+
+  get canAddMoreReferenceImages(): boolean {
+    if (!this._field || !this.isImageField) {
+      return false;
+    }
+    if (!this.imageMultiple) {
+      return this.referenceImages.length < 1;
+    }
+    return this.referenceImages.length < resolveMaxFiles(this._field);
+  }
+
+  onImageMultipleChange(checked: boolean): void {
+    if (!this._field || !this.isFieldEditable || !this.isImageField) {
+      return;
+    }
+
+    this._field.multiple = checked === true;
+    if (!this._field.multiple) {
+      this._field.maxFiles = 1;
+      if ((this._field.minFiles ?? 0) > 1) {
+        this._field.minFiles = 1;
+      }
+      if ((this._field.referenceImages?.length ?? 0) > 1) {
+        this._field.referenceImages = cloneImageFiles(
+          this._field.referenceImages?.slice(0, 1),
+        );
+      }
+    } else if (!this._field.maxFiles || this._field.maxFiles < 2) {
+      this._field.maxFiles = 5;
+    }
+
+    this.onChange();
+  }
+
+  onImageMinFilesChange(raw: string | number): void {
+    if (!this._field || !this.isFieldEditable || !this.isImageField) {
+      return;
+    }
+
+    const parsed = Number(raw);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      this._field.minFiles = undefined;
+      this.onChange();
+      return;
+    }
+
+    const minFiles = Math.floor(parsed);
+    const maxFiles = resolveMaxFiles(this._field);
+    this._field.minFiles = Math.min(minFiles, maxFiles);
+    this.onChange();
+  }
+
+  onImageMaxFilesChange(raw: string | number): void {
+    if (!this._field || !this.isFieldEditable || !this.isImageField) {
+      return;
+    }
+
+    const parsed = Number(raw);
+    if (!Number.isFinite(parsed) || parsed < 1) {
+      this._field.maxFiles = this.imageMultiple ? 5 : 1;
+      this.onChange();
+      return;
+    }
+
+    const maxFiles = Math.floor(parsed);
+    this._field.maxFiles = this.imageMultiple ? Math.max(1, maxFiles) : 1;
+    if ((this._field.minFiles ?? 0) > this._field.maxFiles) {
+      this._field.minFiles = this._field.maxFiles;
+    }
+    this.onChange();
+  }
+
+  onReferenceImagesSelected(event: Event): void {
+    if (!this._field || !this.isFieldEditable || !this.isImageField || this.referenceImagesUploading) {
+      return;
+    }
+
+    const input = event.target as HTMLInputElement;
+    const files = Array.from(input.files || []);
+    input.value = '';
+
+    if (!files.length) {
+      return;
+    }
+
+    const remaining = this.imageMultiple
+      ? Math.max(0, resolveMaxFiles(this._field) - this.referenceImages.length)
+      : Math.max(0, 1 - this.referenceImages.length);
+
+    if (remaining <= 0) {
+      this.toastr.warning('Maximum reference images reached.');
+      return;
+    }
+
+    const selected = files.slice(0, remaining);
+    if (files.length > remaining) {
+      this.toastr.warning(
+        `Only ${remaining} more reference image${remaining === 1 ? '' : 's'} can be added.`,
+      );
+    }
+
+    const rejected = selected
+      .map((file) => ({ file, reason: getImageUploadRejectionReason(file) }))
+      .filter((item) => !!item.reason);
+
+    if (rejected.length) {
+      this.toastr.error(rejected[0].reason || IMAGE_TYPE_ERROR_MESSAGE);
+    }
+
+    const validFiles = selected.filter((file) => !getImageUploadRejectionReason(file));
+    if (!validFiles.length) {
+      return;
+    }
+
+    this.referenceImagesUploading = true;
+
+    forkJoin(
+      validFiles.map((file) =>
+        this.formImageUploadService.upload(file, 'reference').pipe(
+          catchError((err) => {
+            this.toastr.error(
+              err?.error?.message || err?.message || 'Failed to upload reference image.',
+            );
+            return of(null);
+          }),
+        ),
+      ),
+    ).subscribe({
+      next: (results) => {
+        const uploaded = results.filter((item): item is ImageFile => !!item);
+        if (uploaded.length && this._field) {
+          this._field.referenceImages = [
+            ...cloneImageFiles(this._field.referenceImages),
+            ...uploaded,
+          ];
+          this.onChange();
+        }
+      },
+      complete: () => {
+        this.referenceImagesUploading = false;
+      },
+    });
+  }
+
+  removeReferenceImage(index: number): void {
+    if (!this._field || !this.isFieldEditable || !this.isImageField) {
+      return;
+    }
+
+    const next = cloneImageFiles(this._field.referenceImages);
+    if (index < 0 || index >= next.length) {
+      return;
+    }
+
+    const [removed] = next.splice(index, 1);
+    const applyLocalRemove = () => {
+      if (!this._field) {
+        return;
+      }
+      this._field.referenceImages = next;
+      this.onChange();
+    };
+
+    const key = removed?.key?.trim();
+    if (!key) {
+      applyLocalRemove();
+      return;
+    }
+
+    this.formImageUploadService.deleteImage(key).subscribe({
+      next: () => applyLocalRemove(),
+      error: (err) => {
+        this.toastr.error(
+          err?.error?.message || err?.message || 'Failed to delete reference image.',
+        );
+      },
+    });
+  }
+
+  getImageDisplayUrl(image: ImageFile): string {
+    return resolveImageDisplayUrl(image);
+  }
+
+  openReferencePreview(image: ImageFile | string): void {
+    const url =
+      typeof image === 'string' ? image : resolveImageDisplayUrl(image);
+    this.referencePreviewUrl = url || null;
+  }
+
+  closeReferencePreview(): void {
+    this.referencePreviewUrl = null;
   }
 
   /** Selection Type (Single/Multi) — only for user/item/vendor setup Form Builders. */
@@ -1083,6 +1327,24 @@ export class FieldSettingsComponent {
       condition: serializeConditionalLogic(value.condition),
       options: [...(value.options || [])],
       optionSource: value.optionSource ? { ...value.optionSource } : undefined,
+      ...(value.type === 'image'
+        ? (() => {
+            const imageConfig = sanitizeImageFieldConfig(
+              value as FormField & Record<string, unknown>,
+            );
+            return {
+              referenceImages: cloneImageFiles(imageConfig.referenceImages),
+              multiple: imageConfig.multiple,
+              minFiles: imageConfig.minFiles,
+              maxFiles: imageConfig.maxFiles,
+            };
+          })()
+        : {
+            referenceImages: undefined,
+            multiple: undefined,
+            minFiles: undefined,
+            maxFiles: undefined,
+          }),
       selectionType:
         value.type === 'select'
           ? this.resolveSelectSelectionType(value)
