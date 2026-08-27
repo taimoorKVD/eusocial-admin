@@ -14,6 +14,10 @@ import { FieldOptionsService } from '../../form-builder/services/field-options.s
 import { normalizeCheckboxFieldOptions, normalizeStaticSelectFieldOptions } from '../../form-builder/utils/field-options.utils';
 import { toFieldName } from '../../form-builder/utils/form-field.factory';
 import { resolveBuilderLocationKind } from '../../form-builder/utils/location-field-dependencies.utils';
+import {
+  cloneImageFiles,
+  sanitizeImageFieldConfig,
+} from '../../form-builder/utils/image-field.utils';
 
 const SUPPORTED_TYPES = new Set<DynamicFieldType>([
   'text',
@@ -75,6 +79,8 @@ export class DynamicFormFieldMapperService {
           : [];
 
     const normalizedOptions = this.normalizeOptions(field, options);
+    const imageConfig =
+      type === 'image' ? sanitizeImageFieldConfig(field as FormField & Record<string, unknown>) : null;
 
     return {
       id: field.id,
@@ -130,6 +136,12 @@ export class DynamicFormFieldMapperService {
           ? normalizeRangeTimeFormat(field.timeFormat)
           : undefined,
       condition: field.condition,
+      referenceImages: imageConfig
+        ? cloneImageFiles(imageConfig.referenceImages)
+        : undefined,
+      multiple: imageConfig?.multiple,
+      minFiles: imageConfig?.minFiles,
+      maxFiles: imageConfig?.maxFiles,
     };
   }
 

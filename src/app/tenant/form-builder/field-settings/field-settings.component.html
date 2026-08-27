@@ -89,6 +89,124 @@
     </div> -->
   </div>
 
+  <div *ngIf="isImageField" class="space-y-3">
+    <div class="space-y-2 rounded-md border border-slate-100 bg-slate-50 px-3 py-2.5">
+      <div class="flex items-center gap-2">
+        <input
+          id="field-image-multiple"
+          type="checkbox"
+          [ngModel]="imageMultiple"
+          (ngModelChange)="onImageMultipleChange($event)"
+          [disabled]="!isFieldEditable"
+          class="field-settings-checkbox"
+        />
+        <label for="field-image-multiple" class="text-sm text-slate-700">Allow multiple images</label>
+      </div>
+
+      <div *ngIf="imageMultiple" class="grid grid-cols-2 gap-2 pt-1">
+        <div>
+          <label class="mb-1 block text-[11px] font-medium text-slate-600">Min files</label>
+          <input
+            type="number"
+            min="0"
+            [ngModel]="field.minFiles ?? ''"
+            (ngModelChange)="onImageMinFilesChange($event)"
+            [disabled]="!isFieldEditable"
+            class="w-full rounded-md border border-slate-200 px-2.5 py-1.5 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100"
+          />
+        </div>
+        <div>
+          <label class="mb-1 block text-[11px] font-medium text-slate-600">Max files</label>
+          <input
+            type="number"
+            min="1"
+            [ngModel]="field.maxFiles ?? 5"
+            (ngModelChange)="onImageMaxFilesChange($event)"
+            [disabled]="!isFieldEditable"
+            class="w-full rounded-md border border-slate-200 px-2.5 py-1.5 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100"
+          />
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <label class="mb-1.5 block text-xs font-medium text-slate-600">Example / Reference Images</label>
+      <p class="mb-2 text-[11px] leading-relaxed text-slate-500">
+        These images show what is expected. They are not submitted as answers.
+      </p>
+
+      <div class="rounded-md border border-slate-100 bg-slate-50 p-3">
+        <div class="flex flex-wrap gap-2" *ngIf="referenceImages.length">
+          <div
+            *ngFor="let image of referenceImages; let i = index"
+            class="group relative h-20 w-20 overflow-hidden rounded-lg border border-slate-200 bg-white"
+          >
+            <button
+              type="button"
+              class="h-full w-full"
+              (click)="openReferencePreview(image)"
+              [attr.aria-label]="'Preview ' + image.fileName"
+            >
+              <img
+                [src]="getImageDisplayUrl(image)"
+                [alt]="image.fileName"
+                class="h-full w-full object-cover"
+              />
+            </button>
+            <button
+              *ngIf="isFieldEditable"
+              type="button"
+              class="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white opacity-0 shadow transition group-hover:opacity-100"
+              (click)="removeReferenceImage(i)"
+              aria-label="Remove reference image"
+            >
+              <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="!referenceImages.length" class="mb-2 text-[11px] text-slate-500">
+          No reference images yet.
+        </div>
+
+        <label
+          *ngIf="canAddMoreReferenceImages && isFieldEditable"
+          class="mt-2 inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-dashed border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:border-[#0054AC] hover:text-[#0054AC]"
+          [class.pointer-events-none]="referenceImagesUploading"
+          [class.opacity-60]="referenceImagesUploading"
+        >
+          <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+          </svg>
+          {{ referenceImagesUploading ? 'Uploading…' : 'Add reference image' }}
+          <input
+            type="file"
+            class="sr-only"
+            [accept]="imageAcceptAttribute"
+            [multiple]="imageMultiple"
+            [disabled]="referenceImagesUploading || !isFieldEditable"
+            (change)="onReferenceImagesSelected($event)"
+          />
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div
+    *ngIf="referencePreviewUrl"
+    class="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/70 p-4"
+    (click)="closeReferencePreview()"
+  >
+    <img
+      [src]="referencePreviewUrl"
+      alt="Reference preview"
+      class="max-h-[85vh] max-w-[90vw] rounded-lg object-contain shadow-2xl"
+      (click)="$event.stopPropagation()"
+    />
+  </div>
+
   <div *ngIf="supportsCharacterLimit" class="space-y-1.5">
     <label for="field-character-limit" class="mb-1.5 block text-xs font-medium text-slate-600">
       Character Limit

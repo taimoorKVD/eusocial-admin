@@ -15,6 +15,10 @@ import {
   normalizeRangeValue,
   rangeFieldValidator,
 } from './range-field.utils';
+import {
+  filterAnswerImages,
+  imageFieldValidator,
+} from '../../tenant/form-builder/utils/image-field.utils';
 
 export function sortDynamicFields(fields: DynamicField[]): DynamicField[] {
   return [...fields]
@@ -34,7 +38,7 @@ export function serializeDynamicFieldsSchema(fields: DynamicField[]): string {
   return sortDynamicFields(fields)
     .map(
       (field) =>
-        `${field.id}:${field.name}:${field.type}:${Number(!!field.required)}:${field.selectionType || 'single'}:${Number(field.isShow !== false)}:${Number(!!field.isReadonly)}:${Number(allowsDecimalPoint(field))}:${getFieldCharacterLimit(field) ?? ''}:${field.type === 'range' ? normalizeRangeType(field.rangeType) : ''}:${JSON.stringify(field.condition ?? null)}`,
+        `${field.id}:${field.name}:${field.type}:${Number(!!field.required)}:${field.selectionType || 'single'}:${Number(field.isShow !== false)}:${Number(!!field.isReadonly)}:${Number(allowsDecimalPoint(field))}:${getFieldCharacterLimit(field) ?? ''}:${field.type === 'range' ? normalizeRangeType(field.rangeType) : ''}:${field.type === 'image' ? `${Number(!!field.multiple)}:${field.minFiles ?? ''}:${field.maxFiles ?? ''}:${(field.referenceImages || []).length}` : ''}:${JSON.stringify(field.condition ?? null)}`,
     )
     .join('|');
 }
@@ -113,7 +117,7 @@ export function getInitialFieldValue(field: DynamicField): unknown {
     case 'range':
       return normalizeRangeValue(field.defaultValue ?? field.value ?? createEmptyRangeValue());
     case 'image':
-      return field.defaultValue ?? field.value ?? null;
+      return filterAnswerImages(field.defaultValue ?? field.value);
     default:
       return field.defaultValue ?? field.value ?? '';
   }
@@ -133,6 +137,11 @@ export function getFieldValidators(
 
   if (field.type === 'range') {
     validators.push(rangeFieldValidator(field, { required, visible }));
+    return validators;
+  }
+
+  if (field.type === 'image') {
+    validators.push(imageFieldValidator(field, { required, visible }));
     return validators;
   }
 

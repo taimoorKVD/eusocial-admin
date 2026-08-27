@@ -22,6 +22,7 @@ import {
 } from '../../../../interfaces/employee-assignment';
 import { DynamicField, DynamicFormValue } from '../../../../interfaces/dynamic-field';
 import { mapAssignmentSectionsToBuilder } from '../utils/assignment-form.mapper';
+import { filterAnswerImages } from '../../../form-builder/utils/image-field.utils';
 
 @Component({
   selector: 'app-employee-assignment',
@@ -311,7 +312,11 @@ export class EmployeeAssignmentComponent implements OnInit {
         }
         const hasName = Object.prototype.hasOwnProperty.call(values, field.name);
         const value = hasName ? values[field.name] : values[field.id];
-        answers[field.id] = value instanceof File ? value.name : value ?? '';
+        if (field.type === 'image') {
+          answers[field.id] = filterAnswerImages(value);
+        } else {
+          answers[field.id] = value instanceof File ? value.name : value ?? '';
+        }
       }
     });
 

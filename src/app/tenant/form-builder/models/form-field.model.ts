@@ -1,4 +1,5 @@
 import { FieldCondition } from '../../../shared/conditional-logic';
+import { ImageFile } from './image-file.model';
 
 export type FieldType =
   | 'text'
@@ -112,4 +113,16 @@ export interface FormField {
    * Missing/undefined uses 255 (text) or 5000 (textarea).
    */
   characterLimit?: number;
+
+  /**
+   * Image Upload only. Example / reference images configured in Form Builder.
+   * Never submitted as user answers.
+   */
+  referenceImages?: ImageFile[];
+  /** Image Upload only. When true, the end user may upload multiple answer images. */
+  multiple?: boolean;
+  /** Image Upload only. Minimum answer images required (does not count references). */
+  minFiles?: number;
+  /** Image Upload only. Maximum answer images allowed. */
+  maxFiles?: number;
 }
