@@ -460,14 +460,7 @@
     </div>
 
     <div *ngIf="optionsMode === 'static'">
-      <label class="mb-1.5 block text-xs font-medium text-slate-600">Options (one per line)</label>
-      <textarea
-        rows="5"
-        [value]="optionsText"
-        (input)="updateOptions($event)"
-        [disabled]="!isFieldEditable"
-        class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
-      ></textarea>
+      <ng-container *ngTemplateOutlet="staticOptionsRepeater"></ng-container>
     </div>
 
     <div *ngIf="optionsMode === 'dynamic'" class="space-y-3">
@@ -708,14 +701,7 @@
     </p>
 
     <ng-container *ngIf="field.optionSource?.type !== 'api'">
-      <label class="mb-1.5 block text-xs font-medium text-slate-600">Options (one per line)</label>
-      <textarea
-        rows="5"
-        [value]="optionsText"
-        (input)="updateOptions($event)"
-        [disabled]="!isFieldEditable"
-        class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
-      ></textarea>
+      <ng-container *ngTemplateOutlet="staticOptionsRepeater"></ng-container>
     </ng-container>
   </div>
 
@@ -831,6 +817,60 @@
   </div>
 
 </div>
+
+<ng-template #staticOptionsRepeater>
+  <div class="static-options-repeater">
+    <div class="mb-1.5 flex items-center justify-between gap-2">
+      <label class="block text-xs font-medium text-slate-600">Options</label>
+      <span class="text-[11px] text-slate-500">{{ getStaticOptionLabels().length }} option(s)</span>
+    </div>
+
+    <div class="static-options-repeater__list">
+      @if (!getStaticOptionLabels().length) {
+        <p class="static-options-repeater__empty text-xs text-slate-500">
+          No options yet. Add one below.
+        </p>
+      }
+
+      @for (label of getStaticOptionLabels(); track $index; let i = $index) {
+        <div class="static-options-repeater__row">
+          <span class="static-options-repeater__index">{{ i + 1 }}</span>
+          <input
+            type="text"
+            [value]="label"
+            (input)="updateStaticOptionLabel(i, $any($event.target).value)"
+            [disabled]="!isFieldEditable"
+            [placeholder]="'Option ' + (i + 1)"
+            class="static-options-repeater__input"
+          />
+          <button
+            type="button"
+            class="static-options-repeater__remove"
+            (click)="removeStaticOption(i)"
+            [disabled]="!isFieldEditable"
+            [attr.aria-label]="'Remove option ' + (i + 1)"
+          >
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      }
+    </div>
+
+    <button
+      type="button"
+      class="static-options-repeater__add"
+      (click)="addStaticOption()"
+      [disabled]="!isFieldEditable"
+    >
+      <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+      </svg>
+      Add option
+    </button>
+  </div>
+</ng-template>
 
 <app-confirm-modal
   [isOpen]="isDeleteModalOpen"

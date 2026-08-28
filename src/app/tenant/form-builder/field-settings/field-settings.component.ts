@@ -1236,28 +1236,7 @@ export class FieldSettingsComponent {
     return module ? this.getModuleLabel(module) : moduleSlug;
   }
 
-  updateOptions(event: Event): void {
-    if (!this._field || !this.isFieldEditable) {
-      return;
-    }
-
-    const value = (event.target as HTMLTextAreaElement).value;
-    const labels = value
-      .split('\n')
-      .map(v => v.trim())
-      .filter(v => v);
-
-    if (this.isSelectField && this.optionsMode === 'static') {
-      this._field.options = normalizeStaticSelectFieldOptions(labels);
-    } else {
-      this._field.options = labels;
-    }
-
-    this._field.optionSource = undefined;
-    this.onChange();
-  }
-
-  get optionsText(): string {
+  getStaticOptionLabels(): string[] {
     return (this._field?.options || [])
       .map(option => {
         if (typeof option === 'string') {
@@ -1266,8 +1245,62 @@ export class FieldSettingsComponent {
 
         return normalizeFieldOption(option)?.label ?? '';
       })
-      .filter(Boolean)
-      .join('\n');
+      .filter(Boolean);
+  }
+
+  updateStaticOptionLabel(index: number, value: string): void {
+    if (!this._field || !this.isFieldEditable) {
+      return;
+    }
+
+    const labels = this.getStaticOptionLabels();
+    if (index < 0 || index >= labels.length) {
+      return;
+    }
+
+    labels[index] = value;
+    this.applyStaticOptionLabels(labels);
+  }
+
+  addStaticOption(): void {
+    if (!this._field || !this.isFieldEditable) {
+      return;
+    }
+
+    const labels = this.getStaticOptionLabels();
+    labels.push(`Option ${labels.length + 1}`);
+    this.applyStaticOptionLabels(labels);
+  }
+
+  removeStaticOption(index: number): void {
+    if (!this._field || !this.isFieldEditable) {
+      return;
+    }
+
+    const labels = this.getStaticOptionLabels();
+    if (index < 0 || index >= labels.length) {
+      return;
+    }
+
+    labels.splice(index, 1);
+    this.applyStaticOptionLabels(labels);
+  }
+
+  private applyStaticOptionLabels(labels: string[]): void {
+    if (!this._field || !this.isFieldEditable) {
+      return;
+    }
+
+    const normalizedLabels = labels.map(v => v.trim()).filter(v => v);
+
+    if (this.isSelectField && this.optionsMode === 'static') {
+      this._field.options = normalizeStaticSelectFieldOptions(normalizedLabels);
+    } else {
+      this._field.options = normalizedLabels;
+    }
+
+    this._field.optionSource = undefined;
+    this.onChange();
   }
 
   onDuplicateClick(): void {
