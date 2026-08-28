@@ -347,25 +347,6 @@
     margin-top: 0.85rem;
   }
 
-  .image-lightbox {
-    position: fixed;
-    inset: 0;
-    z-index: 80;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1rem;
-    background: rgba(15, 23, 42, 0.72);
-  }
-
-  .image-lightbox-img {
-    max-width: 90vw;
-    max-height: 85vh;
-    border-radius: 0.75rem;
-    object-fit: contain;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
-  }
-
   .upload-icon {
     width: 2.25rem;
     height: 2.25rem;
@@ -621,4 +602,62 @@
 
 .option-item:hover {
   background: #f0f0f0;
+}
+
+.image-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.72);
+}
+
+.image-lightbox__panel {
+  position: relative;
+  display: flex;
+  max-width: min(90vw, 56rem);
+  max-height: 85vh;
+}
+
+.image-lightbox-img {
+  display: block;
+  max-width: 100%;
+  max-height: 85vh;
+  width: auto;
+  height: auto;
+  border-radius: 0.75rem;
+  object-fit: contain;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+}
+
+.image-lightbox__close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  border-radius: 9999px;
+  background: #fff;
+  color: #334155;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
+  transition: background-color 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    background: #f8fafc;
+    color: #0f172a;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #ea580c;
+    outline-offset: 2px;
+  }
 }
