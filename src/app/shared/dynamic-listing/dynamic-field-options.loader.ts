@@ -1,7 +1,8 @@
 import { Observable, forkJoin, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
-import { DynamicField } from '../../interfaces/dynamic-field';
+import { DynamicField, DynamicFieldOption } from '../../interfaces/dynamic-field';
 import { FormStorageService } from '../../tenant/forms/services/form-storage.service';
+import { getOptionValue } from '../dynamic-form/dynamic-form.builder';
 
 function isLazyLocationEndpoint(endpoint?: string | null): boolean {
   if (!endpoint) {
@@ -18,7 +19,7 @@ function isLazyLocationEndpoint(endpoint?: string | null): boolean {
   return normalized === 'states' || normalized === 'cities';
 }
 
-/** Form Builder baked dynamic options are the runtime source of truth. */
+/** True when a dynamic select has builder-saved option selections. */
 export function hasSavedDynamicSelectOptions(field: DynamicField): boolean {
   return (
     field.optionSource?.type === 'dynamic' &&
@@ -41,8 +42,7 @@ export function shouldFetchSelectOptionsFromApi(field: DynamicField): boolean {
   }
 
   if (field.optionSource.type === 'dynamic') {
-    // Keep Form Builder selected options; do not replace with full module list.
-    return !hasSavedDynamicSelectOptions(field);
+    return true;
   }
 
   return false;
@@ -70,25 +70,67 @@ export function normalizeStaticSelectOptions(fields: DynamicField[]): void {
   }
 }
 
-export function applyApiDropdownOptionsToField(
+function mapApiResponseToOptions(
   field: DynamicField,
   response: Record<string, unknown>,
-): void {
-  if (hasSavedDynamicSelectOptions(field)) {
-    return;
-  }
-
+): DynamicFieldOption[] {
   const dataPath = field.optionSource?.response?.dataPath ?? 'data';
   const labelKey = field.optionSource?.response?.labelKey ?? 'label';
   const valueKey = field.optionSource?.response?.valueKey ?? 'value';
   const data = (response[dataPath] as Record<string, unknown>[]) || [];
 
-  field.options = data.map((item) => ({
-    name: item[labelKey] as string,
-    label: item[labelKey],
-    value: item[valueKey],
-    id: item[valueKey],
-  })) as DynamicField['options'];
+  return data
+    .map((item) => {
+      const label = item[labelKey];
+      const value = item[valueKey];
+
+      if (label == null || value == null) {
+        return null;
+      }
+
+      return {
+        name: String(label),
+        label,
+        value: value as string | number,
+        id: value as string | number,
+      } as DynamicFieldOption & { name: string; id: string | number };
+    })
+    .filter((option): option is DynamicFieldOption & { name: string; id: string | number } =>
+      option !== null,
+    );
+}
+
+/**
+ * At form-fill time, dynamic selects intersect builder-saved selections with the
+ * current API response. Labels come from the API; options removed from the API
+ * are no longer shown.
+ */
+export function applyApiDropdownOptionsToField(
+  field: DynamicField,
+  response: Record<string, unknown>,
+): void {
+  const apiOptions = mapApiResponseToOptions(field, response);
+
+  if (field.optionSource?.type === 'dynamic' && hasSavedDynamicSelectOptions(field)) {
+    const apiByValue = new Map(
+      apiOptions.map((option) => [String(option.value), option]),
+    );
+
+    field.options = (field.options || [])
+      .map((savedOption, index) => {
+        const savedValue = getOptionValue(savedOption, index);
+        if (savedValue === '' || savedValue == null) {
+          return null;
+        }
+
+        return apiByValue.get(String(savedValue)) ?? null;
+      })
+      .filter((option): option is DynamicFieldOption => option !== null);
+
+    return;
+  }
+
+  field.options = apiOptions as DynamicField['options'];
 }
 
 export function loadDynamicDropdownOptions(

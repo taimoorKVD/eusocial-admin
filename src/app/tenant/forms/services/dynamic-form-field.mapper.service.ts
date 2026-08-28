@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { forkJoin, Observable, of } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { map, switchMap } from 'rxjs/operators';
+import { loadDynamicDropdownOptions } from '../../../shared/dynamic-listing/dynamic-field-options.loader';
 import { shouldIncludeFieldInRuntimeForm } from '../../../shared/conditional-logic';
 import { resolveCharacterLimit, supportsCharacterLimit } from '../../../shared/dynamic-form/character-limit.utils';
 import {
@@ -18,6 +19,7 @@ import {
   cloneImageFiles,
   sanitizeImageFieldConfig,
 } from '../../form-builder/utils/image-field.utils';
+import { FormStorageService } from './form-storage.service';
 
 const SUPPORTED_TYPES = new Set<DynamicFieldType>([
   'text',
@@ -42,7 +44,10 @@ const SUPPORTED_TYPES = new Set<DynamicFieldType>([
   providedIn: 'root',
 })
 export class DynamicFormFieldMapperService {
-  constructor(private fieldOptionsService: FieldOptionsService) {}
+  constructor(
+    private fieldOptionsService: FieldOptionsService,
+    private formStorageService: FormStorageService,
+  ) {}
 
   resolveFields(formFields: FormField[]): Observable<DynamicField[]> {
     const visibleFields = (formFields || []).filter((field) =>
@@ -61,6 +66,9 @@ export class DynamicFormFieldMapperService {
 
     return forkJoin(requests).pipe(
       map((fields) => fields.filter((field): field is DynamicField => field !== null)),
+      switchMap((fields) =>
+        loadDynamicDropdownOptions(this.formStorageService, fields).pipe(map(() => fields)),
+      ),
     );
   }
 
