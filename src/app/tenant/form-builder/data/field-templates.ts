@@ -65,6 +65,9 @@ export const FIELD_TEMPLATES: Omit<FormField, 'id'>[] = [
     label: 'Image Upload',
     placeholder: '',
     required: false,
+    multiple: false,
+    maxFiles: 1,
+    referenceImages: [],
     options: []
   },
 

@@ -3,6 +3,7 @@ import type {
   RangeFieldType,
   RangeTimeFormat,
 } from '../tenant/form-builder/models/form-field.model';
+import type { ImageFile } from '../tenant/form-builder/models/image-file.model';
 
 export type DynamicFieldType =
   | 'text'
@@ -78,6 +79,20 @@ export interface DynamicField {
   rangePlaceholderTo?: string;
   timeFormat?: RangeTimeFormat;
   condition?: FieldCondition;
+
+  /**
+   * Image Upload only. Example / reference images from Form Builder.
+   * Not part of the FormControl value.
+   */
+  referenceImages?: ImageFile[];
+  /** Image Upload only. */
+  multiple?: boolean;
+  /** Image Upload only. */
+  minFiles?: number;
+  /** Image Upload only. */
+  maxFiles?: number;
 }
 
 export type DynamicFormValue = Record<string, unknown>;
+
+export type { ImageFile };

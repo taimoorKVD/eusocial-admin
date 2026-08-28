@@ -16,6 +16,7 @@ import {
   getListingBadgeClass,
   getListingFieldLocationKind,
   getListingImageSrc,
+  getListingImageSrcs,
   getListingLocationFieldIds,
   getOrderedVisibleFieldIds,
   getRecordTrackId,
@@ -195,6 +196,10 @@ export class DynamicListingComponent {
 
   getImageSrc(record: Record<string, unknown>, field: DynamicField): string | null {
     return getListingImageSrc(record, field);
+  }
+
+  getImageSrcs(record: Record<string, unknown>, field: DynamicField): string[] {
+    return getListingImageSrcs(record, field);
   }
 
   onEdit(record: Record<string, unknown>): void {

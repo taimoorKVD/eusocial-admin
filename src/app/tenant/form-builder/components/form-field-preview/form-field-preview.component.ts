@@ -29,6 +29,8 @@ import {
   getRangePlaceholderFrom,
   getRangePlaceholderTo,
 } from '../../../../shared/dynamic-form/range-field.utils';
+import { ImageFile } from '../../models/image-file.model';
+import { resolveImageDisplayUrl } from '../../utils/image-field.utils';
 
 @Component({
   selector: 'app-form-field-preview',
@@ -62,6 +64,10 @@ export class FormFieldPreviewComponent implements OnChanges {
 
   get rangePlaceholderTo(): string {
     return getRangePlaceholderTo(this.field);
+  }
+
+  getImageDisplayUrl(image: ImageFile): string {
+    return resolveImageDisplayUrl(image);
   }
 
   private readonly destroyRef = inject(DestroyRef);

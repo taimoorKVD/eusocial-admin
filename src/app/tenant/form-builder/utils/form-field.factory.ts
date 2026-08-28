@@ -21,6 +21,7 @@ import {
 import { normalizeFieldTypeName } from './field-type.utils';
 import { readOptionSourceFromField } from './option-source.utils';
 import { resolveBuilderLocationKind } from './location-field-dependencies.utils';
+import { sanitizeImageFieldConfig } from './image-field.utils';
 
 export function generateFieldId(): string {
   return `fld_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
@@ -187,6 +188,8 @@ export function sanitizeField(
     type === 'range' && rangeType === 'date'
       ? sanitizeDateBounds(field.rangeMinDate, field.rangeMaxDate)
       : {};
+  const imageConfig =
+    type === 'image' ? sanitizeImageFieldConfig(field) : null;
 
   return {
     id: readFieldIdentifier(field),
@@ -257,6 +260,10 @@ export function sanitizeField(
         field['maxLength'] ??
         field['max_length'],
     ),
+    referenceImages: imageConfig?.referenceImages,
+    multiple: imageConfig?.multiple,
+    minFiles: imageConfig?.minFiles,
+    maxFiles: imageConfig?.maxFiles,
   };
 }
 

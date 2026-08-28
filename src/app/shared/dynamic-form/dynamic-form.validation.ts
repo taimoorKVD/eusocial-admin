@@ -15,6 +15,16 @@ export function getDynamicFieldErrorMessage(
     return `${field.label} is required.`;
   }
 
+  if (control.errors['minFiles']) {
+    const requiredCount = control.errors['minFiles'].required;
+    return `${field.label} requires at least ${requiredCount} image${requiredCount === 1 ? '' : 's'}.`;
+  }
+
+  if (control.errors['maxFiles']) {
+    const maxCount = control.errors['maxFiles'].max;
+    return `${field.label} allows at most ${maxCount} image${maxCount === 1 ? '' : 's'}.`;
+  }
+
   if (control.errors['email'] || (field.type === 'email' && control.errors['pattern'])) {
     return 'Please enter a valid email address.';
   }

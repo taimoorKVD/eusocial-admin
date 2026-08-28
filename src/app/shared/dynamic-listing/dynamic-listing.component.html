@@ -160,13 +160,24 @@
                 <td class="px-4 py-3 align-middle">
                   @switch (field.type) {
                     @case ('image') {
-                      @let imageSrc = getImageSrc(record, field);
-                      @if (imageSrc) {
-                        <img
-                          [src]="imageSrc"
-                          [alt]="field.label"
-                          class="w-10 h-10 rounded object-cover border border-gray-200"
-                        />
+                      @let imageSrcs = getImageSrcs(record, field);
+                      @if (imageSrcs.length) {
+                        <div class="flex flex-wrap items-center gap-1.5 max-w-[7.5rem]">
+                          @for (imageSrc of imageSrcs; track imageSrc; let i = $index) {
+                            @if (i < 3) {
+                              <img
+                                [src]="imageSrc"
+                                [alt]="field.label"
+                                class="w-9 h-9 rounded object-cover border border-gray-200 shrink-0"
+                              />
+                            }
+                          }
+                          @if (imageSrcs.length > 3) {
+                            <span class="text-[11px] font-medium text-gray-500">
+                              +{{ imageSrcs.length - 3 }}
+                            </span>
+                          }
+                        </div>
                       } @else {
                         <span class="text-gray-400">—</span>
                       }

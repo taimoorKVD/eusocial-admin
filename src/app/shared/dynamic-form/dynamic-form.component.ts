@@ -11,8 +11,8 @@ import {
   OnDestroy,
 } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup } from '@angular/forms';
-import { Subscription, merge } from 'rxjs';
-import { take } from 'rxjs/operators';
+import { Subscription, forkJoin, merge, of } from 'rxjs';
+import { catchError, take } from 'rxjs/operators';
 import {
   DynamicField,
   DynamicFieldOption,
@@ -64,6 +64,20 @@ import {
   sanitizeRangeNumberInput,
 } from './range-field.utils';
 import { DropdownOverlayService } from '../directives/dropdown-panel/dropdown-overlay.service';
+import { ToastrService } from 'ngx-toastr';
+import { FormImageUploadService } from '../../tenant/form-builder/services/form-image-upload.service';
+import { ImageFile } from '../../tenant/form-builder/models/image-file.model';
+import {
+  cloneImageFiles,
+  filterAnswerImages,
+  getImageUploadRejectionReason,
+  IMAGE_ACCEPT_ATTRIBUTE,
+  IMAGE_TYPE_ERROR_MESSAGE,
+  readImageMultiple,
+  resolveImageDisplayUrl,
+  resolveMaxFiles,
+  resolveMinFiles,
+} from '../../tenant/form-builder/utils/image-field.utils';
 
 @Component({
   selector: 'app-dynamic-form',
@@ -77,6 +91,8 @@ export class DynamicFormComponent implements OnDestroy {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly overlayService = inject(DropdownOverlayService);
   private readonly locationCache = inject(LocationCacheService);
+  private readonly formImageUploadService = inject(FormImageUploadService);
+  private readonly toastr = inject(ToastrService);
 
   readonly selectDropdownGroup = 'dynamic-form-select';
 
@@ -92,7 +108,8 @@ export class DynamicFormComponent implements OnDestroy {
   form!: FormGroup;
   readonly sortedFields = signal<DynamicField[]>([]);
   readonly formReady = signal(false);
-  readonly imagePreviews = signal<Record<string, string>>({});
+  readonly imageUploading = signal<Record<string, boolean>>({});
+  readonly imageLightboxUrl = signal<string | null>(null);
   readonly showPasswords = signal<Record<string, boolean>>({});
   readonly selectSearchQueries = signal<Record<string, string>>({});
   /**
@@ -147,7 +164,7 @@ export class DynamicFormComponent implements OnDestroy {
 
   get value(): DynamicFormValue {
     const raw = this.form?.getRawValue() ?? {};
-    return this.toLocationSubmitValues(raw);
+    return this.toLocationSubmitValues(this.normalizeImageFormValue(raw));
   }
 
   get invalid(): boolean {
@@ -170,7 +187,18 @@ export class DynamicFormComponent implements OnDestroy {
 
   patchValue(values: DynamicFormValue): void {
     if (!this.form || !values) return;
-    this.form.patchValue(values);
+
+    const normalized: DynamicFormValue = { ...values };
+    for (const field of this.sortedFields()) {
+      if (
+        field.type === 'image' &&
+        Object.prototype.hasOwnProperty.call(normalized, field.name)
+      ) {
+        normalized[field.name] = filterAnswerImages(normalized[field.name]);
+      }
+    }
+
+    this.form.patchValue(normalized);
     this.refreshLocationOptionsFromValues();
     this.refreshConditionalEffects();
     this.emitNormalizedValue();
@@ -184,7 +212,7 @@ export class DynamicFormComponent implements OnDestroy {
       this.form.get(field.name)?.setValue(this.getInitialValue(field));
     }
 
-    this.imagePreviews.set({});
+    this.imageUploading.set({});
     this.refreshConditionalEffects();
     this.emitNormalizedValue();
     this.cdr.markForCheck();
@@ -238,49 +266,174 @@ export class DynamicFormComponent implements OnDestroy {
     return this.locationOptionOverrides()[field.name] ?? field.options ?? [];
   }
 
-  onImageSelected(event: Event, fieldName: string): void {
-    const control = this.form.get(fieldName);
-    if (control?.disabled) {
+  getImageAcceptAttribute(): string {
+    return IMAGE_ACCEPT_ATTRIBUTE;
+  }
+
+  getReferenceImages(field: DynamicField): ImageFile[] {
+    return cloneImageFiles(field.referenceImages);
+  }
+
+  getAnswerImages(field: DynamicField): ImageFile[] {
+    return filterAnswerImages(this.form?.get(field.name)?.value);
+  }
+
+  isImageMultiple(field: DynamicField): boolean {
+    return readImageMultiple(field);
+  }
+
+  getImageMaxFiles(field: DynamicField): number {
+    return resolveMaxFiles(field);
+  }
+
+  getImageMinFiles(field: DynamicField): number {
+    return resolveMinFiles(field);
+  }
+
+  canAddAnswerImages(field: DynamicField): boolean {
+    if (this.isFieldDisabled(field) || this.imageUploading()[field.name]) {
+      return false;
+    }
+    return this.getAnswerImages(field).length < resolveMaxFiles(field);
+  }
+
+  getAnswerImageSlotsRemaining(field: DynamicField): number {
+    return Math.max(0, resolveMaxFiles(field) - this.getAnswerImages(field).length);
+  }
+
+  onAnswerImagesSelected(event: Event, field: DynamicField): void {
+    const control = this.form.get(field.name);
+    if (!control || control.disabled || this.imageUploading()[field.name]) {
       return;
     }
 
     const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
+    const files = Array.from(input.files || []);
+    input.value = '';
 
-    if (!file) return;
-
-    const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-    if (!allowed.includes(file.type)) {
+    if (!files.length) {
       return;
     }
 
-    this.form.get(fieldName)?.setValue(file);
-    this.form.get(fieldName)?.markAsDirty();
-    this.form.get(fieldName)?.markAsTouched();
+    const remaining = this.getAnswerImageSlotsRemaining(field);
+    if (remaining <= 0) {
+      this.toastr.warning(
+        `${field.label} allows at most ${resolveMaxFiles(field)} image${resolveMaxFiles(field) === 1 ? '' : 's'}.`,
+      );
+      return;
+    }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      this.imagePreviews.update((previews) => ({
-        ...previews,
-        [fieldName]: reader.result as string,
-      }));
+    const selected = files.slice(0, remaining);
+    if (files.length > remaining) {
+      this.toastr.warning(
+        `Only ${remaining} more image${remaining === 1 ? '' : 's'} can be uploaded for ${field.label}.`,
+      );
+    }
+
+    const rejected = selected
+      .map((file) => ({ file, reason: getImageUploadRejectionReason(file) }))
+      .filter((item) => !!item.reason);
+
+    if (rejected.length) {
+      this.toastr.error(rejected[0].reason || IMAGE_TYPE_ERROR_MESSAGE);
+    }
+
+    const validFiles = selected.filter((file) => !getImageUploadRejectionReason(file));
+    if (!validFiles.length) {
+      return;
+    }
+
+    this.imageUploading.update((state) => ({ ...state, [field.name]: true }));
+
+    forkJoin(
+      validFiles.map((file) =>
+        this.formImageUploadService.upload(file, 'answer').pipe(
+          catchError((err) => {
+            this.toastr.error(
+              err?.error?.message || err?.message || 'Failed to upload image.',
+            );
+            return of(null);
+          }),
+        ),
+      ),
+    ).subscribe({
+      next: (results) => {
+        const uploaded = results.filter((item): item is ImageFile => !!item);
+        if (!uploaded.length) {
+          return;
+        }
+
+        const next = [
+          ...filterAnswerImages(control.value),
+          ...uploaded.map((image) => ({ ...image, purpose: 'answer' as const })),
+        ].slice(0, resolveMaxFiles(field));
+
+        control.setValue(next);
+        control.markAsDirty();
+        control.markAsTouched();
+        this.emitNormalizedValue();
+        this.cdr.markForCheck();
+      },
+      complete: () => {
+        this.imageUploading.update((state) => ({ ...state, [field.name]: false }));
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  removeAnswerImage(field: DynamicField, index: number): void {
+    const control = this.form.get(field.name);
+    if (!control || control.disabled) {
+      return;
+    }
+
+    const next = filterAnswerImages(control.value);
+    if (index < 0 || index >= next.length) {
+      return;
+    }
+
+    const [removed] = next.splice(index, 1);
+
+    const applyLocalRemove = () => {
+      control.setValue(next);
+      control.markAsDirty();
+      control.markAsTouched();
       this.emitNormalizedValue();
       this.cdr.markForCheck();
     };
-    reader.readAsDataURL(file);
+
+    const key = removed?.key?.trim();
+    if (!key) {
+      applyLocalRemove();
+      return;
+    }
+
+    this.formImageUploadService.deleteImage(key).subscribe({
+      next: () => applyLocalRemove(),
+      error: (err) => {
+        this.toastr.error(
+          err?.error?.message || err?.message || 'Failed to delete image.',
+        );
+        this.cdr.markForCheck();
+      },
+    });
   }
 
-  removeImage(fieldName: string, input: HTMLInputElement): void {
-    this.imagePreviews.update((previews) => {
-      const next = { ...previews };
-      delete next[fieldName];
-      return next;
-    });
-    this.form.get(fieldName)?.setValue(null);
-    this.form.get(fieldName)?.markAsTouched();
-    input.value = '';
-    this.emitNormalizedValue();
-    this.cdr.markForCheck();
+  getImageDisplayUrl(image: ImageFile): string {
+    return resolveImageDisplayUrl(image);
+  }
+
+  openImageLightbox(image: ImageFile | string): void {
+    const url =
+      typeof image === 'string' ? image : resolveImageDisplayUrl(image);
+    if (!url) {
+      return;
+    }
+    this.imageLightboxUrl.set(url);
+  }
+
+  closeImageLightbox(): void {
+    this.imageLightboxUrl.set(null);
   }
 
   togglePassword(fieldName: string): void {
@@ -674,7 +827,7 @@ export class DynamicFormComponent implements OnDestroy {
     if (!fields?.length) {
       this.form = this.fb.group({});
       this.sortedFields.set([]);
-      this.imagePreviews.set({});
+      this.imageUploading.set({});
       this.selectSearchQueries.set({});
       this.cdr.markForCheck();
       return;
@@ -687,7 +840,7 @@ export class DynamicFormComponent implements OnDestroy {
       this.selectSearchQueries.set({});
       this.form = this.fb.group(buildDynamicFormGroupConfig(this.fb, sorted));
       this.patchPreservedValuesByFieldId(preservedValues, sorted);
-      this.imagePreviews.set({});
+      this.imageUploading.set({});
       this.subscribeToFormChanges();
       this.setupLocationDependencies(sorted);
       this.refreshConditionalEffects();
@@ -726,7 +879,9 @@ export class DynamicFormComponent implements OnDestroy {
 
     for (const field of fields) {
       if (preserved.has(field.id)) {
-        patch[field.name] = preserved.get(field.id);
+        const value = preserved.get(field.id);
+        patch[field.name] =
+          field.type === 'image' ? filterAnswerImages(value) : value;
       }
     }
 
@@ -815,8 +970,22 @@ export class DynamicFormComponent implements OnDestroy {
   private emitNormalizedValue(): void {
     if (!this.form) return;
     this.valueChange.emit(
-      normalizeCheckboxFormValue(this.form.getRawValue(), this.sortedFields()),
+      this.normalizeImageFormValue(
+        normalizeCheckboxFormValue(this.form.getRawValue(), this.sortedFields()),
+      ),
     );
+  }
+
+  private normalizeImageFormValue(raw: DynamicFormValue): DynamicFormValue {
+    const result: DynamicFormValue = { ...raw };
+
+    for (const field of this.sortedFields()) {
+      if (field.type === 'image') {
+        result[field.name] = filterAnswerImages(raw[field.name]);
+      }
+    }
+
+    return result;
   }
 
   // ---------------------------------------------------------------------------

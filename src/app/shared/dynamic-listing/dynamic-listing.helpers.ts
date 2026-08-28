@@ -1,6 +1,8 @@
 import { DynamicField, DynamicFieldOption, DynamicFieldType } from '../../interfaces/dynamic-field';
 import { GlobalFilterField } from '../global-filter/global-filter';
 import { formatRangeDisplayValue } from '../dynamic-form/range-field.utils';
+import { resolveImageDisplayUrl } from '../../tenant/form-builder/utils/image-field.utils';
+import type { ImageFile } from '../../tenant/form-builder/models/image-file.model';
 
 const DEFAULT_NON_FILTERABLE_TYPES = new Set<DynamicFieldType>(['image']);
 
@@ -464,8 +466,10 @@ export function formatListingCellValue(
       return match ? getOptionLabel(match) : String(rawValue);
     }
 
-    case 'image':
-      return typeof rawValue === 'string' ? rawValue : '—';
+    case 'image': {
+      const imageCount = getListingImageSrcs(record, field).length;
+      return imageCount > 0 ? `${imageCount} image${imageCount === 1 ? '' : 's'}` : '—';
+    }
 
     default:
       if (Array.isArray(rawValue)) {
@@ -500,13 +504,49 @@ export function formatListingCellValue(
   }
 
 export function getListingImageSrc(record: Record<string, unknown>, field: DynamicField): string | null {
+  return getListingImageSrcs(record, field)[0] ?? null;
+}
+
+/**
+ * Resolve displayable image URLs for a listing cell.
+ * Reads record value via field name (already remapped from field.id in setup listings)
+ * and supports ImageFile[], a single ImageFile object, or a legacy string URL.
+ */
+export function getListingImageSrcs(
+  record: Record<string, unknown>,
+  field: DynamicField,
+): string[] {
   const rawValue = getRecordFieldValue(record, field);
 
-  if (typeof rawValue === 'string' && rawValue.trim()) {
-    return rawValue;
+  if (rawValue == null || rawValue === '') {
+    return [];
   }
 
-  return null;
+  if (typeof rawValue === 'string') {
+    const trimmed = rawValue.trim();
+    return trimmed ? [trimmed] : [];
+  }
+
+  const items = Array.isArray(rawValue) ? rawValue : [rawValue];
+  const urls: string[] = [];
+
+  for (const item of items) {
+    if (typeof item === 'string' && item.trim()) {
+      urls.push(item.trim());
+      continue;
+    }
+
+    if (!item || typeof item !== 'object') {
+      continue;
+    }
+
+    const displayUrl = resolveImageDisplayUrl(item as Pick<ImageFile, 'url' | 'path'>);
+    if (displayUrl) {
+      urls.push(displayUrl);
+    }
+  }
+
+  return urls;
 }
 
 export function mapVisibleColumnsToFilterFields(

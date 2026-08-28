@@ -38,6 +38,11 @@ export function buildFormSchemaPayload(fields: FormField[]) {
               ? 'single'
               : field.selectionType || 'single'
             : undefined,
+        referenceImages:
+          field.type === 'image' ? field.referenceImages || [] : undefined,
+        multiple: field.type === 'image' ? field.multiple === true : undefined,
+        minFiles: field.type === 'image' ? field.minFiles : undefined,
+        maxFiles: field.type === 'image' ? field.maxFiles : undefined,
         allowDecimal:
           field.type === 'number' ||
           (field.type === 'range' && normalizeRangeType(field.rangeType) === 'number')
