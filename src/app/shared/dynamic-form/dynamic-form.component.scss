@@ -88,6 +88,19 @@
     appearance: none;
   }
 
+  .time-field__part {
+    margin: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    line-height: 2.25rem;
+    vertical-align: middle;
+  }
+
+  input.time-field__native[type='time'] {
+    min-height: 2.75rem;
+    line-height: normal;
+  }
+
   .global-filter__control {
     min-height: 2.625rem;
   }
