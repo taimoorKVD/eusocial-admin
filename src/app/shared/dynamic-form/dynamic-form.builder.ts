@@ -19,6 +19,10 @@ import {
   filterAnswerImages,
   imageFieldValidator,
 } from '../../tenant/form-builder/utils/image-field.utils';
+import {
+  normalizeMaxRating,
+  normalizeRatingValue,
+} from './rating-field.utils';
 
 export function sortDynamicFields(fields: DynamicField[]): DynamicField[] {
   return [...fields]
@@ -38,7 +42,7 @@ export function serializeDynamicFieldsSchema(fields: DynamicField[]): string {
   return sortDynamicFields(fields)
     .map(
       (field) =>
-        `${field.id}:${field.name}:${field.type}:${Number(!!field.required)}:${field.selectionType || 'single'}:${Number(field.isShow !== false)}:${Number(!!field.isReadonly)}:${Number(allowsDecimalPoint(field))}:${getFieldCharacterLimit(field) ?? ''}:${field.type === 'range' ? normalizeRangeType(field.rangeType) : ''}:${field.type === 'image' ? `${Number(!!field.multiple)}:${field.minFiles ?? ''}:${field.maxFiles ?? ''}:${(field.referenceImages || []).length}` : ''}:${JSON.stringify(field.condition ?? null)}`,
+        `${field.id}:${field.name}:${field.type}:${Number(!!field.required)}:${field.selectionType || 'single'}:${Number(field.isShow !== false)}:${Number(!!field.isReadonly)}:${Number(allowsDecimalPoint(field))}:${getFieldCharacterLimit(field) ?? ''}:${field.type === 'range' ? normalizeRangeType(field.rangeType) : ''}:${field.type === 'image' ? `${Number(!!field.multiple)}:${field.minFiles ?? ''}:${field.maxFiles ?? ''}:${(field.referenceImages || []).length}` : ''}:${field.type === 'rating' ? normalizeMaxRating(field.maxRating) : ''}:${JSON.stringify(field.condition ?? null)}`,
     )
     .join('|');
 }
@@ -114,6 +118,11 @@ export function getInitialFieldValue(field: DynamicField): unknown {
     }
     case 'number':
       return field.defaultValue ?? field.value ?? null;
+    case 'rating':
+      return normalizeRatingValue(
+        field.defaultValue ?? field.value,
+        normalizeMaxRating(field.maxRating),
+      );
     case 'range':
       return normalizeRangeValue(field.defaultValue ?? field.value ?? createEmptyRangeValue());
     case 'image':
@@ -155,6 +164,11 @@ export function getFieldValidators(
 
   if (field.type === 'number' && !allowsDecimalPoint(field)) {
     validators.push(integerNumberValidator());
+  }
+
+  if (field.type === 'rating') {
+    const max = normalizeMaxRating(field.maxRating);
+    validators.push(Validators.min(1), Validators.max(max));
   }
 
   const characterLimit = getFieldCharacterLimit(field);
@@ -218,6 +232,14 @@ export function normalizeCheckboxFormValue(
     if (isMultiSelectField(field)) {
       const value = raw[field.name];
       result[field.name] = Array.isArray(value) ? value.filter((item) => item !== '' && item != null) : [];
+      continue;
+    }
+
+    if (field.type === 'rating') {
+      result[field.name] = normalizeRatingValue(
+        raw[field.name],
+        normalizeMaxRating(field.maxRating),
+      );
     }
   }
 

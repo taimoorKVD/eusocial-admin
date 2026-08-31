@@ -78,6 +78,11 @@ import {
   resolveMaxFiles,
   resolveMinFiles,
 } from '../../tenant/form-builder/utils/image-field.utils';
+import {
+  getRatingStarValues,
+  normalizeMaxRating,
+  normalizeRatingValue,
+} from './rating-field.utils';
 
 @Component({
   selector: 'app-dynamic-form',
@@ -164,7 +169,11 @@ export class DynamicFormComponent implements OnDestroy {
 
   get value(): DynamicFormValue {
     const raw = this.form?.getRawValue() ?? {};
-    return this.toLocationSubmitValues(this.normalizeImageFormValue(raw));
+    return this.toLocationSubmitValues(
+      this.normalizeImageFormValue(
+        normalizeCheckboxFormValue(raw, this.sortedFields()),
+      ),
+    );
   }
 
   get invalid(): boolean {
@@ -190,11 +199,17 @@ export class DynamicFormComponent implements OnDestroy {
 
     const normalized: DynamicFormValue = { ...values };
     for (const field of this.sortedFields()) {
-      if (
-        field.type === 'image' &&
-        Object.prototype.hasOwnProperty.call(normalized, field.name)
-      ) {
+      if (!Object.prototype.hasOwnProperty.call(normalized, field.name)) {
+        continue;
+      }
+
+      if (field.type === 'image') {
         normalized[field.name] = filterAnswerImages(normalized[field.name]);
+      } else if (field.type === 'rating') {
+        normalized[field.name] = normalizeRatingValue(
+          normalized[field.name],
+          normalizeMaxRating(field.maxRating),
+        );
       }
     }
 
@@ -450,6 +465,47 @@ export class DynamicFormComponent implements OnDestroy {
 
   getNumberStep(field: DynamicField): string {
     return getNumberFieldStep(field);
+  }
+
+  getMaxRating(field: DynamicField): number {
+    return normalizeMaxRating(field.maxRating);
+  }
+
+  getRatingStarValues(field: DynamicField): number[] {
+    return getRatingStarValues(this.getMaxRating(field));
+  }
+
+  getRatingValue(field: DynamicField): number {
+    return normalizeRatingValue(this.form?.get(field.name)?.value, this.getMaxRating(field)) ?? 0;
+  }
+
+  isRatingSelected(field: DynamicField, star: number): boolean {
+    return star <= this.getRatingValue(field);
+  }
+
+  onRatingSelect(field: DynamicField, star: number): void {
+    if (this.isFieldDisabled(field)) {
+      return;
+    }
+
+    const control = this.form?.get(field.name);
+    if (!control || control.disabled) {
+      return;
+    }
+
+    const max = this.getMaxRating(field);
+    const current = normalizeRatingValue(control.value, max);
+    // Toggle off when clicking the same selected value on an optional field.
+    const next =
+      current === star && !this.isFieldRequired(field)
+        ? null
+        : normalizeRatingValue(star, max);
+
+    control.setValue(next);
+    control.markAsDirty();
+    control.markAsTouched();
+    this.emitNormalizedValue();
+    this.cdr.markForCheck();
   }
 
   getCharacterLimit(field: DynamicField): number | null {

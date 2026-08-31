@@ -91,6 +91,9 @@ export interface DynamicField {
   minFiles?: number;
   /** Image Upload only. */
   maxFiles?: number;
+
+  /** Rating field only. Maximum stars (3, 5, 7, or 10). Defaults to 5. */
+  maxRating?: number;
 }
 
 export type DynamicFormValue = Record<string, unknown>;

@@ -9,6 +9,7 @@ import {
   normalizeRangeTimeFormat,
   normalizeRangeType,
 } from '../../../shared/dynamic-form/range-field.utils';
+import { normalizeMaxRating } from '../../../shared/dynamic-form/rating-field.utils';
 import { DynamicField, DynamicFieldType } from '../../../interfaces/dynamic-field';
 import { FieldOption, FieldType, FormField } from '../../form-builder/models/form-field.model';
 import { FieldOptionsService } from '../../form-builder/services/field-options.service';
@@ -150,6 +151,7 @@ export class DynamicFormFieldMapperService {
       multiple: imageConfig?.multiple,
       minFiles: imageConfig?.minFiles,
       maxFiles: imageConfig?.maxFiles,
+      maxRating: type === 'rating' ? normalizeMaxRating(field.maxRating) : undefined,
     };
   }
 

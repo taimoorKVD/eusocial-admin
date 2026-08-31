@@ -210,6 +210,21 @@
                       }
                     }
 
+                    @case ('rating') {
+                      @let ratingDisplay = getCellValue(record, field);
+                      @if (ratingDisplay === '—') {
+                        <span class="text-gray-400">—</span>
+                      } @else {
+                        <span
+                          class="inline-flex items-center gap-0.5 text-amber-500 text-sm tracking-tight"
+                          [attr.title]="ratingDisplay"
+                          [attr.aria-label]="ratingDisplay"
+                        >
+                          {{ ratingDisplay }}
+                        </span>
+                      }
+                    }
+
                     @default {
                       <span>{{ getCellValue(record, field) }}</span>
                     }

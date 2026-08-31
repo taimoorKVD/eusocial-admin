@@ -1,6 +1,10 @@
 import { DynamicField, DynamicFieldOption, DynamicFieldType } from '../../interfaces/dynamic-field';
 import { GlobalFilterField } from '../global-filter/global-filter';
 import { formatRangeDisplayValue } from '../dynamic-form/range-field.utils';
+import {
+  formatRatingStars,
+  normalizeMaxRating,
+} from '../dynamic-form/rating-field.utils';
 import { resolveImageDisplayUrl } from '../../tenant/form-builder/utils/image-field.utils';
 import type { ImageFile } from '../../tenant/form-builder/models/image-file.model';
 
@@ -427,6 +431,10 @@ export function formatListingCellValue(
     return formatRangeDisplayValue(rawValue, field);
   }
 
+  if (field.type === 'rating') {
+    return formatRatingStars(rawValue, normalizeMaxRating(field.maxRating));
+  }
+
   switch (field.type) {
     case 'checkbox':
       {
@@ -559,7 +567,10 @@ export function mapVisibleColumnsToFilterFields(
       key: field.name,
       label: field.label,
       type: mapDynamicFieldToFilterType(field),
-      placeholder: field.placeholder || `Search by ${field.label.toLowerCase()}...`,
+      placeholder:
+        field.type === 'rating'
+          ? `Filter by ${field.label.toLowerCase()} (e.g. 4)...`
+          : field.placeholder || `Search by ${field.label.toLowerCase()}...`,
       endpoint: field.optionSource?.endpoint,
       labelKey: field.optionSource?.response?.labelKey,
       valueKey: field.optionSource?.response?.valueKey,
@@ -617,6 +628,7 @@ function mapDynamicFieldToFilterType(field: DynamicField): string {
     case 'checkbox':
       return 'checkbox';
     case 'number':
+    case 'rating':
       return 'number';
     case 'email':
       return 'email';
