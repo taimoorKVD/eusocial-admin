@@ -15,7 +15,7 @@ export type FieldType =
   | 'file'
   | 'parameter'
   | 'signature'
-  | 'user-timestamp'
+  | 'time'
   | 'rating'
   | 'range'
   | 'barcode'
@@ -76,7 +76,7 @@ export interface FormFieldConfig {
   rangePlaceholderFrom?: string;
   /** Placeholder for the Range To / second input. */
   rangePlaceholderTo?: string;
-  /** Time range display preference. Values are stored as HH:mm (24h). */
+  /** Time field / Time range display preference. Values are stored as HH:mm (24h). */
   timeFormat?: '12' | '24';
   /**
    * Number field / Number range. When true, decimal values are allowed.
@@ -194,7 +194,7 @@ export const FIELD_TYPE_OPTIONS: { label: string; value: FieldType }[] = [
   { label: 'File', value: 'file' },
   { label: 'Parameter', value: 'parameter' },
   { label: 'Signature', value: 'signature' },
-  { label: 'User Timestamp', value: 'user-timestamp' },
+  { label: 'Time', value: 'time' },
   { label: 'Rating', value: 'rating' },
   { label: 'Range', value: 'range' },
   { label: 'Barcode', value: 'barcode' },

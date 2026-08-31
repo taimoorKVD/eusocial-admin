@@ -60,6 +60,10 @@ export function getDynamicFieldErrorMessage(
     return `${field.label} must use step ${control.errors['rangeStep'].step}.`;
   }
 
+  if (control.errors['invalidTime']) {
+    return `${field.label} must be a valid time.`;
+  }
+
   if (control.errors['maxlength']) {
     const requiredLength = control.errors['maxlength'].requiredLength;
     return `${field.label} must be at most ${requiredLength} characters.`;

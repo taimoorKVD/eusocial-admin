@@ -9,6 +9,10 @@ import {
   getSignatureDisplayUrl,
   hasSignatureValue,
 } from '../dynamic-form/signature-field.utils';
+import {
+  formatTimeFieldDisplay,
+  normalizeTimeFieldFormat,
+} from '../dynamic-form/time-field.utils';
 import { resolveImageDisplayUrl } from '../../tenant/form-builder/utils/image-field.utils';
 import type { ImageFile } from '../../tenant/form-builder/models/image-file.model';
 
@@ -439,6 +443,10 @@ export function formatListingCellValue(
     return formatRatingStars(rawValue, normalizeMaxRating(field.maxRating));
   }
 
+  if (field.type === 'time') {
+    return formatTimeFieldDisplay(rawValue, normalizeTimeFieldFormat(field.timeFormat));
+  }
+
   switch (field.type) {
     case 'checkbox':
       {
@@ -587,7 +595,9 @@ export function mapVisibleColumnsToFilterFields(
       placeholder:
         field.type === 'rating'
           ? `Filter by ${field.label.toLowerCase()} (e.g. 4)...`
-          : field.placeholder || `Search by ${field.label.toLowerCase()}...`,
+          : field.type === 'time'
+            ? `Filter by ${field.label.toLowerCase()} (e.g. 09:30)...`
+            : field.placeholder || `Search by ${field.label.toLowerCase()}...`,
       endpoint: field.optionSource?.endpoint,
       labelKey: field.optionSource?.response?.labelKey,
       valueKey: field.optionSource?.response?.valueKey,
@@ -651,6 +661,8 @@ function mapDynamicFieldToFilterType(field: DynamicField): string {
       return 'email';
     case 'date':
       return 'date';
+    case 'time':
+      return 'text';
     default:
       return 'text';
   }

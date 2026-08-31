@@ -96,6 +96,19 @@ import {
   prepareSignatureCanvas,
   SignatureValue,
 } from './signature-field.utils';
+import {
+  composeTimeFrom12h,
+  formatTimeFieldDisplay,
+  getTimeHour12,
+  getTimeMeridiem,
+  getTimeMinute,
+  normalizeTimeFieldFormat,
+  normalizeTimeFieldValue,
+  TIME_HOUR_OPTIONS_12,
+  TIME_MERIDIEM_OPTIONS,
+  TIME_MINUTE_OPTIONS,
+  TimeMeridiem,
+} from './time-field.utils';
 
 @Component({
   selector: 'app-dynamic-form',
@@ -247,6 +260,8 @@ export class DynamicFormComponent implements OnDestroy {
         );
       } else if (field.type === 'signature') {
         normalized[field.name] = normalizeSignatureValue(normalized[field.name]);
+      } else if (field.type === 'time') {
+        normalized[field.name] = normalizeTimeFieldValue(normalized[field.name]);
       }
     }
 
@@ -786,6 +801,113 @@ export class DynamicFormComponent implements OnDestroy {
     return normalizeRangeTimeFormat(field.timeFormat);
   }
 
+  getTimeFieldFormat(field: DynamicField): '12' | '24' {
+    return normalizeTimeFieldFormat(field.timeFormat);
+  }
+
+  getTimeHourOptions(): number[] {
+    return TIME_HOUR_OPTIONS_12;
+  }
+
+  getTimeMinuteOptions(): number[] {
+    return TIME_MINUTE_OPTIONS;
+  }
+
+  getTimeMeridiemOptions(): TimeMeridiem[] {
+    return TIME_MERIDIEM_OPTIONS;
+  }
+
+  getTimeHour12Value(field: DynamicField): number | null {
+    return getTimeHour12(this.form?.get(field.name)?.value);
+  }
+
+  getTimeMinuteValue(field: DynamicField): number | null {
+    return getTimeMinute(this.form?.get(field.name)?.value);
+  }
+
+  getTimeMeridiemValue(field: DynamicField): TimeMeridiem | null {
+    return getTimeMeridiem(this.form?.get(field.name)?.value);
+  }
+
+  getTimeInputValue(field: DynamicField): string {
+    return normalizeTimeFieldValue(this.form?.get(field.name)?.value) ?? '';
+  }
+
+  onTime24Input(event: Event, field: DynamicField): void {
+    if (this.isFieldDisabled(field)) {
+      return;
+    }
+
+    const control = this.form?.get(field.name);
+    if (!control || control.disabled) {
+      return;
+    }
+
+    const input = event.target as HTMLInputElement;
+    control.setValue(normalizeTimeFieldValue(input.value));
+    control.markAsDirty();
+    control.markAsTouched();
+    this.emitNormalizedValue();
+    this.cdr.markForCheck();
+  }
+
+  onTime12PartChange(
+    field: DynamicField,
+    part: 'hour' | 'minute' | 'meridiem',
+    raw: string | number,
+  ): void {
+    if (this.isFieldDisabled(field)) {
+      return;
+    }
+
+    const control = this.form?.get(field.name);
+    if (!control || control.disabled) {
+      return;
+    }
+
+    let hour = getTimeHour12(control.value) ?? 12;
+    let minute = getTimeMinute(control.value) ?? 0;
+    let meridiem = getTimeMeridiem(control.value) ?? 'AM';
+
+    if (part === 'hour') {
+      hour = Number(raw);
+    } else if (part === 'minute') {
+      minute = Number(raw);
+    } else {
+      meridiem = String(raw).toUpperCase() === 'PM' ? 'PM' : 'AM';
+    }
+
+    control.setValue(composeTimeFrom12h(hour, minute, meridiem));
+    control.markAsDirty();
+    control.markAsTouched();
+    this.emitNormalizedValue();
+    this.cdr.markForCheck();
+  }
+
+  clearTimeValue(field: DynamicField): void {
+    if (this.isFieldDisabled(field)) {
+      return;
+    }
+
+    const control = this.form?.get(field.name);
+    if (!control || control.disabled) {
+      return;
+    }
+
+    control.setValue(null);
+    control.markAsDirty();
+    control.markAsTouched();
+    this.emitNormalizedValue();
+    this.cdr.markForCheck();
+  }
+
+  formatTimeDisplay(field: DynamicField): string {
+    return formatTimeFieldDisplay(
+      this.form?.get(field.name)?.value,
+      this.getTimeFieldFormat(field),
+    );
+  }
+
   getRangePlaceholderFrom(field: DynamicField): string {
     return resolveRangePlaceholderFrom(field);
   }
@@ -1207,7 +1329,9 @@ export class DynamicFormComponent implements OnDestroy {
             ? filterAnswerImages(value)
             : field.type === 'signature'
               ? normalizeSignatureValue(value)
-              : value;
+              : field.type === 'time'
+                ? normalizeTimeFieldValue(value)
+                : value;
       }
     }
 
@@ -1310,6 +1434,8 @@ export class DynamicFormComponent implements OnDestroy {
         result[field.name] = filterAnswerImages(raw[field.name]);
       } else if (field.type === 'signature') {
         result[field.name] = normalizeSignatureValue(raw[field.name]);
+      } else if (field.type === 'time') {
+        result[field.name] = normalizeTimeFieldValue(raw[field.name]);
       }
     }
 

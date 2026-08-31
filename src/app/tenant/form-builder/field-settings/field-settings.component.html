@@ -355,6 +355,21 @@
     </ng-container>
   </div>
 
+  <div *ngIf="isTimeField" class="space-y-3">
+    <div>
+      <label class="mb-1.5 block text-xs font-medium text-slate-600">Time Format</label>
+      <select
+        [ngModel]="timeFormatValue"
+        (ngModelChange)="onTimeFormatChange($event)"
+        [disabled]="!isFieldEditable"
+        class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+      >
+        <option value="12">12 Hour (AM/PM)</option>
+        <option value="24">24 Hour</option>
+      </select>
+    </div>
+  </div>
+
   <div *ngIf="isParameterField" class="space-y-3">
     <div>
       <label class="mb-1.5 block text-xs font-medium text-slate-600">Parameter Category</label>

@@ -9,6 +9,7 @@ import {
   normalizeRangeTimeFormat,
   normalizeRangeType,
 } from '../../../../../shared/dynamic-form/range-field.utils';
+import { normalizeTimeFieldFormat } from '../../../../../shared/dynamic-form/time-field.utils';
 import { FormField, FieldOption } from '../../../../form-builder/models/form-field.model';
 import {
   cloneOptionSource,
@@ -50,7 +51,7 @@ function toFormFieldType(type: string): FormField['type'] {
       return 'image';
     case 'parameter':
     case 'signature':
-    case 'user-timestamp':
+    case 'time':
     case 'rating':
     case 'range':
     case 'barcode':
@@ -63,6 +64,8 @@ function toFormFieldType(type: string): FormField['type'] {
     case 'radio':
     case 'text':
       return type;
+    case 'user-timestamp':
+      return 'time';
     default:
       return 'text';
   }
@@ -119,9 +122,11 @@ export function mapConfigFieldToBuilder(field: FormFieldConfig): FormField {
     rangePlaceholderFrom: field.rangePlaceholderFrom,
     rangePlaceholderTo: field.rangePlaceholderTo,
     timeFormat:
-      formFieldType === 'range' && normalizeRangeType(field.rangeType) === 'time'
-        ? normalizeRangeTimeFormat(field.timeFormat)
-        : undefined,
+      formFieldType === 'time'
+        ? normalizeTimeFieldFormat(field.timeFormat)
+        : formFieldType === 'range' && normalizeRangeType(field.rangeType) === 'time'
+          ? normalizeRangeTimeFormat(field.timeFormat)
+          : undefined,
     allowDecimal: field.allowDecimal === true,
     characterLimit: supportsCharacterLimit(formFieldType)
       ? resolveCharacterLimit(formFieldType, field.characterLimit)
@@ -172,9 +177,11 @@ export function mapBuilderFieldToConfig(
     rangePlaceholderFrom: field.rangePlaceholderFrom,
     rangePlaceholderTo: field.rangePlaceholderTo,
     timeFormat:
-      type === 'range' && normalizeRangeType(field.rangeType) === 'time'
-        ? normalizeRangeTimeFormat(field.timeFormat)
-        : undefined,
+      type === 'time'
+        ? normalizeTimeFieldFormat(field.timeFormat)
+        : type === 'range' && normalizeRangeType(field.rangeType) === 'time'
+          ? normalizeRangeTimeFormat(field.timeFormat)
+          : undefined,
     allowDecimal:
       field.type === 'number' ||
       (field.type === 'range' && normalizeRangeType(field.rangeType) === 'number')
@@ -224,12 +231,17 @@ function resolveConfigType(field: FormField, selectedType?: string): FieldType {
     'file',
     'parameter',
     'signature',
-    'user-timestamp',
+    'time',
     'rating',
     'range',
     'barcode',
     'qr-code',
   ];
+
+  // Migrate legacy User Timestamp schemas to Time.
+  if (candidate === 'user-timestamp') {
+    return 'time';
+  }
 
   if (allowed.includes(candidate as FieldType)) {
     return candidate as FieldType;

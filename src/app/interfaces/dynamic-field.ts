@@ -17,7 +17,7 @@ export type DynamicFieldType =
   | 'image'
   | 'parameter'
   | 'signature'
-  | 'user-timestamp'
+  | 'time'
   | 'rating'
   | 'range'
   | 'barcode'

@@ -88,10 +88,11 @@ export const FIELD_TEMPLATES: Omit<FormField, 'id'>[] = [
   },
 
   {
-    type: 'user-timestamp',
-    label: 'User Timestamp',
-    placeholder: '',
+    type: 'time',
+    label: 'Time Field',
+    placeholder: 'Select time',
     required: false,
+    timeFormat: '12',
     options: []
   },
 

@@ -12,7 +12,7 @@ export type FieldType =
   | 'image'
   | 'parameter'
   | 'signature'
-  | 'user-timestamp'
+  | 'time'
   | 'rating'
   | 'range'
   | 'barcode'
@@ -101,7 +101,7 @@ export interface FormField {
   rangePlaceholderFrom?: string;
   /** Placeholder for the Range To / second input. */
   rangePlaceholderTo?: string;
-  /** Time range display preference. Values are stored as HH:mm (24h). */
+  /** Time field / Time range display preference. Values are stored as HH:mm (24h). */
   timeFormat?: RangeTimeFormat;
   /**
    * Number field / Number range. When true, decimal values are allowed.

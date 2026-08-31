@@ -27,6 +27,11 @@ import {
   normalizeSignatureValue,
   signatureFieldValidator,
 } from './signature-field.utils';
+import {
+  normalizeTimeFieldFormat,
+  normalizeTimeFieldValue,
+  timeFieldValidator,
+} from './time-field.utils';
 
 export function sortDynamicFields(fields: DynamicField[]): DynamicField[] {
   return [...fields]
@@ -46,7 +51,7 @@ export function serializeDynamicFieldsSchema(fields: DynamicField[]): string {
   return sortDynamicFields(fields)
     .map(
       (field) =>
-        `${field.id}:${field.name}:${field.type}:${Number(!!field.required)}:${field.selectionType || 'single'}:${Number(field.isShow !== false)}:${Number(!!field.isReadonly)}:${Number(allowsDecimalPoint(field))}:${getFieldCharacterLimit(field) ?? ''}:${field.type === 'range' ? normalizeRangeType(field.rangeType) : ''}:${field.type === 'image' ? `${Number(!!field.multiple)}:${field.minFiles ?? ''}:${field.maxFiles ?? ''}:${(field.referenceImages || []).length}` : ''}:${field.type === 'rating' ? normalizeMaxRating(field.maxRating) : ''}:${JSON.stringify(field.condition ?? null)}`,
+        `${field.id}:${field.name}:${field.type}:${Number(!!field.required)}:${field.selectionType || 'single'}:${Number(field.isShow !== false)}:${Number(!!field.isReadonly)}:${Number(allowsDecimalPoint(field))}:${getFieldCharacterLimit(field) ?? ''}:${field.type === 'range' ? normalizeRangeType(field.rangeType) : ''}:${field.type === 'image' ? `${Number(!!field.multiple)}:${field.minFiles ?? ''}:${field.maxFiles ?? ''}:${(field.referenceImages || []).length}` : ''}:${field.type === 'rating' ? normalizeMaxRating(field.maxRating) : ''}:${field.type === 'time' ? normalizeTimeFieldFormat(field.timeFormat) : ''}:${JSON.stringify(field.condition ?? null)}`,
     )
     .join('|');
 }
@@ -133,6 +138,8 @@ export function getInitialFieldValue(field: DynamicField): unknown {
       return filterAnswerImages(field.defaultValue ?? field.value);
     case 'signature':
       return normalizeSignatureValue(field.defaultValue ?? field.value);
+    case 'time':
+      return normalizeTimeFieldValue(field.defaultValue ?? field.value);
     default:
       return field.defaultValue ?? field.value ?? '';
   }
@@ -162,6 +169,11 @@ export function getFieldValidators(
 
   if (field.type === 'signature') {
     validators.push(signatureFieldValidator(field, { required, visible }));
+    return validators;
+  }
+
+  if (field.type === 'time') {
+    validators.push(timeFieldValidator(field, { required, visible }));
     return validators;
   }
 
@@ -256,6 +268,11 @@ export function normalizeCheckboxFormValue(
 
     if (field.type === 'signature') {
       result[field.name] = normalizeSignatureValue(raw[field.name]);
+      continue;
+    }
+
+    if (field.type === 'time') {
+      result[field.name] = normalizeTimeFieldValue(raw[field.name]);
     }
   }
 

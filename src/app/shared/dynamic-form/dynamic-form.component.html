@@ -229,6 +229,141 @@
               />
             }
 
+            @case ('time') {
+              <div class="flex flex-wrap items-center gap-2">
+                <!-- @if (getTimeFieldFormat(field) === '12') {
+                  <select
+                    class="dynamic-control w-auto min-w-[4.5rem]"
+                    [id]="field.id + '-hour'"
+                    [disabled]="isFieldDisabled(field)"
+                    [value]="getTimeHour12Value(field) ?? ''"
+                    (change)="onTime12PartChange(field, 'hour', $any($event.target).value)"
+                    aria-label="Hour"
+                  >
+                    <option value="" disabled>HH</option>
+                    @for (hour of getTimeHourOptions(); track hour) {
+                      <option [value]="hour">{{ hour < 10 ? '0' + hour : hour }}</option>
+                    }
+                  </select>
+                  <span class="text-slate-400" aria-hidden="true">:</span>
+                  <select
+                    class="dynamic-control w-auto min-w-[4.5rem]"
+                    [id]="field.id + '-minute'"
+                    [disabled]="isFieldDisabled(field)"
+                    [value]="getTimeMinuteValue(field) ?? ''"
+                    (change)="onTime12PartChange(field, 'minute', $any($event.target).value)"
+                    aria-label="Minute"
+                  >
+                    <option value="" disabled>MM</option>
+                    @for (minute of getTimeMinuteOptions(); track minute) {
+                      <option [value]="minute">{{ minute < 10 ? '0' + minute : minute }}</option>
+                    }
+                  </select>
+                  <select
+                    class="dynamic-control w-auto min-w-[4.75rem]"
+                    [id]="field.id + '-meridiem'"
+                    [disabled]="isFieldDisabled(field)"
+                    [value]="getTimeMeridiemValue(field) ?? ''"
+                    (change)="onTime12PartChange(field, 'meridiem', $any($event.target).value)"
+                    aria-label="AM or PM"
+                  >
+                    <option value="" disabled>—</option>
+                    @for (meridiem of getTimeMeridiemOptions(); track meridiem) {
+                      <option [value]="meridiem">{{ meridiem }}</option>
+                    }
+                  </select>
+                }  -->
+                @if (getTimeFieldFormat(field) === '12') {
+                   <div class="flex items-center gap-3">
+    <div
+      class="inline-flex h-11 items-center rounded-xl border border-slate-200 bg-slate-50/80 p-1 shadow-sm transition-all focus-within:border-slate-300 focus-within:bg-white focus-within:shadow-md"
+    >
+      <!-- Hour -->
+      <select
+        class="dynamic-control !h-9 !w-[4.25rem] !min-w-0 !border-0 !bg-transparent !px-2 !text-center !font-semibold !text-slate-700 !shadow-none focus:!outline-none focus:!ring-0"
+        [id]="field.id + '-hour'"
+        [disabled]="isFieldDisabled(field)"
+        [value]="getTimeHour12Value(field) ?? ''"
+        (change)="onTime12PartChange(field, 'hour', $any($event.target).value)"
+        aria-label="Hour"
+      >
+        <option value="" disabled>HH</option>
+        @for (hour of getTimeHourOptions(); track hour) {
+          <option [value]="hour">
+            {{ hour < 10 ? '0' + hour : hour }}
+          </option>
+        }
+      </select>
+
+      <span
+        class="select-none px-0.5 text-lg font-bold leading-none text-slate-300"
+        aria-hidden="true"
+      >
+        :
+      </span>
+
+      <!-- Minute -->
+      <select
+        class="dynamic-control !h-9 !w-[4.25rem] !min-w-0 !border-0 !bg-transparent !px-2 !text-center !font-semibold !text-slate-700 !shadow-none focus:!outline-none focus:!ring-0"
+        [id]="field.id + '-minute'"
+        [disabled]="isFieldDisabled(field)"
+        [value]="getTimeMinuteValue(field) ?? ''"
+        (change)="onTime12PartChange(field, 'minute', $any($event.target).value)"
+        aria-label="Minute"
+      >
+        <option value="" disabled>MM</option>
+        @for (minute of getTimeMinuteOptions(); track minute) {
+          <option [value]="minute">
+            {{ minute < 10 ? '0' + minute : minute }}
+          </option>
+        }
+      </select>
+
+      <!-- Divider -->
+      <div class="mx-1 h-6 w-px bg-slate-200"></div>
+
+      <!-- AM / PM -->
+      <select
+        class="dynamic-control !h-9 !w-[4.75rem] !min-w-0 !border-0 !bg-transparent !px-2 !text-center !font-bold !text-slate-700 !shadow-none focus:!outline-none focus:!ring-0"
+        [id]="field.id + '-meridiem'"
+        [disabled]="isFieldDisabled(field)"
+        [value]="getTimeMeridiemValue(field) ?? ''"
+        (change)="onTime12PartChange(field, 'meridiem', $any($event.target).value)"
+        aria-label="AM or PM"
+      >
+        <option value="" disabled>—</option>
+        @for (meridiem of getTimeMeridiemOptions(); track meridiem) {
+          <option [value]="meridiem">{{ meridiem }}</option>
+        }
+      </select>
+    </div>
+    </div>
+
+                }
+
+                @else {
+                  <input
+                    class="dynamic-control"
+                    type="time"
+                    [id]="field.id"
+                    [disabled]="isFieldDisabled(field)"
+                    [value]="getTimeInputValue(field)"
+                    (input)="onTime24Input($event, field)"
+                  />
+                }
+
+                @if (getTimeInputValue(field) && !isFieldRequired(field) && !isFieldDisabled(field)) {
+                  <button
+                    type="button"
+                    class="text-xs font-medium text-[#ea580c] hover:underline"
+                    (click)="clearTimeValue(field)"
+                  >
+                    Clear
+                  </button>
+                }
+              </div>
+            }
+
             @case ('range') {
               <div
                 class="range-field"

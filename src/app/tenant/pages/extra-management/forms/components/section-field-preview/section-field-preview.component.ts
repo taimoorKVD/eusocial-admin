@@ -35,6 +35,16 @@ import {
   resolveRangeStep,
   sanitizeRangeNumberInput,
 } from '../../../../../../shared/dynamic-form/range-field.utils';
+import {
+  composeTimeFrom12h,
+  getTimeHour12,
+  getTimeMeridiem,
+  getTimeMinute,
+  normalizeTimeFieldValue,
+  TIME_HOUR_OPTIONS_12,
+  TIME_MINUTE_OPTIONS,
+  TimeMeridiem,
+} from '../../../../../../shared/dynamic-form/time-field.utils';
 import { FlatpickrDirective } from '../../../../../../shared/directives/flatpickr/flatpickr.directive';
 
 /**
@@ -425,10 +435,56 @@ export class SectionFieldPreviewComponent {
     return resolveRangeStep(this.field);
   }
 
-  get displayTimestamp(): string {
-    if (this.field.value) return this.field.value;
-    const now = new Date();
-    return now.toLocaleString();
+  get timeHourOptions(): number[] {
+    return TIME_HOUR_OPTIONS_12;
+  }
+
+  get timeMinuteOptions(): number[] {
+    return TIME_MINUTE_OPTIONS;
+  }
+
+  get timeHour12(): number | null {
+    return getTimeHour12(this.field.value);
+  }
+
+  get timeMinute(): number | null {
+    return getTimeMinute(this.field.value);
+  }
+
+  get timeMeridiem(): TimeMeridiem | null {
+    return getTimeMeridiem(this.field.value);
+  }
+
+  get timeInputValue(): string {
+    return normalizeTimeFieldValue(this.field.value) ?? '';
+  }
+
+  onTime24Input(event: Event): void {
+    if (this.isInteractionDisabled) {
+      return;
+    }
+    const input = event.target as HTMLInputElement;
+    this.valueChange.emit(normalizeTimeFieldValue(input.value) ?? '');
+  }
+
+  onTime12PartChange(part: 'hour' | 'minute' | 'meridiem', raw: string): void {
+    if (this.isInteractionDisabled) {
+      return;
+    }
+
+    let hour = getTimeHour12(this.field.value) ?? 12;
+    let minute = getTimeMinute(this.field.value) ?? 0;
+    let meridiem = getTimeMeridiem(this.field.value) ?? 'AM';
+
+    if (part === 'hour') {
+      hour = Number(raw);
+    } else if (part === 'minute') {
+      minute = Number(raw);
+    } else {
+      meridiem = String(raw).toUpperCase() === 'PM' ? 'PM' : 'AM';
+    }
+
+    this.valueChange.emit(composeTimeFrom12h(hour, minute, meridiem) ?? '');
   }
 
   onCheckboxToggle(checked: boolean): void {

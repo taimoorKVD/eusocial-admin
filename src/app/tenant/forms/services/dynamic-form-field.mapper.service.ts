@@ -10,11 +10,13 @@ import {
   normalizeRangeType,
 } from '../../../shared/dynamic-form/range-field.utils';
 import { normalizeMaxRating } from '../../../shared/dynamic-form/rating-field.utils';
+import { normalizeTimeFieldFormat } from '../../../shared/dynamic-form/time-field.utils';
 import { DynamicField, DynamicFieldType } from '../../../interfaces/dynamic-field';
 import { FieldOption, FieldType, FormField } from '../../form-builder/models/form-field.model';
 import { FieldOptionsService } from '../../form-builder/services/field-options.service';
 import { normalizeCheckboxFieldOptions, normalizeStaticSelectFieldOptions } from '../../form-builder/utils/field-options.utils';
 import { toFieldName } from '../../form-builder/utils/form-field.factory';
+import { normalizeFieldTypeName } from '../../form-builder/utils/field-type.utils';
 import { resolveBuilderLocationKind } from '../../form-builder/utils/location-field-dependencies.utils';
 import {
   cloneImageFiles,
@@ -34,7 +36,7 @@ const SUPPORTED_TYPES = new Set<DynamicFieldType>([
   'image',
   'parameter',
   'signature',
-  'user-timestamp',
+  'time',
   'rating',
   'range',
   'barcode',
@@ -141,9 +143,11 @@ export class DynamicFormFieldMapperService {
       rangePlaceholderFrom: field.rangePlaceholderFrom,
       rangePlaceholderTo: field.rangePlaceholderTo,
       timeFormat:
-        type === 'range' && normalizeRangeType(field.rangeType) === 'time'
-          ? normalizeRangeTimeFormat(field.timeFormat)
-          : undefined,
+        type === 'time'
+          ? normalizeTimeFieldFormat(field.timeFormat)
+          : type === 'range' && normalizeRangeType(field.rangeType) === 'time'
+            ? normalizeRangeTimeFormat(field.timeFormat)
+            : undefined,
       condition: field.condition,
       referenceImages: imageConfig
         ? cloneImageFiles(imageConfig.referenceImages)
@@ -176,9 +180,10 @@ export class DynamicFormFieldMapperService {
     return options as FieldOption[];
   }
 
-  private mapType(type: FieldType): DynamicFieldType | null {
-    if (SUPPORTED_TYPES.has(type as DynamicFieldType)) {
-      return type as DynamicFieldType;
+  private mapType(type: FieldType | string): DynamicFieldType | null {
+    const mapped = normalizeFieldTypeName(String(type), type);
+    if (SUPPORTED_TYPES.has(mapped as DynamicFieldType)) {
+      return mapped as DynamicFieldType;
     }
 
     return null;

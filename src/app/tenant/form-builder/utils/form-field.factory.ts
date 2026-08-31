@@ -14,6 +14,7 @@ import {
   sanitizeDateBounds,
   sanitizeRangeBounds,
 } from '../../../shared/dynamic-form/range-field.utils';
+import { normalizeTimeFieldFormat } from '../../../shared/dynamic-form/time-field.utils';
 import {
   normalizeCheckboxFieldOptions,
   normalizeStaticSelectFieldOptions,
@@ -246,9 +247,11 @@ export function sanitizeField(
             : undefined)
         : undefined,
     timeFormat:
-      type === 'range' && rangeType === 'time'
-        ? normalizeRangeTimeFormat(field.timeFormat)
-        : undefined,
+      type === 'time'
+        ? normalizeTimeFieldFormat(field.timeFormat)
+        : type === 'range' && rangeType === 'time'
+          ? normalizeRangeTimeFormat(field.timeFormat)
+          : undefined,
     allowDecimal:
       type === 'number' || (type === 'range' && rangeType === 'number')
         ? readBooleanFlag(field, 'allowDecimal', 'allow_decimal', false)
