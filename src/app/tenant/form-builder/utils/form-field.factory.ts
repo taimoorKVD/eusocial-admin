@@ -219,8 +219,6 @@ export function sanitizeField(
     width: field.width ?? 12,
     order: order ?? field.order,
     condition: serializeConditionalLogic(field.condition),
-    parameterCategory: field.parameterCategory,
-    parameterUnit: field.parameterUnit,
     maxRating: field.maxRating,
     rangeType,
     rangeMin: numberBounds.rangeMin,
@@ -313,5 +311,24 @@ function readOptionalString(
 }
 
 export function normalizeFieldOrder(schema: Array<Partial<FormField>>): FormField[] {
-  return schema.map((field, index) => sanitizeField(field, index + 1));
+  return schema
+    .filter((field) => !isLegacyParameterField(field))
+    .map((field, index) => sanitizeField(field, index + 1));
+}
+
+/** Removed Form Builder Parameter type — drop from loaded schemas (DB unchanged). */
+function isLegacyParameterField(
+  field: Partial<FormField> & Record<string, unknown>,
+): boolean {
+  const candidates = [
+    field.fieldTypeName,
+    field.type,
+    field['field_type'],
+    field['field_type_name'],
+  ].map((value) =>
+    String(value ?? '')
+      .trim()
+      .toLowerCase(),
+  );
+  return candidates.includes('parameter');
 }

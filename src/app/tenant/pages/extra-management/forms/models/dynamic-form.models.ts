@@ -13,7 +13,6 @@ export type FieldType =
   | 'radio'
   | 'image'
   | 'file'
-  | 'parameter'
   | 'signature'
   | 'time'
   | 'rating'
@@ -52,10 +51,6 @@ export interface FormFieldConfig {
   validations?: Record<string, unknown>;
   condition?: FieldCondition;
   defaultValue?: unknown;
-  /** Parameter field category: currency, length, weight, volume. */
-  parameterCategory?: string;
-  /** Parameter field unit (e.g. USD, m, kg). */
-  parameterUnit?: string;
   /** Maximum rating value (default 5). */
   maxRating?: number;
   /**
@@ -192,7 +187,6 @@ export const FIELD_TYPE_OPTIONS: { label: string; value: FieldType }[] = [
   { label: 'Radio', value: 'radio' },
   { label: 'Image', value: 'image' },
   { label: 'File', value: 'file' },
-  { label: 'Parameter', value: 'parameter' },
   { label: 'Signature', value: 'signature' },
   { label: 'Time', value: 'time' },
   { label: 'Rating', value: 'rating' },

@@ -15,7 +15,6 @@ export type DynamicFieldType =
   | 'radio'
   | 'date'
   | 'image'
-  | 'parameter'
   | 'signature'
   | 'time'
   | 'rating'

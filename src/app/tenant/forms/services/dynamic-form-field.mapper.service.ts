@@ -34,7 +34,6 @@ const SUPPORTED_TYPES = new Set<DynamicFieldType>([
   'radio',
   'date',
   'image',
-  'parameter',
   'signature',
   'time',
   'rating',
@@ -76,6 +75,11 @@ export class DynamicFormFieldMapperService {
   }
 
   private toDynamicField(field: FormField, resolvedOptions: FieldOption[]): DynamicField | null {
+    // Legacy Parameter fields are no longer supported — ignore at runtime.
+    if (this.isRemovedParameterField(field)) {
+      return null;
+    }
+
     const type = this.mapType(field.type);
 
     if (!type) {
@@ -187,5 +191,15 @@ export class DynamicFormFieldMapperService {
     }
 
     return null;
+  }
+
+  /** True when the saved schema field is the removed Form Builder Parameter type. */
+  private isRemovedParameterField(field: FormField): boolean {
+    const candidates = [field.fieldTypeName, field.type].map((value) =>
+      String(value ?? '')
+        .trim()
+        .toLowerCase(),
+    );
+    return candidates.includes('parameter');
   }
 }

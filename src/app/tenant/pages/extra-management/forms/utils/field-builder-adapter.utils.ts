@@ -49,7 +49,6 @@ function toFormFieldType(type: string): FormField['type'] {
       return 'text';
     case 'image':
       return 'image';
-    case 'parameter':
     case 'signature':
     case 'time':
     case 'rating':
@@ -66,6 +65,9 @@ function toFormFieldType(type: string): FormField['type'] {
       return type;
     case 'user-timestamp':
       return 'time';
+    // Legacy Parameter field — no longer supported in the builder.
+    case 'parameter':
+      return 'text';
     default:
       return 'text';
   }
@@ -110,8 +112,6 @@ export function mapConfigFieldToBuilder(field: FormFieldConfig): FormField {
     defaultValue: field.defaultValue ?? field.value ?? '',
     validations: field.validations ? { ...field.validations } : {},
     condition: cloneConditionalLogic(field.condition),
-    parameterCategory: field.parameterCategory,
-    parameterUnit: field.parameterUnit,
     maxRating: field.maxRating,
     rangeType: formFieldType === 'range' ? normalizeRangeType(field.rangeType) : undefined,
     rangeMin: field.rangeMin,
@@ -162,8 +162,6 @@ export function mapBuilderFieldToConfig(
     validations: field.validations ? { ...field.validations } : undefined,
     condition: serializeConditionalLogic(field.condition),
     defaultValue: field.defaultValue,
-    parameterCategory: field.parameterCategory,
-    parameterUnit: field.parameterUnit,
     maxRating: field.maxRating,
     rangeType: type === 'range' ? normalizeRangeType(field.rangeType) : undefined,
     rangeMin: field.rangeMin,
@@ -229,7 +227,6 @@ function resolveConfigType(field: FormField, selectedType?: string): FieldType {
     'radio',
     'image',
     'file',
-    'parameter',
     'signature',
     'time',
     'rating',
@@ -241,6 +238,11 @@ function resolveConfigType(field: FormField, selectedType?: string): FieldType {
   // Migrate legacy User Timestamp schemas to Time.
   if (candidate === 'user-timestamp') {
     return 'time';
+  }
+
+  // Legacy Parameter field is no longer available.
+  if (candidate === 'parameter') {
+    return 'text';
   }
 
   if (allowed.includes(candidate as FieldType)) {

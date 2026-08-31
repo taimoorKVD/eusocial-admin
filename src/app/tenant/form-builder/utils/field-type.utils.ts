@@ -11,7 +11,6 @@ const FIELD_TYPE_MAP: Record<string, FieldType> = {
   checkbox: 'checkbox',
   image: 'image',
   file: 'image',
-  parameter: 'parameter',
   signature: 'signature',
   time: 'time',
   // Legacy Form Builder type — migrate saved schemas to Time.

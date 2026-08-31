@@ -72,14 +72,6 @@ export const FIELD_TEMPLATES: Omit<FormField, 'id'>[] = [
   },
 
   {
-    type: 'parameter',
-    label: 'Parameter',
-    placeholder: 'Enter value',
-    required: false,
-    options: []
-  },
-
-  {
     type: 'signature',
     label: 'Signature',
     placeholder: '',

@@ -583,10 +583,6 @@ export class FieldSettingsComponent {
     return field.selectionType === 'multi' ? 'multi' : 'single';
   }
 
-  get isParameterField(): boolean {
-    return this._field?.type === 'parameter';
-  }
-
   get isNumberField(): boolean {
     return this._field?.type === 'number';
   }
@@ -906,48 +902,6 @@ export class FieldSettingsComponent {
     this.onChange();
   }
 
-  readonly parameterCategories = [
-    { label: 'Currency', value: 'currency' },
-    { label: 'Length / Distance', value: 'length' },
-    { label: 'Weight / Mass', value: 'weight' },
-    { label: 'Volume / Capacity', value: 'volume' },
-  ];
-
-  get parameterUnits(): { label: string; value: string }[] {
-    switch (this._field?.parameterCategory) {
-      case 'currency':
-        return [
-          { label: 'USD', value: 'USD' }, { label: 'EUR', value: 'EUR' },
-          { label: 'GBP', value: 'GBP' }, { label: 'PKR', value: 'PKR' },
-          { label: 'INR', value: 'INR' }, { label: 'JPY', value: 'JPY' },
-          { label: 'CNY', value: 'CNY' }, { label: 'CAD', value: 'CAD' },
-          { label: 'AUD', value: 'AUD' },
-        ];
-      case 'length':
-        return [
-          { label: 'Meter (m)', value: 'm' }, { label: 'Centimeter (cm)', value: 'cm' },
-          { label: 'Millimeter (mm)', value: 'mm' }, { label: 'Kilometer (km)', value: 'km' },
-          { label: 'Inch (in)', value: 'in' }, { label: 'Foot (ft)', value: 'ft' },
-          { label: 'Yard (yd)', value: 'yd' }, { label: 'Mile (mi)', value: 'mi' },
-        ];
-      case 'weight':
-        return [
-          { label: 'Kilogram (kg)', value: 'kg' }, { label: 'Gram (g)', value: 'g' },
-          { label: 'Milligram (mg)', value: 'mg' }, { label: 'Pound (lb)', value: 'lb' },
-          { label: 'Ounce (oz)', value: 'oz' }, { label: 'Ton', value: 'ton' },
-        ];
-      case 'volume':
-        return [
-          { label: 'Liter (L)', value: 'L' }, { label: 'Milliliter (mL)', value: 'mL' },
-          { label: 'Gallon (gal)', value: 'gal' }, { label: 'Quart (qt)', value: 'qt' },
-          { label: 'Pint (pt)', value: 'pt' }, { label: 'Cup', value: 'cup' },
-          { label: 'Cubic Meter (m³)', value: 'm3' },
-        ];
-      default:
-        return [];
-    }
-  }
-
   get dynamicOptionsCount(): number {
     return this.optionsMode === 'dynamic' ? this._field?.options?.length ?? 0 : 0;
   }
@@ -1209,19 +1163,6 @@ export class FieldSettingsComponent {
       return option;
     }
     return normalizeFieldOption(option)?.value ?? null;
-  }
-
-  onParameterCategoryChange(category: string): void {
-    if (!this.isFieldEditable || !this._field) return;
-    this._field.parameterCategory = category;
-    this._field.parameterUnit = '';
-    this.onChange();
-  }
-
-  onParameterUnitChange(unit: string): void {
-    if (!this.isFieldEditable || !this._field) return;
-    this._field.parameterUnit = unit;
-    this.onChange();
   }
 
   onMaxRatingChange(value: number): void {

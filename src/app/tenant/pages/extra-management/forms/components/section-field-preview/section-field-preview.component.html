@@ -236,42 +236,6 @@
         (input)="onInput($event)"
       />
     }
-    @case ('parameter') {
-      <div class="flex flex-col gap-2">
-        <div class="flex gap-2">
-          <select
-            class="section-input font-ibm flex-1"
-            [value]="field.parameterCategory || ''"
-            [disabled]="!!isInteractionDisabled"
-            (change)="onParameterCategoryChange(($any($event.target).value))"
-          >
-            <option value="" disabled>Select category</option>
-            @for (cat of parameterCategories; track cat.value) {
-              <option [value]="cat.value">{{ cat.label }}</option>
-            }
-          </select>
-          <select
-            class="section-input font-ibm flex-1"
-            [value]="field.parameterUnit || ''"
-            [disabled]="!!isInteractionDisabled || !field.parameterCategory"
-            (change)="onParameterUnitChange(($any($event.target).value))"
-          >
-            <option value="" disabled>Select unit</option>
-            @for (unit of parameterUnits; track unit.value) {
-              <option [value]="unit.value">{{ unit.label }}</option>
-            }
-          </select>
-        </div>
-        <input
-          class="section-input font-ibm"
-          type="number"
-          placeholder="Enter value"
-          [value]="field.value || ''"
-          [attr.readonly]="isInteractionDisabled || null"
-          (input)="onParameterValueChange($event)"
-        />
-      </div>
-    }
     @case ('signature') {
       <div class="flex items-center justify-center rounded-md border border-dashed border-[#d4c5b6] bg-[#faf5f0] py-8">
         @if (field.value) {

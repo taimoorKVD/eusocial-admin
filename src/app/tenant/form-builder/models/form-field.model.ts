@@ -10,7 +10,6 @@ export type FieldType =
   | 'checkbox'
   | 'radio'
   | 'image'
-  | 'parameter'
   | 'signature'
   | 'time'
   | 'rating'
@@ -77,10 +76,6 @@ export interface FormField {
 
   condition?: FieldCondition;
 
-  /** Parameter field category: currency, length, weight, volume. */
-  parameterCategory?: string;
-  /** Parameter field unit (e.g. USD, m, kg). */
-  parameterUnit?: string;
   /** Maximum rating value (default 5). */
   maxRating?: number;
   /**
