@@ -10,6 +10,12 @@ import {
   normalizeRangeType,
 } from '../../../../../shared/dynamic-form/range-field.utils';
 import { normalizeTimeFieldFormat } from '../../../../../shared/dynamic-form/time-field.utils';
+import {
+  getDefaultUnitCode,
+  isMeasurementFieldType,
+  normalizeMeasurementUnitCode,
+  normalizeMeasurementUnitMode,
+} from '../../../../../shared/dynamic-form/measurement-units';
 import { FormField, FieldOption } from '../../../../form-builder/models/form-field.model';
 import {
   cloneOptionSource,
@@ -53,6 +59,10 @@ function toFormFieldType(type: string): FormField['type'] {
     case 'time':
     case 'rating':
     case 'range':
+    case 'price':
+    case 'length':
+    case 'mass':
+    case 'volume':
     case 'barcode':
     case 'qr-code':
     case 'number':
@@ -127,7 +137,27 @@ export function mapConfigFieldToBuilder(field: FormFieldConfig): FormField {
         : formFieldType === 'range' && normalizeRangeType(field.rangeType) === 'time'
           ? normalizeRangeTimeFormat(field.timeFormat)
           : undefined,
-    allowDecimal: field.allowDecimal === true,
+    unitMode: isMeasurementFieldType(formFieldType)
+      ? normalizeMeasurementUnitMode(field.unitMode)
+      : undefined,
+    unit: isMeasurementFieldType(formFieldType)
+      ? normalizeMeasurementUnitCode(formFieldType, field.unit) ??
+        getDefaultUnitCode(formFieldType)
+      : undefined,
+    minValue: isMeasurementFieldType(formFieldType)
+      ? (() => {
+          const min = Number(field.minValue);
+          return Number.isFinite(min) ? min : 0;
+        })()
+      : undefined,
+    maxValue: isMeasurementFieldType(formFieldType)
+      ? (() => {
+          const max = Number(field.maxValue);
+          return Number.isFinite(max) ? max : undefined;
+        })()
+      : undefined,
+    allowDecimal:
+      isMeasurementFieldType(formFieldType) ? true : field.allowDecimal === true,
     characterLimit: supportsCharacterLimit(formFieldType)
       ? resolveCharacterLimit(formFieldType, field.characterLimit)
       : undefined,
@@ -180,10 +210,31 @@ export function mapBuilderFieldToConfig(
         : type === 'range' && normalizeRangeType(field.rangeType) === 'time'
           ? normalizeRangeTimeFormat(field.timeFormat)
           : undefined,
+    unitMode: isMeasurementFieldType(type)
+      ? normalizeMeasurementUnitMode(field.unitMode)
+      : undefined,
+    unit: isMeasurementFieldType(type)
+      ? normalizeMeasurementUnitCode(type, field.unit) ?? getDefaultUnitCode(type)
+      : undefined,
+    minValue: isMeasurementFieldType(type)
+      ? (() => {
+          const min = Number(field.minValue);
+          return Number.isFinite(min) ? min : 0;
+        })()
+      : undefined,
+    maxValue: isMeasurementFieldType(type)
+      ? (() => {
+          const max = Number(field.maxValue);
+          return Number.isFinite(max) ? max : undefined;
+        })()
+      : undefined,
     allowDecimal:
       field.type === 'number' ||
-      (field.type === 'range' && normalizeRangeType(field.rangeType) === 'number')
-        ? field.allowDecimal === true
+      (field.type === 'range' && normalizeRangeType(field.rangeType) === 'number') ||
+      isMeasurementFieldType(type)
+        ? isMeasurementFieldType(type)
+          ? true
+          : field.allowDecimal === true
         : undefined,
     characterLimit: supportsCharacterLimit(type)
       ? (resolveCharacterLimit(type, field.characterLimit) ??
@@ -231,6 +282,10 @@ function resolveConfigType(field: FormField, selectedType?: string): FieldType {
     'time',
     'rating',
     'range',
+    'price',
+    'length',
+    'mass',
+    'volume',
     'barcode',
     'qr-code',
   ];

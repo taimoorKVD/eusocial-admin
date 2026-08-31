@@ -114,6 +114,38 @@
   width: 100%;
 }
 
+.measurement-field-preview {
+  display: flex;
+  align-items: stretch;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.measurement-field-preview__amount {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.measurement-field-preview__unit-fixed {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  min-width: 3rem;
+  padding: 0 0.75rem;
+  border: 1px solid #e5e5e5;
+  border-radius: 0.5rem;
+  background: #fafafa;
+  color: #555;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.measurement-field-preview__unit-select {
+  flex: 0 1 11rem;
+  max-width: 45%;
+}
+
 .range-field-preview--date {
   flex-direction: column;
   align-items: stretch;

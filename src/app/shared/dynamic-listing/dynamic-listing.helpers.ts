@@ -6,6 +6,10 @@ import {
   normalizeMaxRating,
 } from '../dynamic-form/rating-field.utils';
 import {
+  formatMeasurementDisplay,
+  getMeasurementFieldType,
+} from '../dynamic-form/measurement-field.utils';
+import {
   getSignatureDisplayUrl,
   hasSignatureValue,
 } from '../dynamic-form/signature-field.utils';
@@ -13,6 +17,7 @@ import {
   formatTimeFieldDisplay,
   normalizeTimeFieldFormat,
 } from '../dynamic-form/time-field.utils';
+import { normalizeMeasurementUnitMode } from '../dynamic-form/measurement-units';
 import { resolveImageDisplayUrl } from '../../tenant/form-builder/utils/image-field.utils';
 import type { ImageFile } from '../../tenant/form-builder/models/image-file.model';
 
@@ -447,6 +452,14 @@ export function formatListingCellValue(
     return formatTimeFieldDisplay(rawValue, normalizeTimeFieldFormat(field.timeFormat));
   }
 
+  const measurementType = getMeasurementFieldType(field.type);
+  if (measurementType) {
+    return formatMeasurementDisplay(rawValue, measurementType, {
+      unitMode: normalizeMeasurementUnitMode(field.unitMode),
+      unit: field.unit,
+    });
+  }
+
   switch (field.type) {
     case 'checkbox':
       {
@@ -597,7 +610,9 @@ export function mapVisibleColumnsToFilterFields(
           ? `Filter by ${field.label.toLowerCase()} (e.g. 4)...`
           : field.type === 'time'
             ? `Filter by ${field.label.toLowerCase()} (e.g. 09:30)...`
-            : field.placeholder || `Search by ${field.label.toLowerCase()}...`,
+            : getMeasurementFieldType(field.type)
+              ? `Filter by ${field.label.toLowerCase()}...`
+              : field.placeholder || `Search by ${field.label.toLowerCase()}...`,
       endpoint: field.optionSource?.endpoint,
       labelKey: field.optionSource?.response?.labelKey,
       valueKey: field.optionSource?.response?.valueKey,
@@ -656,6 +671,10 @@ function mapDynamicFieldToFilterType(field: DynamicField): string {
       return 'checkbox';
     case 'number':
     case 'rating':
+    case 'price':
+    case 'length':
+    case 'mass':
+    case 'volume':
       return 'number';
     case 'email':
       return 'email';

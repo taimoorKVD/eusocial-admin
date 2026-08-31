@@ -110,6 +110,54 @@ export const FIELD_TEMPLATES: Omit<FormField, 'id'>[] = [
   },
 
   {
+    type: 'price',
+    label: 'Price',
+    placeholder: 'Enter amount',
+    required: false,
+    allowDecimal: true,
+    unitMode: 'fixed',
+    unit: 'USD',
+    minValue: 0,
+    options: []
+  },
+
+  {
+    type: 'length',
+    label: 'Length / Distance',
+    placeholder: 'Enter length',
+    required: false,
+    allowDecimal: true,
+    unitMode: 'fixed',
+    unit: 'm',
+    minValue: 0,
+    options: []
+  },
+
+  {
+    type: 'mass',
+    label: 'Weight / Mass',
+    placeholder: 'Enter weight',
+    required: false,
+    allowDecimal: true,
+    unitMode: 'fixed',
+    unit: 'kg',
+    minValue: 0,
+    options: []
+  },
+
+  {
+    type: 'volume',
+    label: 'Volume / Capacity',
+    placeholder: 'Enter volume',
+    required: false,
+    allowDecimal: true,
+    unitMode: 'fixed',
+    unit: 'L',
+    minValue: 0,
+    options: []
+  },
+
+  {
     type: 'barcode',
     label: 'Barcode',
     placeholder: '',

@@ -1,5 +1,6 @@
 import { FieldCondition } from '../shared/conditional-logic';
 import type {
+  MeasurementUnitMode,
   RangeFieldType,
   RangeTimeFormat,
 } from '../tenant/form-builder/models/form-field.model';
@@ -19,6 +20,10 @@ export type DynamicFieldType =
   | 'time'
   | 'rating'
   | 'range'
+  | 'price'
+  | 'length'
+  | 'mass'
+  | 'volume'
   | 'barcode'
   | 'qr-code';
 
@@ -78,6 +83,14 @@ export interface DynamicField {
   rangePlaceholderTo?: string;
   timeFormat?: RangeTimeFormat;
   condition?: FieldCondition;
+
+  /**
+   * Measurement fields (price / length / mass / volume).
+   */
+  unitMode?: MeasurementUnitMode;
+  unit?: string;
+  minValue?: number;
+  maxValue?: number;
 
   /**
    * Image Upload only. Example / reference images from Form Builder.

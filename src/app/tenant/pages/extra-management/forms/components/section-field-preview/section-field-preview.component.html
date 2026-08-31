@@ -409,6 +409,18 @@
         }
       </div>
     }
+    @case ('price') {
+      <ng-container *ngTemplateOutlet="measurementPreviewTpl" />
+    }
+    @case ('length') {
+      <ng-container *ngTemplateOutlet="measurementPreviewTpl" />
+    }
+    @case ('mass') {
+      <ng-container *ngTemplateOutlet="measurementPreviewTpl" />
+    }
+    @case ('volume') {
+      <ng-container *ngTemplateOutlet="measurementPreviewTpl" />
+    }
     @case ('barcode') {
       <div class="relative">
         <input
@@ -452,3 +464,33 @@
     }
   }
 </div>
+
+<ng-template #measurementPreviewTpl>
+  <div class="measurement-field-preview">
+    <input
+      class="section-input font-ibm measurement-field-preview__amount"
+      type="number"
+      step="any"
+      [placeholder]="field.placeholder || '0'"
+      [value]="measurementAmountDisplay"
+      [attr.min]="field.minValue ?? 0"
+      [attr.max]="field.maxValue ?? null"
+      [attr.readonly]="isInteractionDisabled || null"
+      (input)="onMeasurementAmountInput($event)"
+    />
+    @if (measurementUnitMode === 'fixed') {
+      <span class="measurement-field-preview__unit-fixed">{{ measurementUnitSymbol }}</span>
+    } @else {
+      <select
+        class="section-input font-ibm measurement-field-preview__unit-select"
+        [value]="measurementUnitCode"
+        [disabled]="!!isInteractionDisabled"
+        (change)="onMeasurementUnitChange($event)"
+      >
+        @for (unit of measurementUnits; track unit.code) {
+          <option [value]="unit.code">{{ unit.symbol }} — {{ unit.label }}</option>
+        }
+      </select>
+    }
+  </div>
+</ng-template>

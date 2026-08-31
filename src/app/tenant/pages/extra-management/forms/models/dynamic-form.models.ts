@@ -17,6 +17,10 @@ export type FieldType =
   | 'time'
   | 'rating'
   | 'range'
+  | 'price'
+  | 'length'
+  | 'mass'
+  | 'volume'
   | 'barcode'
   | 'qr-code';
 
@@ -73,6 +77,11 @@ export interface FormFieldConfig {
   rangePlaceholderTo?: string;
   /** Time field / Time range display preference. Values are stored as HH:mm (24h). */
   timeFormat?: '12' | '24';
+  /** Measurement fields: fixed vs selectable unit. */
+  unitMode?: 'fixed' | 'selectable';
+  unit?: string;
+  minValue?: number;
+  maxValue?: number;
   /**
    * Number field / Number range. When true, decimal values are allowed.
    * Missing/undefined is treated as false for backward compatibility.
@@ -191,6 +200,10 @@ export const FIELD_TYPE_OPTIONS: { label: string; value: FieldType }[] = [
   { label: 'Time', value: 'time' },
   { label: 'Rating', value: 'rating' },
   { label: 'Range', value: 'range' },
+  { label: 'Price', value: 'price' },
+  { label: 'Length / Distance', value: 'length' },
+  { label: 'Weight / Mass', value: 'mass' },
+  { label: 'Volume / Capacity', value: 'volume' },
   { label: 'Barcode', value: 'barcode' },
   { label: 'QR Code', value: 'qr-code' },
 ];

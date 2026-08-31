@@ -45,6 +45,19 @@ import {
   TIME_MINUTE_OPTIONS,
   TimeMeridiem,
 } from '../../../../../../shared/dynamic-form/time-field.utils';
+import {
+  getDefaultUnitCode,
+  getUnitSymbol,
+  getUnitsForFieldType,
+  isMeasurementFieldType,
+  MeasurementUnit,
+  normalizeMeasurementUnitCode,
+  normalizeMeasurementUnitMode,
+} from '../../../../../../shared/dynamic-form/measurement-units';
+import {
+  MeasurementFieldValue,
+  normalizeMeasurementValue,
+} from '../../../../../../shared/dynamic-form/measurement-field.utils';
 import { FlatpickrDirective } from '../../../../../../shared/directives/flatpickr/flatpickr.directive';
 
 /**
@@ -291,6 +304,104 @@ export class SectionFieldPreviewComponent {
       JSON.stringify({
         ...current,
         [side]: nextSide,
+      }),
+    );
+  }
+
+  get isMeasurementField(): boolean {
+    return isMeasurementFieldType(this.field?.type);
+  }
+
+  get measurementUnitMode(): 'fixed' | 'selectable' {
+    return normalizeMeasurementUnitMode(this.field?.unitMode);
+  }
+
+  get measurementUnits(): readonly MeasurementUnit[] {
+    if (!isMeasurementFieldType(this.field?.type)) {
+      return [];
+    }
+    return getUnitsForFieldType(this.field.type);
+  }
+
+  get measurementValue(): MeasurementFieldValue {
+    if (!isMeasurementFieldType(this.field?.type)) {
+      return { value: null, unit: null };
+    }
+    return normalizeMeasurementValue(this.field.value, this.field.type, {
+      unitMode: normalizeMeasurementUnitMode(this.field.unitMode),
+      unit: this.field.unit,
+    });
+  }
+
+  get measurementAmountDisplay(): string {
+    const amount = this.measurementValue.value;
+    return amount == null ? '' : String(amount);
+  }
+
+  get measurementUnitCode(): string {
+    if (!isMeasurementFieldType(this.field?.type)) {
+      return '';
+    }
+    return (
+      this.measurementValue.unit ??
+      normalizeMeasurementUnitCode(this.field.type, this.field.unit) ??
+      getDefaultUnitCode(this.field.type)
+    );
+  }
+
+  get measurementUnitSymbol(): string {
+    if (!isMeasurementFieldType(this.field?.type)) {
+      return '';
+    }
+    return getUnitSymbol(this.field.type, this.measurementUnitCode);
+  }
+
+  onMeasurementAmountInput(event: Event): void {
+    if (this.isInteractionDisabled || !isMeasurementFieldType(this.field?.type)) {
+      return;
+    }
+
+    const input = event.target as HTMLInputElement;
+    const sanitized = sanitizeNumberFieldInput(input.value, true);
+    if (input.value !== sanitized) {
+      input.value = sanitized;
+    }
+
+    const current = normalizeMeasurementValue(this.field.value, this.field.type, {
+      unitMode: normalizeMeasurementUnitMode(this.field.unitMode),
+      unit: this.field.unit,
+    });
+
+    const nextAmount =
+      sanitized === '' || sanitized === '-' || sanitized === '.' || sanitized === '-.'
+        ? null
+        : Number(sanitized);
+
+    this.valueChange.emit(
+      JSON.stringify({
+        value: Number.isFinite(nextAmount as number) ? nextAmount : null,
+        unit: current.unit,
+      }),
+    );
+  }
+
+  onMeasurementUnitChange(event: Event): void {
+    if (this.isInteractionDisabled || !isMeasurementFieldType(this.field?.type)) {
+      return;
+    }
+
+    const select = event.target as HTMLSelectElement;
+    const current = normalizeMeasurementValue(this.field.value, this.field.type, {
+      unitMode: normalizeMeasurementUnitMode(this.field.unitMode),
+      unit: this.field.unit,
+    });
+
+    this.valueChange.emit(
+      JSON.stringify({
+        value: current.value,
+        unit:
+          normalizeMeasurementUnitCode(this.field.type, select.value) ??
+          getDefaultUnitCode(this.field.type),
       }),
     );
   }

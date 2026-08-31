@@ -29,6 +29,13 @@ import {
   getRangePlaceholderFrom,
   getRangePlaceholderTo,
 } from '../../../../shared/dynamic-form/range-field.utils';
+import {
+  getDefaultUnitCode,
+  getUnitSymbol,
+  isMeasurementFieldType,
+  normalizeMeasurementUnitCode,
+  normalizeMeasurementUnitMode,
+} from '../../../../shared/dynamic-form/measurement-units';
 import { ImageFile } from '../../models/image-file.model';
 import { resolveImageDisplayUrl } from '../../utils/image-field.utils';
 
@@ -64,6 +71,24 @@ export class FormFieldPreviewComponent implements OnChanges {
 
   get rangePlaceholderTo(): string {
     return getRangePlaceholderTo(this.field);
+  }
+
+  get isMeasurementPreview(): boolean {
+    return isMeasurementFieldType(this.fieldType);
+  }
+
+  get measurementUnitMode(): 'fixed' | 'selectable' {
+    return normalizeMeasurementUnitMode(this.field?.unitMode);
+  }
+
+  get measurementUnitSymbol(): string {
+    if (!isMeasurementFieldType(this.fieldType)) {
+      return '';
+    }
+    const code =
+      normalizeMeasurementUnitCode(this.fieldType, this.field?.unit) ??
+      getDefaultUnitCode(this.fieldType);
+    return getUnitSymbol(this.fieldType, code);
   }
 
   getImageDisplayUrl(image: ImageFile): string {

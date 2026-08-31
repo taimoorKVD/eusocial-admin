@@ -64,6 +64,15 @@ import {
 } from '../../../shared/dynamic-form/range-field.utils';
 import { normalizeTimeFieldFormat } from '../../../shared/dynamic-form/time-field.utils';
 import {
+  getDefaultUnitCode,
+  getUnitsForFieldType,
+  isMeasurementFieldType,
+  MeasurementUnit,
+  MeasurementUnitMode,
+  normalizeMeasurementUnitCode,
+  normalizeMeasurementUnitMode,
+} from '../../../shared/dynamic-form/measurement-units';
+import {
   getLocationFieldDeleteBlockReason,
   isDynamicSelectOptionsHiddenForModule,
   isMultiSelectionTypeHiddenForModule,
@@ -595,6 +604,36 @@ export class FieldSettingsComponent {
     return this._field?.type === 'time';
   }
 
+  get isMeasurementField(): boolean {
+    return isMeasurementFieldType(this._field?.type);
+  }
+
+  get measurementUnitModeValue(): MeasurementUnitMode {
+    return normalizeMeasurementUnitMode(this._field?.unitMode);
+  }
+
+  get measurementUnits(): MeasurementUnit[] {
+    if (!isMeasurementFieldType(this._field?.type)) {
+      return [];
+    }
+    return [...getUnitsForFieldType(this._field.type)];
+  }
+
+  get measurementUnitLabel(): string {
+    switch (this._field?.type) {
+      case 'price':
+        return 'Currency';
+      case 'length':
+        return 'Length Unit';
+      case 'mass':
+        return 'Mass Unit';
+      case 'volume':
+        return 'Volume Unit';
+      default:
+        return 'Unit';
+    }
+  }
+
   get isRangeField(): boolean {
     return this._field?.type === 'range';
   }
@@ -742,6 +781,87 @@ export class FieldSettingsComponent {
     this._field.timeFormat = this.isTimeField
       ? normalizeTimeFieldFormat(value)
       : normalizeRangeTimeFormat(value);
+    this.onChange();
+  }
+
+  onMeasurementUnitModeChange(mode: MeasurementUnitMode | string): void {
+    if (!this._field || !this.isFieldEditable || !this.isMeasurementField) {
+      return;
+    }
+
+    this._field.unitMode = normalizeMeasurementUnitMode(mode);
+    if (!this._field.unit && isMeasurementFieldType(this._field.type)) {
+      this._field.unit = getDefaultUnitCode(this._field.type);
+    }
+    this.onChange();
+  }
+
+  onMeasurementUnitChange(code: string): void {
+    if (!this._field || !this.isFieldEditable || !this.isMeasurementField) {
+      return;
+    }
+    if (!isMeasurementFieldType(this._field.type)) {
+      return;
+    }
+
+    this._field.unit =
+      normalizeMeasurementUnitCode(this._field.type, code) ??
+      getDefaultUnitCode(this._field.type);
+    this.onChange();
+  }
+
+  onMeasurementMinValueChange(raw: string | number): void {
+    if (!this._field || !this.isFieldEditable || !this.isMeasurementField) {
+      return;
+    }
+
+    const numeric = typeof raw === 'number' ? raw : Number(String(raw).trim());
+    let min = Number.isFinite(numeric) ? numeric : 0;
+    const max =
+      this._field.maxValue != null && Number.isFinite(Number(this._field.maxValue))
+        ? Number(this._field.maxValue)
+        : null;
+
+    if (max != null && min > max) {
+      this.toastr.warning('Minimum cannot be greater than maximum.');
+      min = max;
+    }
+
+    this._field.minValue = min;
+    this.onChange();
+  }
+
+  onMeasurementMaxValueChange(raw: string | number): void {
+    if (!this._field || !this.isFieldEditable || !this.isMeasurementField) {
+      return;
+    }
+
+    const trimmed = String(raw ?? '').trim();
+    if (trimmed === '') {
+      this._field.maxValue = undefined;
+      this.onChange();
+      return;
+    }
+
+    const numeric = typeof raw === 'number' ? raw : Number(trimmed);
+    if (!Number.isFinite(numeric)) {
+      this._field.maxValue = undefined;
+      this.onChange();
+      return;
+    }
+
+    let max = numeric;
+    const min =
+      this._field.minValue != null && Number.isFinite(Number(this._field.minValue))
+        ? Number(this._field.minValue)
+        : 0;
+
+    if (max < min) {
+      this.toastr.warning('Maximum cannot be less than minimum.');
+      max = min;
+    }
+
+    this._field.maxValue = max;
     this.onChange();
   }
 
@@ -1337,8 +1457,11 @@ export class FieldSettingsComponent {
       isReadonly: value.isReadonly === true,
       allowDecimal:
         value.type === 'number' ||
-        (value.type === 'range' && normalizeRangeType(value.rangeType) === 'number')
-          ? value.allowDecimal === true
+        (value.type === 'range' && normalizeRangeType(value.rangeType) === 'number') ||
+        isMeasurementFieldType(value.type)
+          ? isMeasurementFieldType(value.type)
+            ? true
+            : value.allowDecimal === true
           : undefined,
       characterLimit: fieldSupportsCharacterLimit(value.type)
         ? resolveCharacterLimit(value.type, value.characterLimit)
@@ -1370,6 +1493,25 @@ export class FieldSettingsComponent {
           : value.type === 'range' && normalizeRangeType(value.rangeType) === 'time'
             ? normalizeRangeTimeFormat(value.timeFormat)
             : undefined,
+      unitMode: isMeasurementFieldType(value.type)
+        ? normalizeMeasurementUnitMode(value.unitMode)
+        : undefined,
+      unit: isMeasurementFieldType(value.type)
+        ? normalizeMeasurementUnitCode(value.type, value.unit) ??
+          getDefaultUnitCode(value.type)
+        : undefined,
+      minValue: isMeasurementFieldType(value.type)
+        ? (() => {
+            const min = Number(value.minValue);
+            return Number.isFinite(min) ? min : 0;
+          })()
+        : undefined,
+      maxValue: isMeasurementFieldType(value.type)
+        ? (() => {
+            const max = Number(value.maxValue);
+            return Number.isFinite(max) ? max : undefined;
+          })()
+        : undefined,
     };
 
     this.placeholderManuallyEdited = !this.isAutoGeneratedPlaceholder(this._field);

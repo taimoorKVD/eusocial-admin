@@ -11,6 +11,12 @@ import {
 } from '../../../shared/dynamic-form/range-field.utils';
 import { normalizeMaxRating } from '../../../shared/dynamic-form/rating-field.utils';
 import { normalizeTimeFieldFormat } from '../../../shared/dynamic-form/time-field.utils';
+import {
+  getDefaultUnitCode,
+  isMeasurementFieldType,
+  normalizeMeasurementUnitCode,
+  normalizeMeasurementUnitMode,
+} from '../../../shared/dynamic-form/measurement-units';
 import { DynamicField, DynamicFieldType } from '../../../interfaces/dynamic-field';
 import { FieldOption, FieldType, FormField } from '../../form-builder/models/form-field.model';
 import { FieldOptionsService } from '../../form-builder/services/field-options.service';
@@ -38,6 +44,10 @@ const SUPPORTED_TYPES = new Set<DynamicFieldType>([
   'time',
   'rating',
   'range',
+  'price',
+  'length',
+  'mass',
+  'volume',
   'barcode',
   'qr-code',
 ]);
@@ -129,8 +139,12 @@ export class DynamicFormFieldMapperService {
       isShow: field.isShow,
       isReadonly: field.isReadonly,
       allowDecimal:
-        type === 'number' || (type === 'range' && normalizeRangeType(field.rangeType) === 'number')
-          ? field.allowDecimal === true
+        type === 'number' ||
+        (type === 'range' && normalizeRangeType(field.rangeType) === 'number') ||
+        isMeasurementFieldType(type)
+          ? isMeasurementFieldType(type)
+            ? true
+            : field.allowDecimal === true
           : undefined,
       characterLimit: supportsCharacterLimit(type)
         ? resolveCharacterLimit(type, field.characterLimit)
@@ -152,6 +166,24 @@ export class DynamicFormFieldMapperService {
           : type === 'range' && normalizeRangeType(field.rangeType) === 'time'
             ? normalizeRangeTimeFormat(field.timeFormat)
             : undefined,
+      unitMode: isMeasurementFieldType(type)
+        ? normalizeMeasurementUnitMode(field.unitMode)
+        : undefined,
+      unit: isMeasurementFieldType(type)
+        ? normalizeMeasurementUnitCode(type, field.unit) ?? getDefaultUnitCode(type)
+        : undefined,
+      minValue: isMeasurementFieldType(type)
+        ? (() => {
+            const min = Number(field.minValue);
+            return Number.isFinite(min) ? min : 0;
+          })()
+        : undefined,
+      maxValue: isMeasurementFieldType(type)
+        ? (() => {
+            const max = Number(field.maxValue);
+            return Number.isFinite(max) ? max : undefined;
+          })()
+        : undefined,
       condition: field.condition,
       referenceImages: imageConfig
         ? cloneImageFiles(imageConfig.referenceImages)

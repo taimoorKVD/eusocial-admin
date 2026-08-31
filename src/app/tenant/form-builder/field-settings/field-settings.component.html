@@ -370,6 +370,79 @@
     </div>
   </div>
 
+  <div *ngIf="isMeasurementField" class="space-y-3">
+    <div>
+      <label class="mb-1.5 block text-xs font-medium text-slate-600">Unit Mode</label>
+      <div class="space-y-2 rounded-md border border-slate-100 bg-slate-50 px-3 py-2.5">
+        <label class="flex items-center gap-2 text-sm text-slate-700">
+          <input
+            type="radio"
+            name="measurement-unit-mode"
+            [checked]="measurementUnitModeValue === 'fixed'"
+            (change)="onMeasurementUnitModeChange('fixed')"
+            [disabled]="!isFieldEditable"
+            class="field-settings-radio"
+          />
+          Fixed unit
+        </label>
+        <label class="flex items-center gap-2 text-sm text-slate-700">
+          <input
+            type="radio"
+            name="measurement-unit-mode"
+            [checked]="measurementUnitModeValue === 'selectable'"
+            (change)="onMeasurementUnitModeChange('selectable')"
+            [disabled]="!isFieldEditable"
+            class="field-settings-radio"
+          />
+          Selectable by user
+        </label>
+      </div>
+    </div>
+
+    <div>
+      <label class="mb-1.5 block text-xs font-medium text-slate-600">{{ measurementUnitLabel }}</label>
+      <select
+        [ngModel]="field.unit"
+        (ngModelChange)="onMeasurementUnitChange($event)"
+        [disabled]="!isFieldEditable"
+        class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+      >
+        <option *ngFor="let unit of measurementUnits" [value]="unit.code">
+          {{ unit.label }} ({{ unit.symbol }})
+        </option>
+      </select>
+      <p *ngIf="measurementUnitModeValue === 'selectable'" class="mt-1 text-xs text-slate-500">
+        Default unit shown when the form loads. Users can change it while filling.
+      </p>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <label class="mb-1.5 block text-xs font-medium text-slate-600">Minimum</label>
+        <input
+          type="number"
+          step="any"
+          [ngModel]="field.minValue ?? 0"
+          (ngModelChange)="onMeasurementMinValueChange($event)"
+          [disabled]="!isFieldEditable"
+          class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+        />
+      </div>
+      <div>
+        <label class="mb-1.5 block text-xs font-medium text-slate-600">Maximum</label>
+        <input
+          type="number"
+          step="any"
+          [ngModel]="field.maxValue"
+          (ngModelChange)="onMeasurementMaxValueChange($event)"
+          [disabled]="!isFieldEditable"
+          placeholder="Optional"
+          class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+        />
+      </div>
+    </div>
+  </div>
+
   <div *ngIf="isRatingField">
     <label class="mb-1.5 block text-xs font-medium text-slate-600">Maximum Rating</label>
     <select

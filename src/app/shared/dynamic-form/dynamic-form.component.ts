@@ -109,6 +109,21 @@ import {
   TIME_MINUTE_OPTIONS,
   TimeMeridiem,
 } from './time-field.utils';
+import {
+  MeasurementFieldValue,
+  normalizeMeasurementValue,
+  resolveMeasurementMaxValue,
+  resolveMeasurementMinValue,
+} from './measurement-field.utils';
+import {
+  getDefaultUnitCode,
+  getUnitSymbol,
+  getUnitsForFieldType,
+  isMeasurementFieldType,
+  MeasurementUnit,
+  normalizeMeasurementUnitCode,
+  normalizeMeasurementUnitMode,
+} from './measurement-units';
 
 @Component({
   selector: 'app-dynamic-form',
@@ -1041,6 +1056,118 @@ export class DynamicFormComponent implements OnDestroy {
     }
   }
 
+  isMeasurementField(field: DynamicField): boolean {
+    return isMeasurementFieldType(field.type);
+  }
+
+  getMeasurementUnitMode(field: DynamicField): 'fixed' | 'selectable' {
+    return normalizeMeasurementUnitMode(field.unitMode);
+  }
+
+  getMeasurementUnits(field: DynamicField): readonly MeasurementUnit[] {
+    if (!isMeasurementFieldType(field.type)) {
+      return [];
+    }
+    return getUnitsForFieldType(field.type);
+  }
+
+  getMeasurementValue(field: DynamicField): MeasurementFieldValue {
+    if (!isMeasurementFieldType(field.type)) {
+      return { value: null, unit: null };
+    }
+    return normalizeMeasurementValue(this.form?.get(field.name)?.value, field.type, {
+      unitMode: normalizeMeasurementUnitMode(field.unitMode),
+      unit: field.unit,
+    });
+  }
+
+  getMeasurementAmountDisplay(field: DynamicField): string {
+    const amount = this.getMeasurementValue(field).value;
+    return amount == null ? '' : String(amount);
+  }
+
+  getMeasurementUnitCode(field: DynamicField): string {
+    if (!isMeasurementFieldType(field.type)) {
+      return '';
+    }
+    return (
+      this.getMeasurementValue(field).unit ??
+      normalizeMeasurementUnitCode(field.type, field.unit) ??
+      getDefaultUnitCode(field.type)
+    );
+  }
+
+  getMeasurementUnitSymbol(field: DynamicField): string {
+    if (!isMeasurementFieldType(field.type)) {
+      return '';
+    }
+    return getUnitSymbol(field.type, this.getMeasurementUnitCode(field));
+  }
+
+  getMeasurementMin(field: DynamicField): number {
+    return resolveMeasurementMinValue(field);
+  }
+
+  getMeasurementMax(field: DynamicField): number | null {
+    return resolveMeasurementMaxValue(field);
+  }
+
+  onMeasurementAmountInput(event: Event, field: DynamicField): void {
+    const control = this.form?.get(field.name);
+    if (!control || control.disabled || !isMeasurementFieldType(field.type)) {
+      return;
+    }
+
+    const input = event.target as HTMLInputElement;
+    const sanitized = sanitizeNumberFieldInput(input.value, true);
+    if (input.value !== sanitized) {
+      input.value = sanitized;
+    }
+
+    const current = normalizeMeasurementValue(control.value, field.type, {
+      unitMode: normalizeMeasurementUnitMode(field.unitMode),
+      unit: field.unit,
+    });
+
+    const nextAmount =
+      sanitized === '' || sanitized === '-' || sanitized === '.' || sanitized === '-.'
+        ? null
+        : Number(sanitized);
+
+    control.setValue({
+      value: Number.isFinite(nextAmount as number) ? nextAmount : null,
+      unit: current.unit,
+    });
+    control.markAsDirty();
+    control.markAsTouched();
+    this.emitNormalizedValue();
+    this.cdr.markForCheck();
+  }
+
+  onMeasurementUnitChange(event: Event, field: DynamicField): void {
+    const control = this.form?.get(field.name);
+    if (!control || control.disabled || !isMeasurementFieldType(field.type)) {
+      return;
+    }
+
+    const select = event.target as HTMLSelectElement;
+    const current = normalizeMeasurementValue(control.value, field.type, {
+      unitMode: normalizeMeasurementUnitMode(field.unitMode),
+      unit: field.unit,
+    });
+
+    control.setValue({
+      value: current.value,
+      unit:
+        normalizeMeasurementUnitCode(field.type, select.value) ??
+        getDefaultUnitCode(field.type),
+    });
+    control.markAsDirty();
+    control.markAsTouched();
+    this.emitNormalizedValue();
+    this.cdr.markForCheck();
+  }
+
   getSelectDisplayLabel(field: DynamicField): string {
     const control = this.form?.get(field.name);
     const selectedValue = control?.value;
@@ -1331,7 +1458,12 @@ export class DynamicFormComponent implements OnDestroy {
               ? normalizeSignatureValue(value)
               : field.type === 'time'
                 ? normalizeTimeFieldValue(value)
-                : value;
+                : isMeasurementFieldType(field.type)
+                  ? normalizeMeasurementValue(value, field.type, {
+                      unitMode: normalizeMeasurementUnitMode(field.unitMode),
+                      unit: field.unit,
+                    })
+                  : value;
       }
     }
 
@@ -1436,6 +1568,11 @@ export class DynamicFormComponent implements OnDestroy {
         result[field.name] = normalizeSignatureValue(raw[field.name]);
       } else if (field.type === 'time') {
         result[field.name] = normalizeTimeFieldValue(raw[field.name]);
+      } else if (isMeasurementFieldType(field.type)) {
+        result[field.name] = normalizeMeasurementValue(raw[field.name], field.type, {
+          unitMode: normalizeMeasurementUnitMode(field.unitMode),
+          unit: field.unit,
+        });
       }
     }
 

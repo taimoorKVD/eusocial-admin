@@ -409,6 +409,19 @@
               </div>
             }
 
+            @case ('price') {
+              <ng-container *ngTemplateOutlet="measurementFieldTpl; context: { $implicit: field }" />
+            }
+            @case ('length') {
+              <ng-container *ngTemplateOutlet="measurementFieldTpl; context: { $implicit: field }" />
+            }
+            @case ('mass') {
+              <ng-container *ngTemplateOutlet="measurementFieldTpl; context: { $implicit: field }" />
+            }
+            @case ('volume') {
+              <ng-container *ngTemplateOutlet="measurementFieldTpl; context: { $implicit: field }" />
+            }
+
             @case ('textarea') {
               <textarea
                 class="dynamic-control min-h-[120px] resize-none"
@@ -808,4 +821,41 @@
     </div>
   </div>
 }
+
+<ng-template #measurementFieldTpl let-field>
+  <div
+    class="measurement-field"
+    [class.measurement-field--invalid]="!!getErrorMessage(field)"
+  >
+    <input
+      class="dynamic-control measurement-field__amount"
+      type="number"
+      step="any"
+      [id]="field.id"
+      [placeholder]="field.placeholder || '0'"
+      [attr.min]="getMeasurementMin(field)"
+      [attr.max]="getMeasurementMax(field)"
+      [value]="getMeasurementAmountDisplay(field)"
+      [disabled]="isFieldDisabled(field)"
+      (input)="onMeasurementAmountInput($event, field)"
+    />
+    @if (getMeasurementUnitMode(field) === 'fixed') {
+      <span class="measurement-field__unit-fixed">
+        {{ getMeasurementUnitSymbol(field) }}
+      </span>
+    } @else {
+      <select
+        class="dynamic-control measurement-field__unit-select"
+        [id]="field.id + '-unit'"
+        [value]="getMeasurementUnitCode(field)"
+        [disabled]="isFieldDisabled(field)"
+        (change)="onMeasurementUnitChange($event, field)"
+      >
+        @for (unit of getMeasurementUnits(field); track unit.code) {
+          <option [value]="unit.code">{{ unit.symbol }} — {{ unit.label }}</option>
+        }
+      </select>
+    }
+  </div>
+</ng-template>
 }

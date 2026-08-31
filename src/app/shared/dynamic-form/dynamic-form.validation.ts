@@ -64,6 +64,18 @@ export function getDynamicFieldErrorMessage(
     return `${field.label} must be a valid time.`;
   }
 
+  if (control.errors['measurementBelowMin']) {
+    return `${field.label} must be at least ${control.errors['measurementBelowMin'].min}.`;
+  }
+
+  if (control.errors['measurementAboveMax']) {
+    return `${field.label} must be at most ${control.errors['measurementAboveMax'].max}.`;
+  }
+
+  if (control.errors['measurementUnitRequired']) {
+    return `${field.label} requires a unit.`;
+  }
+
   if (control.errors['maxlength']) {
     const requiredLength = control.errors['maxlength'].requiredLength;
     return `${field.label} must be at most ${requiredLength} characters.`;

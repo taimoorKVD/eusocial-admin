@@ -16,6 +16,12 @@ import {
 } from '../../../shared/dynamic-form/range-field.utils';
 import { normalizeTimeFieldFormat } from '../../../shared/dynamic-form/time-field.utils';
 import {
+  getDefaultUnitCode,
+  isMeasurementFieldType,
+  normalizeMeasurementUnitCode,
+  normalizeMeasurementUnitMode,
+} from '../../../shared/dynamic-form/measurement-units';
+import {
   normalizeCheckboxFieldOptions,
   normalizeStaticSelectFieldOptions,
 } from './field-options.utils';
@@ -250,9 +256,31 @@ export function sanitizeField(
         : type === 'range' && rangeType === 'time'
           ? normalizeRangeTimeFormat(field.timeFormat)
           : undefined,
+    unitMode: isMeasurementFieldType(type)
+      ? normalizeMeasurementUnitMode(field.unitMode)
+      : undefined,
+    unit: isMeasurementFieldType(type)
+      ? normalizeMeasurementUnitCode(type, field.unit) ?? getDefaultUnitCode(type)
+      : undefined,
+    minValue: isMeasurementFieldType(type)
+      ? (() => {
+          const min = Number(field.minValue);
+          return Number.isFinite(min) ? min : 0;
+        })()
+      : undefined,
+    maxValue: isMeasurementFieldType(type)
+      ? (() => {
+          const max = Number(field.maxValue);
+          return Number.isFinite(max) ? max : undefined;
+        })()
+      : undefined,
     allowDecimal:
-      type === 'number' || (type === 'range' && rangeType === 'number')
-        ? readBooleanFlag(field, 'allowDecimal', 'allow_decimal', false)
+      type === 'number' ||
+      (type === 'range' && rangeType === 'number') ||
+      isMeasurementFieldType(type)
+        ? isMeasurementFieldType(type)
+          ? true
+          : readBooleanFlag(field, 'allowDecimal', 'allow_decimal', false)
         : undefined,
     characterLimit: resolveCharacterLimit(
       type,
