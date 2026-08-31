@@ -23,6 +23,7 @@ import {
 import { DynamicField, DynamicFormValue } from '../../../../interfaces/dynamic-field';
 import { mapAssignmentSectionsToBuilder } from '../utils/assignment-form.mapper';
 import { filterAnswerImages } from '../../../form-builder/utils/image-field.utils';
+import { normalizeSignatureValue } from '../../../../shared/dynamic-form/signature-field.utils';
 
 @Component({
   selector: 'app-employee-assignment',
@@ -314,6 +315,8 @@ export class EmployeeAssignmentComponent implements OnInit {
         const value = hasName ? values[field.name] : values[field.id];
         if (field.type === 'image') {
           answers[field.id] = filterAnswerImages(value);
+        } else if (field.type === 'signature') {
+          answers[field.id] = normalizeSignatureValue(value);
         } else {
           answers[field.id] = value instanceof File ? value.name : value ?? '';
         }

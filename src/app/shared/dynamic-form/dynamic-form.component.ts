@@ -2,12 +2,14 @@ import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
+  ElementRef,
   computed,
   effect,
   inject,
   input,
   output,
   signal,
+  viewChildren,
   OnDestroy,
 } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup } from '@angular/forms';
@@ -83,6 +85,17 @@ import {
   normalizeMaxRating,
   normalizeRatingValue,
 } from './rating-field.utils';
+import {
+  canvasToSignatureFile,
+  clearSignatureCanvas,
+  getSignatureDisplayUrl,
+  getSignaturePointerPosition,
+  hasSignatureValue,
+  isSignatureCanvasEmpty,
+  normalizeSignatureValue,
+  prepareSignatureCanvas,
+  SignatureValue,
+} from './signature-field.utils';
 
 @Component({
   selector: 'app-dynamic-form',
@@ -114,9 +127,17 @@ export class DynamicFormComponent implements OnDestroy {
   readonly sortedFields = signal<DynamicField[]>([]);
   readonly formReady = signal(false);
   readonly imageUploading = signal<Record<string, boolean>>({});
+  readonly signatureUploading = signal<Record<string, boolean>>({});
   readonly imageLightboxUrl = signal<string | null>(null);
   readonly showPasswords = signal<Record<string, boolean>>({});
   readonly selectSearchQueries = signal<Record<string, string>>({});
+  private readonly signaturePads = viewChildren<ElementRef<HTMLCanvasElement>>('signaturePad');
+
+  private signatureStroke: {
+    fieldName: string;
+    drawing: boolean;
+    dirty: boolean;
+  } | null = null;
   /**
    * Per-field option lists that override the field's own `options` for the
    * dependent location dropdowns (State/City). Empty until a parent is chosen.
@@ -161,6 +182,20 @@ export class DynamicFormComponent implements OnDestroy {
       },
       { allowSignalWrites: true },
     );
+
+    effect(() => {
+      if (!this.formReady()) {
+        return;
+      }
+
+      // Touch ViewChildren so the effect re-runs when pads appear/update.
+      const pads = this.signaturePads();
+      if (!pads.length) {
+        return;
+      }
+
+      queueMicrotask(() => this.syncSignaturePadsFromValues());
+    });
   }
 
   ngOnDestroy(): void {
@@ -210,6 +245,8 @@ export class DynamicFormComponent implements OnDestroy {
           normalized[field.name],
           normalizeMaxRating(field.maxRating),
         );
+      } else if (field.type === 'signature') {
+        normalized[field.name] = normalizeSignatureValue(normalized[field.name]);
       }
     }
 
@@ -217,6 +254,7 @@ export class DynamicFormComponent implements OnDestroy {
     this.refreshLocationOptionsFromValues();
     this.refreshConditionalEffects();
     this.emitNormalizedValue();
+    this.syncSignaturePadsFromValues();
     this.cdr.markForCheck();
   }
 
@@ -228,8 +266,10 @@ export class DynamicFormComponent implements OnDestroy {
     }
 
     this.imageUploading.set({});
+    this.signatureUploading.set({});
     this.refreshConditionalEffects();
     this.emitNormalizedValue();
+    this.syncSignaturePadsFromValues();
     this.cdr.markForCheck();
   }
 
@@ -506,6 +546,228 @@ export class DynamicFormComponent implements OnDestroy {
     control.markAsTouched();
     this.emitNormalizedValue();
     this.cdr.markForCheck();
+  }
+
+  hasSignature(field: DynamicField): boolean {
+    return hasSignatureValue(this.form?.get(field.name)?.value);
+  }
+
+  getSignatureValue(field: DynamicField): SignatureValue {
+    return normalizeSignatureValue(this.form?.get(field.name)?.value);
+  }
+
+  getSignaturePreviewUrl(field: DynamicField): string {
+    return getSignatureDisplayUrl(this.form?.get(field.name)?.value);
+  }
+
+  isSignatureUploading(field: DynamicField): boolean {
+    return !!this.signatureUploading()[field.name];
+  }
+
+  isSignatureDrawing(field: DynamicField): boolean {
+    return this.signatureStroke?.fieldName === field.name && !!this.signatureStroke.drawing;
+  }
+
+  canClearSignature(field: DynamicField): boolean {
+    if (this.hasSignature(field)) {
+      return true;
+    }
+
+    const canvas = this.findSignatureCanvas(field);
+    return !!canvas && !isSignatureCanvasEmpty(canvas);
+  }
+
+  onSignaturePointerDown(event: PointerEvent, field: DynamicField): void {
+    if (this.isFieldDisabled(field) || this.isSignatureUploading(field)) {
+      return;
+    }
+
+    const canvas = event.target as HTMLCanvasElement;
+    if (!(canvas instanceof HTMLCanvasElement)) {
+      return;
+    }
+
+    const ctx = prepareSignatureCanvas(canvas);
+    if (!ctx) {
+      return;
+    }
+
+    canvas.setPointerCapture(event.pointerId);
+    const point = getSignaturePointerPosition(canvas, event);
+    ctx.beginPath();
+    ctx.moveTo(point.x, point.y);
+
+    this.signatureStroke = {
+      fieldName: field.name,
+      drawing: true,
+      dirty: false,
+    };
+    this.cdr.markForCheck();
+  }
+
+  onSignaturePointerMove(event: PointerEvent, field: DynamicField): void {
+    const stroke = this.signatureStroke;
+    if (!stroke?.drawing || stroke.fieldName !== field.name) {
+      return;
+    }
+
+    const canvas = event.target as HTMLCanvasElement;
+    if (!(canvas instanceof HTMLCanvasElement)) {
+      return;
+    }
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      return;
+    }
+
+    const point = getSignaturePointerPosition(canvas, event);
+    ctx.lineTo(point.x, point.y);
+    ctx.stroke();
+    stroke.dirty = true;
+  }
+
+  onSignaturePointerUp(event: PointerEvent, field: DynamicField): void {
+    const stroke = this.signatureStroke;
+    if (!stroke || stroke.fieldName !== field.name) {
+      return;
+    }
+
+    const canvas = event.target as HTMLCanvasElement;
+    if (canvas instanceof HTMLCanvasElement) {
+      try {
+        canvas.releasePointerCapture(event.pointerId);
+      } catch {
+        // Pointer was already released.
+      }
+    }
+
+    const shouldUpload = stroke.dirty;
+    this.signatureStroke = null;
+    this.cdr.markForCheck();
+
+    if (shouldUpload && canvas instanceof HTMLCanvasElement) {
+      void this.commitSignatureCanvas(field, canvas);
+    }
+  }
+
+  clearSignature(field: DynamicField): void {
+    if (this.isFieldDisabled(field) || this.isSignatureUploading(field)) {
+      return;
+    }
+
+    const control = this.form?.get(field.name);
+    if (!control) {
+      return;
+    }
+
+    const previous = normalizeSignatureValue(control.value);
+    const key = previous?.key?.trim();
+
+    control.setValue(null);
+    control.markAsDirty();
+    control.markAsTouched();
+    this.emitNormalizedValue();
+
+    const canvas = this.findSignatureCanvas(field);
+    if (canvas) {
+      clearSignatureCanvas(canvas);
+    }
+
+    this.cdr.markForCheck();
+
+    if (key) {
+      this.formImageUploadService.deleteImage(key).subscribe({
+        error: (err) => {
+          this.toastr.error(
+            err?.error?.message || err?.message || 'Failed to delete signature.',
+          );
+          this.cdr.markForCheck();
+        },
+      });
+    }
+  }
+
+  private async commitSignatureCanvas(
+    field: DynamicField,
+    canvas: HTMLCanvasElement,
+  ): Promise<void> {
+    const control = this.form?.get(field.name);
+    if (!control || control.disabled || this.isSignatureUploading(field)) {
+      return;
+    }
+
+    if (isSignatureCanvasEmpty(canvas)) {
+      return;
+    }
+
+    const file = await canvasToSignatureFile(canvas);
+    if (!file) {
+      this.toastr.error('Unable to capture signature.');
+      return;
+    }
+
+    const previous = normalizeSignatureValue(control.value);
+    const previousKey = previous?.key?.trim();
+
+    this.signatureUploading.update((state) => ({ ...state, [field.name]: true }));
+    this.cdr.markForCheck();
+
+    this.formImageUploadService.upload(file, 'answer').subscribe({
+      next: (uploaded) => {
+        const next: ImageFile = { ...uploaded, purpose: 'answer' };
+        control.setValue(next);
+        control.markAsDirty();
+        control.markAsTouched();
+        this.emitNormalizedValue();
+        this.cdr.markForCheck();
+
+        if (previousKey && previousKey !== next.key) {
+          this.formImageUploadService.deleteImage(previousKey).subscribe({
+            error: () => {
+              // Non-blocking cleanup failure.
+            },
+          });
+        }
+      },
+      error: (err) => {
+        this.toastr.error(
+          err?.error?.message || err?.message || 'Failed to upload signature.',
+        );
+        this.cdr.markForCheck();
+      },
+      complete: () => {
+        this.signatureUploading.update((state) => ({ ...state, [field.name]: false }));
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  private findSignatureCanvas(field: DynamicField): HTMLCanvasElement | null {
+    for (const ref of this.signaturePads()) {
+      const canvas = ref.nativeElement;
+      if (canvas?.dataset?.['signatureField'] === field.id) {
+        return canvas;
+      }
+    }
+    return null;
+  }
+
+  private syncSignaturePadsFromValues(): void {
+    if (!this.formReady() || this.signatureStroke?.drawing) {
+      return;
+    }
+
+    for (const field of this.sortedFields()) {
+      if (field.type !== 'signature' || this.hasSignature(field)) {
+        continue;
+      }
+
+      const canvas = this.findSignatureCanvas(field);
+      if (canvas) {
+        clearSignatureCanvas(canvas);
+      }
+    }
   }
 
   getCharacterLimit(field: DynamicField): number | null {
@@ -858,6 +1120,7 @@ export class DynamicFormComponent implements OnDestroy {
   isFullWidthField(field: DynamicField): boolean {
     return (
       field.type === 'image' ||
+      field.type === 'signature' ||
       field.type === 'textarea' ||
       field.type === 'range' ||
       field.label === 'Availability Days'
@@ -884,6 +1147,7 @@ export class DynamicFormComponent implements OnDestroy {
       this.form = this.fb.group({});
       this.sortedFields.set([]);
       this.imageUploading.set({});
+      this.signatureUploading.set({});
       this.selectSearchQueries.set({});
       this.cdr.markForCheck();
       return;
@@ -897,12 +1161,14 @@ export class DynamicFormComponent implements OnDestroy {
       this.form = this.fb.group(buildDynamicFormGroupConfig(this.fb, sorted));
       this.patchPreservedValuesByFieldId(preservedValues, sorted);
       this.imageUploading.set({});
+      this.signatureUploading.set({});
       this.subscribeToFormChanges();
       this.setupLocationDependencies(sorted);
       this.refreshConditionalEffects();
       this.emitNormalizedValue();
       this.formReady.set(true);
       this.cdr.markForCheck();
+      queueMicrotask(() => this.syncSignaturePadsFromValues());
     });
   }
 
@@ -937,7 +1203,11 @@ export class DynamicFormComponent implements OnDestroy {
       if (preserved.has(field.id)) {
         const value = preserved.get(field.id);
         patch[field.name] =
-          field.type === 'image' ? filterAnswerImages(value) : value;
+          field.type === 'image'
+            ? filterAnswerImages(value)
+            : field.type === 'signature'
+              ? normalizeSignatureValue(value)
+              : value;
       }
     }
 
@@ -1038,6 +1308,8 @@ export class DynamicFormComponent implements OnDestroy {
     for (const field of this.sortedFields()) {
       if (field.type === 'image') {
         result[field.name] = filterAnswerImages(raw[field.name]);
+      } else if (field.type === 'signature') {
+        result[field.name] = normalizeSignatureValue(raw[field.name]);
       }
     }
 

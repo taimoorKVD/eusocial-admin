@@ -5,10 +5,14 @@ import {
   formatRatingStars,
   normalizeMaxRating,
 } from '../dynamic-form/rating-field.utils';
+import {
+  getSignatureDisplayUrl,
+  hasSignatureValue,
+} from '../dynamic-form/signature-field.utils';
 import { resolveImageDisplayUrl } from '../../tenant/form-builder/utils/image-field.utils';
 import type { ImageFile } from '../../tenant/form-builder/models/image-file.model';
 
-const DEFAULT_NON_FILTERABLE_TYPES = new Set<DynamicFieldType>(['image']);
+const DEFAULT_NON_FILTERABLE_TYPES = new Set<DynamicFieldType>(['image', 'signature']);
 
 export type ListingLocationKind = 'countries' | 'states' | 'cities';
 
@@ -479,6 +483,11 @@ export function formatListingCellValue(
       return imageCount > 0 ? `${imageCount} image${imageCount === 1 ? '' : 's'}` : '—';
     }
 
+    case 'signature':
+      return hasSignatureValue(getRecordFieldValue(record, field))
+        ? 'View Signature'
+        : '—';
+
     default:
       if (Array.isArray(rawValue)) {
         return rawValue.length ? rawValue.join(', ') : '—';
@@ -555,6 +564,14 @@ export function getListingImageSrcs(
   }
 
   return urls;
+}
+
+export function getListingSignatureSrc(
+  record: Record<string, unknown>,
+  field: DynamicField,
+): string | null {
+  const url = getSignatureDisplayUrl(getRecordFieldValue(record, field));
+  return url || null;
 }
 
 export function mapVisibleColumnsToFilterFields(

@@ -23,6 +23,10 @@ import {
   normalizeMaxRating,
   normalizeRatingValue,
 } from './rating-field.utils';
+import {
+  normalizeSignatureValue,
+  signatureFieldValidator,
+} from './signature-field.utils';
 
 export function sortDynamicFields(fields: DynamicField[]): DynamicField[] {
   return [...fields]
@@ -127,6 +131,8 @@ export function getInitialFieldValue(field: DynamicField): unknown {
       return normalizeRangeValue(field.defaultValue ?? field.value ?? createEmptyRangeValue());
     case 'image':
       return filterAnswerImages(field.defaultValue ?? field.value);
+    case 'signature':
+      return normalizeSignatureValue(field.defaultValue ?? field.value);
     default:
       return field.defaultValue ?? field.value ?? '';
   }
@@ -151,6 +157,11 @@ export function getFieldValidators(
 
   if (field.type === 'image') {
     validators.push(imageFieldValidator(field, { required, visible }));
+    return validators;
+  }
+
+  if (field.type === 'signature') {
+    validators.push(signatureFieldValidator(field, { required, visible }));
     return validators;
   }
 
@@ -240,6 +251,11 @@ export function normalizeCheckboxFormValue(
         raw[field.name],
         normalizeMaxRating(field.maxRating),
       );
+      continue;
+    }
+
+    if (field.type === 'signature') {
+      result[field.name] = normalizeSignatureValue(raw[field.name]);
     }
   }
 
