@@ -4,13 +4,6 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Tenant } from '../interfaces/tenant';
 
-export interface TenantAdminPayload {
-  name: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-}
-
 export interface TenantCreatePayload {
   name: string;
   domain: string;
@@ -25,7 +18,6 @@ export interface TenantCreatePayload {
   planId: number;
   billingCycle: 'monthly' | 'yearly';
   trialDays?: number;
-  admin: TenantAdminPayload;
 }
 
 export interface TenantUpdatePayload {
