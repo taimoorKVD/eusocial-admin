@@ -466,9 +466,30 @@
 </div>
 
 <ng-template #measurementPreviewTpl>
-  <div class="measurement-field-preview">
+  <div
+    class="measurement-field-preview"
+    [class.measurement-field-preview--disabled]="!!isInteractionDisabled"
+  >
+    @if (measurementUnitMode === 'fixed') {
+      <span class="measurement-field-preview__prefix">{{ measurementUnitSymbol }}</span>
+    } @else {
+      <div class="measurement-field-preview__prefix measurement-field-preview__prefix--selectable">
+        <select
+          class="measurement-field-preview__unit-select"
+          [value]="measurementUnitCode"
+          [disabled]="!!isInteractionDisabled"
+          (change)="onMeasurementUnitChange($event)"
+          [attr.aria-label]="'Select unit for ' + field.label"
+        >
+          @for (unit of measurementUnits; track unit.code) {
+            <option [value]="unit.code">{{ unit.symbol }} — {{ unit.label }}</option>
+          }
+        </select>
+      </div>
+    }
+    <span class="measurement-field-preview__divider" aria-hidden="true"></span>
     <input
-      class="section-input font-ibm measurement-field-preview__amount"
+      class="measurement-field-preview__amount"
       type="number"
       step="any"
       [placeholder]="field.placeholder || '0'"
@@ -478,19 +499,5 @@
       [attr.readonly]="isInteractionDisabled || null"
       (input)="onMeasurementAmountInput($event)"
     />
-    @if (measurementUnitMode === 'fixed') {
-      <span class="measurement-field-preview__unit-fixed">{{ measurementUnitSymbol }}</span>
-    } @else {
-      <select
-        class="section-input font-ibm measurement-field-preview__unit-select"
-        [value]="measurementUnitCode"
-        [disabled]="!!isInteractionDisabled"
-        (change)="onMeasurementUnitChange($event)"
-      >
-        @for (unit of measurementUnits; track unit.code) {
-          <option [value]="unit.code">{{ unit.symbol }} — {{ unit.label }}</option>
-        }
-      </select>
-    }
   </div>
 </ng-template>

@@ -826,9 +826,46 @@
   <div
     class="measurement-field"
     [class.measurement-field--invalid]="!!getErrorMessage(field)"
+    [class.measurement-field--disabled]="isFieldDisabled(field)"
+    [class.measurement-field--selectable]="getMeasurementUnitMode(field) === 'selectable'"
+    appDropdownPanel
+    #unitDropdown="dropdownPanel"
+    [dropdownId]="getMeasurementUnitSearchKey(field)"
+    [dropdownGroup]="selectDropdownGroup"
   >
+    @if (getMeasurementUnitMode(field) === 'fixed') {
+      <span class="measurement-field__prefix" aria-hidden="true">
+        {{ getMeasurementUnitSymbol(field) }}
+      </span>
+    } @else {
+      <button
+        type="button"
+        class="measurement-field__unit-trigger"
+        [id]="field.id + '-unit'"
+        [disabled]="isFieldDisabled(field)"
+        [attr.aria-expanded]="unitDropdown.isOpen"
+        [attr.aria-label]="'Select unit for ' + field.label"
+        (click)="!isFieldDisabled(field) && unitDropdown.toggle($event)"
+      >
+        <span class="measurement-field__unit-symbol">{{ getMeasurementUnitSymbol(field) }}</span>
+        <svg
+          class="measurement-field__chevron"
+          [class.measurement-field__chevron--open]="unitDropdown.isOpen"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+        </svg>
+      </button>
+    }
+
+    <span class="measurement-field__divider" aria-hidden="true"></span>
+
     <input
-      class="dynamic-control measurement-field__amount"
+      class="measurement-field__amount"
       type="number"
       step="any"
       [id]="field.id"
@@ -839,22 +876,36 @@
       [disabled]="isFieldDisabled(field)"
       (input)="onMeasurementAmountInput($event, field)"
     />
-    @if (getMeasurementUnitMode(field) === 'fixed') {
-      <span class="measurement-field__unit-fixed">
-        {{ getMeasurementUnitSymbol(field) }}
-      </span>
-    } @else {
-      <select
-        class="dynamic-control measurement-field__unit-select"
-        [id]="field.id + '-unit'"
-        [value]="getMeasurementUnitCode(field)"
-        [disabled]="isFieldDisabled(field)"
-        (change)="onMeasurementUnitChange($event, field)"
-      >
-        @for (unit of getMeasurementUnits(field); track unit.code) {
-          <option [value]="unit.code">{{ unit.symbol }} — {{ unit.label }}</option>
-        }
-      </select>
+
+    @if (getMeasurementUnitMode(field) === 'selectable' && unitDropdown.isOpen) {
+      <div class="measurement-field__unit-menu" role="listbox">
+        <div class="measurement-field__unit-search">
+          <input
+            type="text"
+            [value]="selectSearchQueries()[getMeasurementUnitSearchKey(field)] || ''"
+            (input)="onSelectSearch(getMeasurementUnitSearchKey(field), $event)"
+            [placeholder]="'Search ' + (field.type === 'price' ? 'currency' : 'unit') + '...'"
+            class="measurement-field__unit-search-input"
+          />
+        </div>
+        <div class="measurement-field__unit-options">
+          @for (unit of getFilteredMeasurementUnits(field); track unit.code) {
+            <button
+              type="button"
+              class="measurement-field__unit-option"
+              role="option"
+              [class.measurement-field__unit-option--active]="unit.code === getMeasurementUnitCode(field)"
+              [attr.aria-selected]="unit.code === getMeasurementUnitCode(field)"
+              (click)="selectMeasurementUnit(field, unit.code); unitDropdown.close()"
+            >
+              <span class="measurement-field__unit-option-symbol">{{ unit.symbol }}</span>
+              <span class="measurement-field__unit-option-label">{{ unit.label }}</span>
+            </button>
+          } @empty {
+            <div class="measurement-field__unit-empty">No matches</div>
+          }
+        </div>
+      </div>
     }
   </div>
 </ng-template>

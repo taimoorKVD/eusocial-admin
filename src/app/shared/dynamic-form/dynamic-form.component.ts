@@ -1071,6 +1071,26 @@ export class DynamicFormComponent implements OnDestroy {
     return getUnitsForFieldType(field.type);
   }
 
+  getFilteredMeasurementUnits(field: DynamicField): MeasurementUnit[] {
+    const units = [...this.getMeasurementUnits(field)];
+    const query = (this.selectSearchQueries()[`${field.name}__unit`] ?? '')
+      .trim()
+      .toLowerCase();
+    if (!query) {
+      return units;
+    }
+    return units.filter(
+      (unit) =>
+        unit.code.toLowerCase().includes(query) ||
+        unit.label.toLowerCase().includes(query) ||
+        unit.symbol.toLowerCase().includes(query),
+    );
+  }
+
+  getMeasurementUnitSearchKey(field: DynamicField): string {
+    return `${field.name}__unit`;
+  }
+
   getMeasurementValue(field: DynamicField): MeasurementFieldValue {
     if (!isMeasurementFieldType(field.type)) {
       return { value: null, unit: null };
@@ -1145,12 +1165,16 @@ export class DynamicFormComponent implements OnDestroy {
   }
 
   onMeasurementUnitChange(event: Event, field: DynamicField): void {
+    const select = event.target as HTMLSelectElement;
+    this.selectMeasurementUnit(field, select.value);
+  }
+
+  selectMeasurementUnit(field: DynamicField, code: string): void {
     const control = this.form?.get(field.name);
     if (!control || control.disabled || !isMeasurementFieldType(field.type)) {
       return;
     }
 
-    const select = event.target as HTMLSelectElement;
     const current = normalizeMeasurementValue(control.value, field.type, {
       unitMode: normalizeMeasurementUnitMode(field.unitMode),
       unit: field.unit,
@@ -1159,7 +1183,7 @@ export class DynamicFormComponent implements OnDestroy {
     control.setValue({
       value: current.value,
       unit:
-        normalizeMeasurementUnitCode(field.type, select.value) ??
+        normalizeMeasurementUnitCode(field.type, code) ??
         getDefaultUnitCode(field.type),
     });
     control.markAsDirty();
