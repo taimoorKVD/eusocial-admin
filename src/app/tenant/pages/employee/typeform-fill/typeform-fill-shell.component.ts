@@ -60,6 +60,10 @@ interface TypeformReviewItem {
 })
 export class TypeformFillShellComponent implements AfterViewInit {
   readonly fields = input.required<DynamicField[]>();
+  readonly formTitle = input('');
+  readonly dueDateLabel = input('');
+  readonly statusLabel = input('');
+  readonly statusClass = input('');
   readonly canFill = input(true);
   readonly submitting = input(false);
 
@@ -153,6 +157,33 @@ export class TypeformFillShellComponent implements AfterViewInit {
     const current = String(this.progressCurrent()).padStart(2, '0');
     const totalLabel = String(total).padStart(2, '0');
     return `${current} / ${totalLabel}`;
+  });
+
+  readonly progressPercent = computed(() => {
+    const total = this.progressTotal();
+    if (!total || this.isReviewPhase()) {
+      return 0;
+    }
+
+    return Math.round((this.progressCurrent() / total) * 100);
+  });
+
+  readonly activeFieldError = computed(() => {
+    const field = this.activeField();
+    const form = this.formComponent();
+    if (!field || !form) {
+      return null;
+    }
+
+    return form.getErrorMessage(field);
+  });
+
+  readonly voiceTranscriptPreview = computed(() => {
+    if (!this.voice.listening()) {
+      return '';
+    }
+
+    return this.voice.interimTranscript() || this.voice.finalTranscript();
   });
 
   readonly canGoBack = computed(() => {

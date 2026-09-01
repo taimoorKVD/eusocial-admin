@@ -15,6 +15,68 @@
     border-radius: 0;
     background: transparent;
     box-shadow: none;
+
+    .dynamic-control {
+      min-height: 3.25rem;
+      padding: 0.95rem 1.1rem;
+      font-size: 1rem;
+      border-color: #e5e7eb;
+      border-radius: 0.875rem;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+
+      &:focus {
+        border-color: #ff9015;
+        box-shadow: 0 0 0 4px rgba(255, 144, 21, 0.14);
+      }
+    }
+
+    textarea.dynamic-control {
+      min-height: 9rem;
+    }
+
+    .option-group--radio {
+      gap: 0.75rem;
+    }
+
+    .option-item {
+      min-height: 3.25rem;
+      padding: 0.9rem 1rem;
+      border-radius: 0.875rem;
+      cursor: pointer;
+
+      &:has(.option-input:checked) {
+        border-color: #ff9015;
+        background: #fffaf3;
+        box-shadow: 0 0 0 3px rgba(255, 144, 21, 0.1);
+      }
+    }
+
+    .option-input {
+      width: 1.125rem;
+      height: 1.125rem;
+      accent-color: #ff9015;
+    }
+
+    .option-label {
+      font-size: 0.975rem;
+      font-weight: 500;
+    }
+
+    .field-error {
+      display: none;
+    }
+
+    .measurement-field,
+    .range-field,
+    .time-field,
+    .rating-field {
+      border-radius: 0.875rem;
+    }
+
+    .global-filter__control,
+    .select-trigger {
+      min-height: 3.25rem;
+    }
   }
 
   @media (min-width: 640px) {

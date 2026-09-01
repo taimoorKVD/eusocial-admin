@@ -1,141 +1,287 @@
 <div
   #shellRoot
-  class="typeform-shell"
+  class="relative mx-auto w-full max-w-3xl outline-none font-ibm"
   tabindex="-1"
   (keydown)="onShellKeydown($event)"
 >
-  <div class="typeform-shell__card">
-    @if (isReviewPhase()) {
-      <section class="typeform-review" aria-labelledby="typeform-review-heading">
-        <p class="typeform-shell__progress" aria-hidden="true">Review</p>
-        <h2 id="typeform-review-heading" class="typeform-shell__title">
-          Review your answers
-        </h2>
-        <p class="typeform-shell__subtitle">
-          Check everything looks correct before submitting.
-        </p>
+  <!-- Ambient background accents -->
+  <div
+    class="pointer-events-none absolute -inset-x-6 -top-8 bottom-0 -z-10 overflow-hidden sm:-inset-x-10"
+    aria-hidden="true"
+  >
+    <div class="absolute -left-16 top-8 h-56 w-56 rounded-full bg-[#FFF4EA]/70 blur-3xl"></div>
+    <div class="absolute -right-10 top-32 h-48 w-48 rounded-full bg-[#F5F5F5]/80 blur-3xl"></div>
+    <div class="absolute bottom-0 left-1/2 h-40 w-[28rem] -translate-x-1/2 rounded-full bg-[#ECFDF3]/40 blur-3xl"></div>
+  </div>
 
-        <dl class="typeform-review__list">
-          @for (item of reviewItems(); track item.field.id) {
-            <div class="typeform-review__item">
-              <dt class="typeform-review__label">{{ item.label }}</dt>
-              <dd class="typeform-review__value">{{ item.display }}</dd>
-              @if (canFill()) {
-                <button
-                  type="button"
-                  class="typeform-review__edit"
-                  (click)="jumpToQuestion(item.field.id)"
-                >
-                  Edit
-                </button>
-              }
-            </div>
-          }
-        </dl>
-      </section>
-    } @else {
-      <section
-        class="typeform-question"
-        [@questionSlide]="animationStep()"
-        aria-live="polite"
-      >
-        @if (progressLabel()) {
-          <p class="typeform-shell__progress" aria-label="Question progress">
-            {{ progressLabel() }}
+  <div
+    class="flex min-h-[min(78vh,760px)] flex-col overflow-hidden rounded-2xl border border-[#E8E8E8]/90 bg-white/95 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-sm sm:rounded-3xl"
+  >
+    <!-- Header / identity -->
+    <header class="border-b border-[#F0F0F0] px-4 pb-4 pt-5 sm:px-8 sm:pb-5 sm:pt-7">
+      <div class="flex items-start justify-between gap-3">
+        <div class="min-w-0 flex-1">
+          <p class="m-0 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#FF9015]">
+            Kitchen Operations
           </p>
+          @if (formTitle()) {
+            <h1 class="mt-1.5 truncate text-lg font-semibold text-[#161616] sm:text-xl">
+              {{ formTitle() }}
+            </h1>
+          }
+          @if (dueDateLabel()) {
+            <p class="mt-1 m-0 text-xs text-[#6F6F6F] sm:text-sm">
+              Due {{ dueDateLabel() }}
+            </p>
+          }
+        </div>
+        @if (statusLabel()) {
+          <span
+            class="inline-flex shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold sm:text-xs"
+            [ngClass]="statusClass()"
+          >
+            {{ statusLabel() }}
+          </span>
         }
+      </div>
 
-        @if (activeField(); as field) {
-          <h2 class="typeform-shell__title" [attr.id]="'typeform-q-' + field.id">
-            {{ field.label }}
-            @if (activeFieldRequired()) {
-              <span class="typeform-shell__required" aria-hidden="true">*</span>
+      @if (!isReviewPhase() && progressTotal()) {
+        <div class="mt-5 space-y-2.5">
+          <div class="flex items-center justify-between gap-3 text-xs font-medium text-[#6F6F6F] sm:text-sm">
+            <span>Question {{ progressCurrent() }} of {{ progressTotal() }}</span>
+            <span class="tabular-nums text-[#161616]">{{ progressLabel() }}</span>
+          </div>
+          <div
+            class="h-2 overflow-hidden rounded-full bg-[#F3F4F6]"
+            role="progressbar"
+            [attr.aria-valuenow]="progressCurrent()"
+            [attr.aria-valuemin]="1"
+            [attr.aria-valuemax]="progressTotal()"
+            [attr.aria-label]="'Question ' + progressCurrent() + ' of ' + progressTotal()"
+          >
+            <div
+              class="h-full rounded-full bg-gradient-to-r from-[#FF9015] to-[#FFB347] transition-all duration-500 ease-out"
+              [style.width.%]="progressPercent()"
+            ></div>
+          </div>
+        </div>
+      }
+    </header>
+
+    <!-- Main content -->
+    <div class="flex flex-1 flex-col px-4 py-5 sm:px-8 sm:py-7">
+      @if (isReviewPhase()) {
+        <section class="flex flex-1 flex-col" aria-labelledby="typeform-review-heading">
+          <div class="mb-6">
+            <p class="m-0 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#FF9015]">
+              Final Step
+            </p>
+            <h2 id="typeform-review-heading" class="mt-2 m-0 text-2xl font-semibold text-[#161616] sm:text-3xl">
+              Review &amp; Submit
+            </h2>
+            <p class="mt-2 m-0 max-w-xl text-sm leading-6 text-[#6F6F6F] sm:text-base">
+              Please review your answers before submitting.
+            </p>
+          </div>
+
+          <dl class="grid gap-3 sm:gap-3.5">
+            @for (item of reviewItems(); track item.field.id) {
+              <div
+                class="group relative rounded-xl border border-[#ECECEC] bg-[#FAFAFA] px-4 py-3.5 transition-colors hover:border-[#FFD7AE] hover:bg-[#FFFBF5] sm:px-5 sm:py-4"
+              >
+                <dt class="m-0 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6F6F6F]">
+                  {{ item.label }}
+                </dt>
+                <dd class="mt-1.5 m-0 break-words text-base font-medium leading-relaxed text-[#161616] sm:text-[1.05rem]">
+                  {{ item.display }}
+                </dd>
+                @if (canFill()) {
+                  <button
+                    type="button"
+                    class="absolute right-3 top-3 rounded-lg px-2.5 py-1 text-xs font-semibold text-[#FF9015] transition-colors hover:bg-[#FFF4EA] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FF9015] sm:right-4 sm:top-4 sm:text-sm"
+                    (click)="jumpToQuestion(item.field.id)"
+                  >
+                    Edit
+                  </button>
+                }
+              </div>
             }
-          </h2>
-        } @else {
-          <p class="typeform-shell__subtitle">No questions are available right now.</p>
+          </dl>
+        </section>
+      } @else {
+        <section
+          class="flex flex-1 flex-col"
+          [@questionSlide]="animationStep()"
+          aria-live="polite"
+        >
+          @if (activeField(); as field) {
+            <h2
+              class="m-0 max-w-2xl text-[1.625rem] font-semibold leading-tight text-[#161616] sm:text-3xl sm:leading-snug"
+              [attr.id]="'typeform-q-' + field.id"
+            >
+              {{ field.label }}
+              @if (activeFieldRequired()) {
+                <span class="ml-1 text-[#B42318]" aria-hidden="true">*</span>
+              }
+            </h2>
+
+            @if (field.placeholder) {
+              <p class="mt-3 m-0 max-w-2xl text-sm leading-6 text-[#6F6F6F] sm:text-base">
+                {{ field.placeholder }}
+              </p>
+            }
+          } @else {
+            <p class="m-0 text-sm text-[#6F6F6F] sm:text-base">
+              No questions are available right now.
+            </p>
+          }
+        </section>
+      }
+
+      <div
+        class="w-full min-w-0"
+        [class.mt-6]="!isReviewPhase()"
+        [class.sm:mt-8]="!isReviewPhase()"
+        [class.sr-only]="isReviewPhase()"
+        [attr.aria-hidden]="isReviewPhase()"
+      >
+        <app-dynamic-form
+          [fields]="fields()"
+          [enableLocationDependencies]="true"
+          [typeformMode]="true"
+          [activeFieldId]="navState().activeFieldId"
+          (valueChange)="onFormValueChange()"
+        ></app-dynamic-form>
+      </div>
+
+      @if (!isReviewPhase()) {
+        @if (activeFieldError()) {
+          <div
+            class="mt-3 flex items-start gap-2 rounded-xl border border-[#FECACA] bg-[#FEF2F2] px-3.5 py-3 text-sm text-[#B42318] sm:mt-4 sm:px-4"
+            role="alert"
+          >
+            <svg class="mt-0.5 h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+            </svg>
+            <span>{{ activeFieldError() }}</span>
+          </div>
         }
 
         @if (showVoiceButton()) {
-          <div class="typeform-voice" [class.typeform-voice--listening]="voice.listening()">
+          <div class="mt-6 flex flex-col items-center gap-3 sm:mt-8">
             <button
               type="button"
-              class="typeform-voice__button"
+              class="inline-flex min-h-[3rem] items-center justify-center gap-2 rounded-full border px-5 py-2.5 text-sm font-semibold transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FF9015] sm:min-h-[3.25rem] sm:px-6 sm:text-base"
+              [class.border-[#FFD7AE]]="!voice.listening()"
+              [class.bg-[#FFF7ED]]="!voice.listening()"
+              [class.text-[#C2410C]]="!voice.listening()"
+              [class.hover:-translate-y-0.5]="!voice.listening()"
+              [class.hover:shadow-md]="!voice.listening()"
+              [class.border-[#FECACA]]="voice.listening()"
+              [class.bg-[#FEF2F2]]="voice.listening()"
+              [class.text-[#B42318]]="voice.listening()"
+              [class.ring-4]="voice.listening()"
+              [class.ring-[#FECACA]/50]="voice.listening()"
+              [class.animate-pulse]="voice.listening()"
               [attr.aria-pressed]="voice.listening()"
               [attr.aria-label]="voice.listening() ? 'Stop voice input' : 'Start voice input'"
               (click)="toggleVoice()"
             >
               @if (voice.listening()) {
-                <span class="typeform-voice__icon typeform-voice__icon--active" aria-hidden="true">●</span>
+                <span class="inline-flex h-2.5 w-2.5 rounded-full bg-[#DC2626]" aria-hidden="true"></span>
+                <span>Listening</span>
               } @else {
-                <span class="typeform-voice__icon" aria-hidden="true">🎙️</span>
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 1.75a3.25 3.25 0 013.25 3.25V12a3.25 3.25 0 01-6.5 0V5a3.25 3.25 0 013.25-3.25z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 10.5a7 7 0 01-14 0M12 17.5V22M8 22h8" />
+                </svg>
+                <span>Voice Input</span>
               }
             </button>
 
             @if (voice.listening()) {
-              <div class="typeform-voice__wave" aria-hidden="true">
-                <span></span><span></span><span></span><span></span><span></span>
+              <div class="flex h-4 items-end gap-1" aria-hidden="true">
+                @for (bar of [1, 2, 3, 4, 5]; track bar) {
+                  <span
+                    class="typeform-voice-bar inline-block w-1 rounded-full bg-[#FF9015]"
+                    [style.animation-delay.ms]="bar * 120"
+                  ></span>
+                }
               </div>
             }
           </div>
         }
 
-        @if (voiceStatusLabel()) {
-          <p
-            class="typeform-shell__voice-status"
-            [class.typeform-shell__voice-status--error]="!!voice.errorMessage()"
+        @if (voice.listening() && voiceTranscriptPreview()) {
+          <div class="mt-4 rounded-xl border border-[#E8E8E8] bg-[#FAFAFA] px-4 py-3.5 sm:mt-5">
+            <p class="m-0 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6F6F6F]">
+              Listening...
+            </p>
+            <p class="mt-1.5 m-0 text-sm italic leading-relaxed text-[#525252] sm:text-base">
+              "{{ voiceTranscriptPreview() }}"
+            </p>
+          </div>
+        } @else if (voiceStatusLabel() && !voice.listening()) {
+          <div
+            class="mt-4 rounded-xl px-4 py-3 text-sm sm:mt-5"
+            [class.border]="!!voice.errorMessage()"
+            [class.border-[#FECACA]]="!!voice.errorMessage()"
+            [class.bg-[#FEF2F2]]="!!voice.errorMessage()"
+            [class.text-[#B42318]]="!!voice.errorMessage()"
+            [class.bg-[#FAFAFA]]="!voice.errorMessage()"
+            [class.text-[#6F6F6F]]="!voice.errorMessage()"
             role="status"
           >
             {{ voiceStatusLabel() }}
-          </p>
+          </div>
         }
-      </section>
-    }
-
-    <div
-      class="typeform-shell__field"
-      [class.typeform-shell__field--hidden]="isReviewPhase()"
-      [attr.aria-hidden]="isReviewPhase()"
-    >
-      <app-dynamic-form
-        [fields]="fields()"
-        [enableLocationDependencies]="true"
-        [typeformMode]="true"
-        [activeFieldId]="navState().activeFieldId"
-        (valueChange)="onFormValueChange()"
-      ></app-dynamic-form>
+      }
     </div>
 
-    <footer class="typeform-shell__nav">
-      <button
-        type="button"
-        class="typeform-shell__nav-btn typeform-shell__nav-btn--back"
-        [disabled]="!canGoBack()"
-        (click)="back()"
-      >
-        ← Back
-      </button>
-
-      @if (isReviewPhase()) {
-        @if (canFill()) {
-          <button
-            type="button"
-            class="typeform-shell__nav-btn typeform-shell__nav-btn--primary"
-            [disabled]="submitting()"
-            (click)="submit()"
-          >
-            Submit Form
-          </button>
-        }
-      } @else {
+    <!-- Navigation -->
+    <footer
+      class="sticky bottom-0 z-10 border-t border-[#F0F0F0] bg-white/95 px-4 py-4 backdrop-blur-sm sm:px-8 sm:py-5"
+    >
+      <div class="flex items-center justify-between gap-3">
         <button
           type="button"
-          class="typeform-shell__nav-btn typeform-shell__nav-btn--primary"
-          (click)="continue()"
+          class="inline-flex min-h-[3rem] items-center gap-2 rounded-xl border border-[#E8E8E8] bg-white px-4 py-2.5 text-sm font-semibold text-[#525252] transition-all hover:bg-[#F5F5F5] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FF9015] disabled:cursor-not-allowed disabled:opacity-45 sm:min-h-[3.25rem] sm:px-5 sm:text-base"
+          [disabled]="!canGoBack()"
+          (click)="back()"
         >
-          {{ continueLabel() }} →
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 12H5M12 19l-7-7 7-7" />
+          </svg>
+          Back
         </button>
-      }
+
+        @if (isReviewPhase()) {
+          @if (canFill()) {
+            <button
+              type="button"
+              class="inline-flex min-h-[3rem] items-center gap-2 rounded-xl border border-[#FF9015] bg-[#FF9015] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-[#E57F0F] hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FF9015] disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-[3.25rem] sm:px-6 sm:text-base"
+              [disabled]="submitting()"
+              (click)="submit()"
+            >
+              Submit Form
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </button>
+          }
+        } @else {
+          <button
+            type="button"
+            class="inline-flex min-h-[3rem] items-center gap-2 rounded-xl border border-[#FF9015] bg-[#FF9015] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-[#E57F0F] hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FF9015] sm:min-h-[3.25rem] sm:px-6 sm:text-base"
+            (click)="continue()"
+          >
+            {{ continueLabel() }}
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+          </button>
+        }
+      </div>
     </footer>
   </div>
 </div>
