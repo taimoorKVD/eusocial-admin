@@ -14,6 +14,13 @@ import {
   sanitizeDateBounds,
   sanitizeRangeBounds,
 } from '../../../shared/dynamic-form/range-field.utils';
+import { normalizeTimeFieldFormat } from '../../../shared/dynamic-form/time-field.utils';
+import {
+  getDefaultUnitCode,
+  isMeasurementFieldType,
+  normalizeMeasurementUnitCode,
+  normalizeMeasurementUnitMode,
+} from '../../../shared/dynamic-form/measurement-units';
 import {
   normalizeCheckboxFieldOptions,
   normalizeStaticSelectFieldOptions,
@@ -218,8 +225,6 @@ export function sanitizeField(
     width: field.width ?? 12,
     order: order ?? field.order,
     condition: serializeConditionalLogic(field.condition),
-    parameterCategory: field.parameterCategory,
-    parameterUnit: field.parameterUnit,
     maxRating: field.maxRating,
     rangeType,
     rangeMin: numberBounds.rangeMin,
@@ -246,12 +251,36 @@ export function sanitizeField(
             : undefined)
         : undefined,
     timeFormat:
-      type === 'range' && rangeType === 'time'
-        ? normalizeRangeTimeFormat(field.timeFormat)
-        : undefined,
+      type === 'time'
+        ? normalizeTimeFieldFormat(field.timeFormat)
+        : type === 'range' && rangeType === 'time'
+          ? normalizeRangeTimeFormat(field.timeFormat)
+          : undefined,
+    unitMode: isMeasurementFieldType(type)
+      ? normalizeMeasurementUnitMode(field.unitMode)
+      : undefined,
+    unit: isMeasurementFieldType(type)
+      ? normalizeMeasurementUnitCode(type, field.unit) ?? getDefaultUnitCode(type)
+      : undefined,
+    minValue: isMeasurementFieldType(type)
+      ? (() => {
+          const min = Number(field.minValue);
+          return Number.isFinite(min) ? min : 0;
+        })()
+      : undefined,
+    maxValue: isMeasurementFieldType(type)
+      ? (() => {
+          const max = Number(field.maxValue);
+          return Number.isFinite(max) ? max : undefined;
+        })()
+      : undefined,
     allowDecimal:
-      type === 'number' || (type === 'range' && rangeType === 'number')
-        ? readBooleanFlag(field, 'allowDecimal', 'allow_decimal', false)
+      type === 'number' ||
+      (type === 'range' && rangeType === 'number') ||
+      isMeasurementFieldType(type)
+        ? isMeasurementFieldType(type)
+          ? true
+          : readBooleanFlag(field, 'allowDecimal', 'allow_decimal', false)
         : undefined,
     characterLimit: resolveCharacterLimit(
       type,
@@ -310,5 +339,24 @@ function readOptionalString(
 }
 
 export function normalizeFieldOrder(schema: Array<Partial<FormField>>): FormField[] {
-  return schema.map((field, index) => sanitizeField(field, index + 1));
+  return schema
+    .filter((field) => !isLegacyParameterField(field))
+    .map((field, index) => sanitizeField(field, index + 1));
+}
+
+/** Removed Form Builder Parameter type — drop from loaded schemas (DB unchanged). */
+function isLegacyParameterField(
+  field: Partial<FormField> & Record<string, unknown>,
+): boolean {
+  const candidates = [
+    field.fieldTypeName,
+    field.type,
+    field['field_type'],
+    field['field_type_name'],
+  ].map((value) =>
+    String(value ?? '')
+      .trim()
+      .toLowerCase(),
+  );
+  return candidates.includes('parameter');
 }

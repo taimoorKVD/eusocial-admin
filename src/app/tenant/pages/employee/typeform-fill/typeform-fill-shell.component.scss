@@ -1,0 +1,23 @@
+.typeform-voice-bar {
+  height: 0.45rem;
+  animation: typeform-voice-wave 900ms ease-in-out infinite;
+}
+
+@keyframes typeform-voice-wave {
+  0%,
+  100% {
+    transform: scaleY(0.6);
+    opacity: 0.55;
+  }
+
+  50% {
+    transform: scaleY(1.8);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .typeform-voice-bar {
+    animation: none !important;
+  }
+}

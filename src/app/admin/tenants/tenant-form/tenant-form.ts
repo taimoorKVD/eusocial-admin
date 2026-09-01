@@ -369,15 +369,12 @@ export class TenantForm implements OnInit, OnDestroy {
   private buildCreatePayload(): TenantCreatePayload {
     const v = this.form.getRawValue();
     const slug = this.slugifyTenantName(v.name);
-    const email = String(v.email || '').trim();
-    const name = String(v.name || '').trim();
-    const password = this.createRandomPassword();
 
     return {
-      name,
+      name: String(v.name || '').trim(),
       // Backend derives subdomain from domain (e.g. folio3.com → folio3.eusocial...).
       domain: `${slug}.com`,
-      email,
+      email: String(v.email || '').trim(),
       phoneNumber: String(v.phoneNumber || '').trim() || undefined,
       description: String(v.description || '').trim() || undefined,
       countryId: v.countryId != null ? Number(v.countryId) : null,
@@ -388,12 +385,6 @@ export class TenantForm implements OnInit, OnDestroy {
       planId: Number(v.planId),
       billingCycle: v.billingCycle,
       trialDays: Number(v.trialDays ?? 0),
-      admin: {
-        name,
-        email,
-        password,
-        confirmPassword: password,
-      },
     };
   }
 
@@ -434,27 +425,6 @@ export class TenantForm implements OnInit, OnDestroy {
       const slug = this.slugifyTenantName(value);
       return slug.length >= 2 ? null : { invalidSlug: true };
     };
-  }
-
-  private createRandomPassword(): string {
-    const length = 12;
-    const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    const lower = 'abcdefghijklmnopqrstuvwxyz';
-    const numbers = '0123456789';
-    const special = '!@#$%^&*';
-    const all = upper + lower + numbers + special;
-    const chars = [
-      upper[Math.floor(Math.random() * upper.length)],
-      lower[Math.floor(Math.random() * lower.length)],
-      numbers[Math.floor(Math.random() * numbers.length)],
-      special[Math.floor(Math.random() * special.length)],
-      ...Array.from({ length: length - 4 }, () => all[Math.floor(Math.random() * all.length)]),
-    ];
-    for (let i = chars.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [chars[i], chars[j]] = [chars[j], chars[i]];
-    }
-    return chars.join('');
   }
 
   private formatPhone(t: Tenant): string {

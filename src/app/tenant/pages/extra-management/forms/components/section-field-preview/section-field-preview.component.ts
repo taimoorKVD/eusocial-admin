@@ -35,6 +35,29 @@ import {
   resolveRangeStep,
   sanitizeRangeNumberInput,
 } from '../../../../../../shared/dynamic-form/range-field.utils';
+import {
+  composeTimeFrom12h,
+  getTimeHour12,
+  getTimeMeridiem,
+  getTimeMinute,
+  normalizeTimeFieldValue,
+  TIME_HOUR_OPTIONS_12,
+  TIME_MINUTE_OPTIONS,
+  TimeMeridiem,
+} from '../../../../../../shared/dynamic-form/time-field.utils';
+import {
+  getDefaultUnitCode,
+  getUnitSymbol,
+  getUnitsForFieldType,
+  isMeasurementFieldType,
+  MeasurementUnit,
+  normalizeMeasurementUnitCode,
+  normalizeMeasurementUnitMode,
+} from '../../../../../../shared/dynamic-form/measurement-units';
+import {
+  MeasurementFieldValue,
+  normalizeMeasurementValue,
+} from '../../../../../../shared/dynamic-form/measurement-field.utils';
 import { FlatpickrDirective } from '../../../../../../shared/directives/flatpickr/flatpickr.directive';
 
 /**
@@ -223,20 +246,6 @@ export class SectionFieldPreviewComponent {
     this.valueChange.emit(sanitized);
   }
 
-  onParameterValueChange(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    this.valueChange.emit(input.value);
-  }
-
-  onParameterCategoryChange(category: string): void {
-    this.field.parameterCategory = category;
-    this.field.parameterUnit = '';
-  }
-
-  onParameterUnitChange(unit: string): void {
-    this.field.parameterUnit = unit;
-  }
-
   onRatingChange(value: number): void {
     this.valueChange.emit(String(value));
   }
@@ -299,60 +308,102 @@ export class SectionFieldPreviewComponent {
     );
   }
 
-  readonly parameterCategories = [
-    { label: 'Currency', value: 'currency' },
-    { label: 'Length / Distance', value: 'length' },
-    { label: 'Weight / Mass', value: 'weight' },
-    { label: 'Volume / Capacity', value: 'volume' },
-  ];
+  get isMeasurementField(): boolean {
+    return isMeasurementFieldType(this.field?.type);
+  }
 
-  get parameterUnits(): { label: string; value: string }[] {
-    switch (this.field.parameterCategory) {
-      case 'currency':
-        return [
-          { label: 'USD', value: 'USD' },
-          { label: 'EUR', value: 'EUR' },
-          { label: 'GBP', value: 'GBP' },
-          { label: 'PKR', value: 'PKR' },
-          { label: 'INR', value: 'INR' },
-          { label: 'JPY', value: 'JPY' },
-          { label: 'CNY', value: 'CNY' },
-          { label: 'CAD', value: 'CAD' },
-          { label: 'AUD', value: 'AUD' },
-        ];
-      case 'length':
-        return [
-          { label: 'Meter (m)', value: 'm' },
-          { label: 'Centimeter (cm)', value: 'cm' },
-          { label: 'Millimeter (mm)', value: 'mm' },
-          { label: 'Kilometer (km)', value: 'km' },
-          { label: 'Inch (in)', value: 'in' },
-          { label: 'Foot (ft)', value: 'ft' },
-          { label: 'Yard (yd)', value: 'yd' },
-          { label: 'Mile (mi)', value: 'mi' },
-        ];
-      case 'weight':
-        return [
-          { label: 'Kilogram (kg)', value: 'kg' },
-          { label: 'Gram (g)', value: 'g' },
-          { label: 'Milligram (mg)', value: 'mg' },
-          { label: 'Pound (lb)', value: 'lb' },
-          { label: 'Ounce (oz)', value: 'oz' },
-          { label: 'Ton', value: 'ton' },
-        ];
-      case 'volume':
-        return [
-          { label: 'Liter (L)', value: 'L' },
-          { label: 'Milliliter (mL)', value: 'mL' },
-          { label: 'Gallon (gal)', value: 'gal' },
-          { label: 'Quart (qt)', value: 'qt' },
-          { label: 'Pint (pt)', value: 'pt' },
-          { label: 'Cup', value: 'cup' },
-          { label: 'Cubic Meter (m³)', value: 'm3' },
-        ];
-      default:
-        return [];
+  get measurementUnitMode(): 'fixed' | 'selectable' {
+    return normalizeMeasurementUnitMode(this.field?.unitMode);
+  }
+
+  get measurementUnits(): readonly MeasurementUnit[] {
+    if (!isMeasurementFieldType(this.field?.type)) {
+      return [];
     }
+    return getUnitsForFieldType(this.field.type);
+  }
+
+  get measurementValue(): MeasurementFieldValue {
+    if (!isMeasurementFieldType(this.field?.type)) {
+      return { value: null, unit: null };
+    }
+    return normalizeMeasurementValue(this.field.value, this.field.type, {
+      unitMode: normalizeMeasurementUnitMode(this.field.unitMode),
+      unit: this.field.unit,
+    });
+  }
+
+  get measurementAmountDisplay(): string {
+    const amount = this.measurementValue.value;
+    return amount == null ? '' : String(amount);
+  }
+
+  get measurementUnitCode(): string {
+    if (!isMeasurementFieldType(this.field?.type)) {
+      return '';
+    }
+    return (
+      this.measurementValue.unit ??
+      normalizeMeasurementUnitCode(this.field.type, this.field.unit) ??
+      getDefaultUnitCode(this.field.type)
+    );
+  }
+
+  get measurementUnitSymbol(): string {
+    if (!isMeasurementFieldType(this.field?.type)) {
+      return '';
+    }
+    return getUnitSymbol(this.field.type, this.measurementUnitCode);
+  }
+
+  onMeasurementAmountInput(event: Event): void {
+    if (this.isInteractionDisabled || !isMeasurementFieldType(this.field?.type)) {
+      return;
+    }
+
+    const input = event.target as HTMLInputElement;
+    const sanitized = sanitizeNumberFieldInput(input.value, true);
+    if (input.value !== sanitized) {
+      input.value = sanitized;
+    }
+
+    const current = normalizeMeasurementValue(this.field.value, this.field.type, {
+      unitMode: normalizeMeasurementUnitMode(this.field.unitMode),
+      unit: this.field.unit,
+    });
+
+    const nextAmount =
+      sanitized === '' || sanitized === '-' || sanitized === '.' || sanitized === '-.'
+        ? null
+        : Number(sanitized);
+
+    this.valueChange.emit(
+      JSON.stringify({
+        value: Number.isFinite(nextAmount as number) ? nextAmount : null,
+        unit: current.unit,
+      }),
+    );
+  }
+
+  onMeasurementUnitChange(event: Event): void {
+    if (this.isInteractionDisabled || !isMeasurementFieldType(this.field?.type)) {
+      return;
+    }
+
+    const select = event.target as HTMLSelectElement;
+    const current = normalizeMeasurementValue(this.field.value, this.field.type, {
+      unitMode: normalizeMeasurementUnitMode(this.field.unitMode),
+      unit: this.field.unit,
+    });
+
+    this.valueChange.emit(
+      JSON.stringify({
+        value: current.value,
+        unit:
+          normalizeMeasurementUnitCode(this.field.type, select.value) ??
+          getDefaultUnitCode(this.field.type),
+      }),
+    );
   }
 
   get ratingMaxValue(): number {
@@ -425,10 +476,56 @@ export class SectionFieldPreviewComponent {
     return resolveRangeStep(this.field);
   }
 
-  get displayTimestamp(): string {
-    if (this.field.value) return this.field.value;
-    const now = new Date();
-    return now.toLocaleString();
+  get timeHourOptions(): number[] {
+    return TIME_HOUR_OPTIONS_12;
+  }
+
+  get timeMinuteOptions(): number[] {
+    return TIME_MINUTE_OPTIONS;
+  }
+
+  get timeHour12(): number | null {
+    return getTimeHour12(this.field.value);
+  }
+
+  get timeMinute(): number | null {
+    return getTimeMinute(this.field.value);
+  }
+
+  get timeMeridiem(): TimeMeridiem | null {
+    return getTimeMeridiem(this.field.value);
+  }
+
+  get timeInputValue(): string {
+    return normalizeTimeFieldValue(this.field.value) ?? '';
+  }
+
+  onTime24Input(event: Event): void {
+    if (this.isInteractionDisabled) {
+      return;
+    }
+    const input = event.target as HTMLInputElement;
+    this.valueChange.emit(normalizeTimeFieldValue(input.value) ?? '');
+  }
+
+  onTime12PartChange(part: 'hour' | 'minute' | 'meridiem', raw: string): void {
+    if (this.isInteractionDisabled) {
+      return;
+    }
+
+    let hour = getTimeHour12(this.field.value) ?? 12;
+    let minute = getTimeMinute(this.field.value) ?? 0;
+    let meridiem = getTimeMeridiem(this.field.value) ?? 'AM';
+
+    if (part === 'hour') {
+      hour = Number(raw);
+    } else if (part === 'minute') {
+      minute = Number(raw);
+    } else {
+      meridiem = String(raw).toUpperCase() === 'PM' ? 'PM' : 'AM';
+    }
+
+    this.valueChange.emit(composeTimeFrom12h(hour, minute, meridiem) ?? '');
   }
 
   onCheckboxToggle(checked: boolean): void {

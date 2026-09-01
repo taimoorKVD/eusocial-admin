@@ -9,6 +9,13 @@ import {
   normalizeRangeTimeFormat,
   normalizeRangeType,
 } from '../../../../../shared/dynamic-form/range-field.utils';
+import { normalizeTimeFieldFormat } from '../../../../../shared/dynamic-form/time-field.utils';
+import {
+  getDefaultUnitCode,
+  isMeasurementFieldType,
+  normalizeMeasurementUnitCode,
+  normalizeMeasurementUnitMode,
+} from '../../../../../shared/dynamic-form/measurement-units';
 import { FormField, FieldOption } from '../../../../form-builder/models/form-field.model';
 import {
   cloneOptionSource,
@@ -48,11 +55,14 @@ function toFormFieldType(type: string): FormField['type'] {
       return 'text';
     case 'image':
       return 'image';
-    case 'parameter':
     case 'signature':
-    case 'user-timestamp':
+    case 'time':
     case 'rating':
     case 'range':
+    case 'price':
+    case 'length':
+    case 'mass':
+    case 'volume':
     case 'barcode':
     case 'qr-code':
     case 'number':
@@ -63,6 +73,11 @@ function toFormFieldType(type: string): FormField['type'] {
     case 'radio':
     case 'text':
       return type;
+    case 'user-timestamp':
+      return 'time';
+    // Legacy Parameter field — no longer supported in the builder.
+    case 'parameter':
+      return 'text';
     default:
       return 'text';
   }
@@ -107,8 +122,6 @@ export function mapConfigFieldToBuilder(field: FormFieldConfig): FormField {
     defaultValue: field.defaultValue ?? field.value ?? '',
     validations: field.validations ? { ...field.validations } : {},
     condition: cloneConditionalLogic(field.condition),
-    parameterCategory: field.parameterCategory,
-    parameterUnit: field.parameterUnit,
     maxRating: field.maxRating,
     rangeType: formFieldType === 'range' ? normalizeRangeType(field.rangeType) : undefined,
     rangeMin: field.rangeMin,
@@ -119,10 +132,32 @@ export function mapConfigFieldToBuilder(field: FormFieldConfig): FormField {
     rangePlaceholderFrom: field.rangePlaceholderFrom,
     rangePlaceholderTo: field.rangePlaceholderTo,
     timeFormat:
-      formFieldType === 'range' && normalizeRangeType(field.rangeType) === 'time'
-        ? normalizeRangeTimeFormat(field.timeFormat)
-        : undefined,
-    allowDecimal: field.allowDecimal === true,
+      formFieldType === 'time'
+        ? normalizeTimeFieldFormat(field.timeFormat)
+        : formFieldType === 'range' && normalizeRangeType(field.rangeType) === 'time'
+          ? normalizeRangeTimeFormat(field.timeFormat)
+          : undefined,
+    unitMode: isMeasurementFieldType(formFieldType)
+      ? normalizeMeasurementUnitMode(field.unitMode)
+      : undefined,
+    unit: isMeasurementFieldType(formFieldType)
+      ? normalizeMeasurementUnitCode(formFieldType, field.unit) ??
+        getDefaultUnitCode(formFieldType)
+      : undefined,
+    minValue: isMeasurementFieldType(formFieldType)
+      ? (() => {
+          const min = Number(field.minValue);
+          return Number.isFinite(min) ? min : 0;
+        })()
+      : undefined,
+    maxValue: isMeasurementFieldType(formFieldType)
+      ? (() => {
+          const max = Number(field.maxValue);
+          return Number.isFinite(max) ? max : undefined;
+        })()
+      : undefined,
+    allowDecimal:
+      isMeasurementFieldType(formFieldType) ? true : field.allowDecimal === true,
     characterLimit: supportsCharacterLimit(formFieldType)
       ? resolveCharacterLimit(formFieldType, field.characterLimit)
       : undefined,
@@ -157,8 +192,6 @@ export function mapBuilderFieldToConfig(
     validations: field.validations ? { ...field.validations } : undefined,
     condition: serializeConditionalLogic(field.condition),
     defaultValue: field.defaultValue,
-    parameterCategory: field.parameterCategory,
-    parameterUnit: field.parameterUnit,
     maxRating: field.maxRating,
     rangeType: type === 'range' ? normalizeRangeType(field.rangeType) : undefined,
     rangeMin: field.rangeMin,
@@ -172,13 +205,36 @@ export function mapBuilderFieldToConfig(
     rangePlaceholderFrom: field.rangePlaceholderFrom,
     rangePlaceholderTo: field.rangePlaceholderTo,
     timeFormat:
-      type === 'range' && normalizeRangeType(field.rangeType) === 'time'
-        ? normalizeRangeTimeFormat(field.timeFormat)
-        : undefined,
+      type === 'time'
+        ? normalizeTimeFieldFormat(field.timeFormat)
+        : type === 'range' && normalizeRangeType(field.rangeType) === 'time'
+          ? normalizeRangeTimeFormat(field.timeFormat)
+          : undefined,
+    unitMode: isMeasurementFieldType(type)
+      ? normalizeMeasurementUnitMode(field.unitMode)
+      : undefined,
+    unit: isMeasurementFieldType(type)
+      ? normalizeMeasurementUnitCode(type, field.unit) ?? getDefaultUnitCode(type)
+      : undefined,
+    minValue: isMeasurementFieldType(type)
+      ? (() => {
+          const min = Number(field.minValue);
+          return Number.isFinite(min) ? min : 0;
+        })()
+      : undefined,
+    maxValue: isMeasurementFieldType(type)
+      ? (() => {
+          const max = Number(field.maxValue);
+          return Number.isFinite(max) ? max : undefined;
+        })()
+      : undefined,
     allowDecimal:
       field.type === 'number' ||
-      (field.type === 'range' && normalizeRangeType(field.rangeType) === 'number')
-        ? field.allowDecimal === true
+      (field.type === 'range' && normalizeRangeType(field.rangeType) === 'number') ||
+      isMeasurementFieldType(type)
+        ? isMeasurementFieldType(type)
+          ? true
+          : field.allowDecimal === true
         : undefined,
     characterLimit: supportsCharacterLimit(type)
       ? (resolveCharacterLimit(type, field.characterLimit) ??
@@ -222,14 +278,27 @@ function resolveConfigType(field: FormField, selectedType?: string): FieldType {
     'radio',
     'image',
     'file',
-    'parameter',
     'signature',
-    'user-timestamp',
+    'time',
     'rating',
     'range',
+    'price',
+    'length',
+    'mass',
+    'volume',
     'barcode',
     'qr-code',
   ];
+
+  // Migrate legacy User Timestamp schemas to Time.
+  if (candidate === 'user-timestamp') {
+    return 'time';
+  }
+
+  // Legacy Parameter field is no longer available.
+  if (candidate === 'parameter') {
+    return 'text';
+  }
 
   if (allowed.includes(candidate as FieldType)) {
     return candidate as FieldType;

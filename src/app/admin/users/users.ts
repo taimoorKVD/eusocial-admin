@@ -6,6 +6,7 @@ import { User } from '../../interfaces/user';
 import { UserService } from '../../services/user.service';
 import { ToastrService } from 'ngx-toastr';
 import { RoleService } from '../../services/role.service';
+import { BulkSelectionState } from '../../shared/dynamic-listing/bulk-selection.state';
 
 @Component({
   selector: 'app-users',
@@ -16,14 +17,15 @@ import { RoleService } from '../../services/role.service';
 export class Users {
   users: User[] = [];
   loading = true;
-  // page = 1;
-  // total = 0;
-  // lastPage = 1;
   page: number = 1;
   lastPage: number = 1;
   total: number = 0;
   showDeleteModal = false;
   deleteTargetId: number | null = null;
+  showBulkDeleteConfirmModal = false;
+  bulkDeleting = false;
+
+  bulkSelection = new BulkSelectionState();
 
   filters: any = {};
   filterFields = [
@@ -64,6 +66,77 @@ export class Users {
     this.getRoles();
   }
 
+  get bulkDeleteConfirmDescription(): string {
+    const count = this.bulkSelection.count();
+    return `Delete ${count} selected user${count === 1 ? '' : 's'}? This action cannot be undone.`;
+  }
+
+  isUserSelectable(user: User): boolean {
+    return user.role?.name !== 'Super Admin';
+  }
+
+  selectableUserIds(): number[] {
+    return this.users.filter((u) => this.isUserSelectable(u)).map((u) => u.id);
+  }
+
+  isSelected(user: User): boolean {
+    return this.bulkSelection.isSelected(user.id);
+  }
+
+  toggleSelect(user: User): void {
+    if (!this.isUserSelectable(user)) return;
+    this.bulkSelection.toggle(user.id);
+  }
+
+  isAllSelected(): boolean {
+    return this.bulkSelection.isAllSelected(this.selectableUserIds());
+  }
+
+  isIndeterminate(): boolean {
+    return this.bulkSelection.isIndeterminate(this.selectableUserIds());
+  }
+
+  toggleSelectAll(): void {
+    this.bulkSelection.toggleAll(this.selectableUserIds());
+  }
+
+  openBulkDeleteConfirm(): void {
+    if (!this.bulkSelection.hasSelection()) return;
+    this.showBulkDeleteConfirmModal = true;
+  }
+
+  closeBulkDeleteConfirmModal(): void {
+    this.showBulkDeleteConfirmModal = false;
+  }
+
+  onConfirmBulkDelete(): void {
+    const ids = [...this.bulkSelection.selectedIds()];
+    if (!ids.length) return;
+
+    const allVisibleSelected =
+      this.users.length > 0 && this.bulkSelection.count() === this.selectableUserIds().length;
+
+    this.closeBulkDeleteConfirmModal();
+    this.bulkDeleting = true;
+
+    this.userService.bulkDeleteUsers(ids).subscribe({
+      next: () => {
+        this.toastr.success('Users deleted successfully');
+        this.bulkSelection.clear();
+        this.bulkDeleting = false;
+        if (allVisibleSelected && this.page > 1) {
+          this.allUsers(this.page - 1);
+        } else {
+          this.allUsers(this.page);
+        }
+      },
+      error: (err) => {
+        this.bulkDeleting = false;
+        this.toastr.error(err?.error?.message || 'Failed to delete users');
+      },
+    });
+  }
+
   getRoles(): void {
     const field = this.filterFields.find(f => f.key === 'role_id');
     this.roleService.getAllRoles().subscribe({
@@ -98,6 +171,7 @@ export class Users {
         this.users = [];
         this.total = 0;
         this.loading = false;
+        this.bulkSelection.clear();
       },
     });
   }
@@ -121,6 +195,7 @@ export class Users {
     this.userService.deleteUser(id).subscribe({
       next: () => {
         this.toastr.success('User deleted successfully');
+        this.bulkSelection.clear();
         this.allUsers(this.page);
       },
       error: (err) => {
@@ -134,11 +209,17 @@ export class Users {
   }
 
   prevPage(): void {
-    if (this.page > 1) this.allUsers(this.page - 1);
+    if (this.page > 1) {
+      this.bulkSelection.clear();
+      this.allUsers(this.page - 1);
+    }
   }
 
   nextPage(): void {
-    if (this.page < this.lastPage) this.allUsers(this.page + 1);
+    if (this.page < this.lastPage) {
+      this.bulkSelection.clear();
+      this.allUsers(this.page + 1);
+    }
   }
 
   addUser(): void {
@@ -148,13 +229,14 @@ export class Users {
   onFilterSearch(filters: any): void {
     this.filters = filters;
     this.page = 1;
+    this.bulkSelection.clear();
     this.allUsers(this.page);
   }
 
   onFilterClear(): void {
     this.filters = {};
     this.page = 1;
+    this.bulkSelection.clear();
     this.allUsers(this.page);
   }
 }
-

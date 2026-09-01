@@ -19,6 +19,29 @@ import {
   filterAnswerImages,
   imageFieldValidator,
 } from '../../tenant/form-builder/utils/image-field.utils';
+import {
+  normalizeMaxRating,
+  normalizeRatingValue,
+} from './rating-field.utils';
+import {
+  normalizeSignatureValue,
+  signatureFieldValidator,
+} from './signature-field.utils';
+import {
+  normalizeTimeFieldFormat,
+  normalizeTimeFieldValue,
+  timeFieldValidator,
+} from './time-field.utils';
+import {
+  measurementFieldValidator,
+  normalizeMeasurementValue,
+} from './measurement-field.utils';
+import {
+  getDefaultUnitCode,
+  isMeasurementFieldType,
+  normalizeMeasurementUnitCode,
+  normalizeMeasurementUnitMode,
+} from './measurement-units';
 
 export function sortDynamicFields(fields: DynamicField[]): DynamicField[] {
   return [...fields]
@@ -38,7 +61,7 @@ export function serializeDynamicFieldsSchema(fields: DynamicField[]): string {
   return sortDynamicFields(fields)
     .map(
       (field) =>
-        `${field.id}:${field.name}:${field.type}:${Number(!!field.required)}:${field.selectionType || 'single'}:${Number(field.isShow !== false)}:${Number(!!field.isReadonly)}:${Number(allowsDecimalPoint(field))}:${getFieldCharacterLimit(field) ?? ''}:${field.type === 'range' ? normalizeRangeType(field.rangeType) : ''}:${field.type === 'image' ? `${Number(!!field.multiple)}:${field.minFiles ?? ''}:${field.maxFiles ?? ''}:${(field.referenceImages || []).length}` : ''}:${JSON.stringify(field.condition ?? null)}`,
+        `${field.id}:${field.name}:${field.type}:${Number(!!field.required)}:${field.selectionType || 'single'}:${Number(field.isShow !== false)}:${Number(!!field.isReadonly)}:${Number(allowsDecimalPoint(field))}:${getFieldCharacterLimit(field) ?? ''}:${field.type === 'range' ? normalizeRangeType(field.rangeType) : ''}:${field.type === 'image' ? `${Number(!!field.multiple)}:${field.minFiles ?? ''}:${field.maxFiles ?? ''}:${(field.referenceImages || []).length}` : ''}:${field.type === 'rating' ? normalizeMaxRating(field.maxRating) : ''}:${field.type === 'time' ? normalizeTimeFieldFormat(field.timeFormat) : ''}:${isMeasurementFieldType(field.type) ? `${normalizeMeasurementUnitMode(field.unitMode)}:${normalizeMeasurementUnitCode(field.type, field.unit) ?? getDefaultUnitCode(field.type)}:${field.minValue ?? 0}:${field.maxValue ?? ''}` : ''}:${JSON.stringify(field.condition ?? null)}`,
     )
     .join('|');
 }
@@ -114,10 +137,27 @@ export function getInitialFieldValue(field: DynamicField): unknown {
     }
     case 'number':
       return field.defaultValue ?? field.value ?? null;
+    case 'rating':
+      return normalizeRatingValue(
+        field.defaultValue ?? field.value,
+        normalizeMaxRating(field.maxRating),
+      );
     case 'range':
       return normalizeRangeValue(field.defaultValue ?? field.value ?? createEmptyRangeValue());
     case 'image':
       return filterAnswerImages(field.defaultValue ?? field.value);
+    case 'signature':
+      return normalizeSignatureValue(field.defaultValue ?? field.value);
+    case 'time':
+      return normalizeTimeFieldValue(field.defaultValue ?? field.value);
+    case 'price':
+    case 'length':
+    case 'mass':
+    case 'volume':
+      return normalizeMeasurementValue(field.defaultValue ?? field.value, field.type, {
+        unitMode: normalizeMeasurementUnitMode(field.unitMode),
+        unit: field.unit,
+      });
     default:
       return field.defaultValue ?? field.value ?? '';
   }
@@ -145,6 +185,21 @@ export function getFieldValidators(
     return validators;
   }
 
+  if (field.type === 'signature') {
+    validators.push(signatureFieldValidator(field, { required, visible }));
+    return validators;
+  }
+
+  if (field.type === 'time') {
+    validators.push(timeFieldValidator(field, { required, visible }));
+    return validators;
+  }
+
+  if (isMeasurementFieldType(field.type)) {
+    validators.push(measurementFieldValidator(field, { required, visible }));
+    return validators;
+  }
+
   if (visible && required && field.type !== 'checkbox') {
     validators.push(Validators.required);
   }
@@ -155,6 +210,11 @@ export function getFieldValidators(
 
   if (field.type === 'number' && !allowsDecimalPoint(field)) {
     validators.push(integerNumberValidator());
+  }
+
+  if (field.type === 'rating') {
+    const max = normalizeMaxRating(field.maxRating);
+    validators.push(Validators.min(1), Validators.max(max));
   }
 
   const characterLimit = getFieldCharacterLimit(field);
@@ -218,6 +278,24 @@ export function normalizeCheckboxFormValue(
     if (isMultiSelectField(field)) {
       const value = raw[field.name];
       result[field.name] = Array.isArray(value) ? value.filter((item) => item !== '' && item != null) : [];
+      continue;
+    }
+
+    if (field.type === 'rating') {
+      result[field.name] = normalizeRatingValue(
+        raw[field.name],
+        normalizeMaxRating(field.maxRating),
+      );
+      continue;
+    }
+
+    if (field.type === 'signature') {
+      result[field.name] = normalizeSignatureValue(raw[field.name]);
+      continue;
+    }
+
+    if (field.type === 'time') {
+      result[field.name] = normalizeTimeFieldValue(raw[field.name]);
     }
   }
 

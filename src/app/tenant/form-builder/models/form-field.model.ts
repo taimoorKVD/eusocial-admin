@@ -10,11 +10,14 @@ export type FieldType =
   | 'checkbox'
   | 'radio'
   | 'image'
-  | 'parameter'
   | 'signature'
-  | 'user-timestamp'
+  | 'time'
   | 'rating'
   | 'range'
+  | 'price'
+  | 'length'
+  | 'mass'
+  | 'volume'
   | 'barcode'
   | 'qr-code';
 
@@ -24,6 +27,9 @@ export type SelectSelectionType = 'single' | 'multi';
 export type RangeFieldType = 'number' | 'date' | 'time';
 
 export type RangeTimeFormat = '12' | '24';
+
+/** Measurement fields: fixed unit vs user-selectable unit on Form Fill. */
+export type MeasurementUnitMode = 'fixed' | 'selectable';
 
 export interface FieldOption {
   id?: number;
@@ -77,10 +83,6 @@ export interface FormField {
 
   condition?: FieldCondition;
 
-  /** Parameter field category: currency, length, weight, volume. */
-  parameterCategory?: string;
-  /** Parameter field unit (e.g. USD, m, kg). */
-  parameterUnit?: string;
   /** Maximum rating value (default 5). */
   maxRating?: number;
   /**
@@ -101,8 +103,19 @@ export interface FormField {
   rangePlaceholderFrom?: string;
   /** Placeholder for the Range To / second input. */
   rangePlaceholderTo?: string;
-  /** Time range display preference. Values are stored as HH:mm (24h). */
+  /** Time field / Time range display preference. Values are stored as HH:mm (24h). */
   timeFormat?: RangeTimeFormat;
+  /**
+   * Measurement fields (price / length / mass / volume).
+   * `fixed` locks the unit; `selectable` lets the user choose at fill time.
+   */
+  unitMode?: MeasurementUnitMode;
+  /** Fixed unit code, or default unit when selectable. */
+  unit?: string;
+  /** Measurement minimum numeric value (defaults to 0). */
+  minValue?: number;
+  /** Measurement maximum numeric value (optional). */
+  maxValue?: number;
   /**
    * Number field / Number range. When true, decimal values are allowed.
    * Missing/undefined is treated as false for backward compatibility.

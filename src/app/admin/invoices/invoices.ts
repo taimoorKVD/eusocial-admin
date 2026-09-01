@@ -7,10 +7,8 @@ import { MasterInvoiceService } from '../../services/master-invoice.service';
 import { environment } from '../../../environments/environment';
 import { displayMoney } from '../../shared/utils/money.util';
 import {
-  invoiceFileName,
-  isPdfBlob,
-  printSystemInvoice,
-  saveBlob,
+  downloadGeneratedInvoice,
+  saveRemoteOrGeneratedInvoice,
 } from './invoice-print';
 
 @Component({
@@ -125,14 +123,8 @@ export class Invoices implements OnInit {
   downloadInvoice(invoice: MasterInvoice): void {
     this.closeMenus();
     this.invoiceService.downloadPdf(invoice.id).subscribe({
-      next: (blob) => {
-        if (isPdfBlob(blob) && blob.size > 0) {
-          saveBlob(blob, invoiceFileName(invoice));
-          return;
-        }
-        printSystemInvoice(invoice);
-      },
-      error: () => printSystemInvoice(invoice),
+      next: (blob) => saveRemoteOrGeneratedInvoice(blob, invoice),
+      error: () => downloadGeneratedInvoice(invoice),
     });
   }
 

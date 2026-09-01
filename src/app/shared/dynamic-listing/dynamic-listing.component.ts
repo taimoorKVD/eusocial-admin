@@ -18,6 +18,7 @@ import {
   getListingImageSrc,
   getListingImageSrcs,
   getListingLocationFieldIds,
+  getListingSignatureSrc,
   getOrderedVisibleFieldIds,
   getRecordTrackId,
   resolveInitialVisibleFieldIds,
@@ -42,6 +43,8 @@ export class DynamicListingComponent {
 
   readonly columnModalOpen = signal(false);
   readonly columnModalSearch = signal('');
+  readonly signaturePreviewUrl = signal<string | null>(null);
+  readonly signaturePreviewLabel = signal('Signature');
 
   readonly filteredModalColumns = computed(() => {
     const query = this.columnModalSearch().trim().toLowerCase();
@@ -200,6 +203,23 @@ export class DynamicListingComponent {
 
   getImageSrcs(record: Record<string, unknown>, field: DynamicField): string[] {
     return getListingImageSrcs(record, field);
+  }
+
+  getSignatureSrc(record: Record<string, unknown>, field: DynamicField): string | null {
+    return getListingSignatureSrc(record, field);
+  }
+
+  openSignaturePreview(record: Record<string, unknown>, field: DynamicField): void {
+    const url = this.getSignatureSrc(record, field);
+    if (!url) {
+      return;
+    }
+    this.signaturePreviewLabel.set(field.label || 'Signature');
+    this.signaturePreviewUrl.set(url);
+  }
+
+  closeSignaturePreview(): void {
+    this.signaturePreviewUrl.set(null);
   }
 
   onEdit(record: Record<string, unknown>): void {

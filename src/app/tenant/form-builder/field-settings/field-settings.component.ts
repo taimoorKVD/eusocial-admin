@@ -62,6 +62,16 @@ import {
   sanitizeDateBounds,
   sanitizeRangeBounds,
 } from '../../../shared/dynamic-form/range-field.utils';
+import { normalizeTimeFieldFormat } from '../../../shared/dynamic-form/time-field.utils';
+import {
+  getDefaultUnitCode,
+  getUnitsForFieldType,
+  isMeasurementFieldType,
+  MeasurementUnit,
+  MeasurementUnitMode,
+  normalizeMeasurementUnitCode,
+  normalizeMeasurementUnitMode,
+} from '../../../shared/dynamic-form/measurement-units';
 import {
   getLocationFieldDeleteBlockReason,
   isDynamicSelectOptionsHiddenForModule,
@@ -582,16 +592,46 @@ export class FieldSettingsComponent {
     return field.selectionType === 'multi' ? 'multi' : 'single';
   }
 
-  get isParameterField(): boolean {
-    return this._field?.type === 'parameter';
-  }
-
   get isNumberField(): boolean {
     return this._field?.type === 'number';
   }
 
   get isRatingField(): boolean {
     return this._field?.type === 'rating';
+  }
+
+  get isTimeField(): boolean {
+    return this._field?.type === 'time';
+  }
+
+  get isMeasurementField(): boolean {
+    return isMeasurementFieldType(this._field?.type);
+  }
+
+  get measurementUnitModeValue(): MeasurementUnitMode {
+    return normalizeMeasurementUnitMode(this._field?.unitMode);
+  }
+
+  get measurementUnits(): MeasurementUnit[] {
+    if (!isMeasurementFieldType(this._field?.type)) {
+      return [];
+    }
+    return [...getUnitsForFieldType(this._field.type)];
+  }
+
+  get measurementUnitLabel(): string {
+    switch (this._field?.type) {
+      case 'price':
+        return 'Currency';
+      case 'length':
+        return 'Length Unit';
+      case 'mass':
+        return 'Mass Unit';
+      case 'volume':
+        return 'Volume Unit';
+      default:
+        return 'Unit';
+    }
   }
 
   get isRangeField(): boolean {
@@ -620,6 +660,9 @@ export class FieldSettingsComponent {
   }
 
   get timeFormatValue(): RangeTimeFormat {
+    if (this.isTimeField) {
+      return normalizeTimeFieldFormat(this._field?.timeFormat);
+    }
     return normalizeRangeTimeFormat(this._field?.timeFormat);
   }
 
@@ -731,11 +774,94 @@ export class FieldSettingsComponent {
   }
 
   onTimeFormatChange(value: string): void {
-    if (!this._field || !this.isFieldEditable || !this.isTimeRange) {
+    if (!this._field || !this.isFieldEditable || (!this.isTimeRange && !this.isTimeField)) {
       return;
     }
 
-    this._field.timeFormat = normalizeRangeTimeFormat(value);
+    this._field.timeFormat = this.isTimeField
+      ? normalizeTimeFieldFormat(value)
+      : normalizeRangeTimeFormat(value);
+    this.onChange();
+  }
+
+  onMeasurementUnitModeChange(mode: MeasurementUnitMode | string): void {
+    if (!this._field || !this.isFieldEditable || !this.isMeasurementField) {
+      return;
+    }
+
+    this._field.unitMode = normalizeMeasurementUnitMode(mode);
+    if (!this._field.unit && isMeasurementFieldType(this._field.type)) {
+      this._field.unit = getDefaultUnitCode(this._field.type);
+    }
+    this.onChange();
+  }
+
+  onMeasurementUnitChange(code: string): void {
+    if (!this._field || !this.isFieldEditable || !this.isMeasurementField) {
+      return;
+    }
+    if (!isMeasurementFieldType(this._field.type)) {
+      return;
+    }
+
+    this._field.unit =
+      normalizeMeasurementUnitCode(this._field.type, code) ??
+      getDefaultUnitCode(this._field.type);
+    this.onChange();
+  }
+
+  onMeasurementMinValueChange(raw: string | number): void {
+    if (!this._field || !this.isFieldEditable || !this.isMeasurementField) {
+      return;
+    }
+
+    const numeric = typeof raw === 'number' ? raw : Number(String(raw).trim());
+    let min = Number.isFinite(numeric) ? numeric : 0;
+    const max =
+      this._field.maxValue != null && Number.isFinite(Number(this._field.maxValue))
+        ? Number(this._field.maxValue)
+        : null;
+
+    if (max != null && min > max) {
+      this.toastr.warning('Minimum cannot be greater than maximum.');
+      min = max;
+    }
+
+    this._field.minValue = min;
+    this.onChange();
+  }
+
+  onMeasurementMaxValueChange(raw: string | number): void {
+    if (!this._field || !this.isFieldEditable || !this.isMeasurementField) {
+      return;
+    }
+
+    const trimmed = String(raw ?? '').trim();
+    if (trimmed === '') {
+      this._field.maxValue = undefined;
+      this.onChange();
+      return;
+    }
+
+    const numeric = typeof raw === 'number' ? raw : Number(trimmed);
+    if (!Number.isFinite(numeric)) {
+      this._field.maxValue = undefined;
+      this.onChange();
+      return;
+    }
+
+    let max = numeric;
+    const min =
+      this._field.minValue != null && Number.isFinite(Number(this._field.minValue))
+        ? Number(this._field.minValue)
+        : 0;
+
+    if (max < min) {
+      this.toastr.warning('Maximum cannot be less than minimum.');
+      max = min;
+    }
+
+    this._field.maxValue = max;
     this.onChange();
   }
 
@@ -894,48 +1020,6 @@ export class FieldSettingsComponent {
     this.conditionEditor = setPrimaryActionType(this.conditionEditor, type);
     this._field.condition = this.conditionEditor;
     this.onChange();
-  }
-
-  readonly parameterCategories = [
-    { label: 'Currency', value: 'currency' },
-    { label: 'Length / Distance', value: 'length' },
-    { label: 'Weight / Mass', value: 'weight' },
-    { label: 'Volume / Capacity', value: 'volume' },
-  ];
-
-  get parameterUnits(): { label: string; value: string }[] {
-    switch (this._field?.parameterCategory) {
-      case 'currency':
-        return [
-          { label: 'USD', value: 'USD' }, { label: 'EUR', value: 'EUR' },
-          { label: 'GBP', value: 'GBP' }, { label: 'PKR', value: 'PKR' },
-          { label: 'INR', value: 'INR' }, { label: 'JPY', value: 'JPY' },
-          { label: 'CNY', value: 'CNY' }, { label: 'CAD', value: 'CAD' },
-          { label: 'AUD', value: 'AUD' },
-        ];
-      case 'length':
-        return [
-          { label: 'Meter (m)', value: 'm' }, { label: 'Centimeter (cm)', value: 'cm' },
-          { label: 'Millimeter (mm)', value: 'mm' }, { label: 'Kilometer (km)', value: 'km' },
-          { label: 'Inch (in)', value: 'in' }, { label: 'Foot (ft)', value: 'ft' },
-          { label: 'Yard (yd)', value: 'yd' }, { label: 'Mile (mi)', value: 'mi' },
-        ];
-      case 'weight':
-        return [
-          { label: 'Kilogram (kg)', value: 'kg' }, { label: 'Gram (g)', value: 'g' },
-          { label: 'Milligram (mg)', value: 'mg' }, { label: 'Pound (lb)', value: 'lb' },
-          { label: 'Ounce (oz)', value: 'oz' }, { label: 'Ton', value: 'ton' },
-        ];
-      case 'volume':
-        return [
-          { label: 'Liter (L)', value: 'L' }, { label: 'Milliliter (mL)', value: 'mL' },
-          { label: 'Gallon (gal)', value: 'gal' }, { label: 'Quart (qt)', value: 'qt' },
-          { label: 'Pint (pt)', value: 'pt' }, { label: 'Cup', value: 'cup' },
-          { label: 'Cubic Meter (m³)', value: 'm3' },
-        ];
-      default:
-        return [];
-    }
   }
 
   get dynamicOptionsCount(): number {
@@ -1201,19 +1285,6 @@ export class FieldSettingsComponent {
     return normalizeFieldOption(option)?.value ?? null;
   }
 
-  onParameterCategoryChange(category: string): void {
-    if (!this.isFieldEditable || !this._field) return;
-    this._field.parameterCategory = category;
-    this._field.parameterUnit = '';
-    this.onChange();
-  }
-
-  onParameterUnitChange(unit: string): void {
-    if (!this.isFieldEditable || !this._field) return;
-    this._field.parameterUnit = unit;
-    this.onChange();
-  }
-
   onMaxRatingChange(value: number): void {
     if (!this.isFieldEditable || !this._field) return;
     this._field.maxRating = value;
@@ -1236,28 +1307,7 @@ export class FieldSettingsComponent {
     return module ? this.getModuleLabel(module) : moduleSlug;
   }
 
-  updateOptions(event: Event): void {
-    if (!this._field || !this.isFieldEditable) {
-      return;
-    }
-
-    const value = (event.target as HTMLTextAreaElement).value;
-    const labels = value
-      .split('\n')
-      .map(v => v.trim())
-      .filter(v => v);
-
-    if (this.isSelectField && this.optionsMode === 'static') {
-      this._field.options = normalizeStaticSelectFieldOptions(labels);
-    } else {
-      this._field.options = labels;
-    }
-
-    this._field.optionSource = undefined;
-    this.onChange();
-  }
-
-  get optionsText(): string {
+  getStaticOptionLabels(): string[] {
     return (this._field?.options || [])
       .map(option => {
         if (typeof option === 'string') {
@@ -1266,8 +1316,62 @@ export class FieldSettingsComponent {
 
         return normalizeFieldOption(option)?.label ?? '';
       })
-      .filter(Boolean)
-      .join('\n');
+      .filter(Boolean);
+  }
+
+  updateStaticOptionLabel(index: number, value: string): void {
+    if (!this._field || !this.isFieldEditable) {
+      return;
+    }
+
+    const labels = this.getStaticOptionLabels();
+    if (index < 0 || index >= labels.length) {
+      return;
+    }
+
+    labels[index] = value;
+    this.applyStaticOptionLabels(labels);
+  }
+
+  addStaticOption(): void {
+    if (!this._field || !this.isFieldEditable) {
+      return;
+    }
+
+    const labels = this.getStaticOptionLabels();
+    labels.push(`Option ${labels.length + 1}`);
+    this.applyStaticOptionLabels(labels);
+  }
+
+  removeStaticOption(index: number): void {
+    if (!this._field || !this.isFieldEditable) {
+      return;
+    }
+
+    const labels = this.getStaticOptionLabels();
+    if (index < 0 || index >= labels.length) {
+      return;
+    }
+
+    labels.splice(index, 1);
+    this.applyStaticOptionLabels(labels);
+  }
+
+  private applyStaticOptionLabels(labels: string[]): void {
+    if (!this._field || !this.isFieldEditable) {
+      return;
+    }
+
+    const normalizedLabels = labels.map(v => v.trim()).filter(v => v);
+
+    if (this.isSelectField && this.optionsMode === 'static') {
+      this._field.options = normalizeStaticSelectFieldOptions(normalizedLabels);
+    } else {
+      this._field.options = normalizedLabels;
+    }
+
+    this._field.optionSource = undefined;
+    this.onChange();
   }
 
   onDuplicateClick(): void {
@@ -1353,8 +1457,11 @@ export class FieldSettingsComponent {
       isReadonly: value.isReadonly === true,
       allowDecimal:
         value.type === 'number' ||
-        (value.type === 'range' && normalizeRangeType(value.rangeType) === 'number')
-          ? value.allowDecimal === true
+        (value.type === 'range' && normalizeRangeType(value.rangeType) === 'number') ||
+        isMeasurementFieldType(value.type)
+          ? isMeasurementFieldType(value.type)
+            ? true
+            : value.allowDecimal === true
           : undefined,
       characterLimit: fieldSupportsCharacterLimit(value.type)
         ? resolveCharacterLimit(value.type, value.characterLimit)
@@ -1381,9 +1488,30 @@ export class FieldSettingsComponent {
               : DEFAULT_RANGE_PLACEHOLDER_TO)
           : undefined,
       timeFormat:
-        value.type === 'range' && normalizeRangeType(value.rangeType) === 'time'
-          ? normalizeRangeTimeFormat(value.timeFormat)
-          : undefined,
+        value.type === 'time'
+          ? normalizeTimeFieldFormat(value.timeFormat)
+          : value.type === 'range' && normalizeRangeType(value.rangeType) === 'time'
+            ? normalizeRangeTimeFormat(value.timeFormat)
+            : undefined,
+      unitMode: isMeasurementFieldType(value.type)
+        ? normalizeMeasurementUnitMode(value.unitMode)
+        : undefined,
+      unit: isMeasurementFieldType(value.type)
+        ? normalizeMeasurementUnitCode(value.type, value.unit) ??
+          getDefaultUnitCode(value.type)
+        : undefined,
+      minValue: isMeasurementFieldType(value.type)
+        ? (() => {
+            const min = Number(value.minValue);
+            return Number.isFinite(min) ? min : 0;
+          })()
+        : undefined,
+      maxValue: isMeasurementFieldType(value.type)
+        ? (() => {
+            const max = Number(value.maxValue);
+            return Number.isFinite(max) ? max : undefined;
+          })()
+        : undefined,
     };
 
     this.placeholderManuallyEdited = !this.isAutoGeneratedPlaceholder(this._field);

@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { forkJoin, Observable, of } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { map, switchMap } from 'rxjs/operators';
+import { loadDynamicDropdownOptions } from '../../../shared/dynamic-listing/dynamic-field-options.loader';
 import { shouldIncludeFieldInRuntimeForm } from '../../../shared/conditional-logic';
 import { resolveCharacterLimit, supportsCharacterLimit } from '../../../shared/dynamic-form/character-limit.utils';
 import {
@@ -8,16 +9,26 @@ import {
   normalizeRangeTimeFormat,
   normalizeRangeType,
 } from '../../../shared/dynamic-form/range-field.utils';
+import { normalizeMaxRating } from '../../../shared/dynamic-form/rating-field.utils';
+import { normalizeTimeFieldFormat } from '../../../shared/dynamic-form/time-field.utils';
+import {
+  getDefaultUnitCode,
+  isMeasurementFieldType,
+  normalizeMeasurementUnitCode,
+  normalizeMeasurementUnitMode,
+} from '../../../shared/dynamic-form/measurement-units';
 import { DynamicField, DynamicFieldType } from '../../../interfaces/dynamic-field';
 import { FieldOption, FieldType, FormField } from '../../form-builder/models/form-field.model';
 import { FieldOptionsService } from '../../form-builder/services/field-options.service';
 import { normalizeCheckboxFieldOptions, normalizeStaticSelectFieldOptions } from '../../form-builder/utils/field-options.utils';
 import { toFieldName } from '../../form-builder/utils/form-field.factory';
+import { normalizeFieldTypeName } from '../../form-builder/utils/field-type.utils';
 import { resolveBuilderLocationKind } from '../../form-builder/utils/location-field-dependencies.utils';
 import {
   cloneImageFiles,
   sanitizeImageFieldConfig,
 } from '../../form-builder/utils/image-field.utils';
+import { FormStorageService } from './form-storage.service';
 
 const SUPPORTED_TYPES = new Set<DynamicFieldType>([
   'text',
@@ -29,11 +40,14 @@ const SUPPORTED_TYPES = new Set<DynamicFieldType>([
   'radio',
   'date',
   'image',
-  'parameter',
   'signature',
-  'user-timestamp',
+  'time',
   'rating',
   'range',
+  'price',
+  'length',
+  'mass',
+  'volume',
   'barcode',
   'qr-code',
 ]);
@@ -42,7 +56,10 @@ const SUPPORTED_TYPES = new Set<DynamicFieldType>([
   providedIn: 'root',
 })
 export class DynamicFormFieldMapperService {
-  constructor(private fieldOptionsService: FieldOptionsService) {}
+  constructor(
+    private fieldOptionsService: FieldOptionsService,
+    private formStorageService: FormStorageService,
+  ) {}
 
   resolveFields(formFields: FormField[]): Observable<DynamicField[]> {
     const visibleFields = (formFields || []).filter((field) =>
@@ -61,10 +78,18 @@ export class DynamicFormFieldMapperService {
 
     return forkJoin(requests).pipe(
       map((fields) => fields.filter((field): field is DynamicField => field !== null)),
+      switchMap((fields) =>
+        loadDynamicDropdownOptions(this.formStorageService, fields).pipe(map(() => fields)),
+      ),
     );
   }
 
   private toDynamicField(field: FormField, resolvedOptions: FieldOption[]): DynamicField | null {
+    // Legacy Parameter fields are no longer supported — ignore at runtime.
+    if (this.isRemovedParameterField(field)) {
+      return null;
+    }
+
     const type = this.mapType(field.type);
 
     if (!type) {
@@ -114,8 +139,12 @@ export class DynamicFormFieldMapperService {
       isShow: field.isShow,
       isReadonly: field.isReadonly,
       allowDecimal:
-        type === 'number' || (type === 'range' && normalizeRangeType(field.rangeType) === 'number')
-          ? field.allowDecimal === true
+        type === 'number' ||
+        (type === 'range' && normalizeRangeType(field.rangeType) === 'number') ||
+        isMeasurementFieldType(type)
+          ? isMeasurementFieldType(type)
+            ? true
+            : field.allowDecimal === true
           : undefined,
       characterLimit: supportsCharacterLimit(type)
         ? resolveCharacterLimit(type, field.characterLimit)
@@ -132,9 +161,29 @@ export class DynamicFormFieldMapperService {
       rangePlaceholderFrom: field.rangePlaceholderFrom,
       rangePlaceholderTo: field.rangePlaceholderTo,
       timeFormat:
-        type === 'range' && normalizeRangeType(field.rangeType) === 'time'
-          ? normalizeRangeTimeFormat(field.timeFormat)
-          : undefined,
+        type === 'time'
+          ? normalizeTimeFieldFormat(field.timeFormat)
+          : type === 'range' && normalizeRangeType(field.rangeType) === 'time'
+            ? normalizeRangeTimeFormat(field.timeFormat)
+            : undefined,
+      unitMode: isMeasurementFieldType(type)
+        ? normalizeMeasurementUnitMode(field.unitMode)
+        : undefined,
+      unit: isMeasurementFieldType(type)
+        ? normalizeMeasurementUnitCode(type, field.unit) ?? getDefaultUnitCode(type)
+        : undefined,
+      minValue: isMeasurementFieldType(type)
+        ? (() => {
+            const min = Number(field.minValue);
+            return Number.isFinite(min) ? min : 0;
+          })()
+        : undefined,
+      maxValue: isMeasurementFieldType(type)
+        ? (() => {
+            const max = Number(field.maxValue);
+            return Number.isFinite(max) ? max : undefined;
+          })()
+        : undefined,
       condition: field.condition,
       referenceImages: imageConfig
         ? cloneImageFiles(imageConfig.referenceImages)
@@ -142,6 +191,7 @@ export class DynamicFormFieldMapperService {
       multiple: imageConfig?.multiple,
       minFiles: imageConfig?.minFiles,
       maxFiles: imageConfig?.maxFiles,
+      maxRating: type === 'rating' ? normalizeMaxRating(field.maxRating) : undefined,
     };
   }
 
@@ -166,11 +216,22 @@ export class DynamicFormFieldMapperService {
     return options as FieldOption[];
   }
 
-  private mapType(type: FieldType): DynamicFieldType | null {
-    if (SUPPORTED_TYPES.has(type as DynamicFieldType)) {
-      return type as DynamicFieldType;
+  private mapType(type: FieldType | string): DynamicFieldType | null {
+    const mapped = normalizeFieldTypeName(String(type), type);
+    if (SUPPORTED_TYPES.has(mapped as DynamicFieldType)) {
+      return mapped as DynamicFieldType;
     }
 
     return null;
+  }
+
+  /** True when the saved schema field is the removed Form Builder Parameter type. */
+  private isRemovedParameterField(field: FormField): boolean {
+    const candidates = [field.fieldTypeName, field.type].map((value) =>
+      String(value ?? '')
+        .trim()
+        .toLowerCase(),
+    );
+    return candidates.includes('parameter');
   }
 }

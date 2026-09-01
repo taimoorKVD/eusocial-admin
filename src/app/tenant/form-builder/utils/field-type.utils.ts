@@ -11,11 +11,16 @@ const FIELD_TYPE_MAP: Record<string, FieldType> = {
   checkbox: 'checkbox',
   image: 'image',
   file: 'image',
-  parameter: 'parameter',
   signature: 'signature',
-  'user-timestamp': 'user-timestamp',
+  time: 'time',
+  // Legacy Form Builder type — migrate saved schemas to Time.
+  'user-timestamp': 'time',
   rating: 'rating',
   range: 'range',
+  price: 'price',
+  length: 'length',
+  mass: 'mass',
+  volume: 'volume',
   barcode: 'barcode',
   'qr-code': 'qr-code',
 };

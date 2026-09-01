@@ -22,11 +22,6 @@ export function invoiceFileName(invoice: MasterInvoice): string {
   return `${number}.pdf`;
 }
 
-export function isPdfBlob(blob: Blob): boolean {
-  const type = (blob.type || '').toLowerCase();
-  return type.includes('pdf') || type === 'application/octet-stream';
-}
-
 export function saveBlob(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -38,139 +33,174 @@ export function saveBlob(blob: Blob, filename: string): void {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-export function printSystemInvoice(invoice: MasterInvoice): void {
-  const html = buildSystemInvoiceHtml(invoice);
-  const iframe = document.createElement('iframe');
-  iframe.setAttribute('aria-hidden', 'true');
-  iframe.style.position = 'fixed';
-  iframe.style.right = '0';
-  iframe.style.bottom = '0';
-  iframe.style.width = '0';
-  iframe.style.height = '0';
-  iframe.style.border = '0';
-  document.body.appendChild(iframe);
-
-  const frameWindow = iframe.contentWindow;
-  const frameDoc = frameWindow?.document;
-  if (!frameWindow || !frameDoc) {
-    iframe.remove();
-    return;
-  }
-
-  frameDoc.open();
-  frameDoc.write(html);
-  frameDoc.close();
-
-  const cleanup = () => iframe.remove();
-  frameWindow.addEventListener('afterprint', cleanup);
-  setTimeout(() => {
-    frameWindow.focus();
-    frameWindow.print();
-  }, 250);
-  setTimeout(cleanup, 60_000);
+export function downloadGeneratedInvoice(invoice: MasterInvoice): void {
+  saveBlob(buildSystemInvoicePdf(invoice), invoiceFileName(invoice));
 }
 
-export function buildSystemInvoiceHtml(invoice: MasterInvoice): string {
-  const number = escapeHtml(invoice.invoiceNumber || `INV-${invoice.id}`);
-  const org = escapeHtml(invoice.tenant?.name || '—');
-  const domain = escapeHtml(invoice.tenant?.subdomain || '');
-  const status = escapeHtml(formatInvoiceStatus(invoice.status));
-  const amount = escapeHtml(displayMoney(invoice.formattedAmount, invoice.amount));
-  const invoiceDate = escapeHtml(formatInvoiceDate(invoice.invoiceDate));
-  const dueDate = escapeHtml(formatInvoiceDate(invoice.dueDate));
-  const paidAt = escapeHtml(formatInvoiceDate(invoice.paidAt));
-  const createdAt = escapeHtml(formatInvoiceDate(invoice.createdAt));
-  const currency = escapeHtml((invoice.currency || 'USD').toUpperCase());
-
-  return `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <title>Invoice ${number}</title>
-  <style>
-    body { font-family: 'Segoe UI', Arial, sans-serif; color: #0f172a; margin: 0; padding: 32px; }
-    .sheet { max-width: 800px; margin: 0 auto; }
-    .top { display: flex; justify-content: space-between; gap: 24px; border-bottom: 2px solid #ea580c; padding-bottom: 16px; }
-    .brand { font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #ea580c; }
-    h1 { margin: 6px 0 0; font-size: 28px; }
-    .meta { text-align: right; font-size: 14px; color: #475569; }
-    .meta strong { display: block; color: #0f172a; font-size: 18px; margin-bottom: 4px; }
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 32px; margin: 28px 0; }
-    .label { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #94a3b8; margin-bottom: 4px; }
-    .value { font-size: 14px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
-    th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: #64748b; border-bottom: 1px solid #e2e8f0; padding: 8px 0; }
-    td { padding: 12px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
-    td.amount, th.amount { text-align: right; }
-    .total { display: flex; justify-content: flex-end; margin-top: 16px; }
-    .total div { min-width: 220px; display: flex; justify-content: space-between; font-size: 16px; font-weight: 700; }
-    .note { margin-top: 36px; font-size: 12px; color: #64748b; }
-  </style>
-</head>
-<body>
-  <div class="sheet">
-    <div class="top">
-      <div>
-        <div class="brand">Eusocial</div>
-        <h1>Invoice</h1>
-      </div>
-      <div class="meta">
-        <strong>${number}</strong>
-        Status: ${status}
-      </div>
-    </div>
-    <div class="grid">
-      <div>
-        <div class="label">Bill To</div>
-        <div class="value">${org}${domain ? `<br/>${domain}` : ''}</div>
-      </div>
-      <div>
-        <div class="label">Invoice Date</div>
-        <div class="value">${invoiceDate}</div>
-      </div>
-      <div>
-        <div class="label">Due Date</div>
-        <div class="value">${dueDate}</div>
-      </div>
-      <div>
-        <div class="label">Paid At</div>
-        <div class="value">${paidAt}</div>
-      </div>
-    </div>
-    <table>
-      <thead>
-        <tr>
-          <th>Description</th>
-          <th class="amount">Amount</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>Platform subscription${currency ? ` (${currency})` : ''}</td>
-          <td class="amount">${amount}</td>
-        </tr>
-      </tbody>
-    </table>
-    <div class="total"><div><span>Total</span><span>${amount}</span></div></div>
-    <p class="note">Generated by Eusocial on ${createdAt}. This is a system invoice, not a Stripe receipt.</p>
-  </div>
-</body>
-</html>`;
+export function saveRemoteOrGeneratedInvoice(blob: Blob, invoice: MasterInvoice): void {
+  blob
+    .slice(0, 8)
+    .arrayBuffer()
+    .then((buf) => {
+      const sig = new TextDecoder().decode(buf);
+      if (blob.size > 80 && sig.startsWith('%PDF')) {
+        saveBlob(blob, invoiceFileName(invoice));
+        return;
+      }
+      downloadGeneratedInvoice(invoice);
+    })
+    .catch(() => downloadGeneratedInvoice(invoice));
 }
 
-function escapeHtml(value: string): string {
-  return value.replace(/[&<>"']/g, (ch) => {
-    switch (ch) {
-      case '&':
-        return '&amp;';
-      case '<':
-        return '&lt;';
-      case '>':
-        return '&gt;';
-      case '"':
-        return '&quot;';
-      default:
-        return '&#39;';
+export function buildSystemInvoicePdf(invoice: MasterInvoice): Blob {
+  const number = invoice.invoiceNumber || `INV-${invoice.id}`;
+  const org = invoice.tenant?.name || '—';
+  const domain = invoice.tenant?.subdomain || '';
+  const status = formatInvoiceStatus(invoice.status);
+  const amount = displayMoney(invoice.formattedAmount, invoice.amount);
+  const invoiceDate = formatInvoiceDate(invoice.invoiceDate);
+  const dueDate = formatInvoiceDate(invoice.dueDate);
+  const paidAt = formatInvoiceDate(invoice.paidAt);
+  const createdAt = formatInvoiceDate(invoice.createdAt);
+  const currency = (invoice.currency || 'USD').toUpperCase();
+  const description = `Platform subscription (${currency})`;
+
+  const orange: Rgb = [0.918, 0.345, 0.047];
+  const muted: Rgb = [0.58, 0.64, 0.72];
+  const dark: Rgb = [0.06, 0.09, 0.16];
+  const line: Rgb = [0.89, 0.91, 0.94];
+  const left = 50;
+  const right = 562;
+
+  const ops: string[] = [
+    strokeLine(left, 710, right, 710, orange, 2),
+    strokeLine(left, 548, right, 548, line, 0.8),
+    strokeLine(left, 516, right, 516, line, 0.8),
+    'BT',
+    pdfText('F2', 10, left, 752, 'EUSOCIAL', orange),
+    pdfText('F2', 24, left, 722, 'Invoice', dark),
+    pdfTextRight('F2', 14, right, 746, number, dark),
+    pdfTextRight('F1', 11, right, 728, `Status: ${status}`, muted),
+    pdfText('F2', 8, left, 688, 'BILL TO', muted),
+    pdfText('F1', 12, left, 670, org, dark),
+    ...(domain ? [pdfText('F1', 10, left, 654, domain, muted)] : []),
+    pdfText('F2', 8, 330, 688, 'INVOICE DATE', muted),
+    pdfText('F1', 12, 330, 670, invoiceDate, dark),
+    pdfText('F2', 8, 330, 640, 'DUE DATE', muted),
+    pdfText('F1', 12, 330, 622, dueDate, dark),
+    pdfText('F2', 8, 330, 592, 'PAID AT', muted),
+    pdfText('F1', 12, 330, 574, paidAt, dark),
+    pdfText('F2', 8, left, 556, 'DESCRIPTION', muted),
+    pdfTextRight('F2', 8, right, 556, 'AMOUNT', muted),
+    pdfText('F1', 12, left, 528, description, dark),
+    pdfTextRight('F1', 12, right, 528, amount, dark),
+    pdfTextRight('F2', 13, right - 130, 492, 'Total', dark),
+    pdfTextRight('F2', 13, right, 492, amount, dark),
+    pdfText(
+      'F1',
+      9,
+      left,
+      80,
+      `Generated by Eusocial on ${createdAt}. This is a system invoice, not a Stripe receipt.`,
+      muted
+    ),
+    'ET',
+  ];
+
+  return assemblePdf(ops.join('\n') + '\n');
+}
+
+type Rgb = [number, number, number];
+
+function pdfText(
+  font: 'F1' | 'F2',
+  size: number,
+  x: number,
+  y: number,
+  value: string,
+  rgb: Rgb
+): string {
+  return [
+    `${rgb[0]} ${rgb[1]} ${rgb[2]} rg`,
+    `/${font} ${size} Tf`,
+    `1 0 0 1 ${x.toFixed(2)} ${y.toFixed(2)} Tm`,
+    `${pdfLiteral(value)} Tj`,
+  ].join('\n');
+}
+
+function pdfTextRight(
+  font: 'F1' | 'F2',
+  size: number,
+  xRight: number,
+  y: number,
+  value: string,
+  rgb: Rgb
+): string {
+  const width = value.length * size * 0.5;
+  return pdfText(font, size, xRight - width, y, value, rgb);
+}
+
+function strokeLine(
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+  rgb: Rgb,
+  width: number
+): string {
+  return [
+    `${rgb[0]} ${rgb[1]} ${rgb[2]} RG`,
+    `${width} w`,
+    `${x1} ${y1} m`,
+    `${x2} ${y2} l`,
+    'S',
+  ].join('\n');
+}
+
+function pdfLiteral(text: string): string {
+  let out = '';
+  for (const ch of Array.from(text || '')) {
+    const code = ch.codePointAt(0) ?? 32;
+    if (ch === '\\' || ch === '(' || ch === ')') {
+      out += `\\${ch}`;
+    } else if (code === 9 || code === 10 || code === 13) {
+      out += ' ';
+    } else if (code >= 32 && code <= 126) {
+      out += ch;
+    } else if (code <= 255) {
+      out += `\\${code.toString(8).padStart(3, '0')}`;
+    } else {
+      const folded = ch.normalize('NFKD').replace(/[\u0300-\u036f]/g, '');
+      out += folded && folded.charCodeAt(0) < 128 ? folded : '?';
     }
+  }
+  return `(${out})`;
+}
+
+function assemblePdf(contentStream: string): Blob {
+  const objects = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> /Contents 4 0 R >>',
+    `<< /Length ${contentStream.length} >>\nstream\n${contentStream}endstream`,
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>',
+  ];
+
+  let file = '%PDF-1.4\n';
+  const offsets = [0];
+  objects.forEach((body, index) => {
+    offsets.push(file.length);
+    file += `${index + 1} 0 obj\n${body}\nendobj\n`;
   });
+
+  const xref = file.length;
+  file += `xref\n0 ${objects.length + 1}\n`;
+  file += '0000000000 65535 f \n';
+  for (let i = 1; i <= objects.length; i++) {
+    file += `${String(offsets[i]).padStart(10, '0')} 00000 n \n`;
+  }
+  file += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
+
+  return new Blob([file], { type: 'application/pdf' });
 }

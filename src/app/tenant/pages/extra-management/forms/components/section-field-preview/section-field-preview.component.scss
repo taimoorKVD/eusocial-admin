@@ -114,6 +114,101 @@
   width: 100%;
 }
 
+.measurement-field-preview {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #e5e5e5;
+  border-radius: 0.5rem;
+  background: #fff;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+
+  &:focus-within {
+    border-color: #ea580c;
+    box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.12);
+  }
+}
+
+.measurement-field-preview--disabled {
+  opacity: 0.65;
+  background: #fafafa;
+}
+
+.measurement-field-preview__prefix {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  min-width: 2.5rem;
+  padding: 0 0.75rem;
+  color: #555;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1;
+  user-select: none;
+}
+
+.measurement-field-preview__prefix--selectable {
+  padding: 0;
+  min-width: 0;
+}
+
+.measurement-field-preview__unit-select {
+  height: 100%;
+  min-width: 3.5rem;
+  max-width: 5.5rem;
+  border: 0;
+  background: transparent;
+  padding: 0 0.5rem 0 0.75rem;
+  color: #555;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23989898' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='m19.5 8.25-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.35rem center;
+  background-size: 0.75rem;
+  padding-right: 1.35rem;
+
+  &:disabled {
+    cursor: not-allowed;
+  }
+}
+
+.measurement-field-preview__divider {
+  flex: 0 0 1px;
+  align-self: stretch;
+  margin: 0.5rem 0;
+  background: #e5e5e5;
+}
+
+.measurement-field-preview__amount {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+  border: 0 !important;
+  border-radius: 0 0.5rem 0.5rem 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0.625rem 0.75rem;
+  font: inherit;
+  font-size: 0.875rem;
+  color: #111;
+  outline: none;
+
+  &::placeholder {
+    color: #a0a0a0;
+  }
+
+  &:read-only {
+    cursor: default;
+  }
+}
+
 .range-field-preview--date {
   flex-direction: column;
   align-items: stretch;

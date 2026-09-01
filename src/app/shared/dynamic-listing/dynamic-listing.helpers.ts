@@ -1,10 +1,27 @@
 import { DynamicField, DynamicFieldOption, DynamicFieldType } from '../../interfaces/dynamic-field';
 import { GlobalFilterField } from '../global-filter/global-filter';
 import { formatRangeDisplayValue } from '../dynamic-form/range-field.utils';
+import {
+  formatRatingStars,
+  normalizeMaxRating,
+} from '../dynamic-form/rating-field.utils';
+import {
+  formatMeasurementDisplay,
+  getMeasurementFieldType,
+} from '../dynamic-form/measurement-field.utils';
+import {
+  getSignatureDisplayUrl,
+  hasSignatureValue,
+} from '../dynamic-form/signature-field.utils';
+import {
+  formatTimeFieldDisplay,
+  normalizeTimeFieldFormat,
+} from '../dynamic-form/time-field.utils';
+import { normalizeMeasurementUnitMode } from '../dynamic-form/measurement-units';
 import { resolveImageDisplayUrl } from '../../tenant/form-builder/utils/image-field.utils';
 import type { ImageFile } from '../../tenant/form-builder/models/image-file.model';
 
-const DEFAULT_NON_FILTERABLE_TYPES = new Set<DynamicFieldType>(['image']);
+const DEFAULT_NON_FILTERABLE_TYPES = new Set<DynamicFieldType>(['image', 'signature']);
 
 export type ListingLocationKind = 'countries' | 'states' | 'cities';
 
@@ -427,6 +444,22 @@ export function formatListingCellValue(
     return formatRangeDisplayValue(rawValue, field);
   }
 
+  if (field.type === 'rating') {
+    return formatRatingStars(rawValue, normalizeMaxRating(field.maxRating));
+  }
+
+  if (field.type === 'time') {
+    return formatTimeFieldDisplay(rawValue, normalizeTimeFieldFormat(field.timeFormat));
+  }
+
+  const measurementType = getMeasurementFieldType(field.type);
+  if (measurementType) {
+    return formatMeasurementDisplay(rawValue, measurementType, {
+      unitMode: normalizeMeasurementUnitMode(field.unitMode),
+      unit: field.unit,
+    });
+  }
+
   switch (field.type) {
     case 'checkbox':
       {
@@ -470,6 +503,11 @@ export function formatListingCellValue(
       const imageCount = getListingImageSrcs(record, field).length;
       return imageCount > 0 ? `${imageCount} image${imageCount === 1 ? '' : 's'}` : '—';
     }
+
+    case 'signature':
+      return hasSignatureValue(getRecordFieldValue(record, field))
+        ? 'View Signature'
+        : '—';
 
     default:
       if (Array.isArray(rawValue)) {
@@ -549,6 +587,14 @@ export function getListingImageSrcs(
   return urls;
 }
 
+export function getListingSignatureSrc(
+  record: Record<string, unknown>,
+  field: DynamicField,
+): string | null {
+  const url = getSignatureDisplayUrl(getRecordFieldValue(record, field));
+  return url || null;
+}
+
 export function mapVisibleColumnsToFilterFields(
   columns: DynamicField[],
   options?: FilterFieldMappingOptions,
@@ -559,7 +605,14 @@ export function mapVisibleColumnsToFilterFields(
       key: field.name,
       label: field.label,
       type: mapDynamicFieldToFilterType(field),
-      placeholder: field.placeholder || `Search by ${field.label.toLowerCase()}...`,
+      placeholder:
+        field.type === 'rating'
+          ? `Filter by ${field.label.toLowerCase()} (e.g. 4)...`
+          : field.type === 'time'
+            ? `Filter by ${field.label.toLowerCase()} (e.g. 09:30)...`
+            : getMeasurementFieldType(field.type)
+              ? `Filter by ${field.label.toLowerCase()}...`
+              : field.placeholder || `Search by ${field.label.toLowerCase()}...`,
       endpoint: field.optionSource?.endpoint,
       labelKey: field.optionSource?.response?.labelKey,
       valueKey: field.optionSource?.response?.valueKey,
@@ -617,11 +670,18 @@ function mapDynamicFieldToFilterType(field: DynamicField): string {
     case 'checkbox':
       return 'checkbox';
     case 'number':
+    case 'rating':
+    case 'price':
+    case 'length':
+    case 'mass':
+    case 'volume':
       return 'number';
     case 'email':
       return 'email';
     case 'date':
       return 'date';
+    case 'time':
+      return 'text';
     default:
       return 'text';
   }

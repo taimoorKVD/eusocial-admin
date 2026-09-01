@@ -5,6 +5,7 @@ import {
   computed,
   inject,
   signal,
+  viewChild,
   viewChildren,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -23,11 +24,15 @@ import {
 import { DynamicField, DynamicFormValue } from '../../../../interfaces/dynamic-field';
 import { mapAssignmentSectionsToBuilder } from '../utils/assignment-form.mapper';
 import { filterAnswerImages } from '../../../form-builder/utils/image-field.utils';
+import { normalizeSignatureValue } from '../../../../shared/dynamic-form/signature-field.utils';
+import { TypeformFillShellComponent } from '../typeform-fill/typeform-fill-shell.component';
+
+export type EmployeeFormFillMode = 'classic' | 'typeform';
 
 @Component({
   selector: 'app-employee-assignment',
   standalone: true,
-  imports: [CommonModule, SharedModule],
+  imports: [CommonModule, SharedModule, TypeformFillShellComponent],
   templateUrl: './employee-assignment.component.html',
 })
 export class EmployeeAssignmentComponent implements OnInit {
@@ -38,6 +43,10 @@ export class EmployeeAssignmentComponent implements OnInit {
   private readonly toastr = inject(ToastrService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly dynamicForms = viewChildren(DynamicFormComponent);
+  private readonly typeformShell = viewChild(TypeformFillShellComponent);
+
+  /** Assigned employee forms use Typeform mode by default. */
+  readonly fillMode = signal<EmployeeFormFillMode>('typeform');
 
   readonly loading = signal(true);
   readonly starting = signal(false);
@@ -67,8 +76,16 @@ export class EmployeeAssignmentComponent implements OnInit {
       !this.formError() &&
       (this.canFill() || this.isCompleted()),
   );
+  readonly mergedFields = computed(() =>
+    this.sections().flatMap((section) => section.fields),
+  );
 
   ngOnInit(): void {
+    const fillMode = this.route.snapshot.queryParamMap.get('fillMode');
+    if (fillMode === 'classic') {
+      this.fillMode.set('classic');
+    }
+
     const id = this.route.snapshot.paramMap.get('id');
     if (!id) {
       this.loading.set(false);
@@ -157,8 +174,8 @@ export class EmployeeAssignmentComponent implements OnInit {
       return;
     }
 
-    const forms = this.dynamicForms();
-    if (forms.some((form) => !form.validate())) {
+    const forms = this.resolveSubmissionForms();
+    if (!forms.length || forms.some((form) => !form.validate())) {
       this.toastr.error('Please fill in all required fields.');
       return;
     }
@@ -301,25 +318,71 @@ export class EmployeeAssignmentComponent implements OnInit {
     };
   }
 
+  private resolveSubmissionForms(): DynamicFormComponent[] {
+    if (this.fillMode() === 'typeform') {
+      const form = this.typeformShell()?.getFormComponent();
+      return form ? [form] : [];
+    }
+
+    return [...this.dynamicForms()];
+  }
+
   private buildAnswers(forms: readonly DynamicFormComponent[]): Record<string, unknown> {
+    if (this.fillMode() === 'typeform') {
+      return this.buildAnswersFromFields(forms[0], this.mergedFields());
+    }
+
     const answers: Record<string, unknown> = {};
 
     this.sections().forEach((section, index) => {
       const values: DynamicFormValue = forms[index]?.value ?? {};
       for (const field of section.fields) {
-        if (!field.id) {
-          continue;
-        }
-        const hasName = Object.prototype.hasOwnProperty.call(values, field.name);
-        const value = hasName ? values[field.name] : values[field.id];
-        if (field.type === 'image') {
-          answers[field.id] = filterAnswerImages(value);
-        } else {
-          answers[field.id] = value instanceof File ? value.name : value ?? '';
+        const mapped = this.mapFieldAnswer(field, values);
+        if (mapped !== undefined && field.id) {
+          answers[field.id] = mapped;
         }
       }
     });
 
     return answers;
+  }
+
+  private buildAnswersFromFields(
+    form: DynamicFormComponent | undefined,
+    fields: DynamicField[],
+  ): Record<string, unknown> {
+    const answers: Record<string, unknown> = {};
+    if (!form) {
+      return answers;
+    }
+
+    const values: DynamicFormValue = form.value ?? {};
+    for (const field of fields) {
+      const mapped = this.mapFieldAnswer(field, values);
+      if (mapped !== undefined && field.id) {
+        answers[field.id] = mapped;
+      }
+    }
+
+    return answers;
+  }
+
+  private mapFieldAnswer(field: DynamicField, values: DynamicFormValue): unknown {
+    if (!field.id) {
+      return undefined;
+    }
+
+    const hasName = Object.prototype.hasOwnProperty.call(values, field.name);
+    const value = hasName ? values[field.name] : values[field.id];
+
+    if (field.type === 'image') {
+      return filterAnswerImages(value);
+    }
+
+    if (field.type === 'signature') {
+      return normalizeSignatureValue(value);
+    }
+
+    return value instanceof File ? value.name : value ?? '';
   }
 }

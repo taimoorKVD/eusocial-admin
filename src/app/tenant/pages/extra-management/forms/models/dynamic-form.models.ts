@@ -13,11 +13,14 @@ export type FieldType =
   | 'radio'
   | 'image'
   | 'file'
-  | 'parameter'
   | 'signature'
-  | 'user-timestamp'
+  | 'time'
   | 'rating'
   | 'range'
+  | 'price'
+  | 'length'
+  | 'mass'
+  | 'volume'
   | 'barcode'
   | 'qr-code';
 
@@ -52,10 +55,6 @@ export interface FormFieldConfig {
   validations?: Record<string, unknown>;
   condition?: FieldCondition;
   defaultValue?: unknown;
-  /** Parameter field category: currency, length, weight, volume. */
-  parameterCategory?: string;
-  /** Parameter field unit (e.g. USD, m, kg). */
-  parameterUnit?: string;
   /** Maximum rating value (default 5). */
   maxRating?: number;
   /**
@@ -76,8 +75,13 @@ export interface FormFieldConfig {
   rangePlaceholderFrom?: string;
   /** Placeholder for the Range To / second input. */
   rangePlaceholderTo?: string;
-  /** Time range display preference. Values are stored as HH:mm (24h). */
+  /** Time field / Time range display preference. Values are stored as HH:mm (24h). */
   timeFormat?: '12' | '24';
+  /** Measurement fields: fixed vs selectable unit. */
+  unitMode?: 'fixed' | 'selectable';
+  unit?: string;
+  minValue?: number;
+  maxValue?: number;
   /**
    * Number field / Number range. When true, decimal values are allowed.
    * Missing/undefined is treated as false for backward compatibility.
@@ -192,11 +196,14 @@ export const FIELD_TYPE_OPTIONS: { label: string; value: FieldType }[] = [
   { label: 'Radio', value: 'radio' },
   { label: 'Image', value: 'image' },
   { label: 'File', value: 'file' },
-  { label: 'Parameter', value: 'parameter' },
   { label: 'Signature', value: 'signature' },
-  { label: 'User Timestamp', value: 'user-timestamp' },
+  { label: 'Time', value: 'time' },
   { label: 'Rating', value: 'rating' },
   { label: 'Range', value: 'range' },
+  { label: 'Price', value: 'price' },
+  { label: 'Length / Distance', value: 'length' },
+  { label: 'Weight / Mass', value: 'mass' },
+  { label: 'Volume / Capacity', value: 'volume' },
   { label: 'Barcode', value: 'barcode' },
   { label: 'QR Code', value: 'qr-code' },
 ];

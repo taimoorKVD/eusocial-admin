@@ -236,42 +236,6 @@
         (input)="onInput($event)"
       />
     }
-    @case ('parameter') {
-      <div class="flex flex-col gap-2">
-        <div class="flex gap-2">
-          <select
-            class="section-input font-ibm flex-1"
-            [value]="field.parameterCategory || ''"
-            [disabled]="!!isInteractionDisabled"
-            (change)="onParameterCategoryChange(($any($event.target).value))"
-          >
-            <option value="" disabled>Select category</option>
-            @for (cat of parameterCategories; track cat.value) {
-              <option [value]="cat.value">{{ cat.label }}</option>
-            }
-          </select>
-          <select
-            class="section-input font-ibm flex-1"
-            [value]="field.parameterUnit || ''"
-            [disabled]="!!isInteractionDisabled || !field.parameterCategory"
-            (change)="onParameterUnitChange(($any($event.target).value))"
-          >
-            <option value="" disabled>Select unit</option>
-            @for (unit of parameterUnits; track unit.value) {
-              <option [value]="unit.value">{{ unit.label }}</option>
-            }
-          </select>
-        </div>
-        <input
-          class="section-input font-ibm"
-          type="number"
-          placeholder="Enter value"
-          [value]="field.value || ''"
-          [attr.readonly]="isInteractionDisabled || null"
-          (input)="onParameterValueChange($event)"
-        />
-      </div>
-    }
     @case ('signature') {
       <div class="flex items-center justify-center rounded-md border border-dashed border-[#d4c5b6] bg-[#faf5f0] py-8">
         @if (field.value) {
@@ -296,12 +260,51 @@
         }
       </div>
     }
-    @case ('user-timestamp') {
-      <div class="flex items-center gap-2 text-sm text-[#525252]">
-        <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-        </svg>
-        <span class="italic">{{ displayTimestamp }}</span>
+    @case ('time') {
+      <div class="flex flex-wrap items-center gap-2">
+        @if ((field.timeFormat || '12') === '12') {
+          <select
+            class="section-input font-ibm w-auto min-w-[4.5rem]"
+            [disabled]="!!isInteractionDisabled"
+            [value]="timeHour12 ?? ''"
+            (change)="onTime12PartChange('hour', $any($event.target).value)"
+          >
+            <option value="" disabled>HH</option>
+            @for (hour of timeHourOptions; track hour) {
+              <option [value]="hour">{{ hour < 10 ? '0' + hour : hour }}</option>
+            }
+          </select>
+          <span class="text-[#a3a3a3]" aria-hidden="true">:</span>
+          <select
+            class="section-input font-ibm w-auto min-w-[4.5rem]"
+            [disabled]="!!isInteractionDisabled"
+            [value]="timeMinute ?? ''"
+            (change)="onTime12PartChange('minute', $any($event.target).value)"
+          >
+            <option value="" disabled>MM</option>
+            @for (minute of timeMinuteOptions; track minute) {
+              <option [value]="minute">{{ minute < 10 ? '0' + minute : minute }}</option>
+            }
+          </select>
+          <select
+            class="section-input font-ibm w-auto min-w-[4.75rem]"
+            [disabled]="!!isInteractionDisabled"
+            [value]="timeMeridiem ?? ''"
+            (change)="onTime12PartChange('meridiem', $any($event.target).value)"
+          >
+            <option value="" disabled>—</option>
+            <option value="AM">AM</option>
+            <option value="PM">PM</option>
+          </select>
+        } @else {
+          <input
+            class="section-input font-ibm w-full"
+            type="time"
+            [disabled]="!!isInteractionDisabled"
+            [value]="timeInputValue"
+            (input)="onTime24Input($event)"
+          />
+        }
       </div>
     }
     @case ('rating') {
@@ -406,6 +409,18 @@
         }
       </div>
     }
+    @case ('price') {
+      <ng-container *ngTemplateOutlet="measurementPreviewTpl" />
+    }
+    @case ('length') {
+      <ng-container *ngTemplateOutlet="measurementPreviewTpl" />
+    }
+    @case ('mass') {
+      <ng-container *ngTemplateOutlet="measurementPreviewTpl" />
+    }
+    @case ('volume') {
+      <ng-container *ngTemplateOutlet="measurementPreviewTpl" />
+    }
     @case ('barcode') {
       <div class="relative">
         <input
@@ -449,3 +464,40 @@
     }
   }
 </div>
+
+<ng-template #measurementPreviewTpl>
+  <div
+    class="measurement-field-preview"
+    [class.measurement-field-preview--disabled]="!!isInteractionDisabled"
+  >
+    @if (measurementUnitMode === 'fixed') {
+      <span class="measurement-field-preview__prefix">{{ measurementUnitSymbol }}</span>
+    } @else {
+      <div class="measurement-field-preview__prefix measurement-field-preview__prefix--selectable">
+        <select
+          class="measurement-field-preview__unit-select"
+          [value]="measurementUnitCode"
+          [disabled]="!!isInteractionDisabled"
+          (change)="onMeasurementUnitChange($event)"
+          [attr.aria-label]="'Select unit for ' + field.label"
+        >
+          @for (unit of measurementUnits; track unit.code) {
+            <option [value]="unit.code">{{ unit.symbol }} — {{ unit.label }}</option>
+          }
+        </select>
+      </div>
+    }
+    <span class="measurement-field-preview__divider" aria-hidden="true"></span>
+    <input
+      class="measurement-field-preview__amount"
+      type="number"
+      step="any"
+      [placeholder]="field.placeholder || '0'"
+      [value]="measurementAmountDisplay"
+      [attr.min]="field.minValue ?? 0"
+      [attr.max]="field.maxValue ?? null"
+      [attr.readonly]="isInteractionDisabled || null"
+      (input)="onMeasurementAmountInput($event)"
+    />
+  </div>
+</ng-template>

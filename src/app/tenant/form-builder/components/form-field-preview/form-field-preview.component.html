@@ -141,19 +141,6 @@
     <img [src]="getImageDisplayUrl(image)" [alt]="image.fileName" class="h-full w-full object-cover" />
   </div>
 </div>
-<div *ngIf="fieldType === 'parameter'" class="flex items-center gap-2">
-  <input
-    type="number"
-    [placeholder]="field.placeholder"
-    disabled
-    tabindex="-1"
-    aria-disabled="true"
-    class="w-full border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none disabled:cursor-default disabled:text-slate-500"
-  />
-  <span class="shrink-0 text-xs font-medium text-slate-500">
-    {{ field.parameterUnit || (field.parameterCategory === 'currency' ? 'USD' : 'unit') }}
-  </span>
-</div>
 
 <div *ngIf="fieldType === 'signature'" class="flex items-center justify-center rounded-md border border-dashed border-slate-300 bg-slate-50 py-8">
   <svg class="h-8 w-8 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -162,11 +149,15 @@
   <span class="ml-2 text-sm text-slate-400">Signature</span>
 </div>
 
-<div *ngIf="fieldType === 'user-timestamp'" class="flex items-center gap-2 text-sm text-slate-500">
-  <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-  </svg>
-  <span class="italic">Auto-filled on submission</span>
+<div *ngIf="fieldType === 'time'" class="flex items-center gap-2">
+  <input
+    type="time"
+    disabled
+    tabindex="-1"
+    aria-disabled="true"
+    class="w-full border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none disabled:cursor-default disabled:text-slate-500"
+  />
+  <span *ngIf="(field.timeFormat || '12') === '12'" class="shrink-0 text-xs text-slate-400">AM/PM</span>
 </div>
 
 <div *ngIf="fieldType === 'rating'" class="flex items-center gap-0.5">
@@ -238,6 +229,35 @@
       />
     </ng-container>
   </ng-container>
+</div>
+
+<div *ngIf="isMeasurementPreview" class="flex w-full min-w-0 items-stretch overflow-hidden rounded-lg border border-slate-200 bg-white">
+  <span
+    class="inline-flex shrink-0 items-center gap-0.5 px-2.5 text-sm font-semibold text-slate-600"
+  >
+    {{ measurementUnitSymbol }}
+    <svg
+      *ngIf="measurementUnitMode === 'selectable'"
+      class="h-3 w-3 text-slate-400"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      stroke-width="2"
+      aria-hidden="true"
+    >
+      <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+    </svg>
+  </span>
+  <span class="my-2 w-px shrink-0 bg-slate-200" aria-hidden="true"></span>
+  <input
+    type="number"
+    step="any"
+    [placeholder]="field.placeholder || '0'"
+    disabled
+    tabindex="-1"
+    aria-disabled="true"
+    class="min-w-0 flex-1 border-0 bg-transparent px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none disabled:cursor-default disabled:text-slate-500"
+  />
 </div>
 
 <div *ngIf="fieldType === 'barcode'" class="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2">

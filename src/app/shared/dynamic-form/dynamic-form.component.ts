@@ -2,12 +2,14 @@ import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
+  ElementRef,
   computed,
   effect,
   inject,
   input,
   output,
   signal,
+  viewChildren,
   OnDestroy,
 } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup } from '@angular/forms';
@@ -78,6 +80,54 @@ import {
   resolveMaxFiles,
   resolveMinFiles,
 } from '../../tenant/form-builder/utils/image-field.utils';
+import {
+  getRatingStarValues,
+  normalizeMaxRating,
+  normalizeRatingValue,
+} from './rating-field.utils';
+import {
+  canvasToSignatureFile,
+  clearSignatureCanvas,
+  getSignatureDisplayUrl,
+  getSignaturePointerPosition,
+  hasSignatureValue,
+  isSignatureCanvasEmpty,
+  normalizeSignatureValue,
+  prepareSignatureCanvas,
+  SignatureValue,
+} from './signature-field.utils';
+import {
+  composeTimeFrom12h,
+  formatTimeFieldDisplay,
+  getTimeHour12,
+  getTimeMeridiem,
+  getTimeMinute,
+  normalizeTimeFieldFormat,
+  normalizeTimeFieldValue,
+  TIME_HOUR_OPTIONS_12,
+  TIME_MERIDIEM_OPTIONS,
+  TIME_MINUTE_OPTIONS,
+  TimeMeridiem,
+} from './time-field.utils';
+import {
+  MeasurementFieldValue,
+  normalizeMeasurementValue,
+  resolveMeasurementMaxValue,
+  resolveMeasurementMinValue,
+} from './measurement-field.utils';
+import {
+  getDefaultUnitCode,
+  getUnitSymbol,
+  getUnitsForFieldType,
+  isMeasurementFieldType,
+  MeasurementUnit,
+  normalizeMeasurementUnitCode,
+  normalizeMeasurementUnitMode,
+} from './measurement-units';
+import {
+  parseVoiceTranscript,
+  VoiceApplyResult,
+} from '../voice/voice-field.adapter';
 
 @Component({
   selector: 'app-dynamic-form',
@@ -103,15 +153,26 @@ export class DynamicFormComponent implements OnDestroy {
    * is selected; they are not preloaded.
    */
   readonly enableLocationDependencies = input(false);
+  /** When true, only the field matching `activeFieldId` is rendered (Typeform mode). */
+  readonly typeformMode = input(false);
+  readonly activeFieldId = input<string | null>(null);
   readonly valueChange = output<DynamicFormValue>();
 
   form!: FormGroup;
   readonly sortedFields = signal<DynamicField[]>([]);
   readonly formReady = signal(false);
   readonly imageUploading = signal<Record<string, boolean>>({});
+  readonly signatureUploading = signal<Record<string, boolean>>({});
   readonly imageLightboxUrl = signal<string | null>(null);
   readonly showPasswords = signal<Record<string, boolean>>({});
   readonly selectSearchQueries = signal<Record<string, string>>({});
+  private readonly signaturePads = viewChildren<ElementRef<HTMLCanvasElement>>('signaturePad');
+
+  private signatureStroke: {
+    fieldName: string;
+    drawing: boolean;
+    dirty: boolean;
+  } | null = null;
   /**
    * Per-field option lists that override the field's own `options` for the
    * dependent location dropdowns (State/City). Empty until a parent is chosen.
@@ -156,6 +217,31 @@ export class DynamicFormComponent implements OnDestroy {
       },
       { allowSignalWrites: true },
     );
+
+    effect(() => {
+      if (!this.formReady()) {
+        return;
+      }
+
+      // Touch ViewChildren so the effect re-runs when pads appear/update.
+      const pads = this.signaturePads();
+      if (!pads.length) {
+        return;
+      }
+
+      queueMicrotask(() => this.syncSignaturePadsFromValues());
+    });
+
+    effect(() => {
+      if (!this.typeformMode() || !this.activeFieldId() || !this.formReady()) {
+        return;
+      }
+
+      queueMicrotask(() => {
+        this.syncSignaturePadsFromValues();
+        this.cdr.markForCheck();
+      });
+    });
   }
 
   ngOnDestroy(): void {
@@ -164,7 +250,11 @@ export class DynamicFormComponent implements OnDestroy {
 
   get value(): DynamicFormValue {
     const raw = this.form?.getRawValue() ?? {};
-    return this.toLocationSubmitValues(this.normalizeImageFormValue(raw));
+    return this.toLocationSubmitValues(
+      this.normalizeImageFormValue(
+        normalizeCheckboxFormValue(raw, this.sortedFields()),
+      ),
+    );
   }
 
   get invalid(): boolean {
@@ -180,6 +270,23 @@ export class DynamicFormComponent implements OnDestroy {
     return this.form?.valid ?? false;
   }
 
+  validateField(fieldId: string): boolean {
+    const field = this.sortedFields().find((item) => item.id === fieldId);
+    if (!field) {
+      return true;
+    }
+
+    const control = this.getControl(field.name);
+    if (!control || control.disabled) {
+      return true;
+    }
+
+    control.markAsTouched();
+    control.updateValueAndValidity();
+    this.cdr.markForCheck();
+    return control.valid;
+  }
+
   markAllAsTouched(): void {
     this.form?.markAllAsTouched();
     this.cdr.markForCheck();
@@ -190,11 +297,21 @@ export class DynamicFormComponent implements OnDestroy {
 
     const normalized: DynamicFormValue = { ...values };
     for (const field of this.sortedFields()) {
-      if (
-        field.type === 'image' &&
-        Object.prototype.hasOwnProperty.call(normalized, field.name)
-      ) {
+      if (!Object.prototype.hasOwnProperty.call(normalized, field.name)) {
+        continue;
+      }
+
+      if (field.type === 'image') {
         normalized[field.name] = filterAnswerImages(normalized[field.name]);
+      } else if (field.type === 'rating') {
+        normalized[field.name] = normalizeRatingValue(
+          normalized[field.name],
+          normalizeMaxRating(field.maxRating),
+        );
+      } else if (field.type === 'signature') {
+        normalized[field.name] = normalizeSignatureValue(normalized[field.name]);
+      } else if (field.type === 'time') {
+        normalized[field.name] = normalizeTimeFieldValue(normalized[field.name]);
       }
     }
 
@@ -202,6 +319,7 @@ export class DynamicFormComponent implements OnDestroy {
     this.refreshLocationOptionsFromValues();
     this.refreshConditionalEffects();
     this.emitNormalizedValue();
+    this.syncSignaturePadsFromValues();
     this.cdr.markForCheck();
   }
 
@@ -213,8 +331,10 @@ export class DynamicFormComponent implements OnDestroy {
     }
 
     this.imageUploading.set({});
+    this.signatureUploading.set({});
     this.refreshConditionalEffects();
     this.emitNormalizedValue();
+    this.syncSignaturePadsFromValues();
     this.cdr.markForCheck();
   }
 
@@ -228,6 +348,15 @@ export class DynamicFormComponent implements OnDestroy {
     return effect ? effect.visible : field.isShow !== false;
   }
 
+  shouldRenderField(field: DynamicField): boolean {
+    if (!this.typeformMode()) {
+      return true;
+    }
+
+    const activeId = this.activeFieldId();
+    return !!activeId && field.id === activeId;
+  }
+
   isFieldRequired(field: DynamicField): boolean {
     return this.conditionalEffects()[field.id]?.required ?? !!field.required;
   }
@@ -238,6 +367,33 @@ export class DynamicFormComponent implements OnDestroy {
 
   getConditionalEffects(): Record<string, ConditionalFieldEffects> {
     return this.conditionalEffects();
+  }
+
+  applyVoiceTranscript(field: DynamicField, transcript: string): VoiceApplyResult {
+    const result = parseVoiceTranscript(field, transcript, {
+      getFieldOptions: (item) => this.getFieldOptions(item),
+    });
+
+    if (!result.success || result.parsedValue === undefined) {
+      return result;
+    }
+
+    const control = this.getControl(field.name);
+    if (!control || control.disabled) {
+      return { success: false, unsupported: true };
+    }
+
+    control.setValue(result.parsedValue);
+    control.markAsDirty();
+    control.markAsTouched();
+
+    if (field.type === 'select') {
+      this.handleLocationSelection(field);
+    }
+
+    this.emitNormalizedValue();
+    this.cdr.markForCheck();
+    return { success: true };
   }
 
   getErrorMessage(field: DynamicField): string | null {
@@ -452,6 +608,269 @@ export class DynamicFormComponent implements OnDestroy {
     return getNumberFieldStep(field);
   }
 
+  getMaxRating(field: DynamicField): number {
+    return normalizeMaxRating(field.maxRating);
+  }
+
+  getRatingStarValues(field: DynamicField): number[] {
+    return getRatingStarValues(this.getMaxRating(field));
+  }
+
+  getRatingValue(field: DynamicField): number {
+    return normalizeRatingValue(this.form?.get(field.name)?.value, this.getMaxRating(field)) ?? 0;
+  }
+
+  isRatingSelected(field: DynamicField, star: number): boolean {
+    return star <= this.getRatingValue(field);
+  }
+
+  onRatingSelect(field: DynamicField, star: number): void {
+    if (this.isFieldDisabled(field)) {
+      return;
+    }
+
+    const control = this.form?.get(field.name);
+    if (!control || control.disabled) {
+      return;
+    }
+
+    const max = this.getMaxRating(field);
+    const current = normalizeRatingValue(control.value, max);
+    // Toggle off when clicking the same selected value on an optional field.
+    const next =
+      current === star && !this.isFieldRequired(field)
+        ? null
+        : normalizeRatingValue(star, max);
+
+    control.setValue(next);
+    control.markAsDirty();
+    control.markAsTouched();
+    this.emitNormalizedValue();
+    this.cdr.markForCheck();
+  }
+
+  hasSignature(field: DynamicField): boolean {
+    return hasSignatureValue(this.form?.get(field.name)?.value);
+  }
+
+  getSignatureValue(field: DynamicField): SignatureValue {
+    return normalizeSignatureValue(this.form?.get(field.name)?.value);
+  }
+
+  getSignaturePreviewUrl(field: DynamicField): string {
+    return getSignatureDisplayUrl(this.form?.get(field.name)?.value);
+  }
+
+  isSignatureUploading(field: DynamicField): boolean {
+    return !!this.signatureUploading()[field.name];
+  }
+
+  isSignatureDrawing(field: DynamicField): boolean {
+    return this.signatureStroke?.fieldName === field.name && !!this.signatureStroke.drawing;
+  }
+
+  canClearSignature(field: DynamicField): boolean {
+    if (this.hasSignature(field)) {
+      return true;
+    }
+
+    const canvas = this.findSignatureCanvas(field);
+    return !!canvas && !isSignatureCanvasEmpty(canvas);
+  }
+
+  onSignaturePointerDown(event: PointerEvent, field: DynamicField): void {
+    if (this.isFieldDisabled(field) || this.isSignatureUploading(field)) {
+      return;
+    }
+
+    const canvas = event.target as HTMLCanvasElement;
+    if (!(canvas instanceof HTMLCanvasElement)) {
+      return;
+    }
+
+    const ctx = prepareSignatureCanvas(canvas);
+    if (!ctx) {
+      return;
+    }
+
+    canvas.setPointerCapture(event.pointerId);
+    const point = getSignaturePointerPosition(canvas, event);
+    ctx.beginPath();
+    ctx.moveTo(point.x, point.y);
+
+    this.signatureStroke = {
+      fieldName: field.name,
+      drawing: true,
+      dirty: false,
+    };
+    this.cdr.markForCheck();
+  }
+
+  onSignaturePointerMove(event: PointerEvent, field: DynamicField): void {
+    const stroke = this.signatureStroke;
+    if (!stroke?.drawing || stroke.fieldName !== field.name) {
+      return;
+    }
+
+    const canvas = event.target as HTMLCanvasElement;
+    if (!(canvas instanceof HTMLCanvasElement)) {
+      return;
+    }
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      return;
+    }
+
+    const point = getSignaturePointerPosition(canvas, event);
+    ctx.lineTo(point.x, point.y);
+    ctx.stroke();
+    stroke.dirty = true;
+  }
+
+  onSignaturePointerUp(event: PointerEvent, field: DynamicField): void {
+    const stroke = this.signatureStroke;
+    if (!stroke || stroke.fieldName !== field.name) {
+      return;
+    }
+
+    const canvas = event.target as HTMLCanvasElement;
+    if (canvas instanceof HTMLCanvasElement) {
+      try {
+        canvas.releasePointerCapture(event.pointerId);
+      } catch {
+        // Pointer was already released.
+      }
+    }
+
+    const shouldUpload = stroke.dirty;
+    this.signatureStroke = null;
+    this.cdr.markForCheck();
+
+    if (shouldUpload && canvas instanceof HTMLCanvasElement) {
+      void this.commitSignatureCanvas(field, canvas);
+    }
+  }
+
+  clearSignature(field: DynamicField): void {
+    if (this.isFieldDisabled(field) || this.isSignatureUploading(field)) {
+      return;
+    }
+
+    const control = this.form?.get(field.name);
+    if (!control) {
+      return;
+    }
+
+    const previous = normalizeSignatureValue(control.value);
+    const key = previous?.key?.trim();
+
+    control.setValue(null);
+    control.markAsDirty();
+    control.markAsTouched();
+    this.emitNormalizedValue();
+
+    const canvas = this.findSignatureCanvas(field);
+    if (canvas) {
+      clearSignatureCanvas(canvas);
+    }
+
+    this.cdr.markForCheck();
+
+    if (key) {
+      this.formImageUploadService.deleteImage(key).subscribe({
+        error: (err) => {
+          this.toastr.error(
+            err?.error?.message || err?.message || 'Failed to delete signature.',
+          );
+          this.cdr.markForCheck();
+        },
+      });
+    }
+  }
+
+  private async commitSignatureCanvas(
+    field: DynamicField,
+    canvas: HTMLCanvasElement,
+  ): Promise<void> {
+    const control = this.form?.get(field.name);
+    if (!control || control.disabled || this.isSignatureUploading(field)) {
+      return;
+    }
+
+    if (isSignatureCanvasEmpty(canvas)) {
+      return;
+    }
+
+    const file = await canvasToSignatureFile(canvas);
+    if (!file) {
+      this.toastr.error('Unable to capture signature.');
+      return;
+    }
+
+    const previous = normalizeSignatureValue(control.value);
+    const previousKey = previous?.key?.trim();
+
+    this.signatureUploading.update((state) => ({ ...state, [field.name]: true }));
+    this.cdr.markForCheck();
+
+    this.formImageUploadService.upload(file, 'answer').subscribe({
+      next: (uploaded) => {
+        const next: ImageFile = { ...uploaded, purpose: 'answer' };
+        control.setValue(next);
+        control.markAsDirty();
+        control.markAsTouched();
+        this.emitNormalizedValue();
+        this.cdr.markForCheck();
+
+        if (previousKey && previousKey !== next.key) {
+          this.formImageUploadService.deleteImage(previousKey).subscribe({
+            error: () => {
+              // Non-blocking cleanup failure.
+            },
+          });
+        }
+      },
+      error: (err) => {
+        this.toastr.error(
+          err?.error?.message || err?.message || 'Failed to upload signature.',
+        );
+        this.cdr.markForCheck();
+      },
+      complete: () => {
+        this.signatureUploading.update((state) => ({ ...state, [field.name]: false }));
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  private findSignatureCanvas(field: DynamicField): HTMLCanvasElement | null {
+    for (const ref of this.signaturePads()) {
+      const canvas = ref.nativeElement;
+      if (canvas?.dataset?.['signatureField'] === field.id) {
+        return canvas;
+      }
+    }
+    return null;
+  }
+
+  private syncSignaturePadsFromValues(): void {
+    if (!this.formReady() || this.signatureStroke?.drawing) {
+      return;
+    }
+
+    for (const field of this.sortedFields()) {
+      if (field.type !== 'signature' || this.hasSignature(field)) {
+        continue;
+      }
+
+      const canvas = this.findSignatureCanvas(field);
+      if (canvas) {
+        clearSignatureCanvas(canvas);
+      }
+    }
+  }
+
   getCharacterLimit(field: DynamicField): number | null {
     return getFieldCharacterLimit(field);
   }
@@ -466,6 +885,113 @@ export class DynamicFormComponent implements OnDestroy {
 
   getRangeTimeFormat(field: DynamicField): '12' | '24' {
     return normalizeRangeTimeFormat(field.timeFormat);
+  }
+
+  getTimeFieldFormat(field: DynamicField): '12' | '24' {
+    return normalizeTimeFieldFormat(field.timeFormat);
+  }
+
+  getTimeHourOptions(): number[] {
+    return TIME_HOUR_OPTIONS_12;
+  }
+
+  getTimeMinuteOptions(): number[] {
+    return TIME_MINUTE_OPTIONS;
+  }
+
+  getTimeMeridiemOptions(): TimeMeridiem[] {
+    return TIME_MERIDIEM_OPTIONS;
+  }
+
+  getTimeHour12Value(field: DynamicField): number | null {
+    return getTimeHour12(this.form?.get(field.name)?.value);
+  }
+
+  getTimeMinuteValue(field: DynamicField): number | null {
+    return getTimeMinute(this.form?.get(field.name)?.value);
+  }
+
+  getTimeMeridiemValue(field: DynamicField): TimeMeridiem | null {
+    return getTimeMeridiem(this.form?.get(field.name)?.value);
+  }
+
+  getTimeInputValue(field: DynamicField): string {
+    return normalizeTimeFieldValue(this.form?.get(field.name)?.value) ?? '';
+  }
+
+  onTime24Input(event: Event, field: DynamicField): void {
+    if (this.isFieldDisabled(field)) {
+      return;
+    }
+
+    const control = this.form?.get(field.name);
+    if (!control || control.disabled) {
+      return;
+    }
+
+    const input = event.target as HTMLInputElement;
+    control.setValue(normalizeTimeFieldValue(input.value));
+    control.markAsDirty();
+    control.markAsTouched();
+    this.emitNormalizedValue();
+    this.cdr.markForCheck();
+  }
+
+  onTime12PartChange(
+    field: DynamicField,
+    part: 'hour' | 'minute' | 'meridiem',
+    raw: string | number,
+  ): void {
+    if (this.isFieldDisabled(field)) {
+      return;
+    }
+
+    const control = this.form?.get(field.name);
+    if (!control || control.disabled) {
+      return;
+    }
+
+    let hour = getTimeHour12(control.value) ?? 12;
+    let minute = getTimeMinute(control.value) ?? 0;
+    let meridiem = getTimeMeridiem(control.value) ?? 'AM';
+
+    if (part === 'hour') {
+      hour = Number(raw);
+    } else if (part === 'minute') {
+      minute = Number(raw);
+    } else {
+      meridiem = String(raw).toUpperCase() === 'PM' ? 'PM' : 'AM';
+    }
+
+    control.setValue(composeTimeFrom12h(hour, minute, meridiem));
+    control.markAsDirty();
+    control.markAsTouched();
+    this.emitNormalizedValue();
+    this.cdr.markForCheck();
+  }
+
+  clearTimeValue(field: DynamicField): void {
+    if (this.isFieldDisabled(field)) {
+      return;
+    }
+
+    const control = this.form?.get(field.name);
+    if (!control || control.disabled) {
+      return;
+    }
+
+    control.setValue(null);
+    control.markAsDirty();
+    control.markAsTouched();
+    this.emitNormalizedValue();
+    this.cdr.markForCheck();
+  }
+
+  formatTimeDisplay(field: DynamicField): string {
+    return formatTimeFieldDisplay(
+      this.form?.get(field.name)?.value,
+      this.getTimeFieldFormat(field),
+    );
   }
 
   getRangePlaceholderFrom(field: DynamicField): string {
@@ -599,6 +1125,142 @@ export class DynamicFormComponent implements OnDestroy {
       control.markAsDirty();
       control.markAsTouched();
     }
+  }
+
+  isMeasurementField(field: DynamicField): boolean {
+    return isMeasurementFieldType(field.type);
+  }
+
+  getMeasurementUnitMode(field: DynamicField): 'fixed' | 'selectable' {
+    return normalizeMeasurementUnitMode(field.unitMode);
+  }
+
+  getMeasurementUnits(field: DynamicField): readonly MeasurementUnit[] {
+    if (!isMeasurementFieldType(field.type)) {
+      return [];
+    }
+    return getUnitsForFieldType(field.type);
+  }
+
+  getFilteredMeasurementUnits(field: DynamicField): MeasurementUnit[] {
+    const units = [...this.getMeasurementUnits(field)];
+    const query = (this.selectSearchQueries()[`${field.name}__unit`] ?? '')
+      .trim()
+      .toLowerCase();
+    if (!query) {
+      return units;
+    }
+    return units.filter(
+      (unit) =>
+        unit.code.toLowerCase().includes(query) ||
+        unit.label.toLowerCase().includes(query) ||
+        unit.symbol.toLowerCase().includes(query),
+    );
+  }
+
+  getMeasurementUnitSearchKey(field: DynamicField): string {
+    return `${field.name}__unit`;
+  }
+
+  getMeasurementValue(field: DynamicField): MeasurementFieldValue {
+    if (!isMeasurementFieldType(field.type)) {
+      return { value: null, unit: null };
+    }
+    return normalizeMeasurementValue(this.form?.get(field.name)?.value, field.type, {
+      unitMode: normalizeMeasurementUnitMode(field.unitMode),
+      unit: field.unit,
+    });
+  }
+
+  getMeasurementAmountDisplay(field: DynamicField): string {
+    const amount = this.getMeasurementValue(field).value;
+    return amount == null ? '' : String(amount);
+  }
+
+  getMeasurementUnitCode(field: DynamicField): string {
+    if (!isMeasurementFieldType(field.type)) {
+      return '';
+    }
+    return (
+      this.getMeasurementValue(field).unit ??
+      normalizeMeasurementUnitCode(field.type, field.unit) ??
+      getDefaultUnitCode(field.type)
+    );
+  }
+
+  getMeasurementUnitSymbol(field: DynamicField): string {
+    if (!isMeasurementFieldType(field.type)) {
+      return '';
+    }
+    return getUnitSymbol(field.type, this.getMeasurementUnitCode(field));
+  }
+
+  getMeasurementMin(field: DynamicField): number {
+    return resolveMeasurementMinValue(field);
+  }
+
+  getMeasurementMax(field: DynamicField): number | null {
+    return resolveMeasurementMaxValue(field);
+  }
+
+  onMeasurementAmountInput(event: Event, field: DynamicField): void {
+    const control = this.form?.get(field.name);
+    if (!control || control.disabled || !isMeasurementFieldType(field.type)) {
+      return;
+    }
+
+    const input = event.target as HTMLInputElement;
+    const sanitized = sanitizeNumberFieldInput(input.value, true);
+    if (input.value !== sanitized) {
+      input.value = sanitized;
+    }
+
+    const current = normalizeMeasurementValue(control.value, field.type, {
+      unitMode: normalizeMeasurementUnitMode(field.unitMode),
+      unit: field.unit,
+    });
+
+    const nextAmount =
+      sanitized === '' || sanitized === '-' || sanitized === '.' || sanitized === '-.'
+        ? null
+        : Number(sanitized);
+
+    control.setValue({
+      value: Number.isFinite(nextAmount as number) ? nextAmount : null,
+      unit: current.unit,
+    });
+    control.markAsDirty();
+    control.markAsTouched();
+    this.emitNormalizedValue();
+    this.cdr.markForCheck();
+  }
+
+  onMeasurementUnitChange(event: Event, field: DynamicField): void {
+    const select = event.target as HTMLSelectElement;
+    this.selectMeasurementUnit(field, select.value);
+  }
+
+  selectMeasurementUnit(field: DynamicField, code: string): void {
+    const control = this.form?.get(field.name);
+    if (!control || control.disabled || !isMeasurementFieldType(field.type)) {
+      return;
+    }
+
+    const current = normalizeMeasurementValue(control.value, field.type, {
+      unitMode: normalizeMeasurementUnitMode(field.unitMode),
+      unit: field.unit,
+    });
+
+    control.setValue({
+      value: current.value,
+      unit:
+        normalizeMeasurementUnitCode(field.type, code) ??
+        getDefaultUnitCode(field.type),
+    });
+    control.markAsDirty();
+    control.markAsTouched();
+    this.emitNormalizedValue();
+    this.cdr.markForCheck();
   }
 
   getSelectDisplayLabel(field: DynamicField): string {
@@ -802,6 +1464,7 @@ export class DynamicFormComponent implements OnDestroy {
   isFullWidthField(field: DynamicField): boolean {
     return (
       field.type === 'image' ||
+      field.type === 'signature' ||
       field.type === 'textarea' ||
       field.type === 'range' ||
       field.label === 'Availability Days'
@@ -828,6 +1491,7 @@ export class DynamicFormComponent implements OnDestroy {
       this.form = this.fb.group({});
       this.sortedFields.set([]);
       this.imageUploading.set({});
+      this.signatureUploading.set({});
       this.selectSearchQueries.set({});
       this.cdr.markForCheck();
       return;
@@ -841,12 +1505,14 @@ export class DynamicFormComponent implements OnDestroy {
       this.form = this.fb.group(buildDynamicFormGroupConfig(this.fb, sorted));
       this.patchPreservedValuesByFieldId(preservedValues, sorted);
       this.imageUploading.set({});
+      this.signatureUploading.set({});
       this.subscribeToFormChanges();
       this.setupLocationDependencies(sorted);
       this.refreshConditionalEffects();
       this.emitNormalizedValue();
       this.formReady.set(true);
       this.cdr.markForCheck();
+      queueMicrotask(() => this.syncSignaturePadsFromValues());
     });
   }
 
@@ -881,7 +1547,18 @@ export class DynamicFormComponent implements OnDestroy {
       if (preserved.has(field.id)) {
         const value = preserved.get(field.id);
         patch[field.name] =
-          field.type === 'image' ? filterAnswerImages(value) : value;
+          field.type === 'image'
+            ? filterAnswerImages(value)
+            : field.type === 'signature'
+              ? normalizeSignatureValue(value)
+              : field.type === 'time'
+                ? normalizeTimeFieldValue(value)
+                : isMeasurementFieldType(field.type)
+                  ? normalizeMeasurementValue(value, field.type, {
+                      unitMode: normalizeMeasurementUnitMode(field.unitMode),
+                      unit: field.unit,
+                    })
+                  : value;
       }
     }
 
@@ -982,6 +1659,15 @@ export class DynamicFormComponent implements OnDestroy {
     for (const field of this.sortedFields()) {
       if (field.type === 'image') {
         result[field.name] = filterAnswerImages(raw[field.name]);
+      } else if (field.type === 'signature') {
+        result[field.name] = normalizeSignatureValue(raw[field.name]);
+      } else if (field.type === 'time') {
+        result[field.name] = normalizeTimeFieldValue(raw[field.name]);
+      } else if (isMeasurementFieldType(field.type)) {
+        result[field.name] = normalizeMeasurementValue(raw[field.name], field.type, {
+          unitMode: normalizeMeasurementUnitMode(field.unitMode),
+          unit: field.unit,
+        });
       }
     }
 

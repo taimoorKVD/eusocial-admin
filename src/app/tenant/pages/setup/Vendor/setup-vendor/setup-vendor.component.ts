@@ -11,7 +11,8 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ToastrService } from 'ngx-toastr';
 import { ActivatedRoute, Router } from '@angular/router';
-import { catchError, finalize, forkJoin, map, of, switchMap } from 'rxjs';
+import { finalize, map, of, switchMap } from 'rxjs';
+import { loadDynamicDropdownOptions } from '../../../../../shared/dynamic-listing/dynamic-field-options.loader';
 import { TenantVendorService } from '../../../../../services/tenant-vendor.service';
 import { FormStorageService } from '../../../../forms/services/form-storage.service';
 import { FormField } from '../../../../form-builder/models/form-field.model';
@@ -462,40 +463,8 @@ export class SetupVendorComponent {
 
           const fields = normalizeFieldOrder(res.fields || []) as DynamicField[];
 
-          const dropdownRequests = fields
-            .filter(
-              (field) =>
-                field.type === 'select' &&
-                (
-                  field.optionSource?.type === 'api' ||
-                  (field.optionSource?.type === 'dynamic' &&
-                    !!field.optionSource?.endpoint &&
-                    !(Array.isArray(field.options) && field.options.length > 0))
-                ),
-            )
-            .map((field) =>
-              this.formStorageService.getEndpointApi<Record<string, unknown>>(
-                field.optionSource!.endpoint!,
-              ).pipe(
-                map((response) => ({ field, response })),
-                catchError(() => of({ field, response: null })),
-              ),
-            );
-
-          if (!dropdownRequests.length) {
-            return of(fields);
-          }
-
-          return forkJoin(dropdownRequests).pipe(
-            map((results) => {
-              results.forEach(({ field, response }) => {
-                if (!response) {
-                  return;
-                }
-                this.applyApiOptionsToField(field, response);
-              });
-              return fields;
-            }),
+          return loadDynamicDropdownOptions(this.formStorageService, fields).pipe(
+            map(() => fields),
           );
         }),
         finalize(() => this.loading.set(false)),
@@ -660,30 +629,6 @@ export class SetupVendorComponent {
     }
 
     return [value];
-  }
-
-  private applyApiOptionsToField(
-    field: DynamicField,
-    response: Record<string, unknown>,
-  ): void {
-    // Form Builder selected dynamic options are the source of truth.
-    if (
-      field.optionSource?.type === 'dynamic' &&
-      Array.isArray(field.options) &&
-      field.options.length > 0
-    ) {
-      return;
-    }
-
-    const dataPath = field.optionSource?.response?.dataPath ?? 'data';
-    const labelKey = field.optionSource?.response?.labelKey ?? 'label';
-    const valueKey = field.optionSource?.response?.valueKey ?? 'value';
-    const data = (response[dataPath] as Record<string, unknown>[]) || [];
-
-    field.options = data.map((item) => ({
-      label: item[labelKey],
-      value: item[valueKey],
-    })) as DynamicField['options'];
   }
 
   readonly showConfirmModal = signal(false);

@@ -1,5 +1,6 @@
 import { FieldCondition } from '../shared/conditional-logic';
 import type {
+  MeasurementUnitMode,
   RangeFieldType,
   RangeTimeFormat,
 } from '../tenant/form-builder/models/form-field.model';
@@ -15,11 +16,14 @@ export type DynamicFieldType =
   | 'radio'
   | 'date'
   | 'image'
-  | 'parameter'
   | 'signature'
-  | 'user-timestamp'
+  | 'time'
   | 'rating'
   | 'range'
+  | 'price'
+  | 'length'
+  | 'mass'
+  | 'volume'
   | 'barcode'
   | 'qr-code';
 
@@ -81,6 +85,14 @@ export interface DynamicField {
   condition?: FieldCondition;
 
   /**
+   * Measurement fields (price / length / mass / volume).
+   */
+  unitMode?: MeasurementUnitMode;
+  unit?: string;
+  minValue?: number;
+  maxValue?: number;
+
+  /**
    * Image Upload only. Example / reference images from Form Builder.
    * Not part of the FormControl value.
    */
@@ -91,6 +103,9 @@ export interface DynamicField {
   minFiles?: number;
   /** Image Upload only. */
   maxFiles?: number;
+
+  /** Rating field only. Maximum stars (3, 5, 7, or 10). Defaults to 5. */
+  maxRating?: number;
 }
 
 export type DynamicFormValue = Record<string, unknown>;

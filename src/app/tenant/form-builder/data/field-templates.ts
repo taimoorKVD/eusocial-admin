@@ -72,14 +72,6 @@ export const FIELD_TEMPLATES: Omit<FormField, 'id'>[] = [
   },
 
   {
-    type: 'parameter',
-    label: 'Parameter',
-    placeholder: 'Enter value',
-    required: false,
-    options: []
-  },
-
-  {
     type: 'signature',
     label: 'Signature',
     placeholder: '',
@@ -88,10 +80,11 @@ export const FIELD_TEMPLATES: Omit<FormField, 'id'>[] = [
   },
 
   {
-    type: 'user-timestamp',
-    label: 'User Timestamp',
-    placeholder: '',
+    type: 'time',
+    label: 'Time Field',
+    placeholder: 'Select time',
     required: false,
+    timeFormat: '12',
     options: []
   },
 
@@ -113,6 +106,54 @@ export const FIELD_TEMPLATES: Omit<FormField, 'id'>[] = [
     allowDecimal: false,
     rangePlaceholderFrom: 'From',
     rangePlaceholderTo: 'To',
+    options: []
+  },
+
+  {
+    type: 'price',
+    label: 'Price',
+    placeholder: 'Enter amount',
+    required: false,
+    allowDecimal: true,
+    unitMode: 'fixed',
+    unit: 'USD',
+    minValue: 0,
+    options: []
+  },
+
+  {
+    type: 'length',
+    label: 'Length / Distance',
+    placeholder: 'Enter length',
+    required: false,
+    allowDecimal: true,
+    unitMode: 'fixed',
+    unit: 'm',
+    minValue: 0,
+    options: []
+  },
+
+  {
+    type: 'mass',
+    label: 'Weight / Mass',
+    placeholder: 'Enter weight',
+    required: false,
+    allowDecimal: true,
+    unitMode: 'fixed',
+    unit: 'kg',
+    minValue: 0,
+    options: []
+  },
+
+  {
+    type: 'volume',
+    label: 'Volume / Capacity',
+    placeholder: 'Enter volume',
+    required: false,
+    allowDecimal: true,
+    unitMode: 'fixed',
+    unit: 'L',
+    minValue: 0,
     options: []
   },
 

@@ -45,8 +45,17 @@ export function buildFormSchemaPayload(fields: FormField[]) {
         maxFiles: field.type === 'image' ? field.maxFiles : undefined,
         allowDecimal:
           field.type === 'number' ||
-          (field.type === 'range' && normalizeRangeType(field.rangeType) === 'number')
-            ? field.allowDecimal === true
+          (field.type === 'range' && normalizeRangeType(field.rangeType) === 'number') ||
+          field.type === 'price' ||
+          field.type === 'length' ||
+          field.type === 'mass' ||
+          field.type === 'volume'
+            ? field.type === 'price' ||
+              field.type === 'length' ||
+              field.type === 'mass' ||
+              field.type === 'volume'
+              ? true
+              : field.allowDecimal === true
             : undefined,
         characterLimit: supportsCharacterLimit(field.type)
           ? resolveCharacterLimit(field.type, field.characterLimit)

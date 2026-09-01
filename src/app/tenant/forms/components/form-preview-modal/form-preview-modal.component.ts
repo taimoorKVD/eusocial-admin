@@ -16,7 +16,7 @@ import { shouldIncludeFieldInRuntimeForm } from '../../../../shared/conditional-
 import { FormField } from '../../../form-builder/models/form-field.model';
 import { normalizeFieldOrder } from '../../../form-builder/utils/form-field.factory';
 import { FormStorageService } from '../../services/form-storage.service';
-import { loadDynamicDropdownOptions } from '../../../../shared/dynamic-listing/dynamic-field-options.loader';
+import { loadDynamicDropdownOptions, shouldFetchSelectOptionsFromApi } from '../../../../shared/dynamic-listing/dynamic-field-options.loader';
 
 const CLOSE_ANIMATION_MS = 280;
 
@@ -181,14 +181,7 @@ export class FormPreviewModalComponent implements OnDestroy {
   }
 
   private needsAsyncOptions(fields: DynamicField[]): boolean {
-    return fields.some(
-      (field) =>
-        field.type === 'select' &&
-        !!field.optionSource?.endpoint &&
-        (field.optionSource?.type === 'api' ||
-          (field.optionSource?.type === 'dynamic' &&
-            !(Array.isArray(field.options) && field.options.length > 0))),
-    );
+    return fields.some((field) => shouldFetchSelectOptionsFromApi(field));
   }
 
   private buildCacheKey(formFields: FormField[]): string {

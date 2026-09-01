@@ -44,4 +44,8 @@ export class PermissionService {
   deletePermission(id: number) {
     return this.http.delete(`${this.baseUrl}/${id}`);
   }
+
+  bulkDeletePermissions(ids: number[]) {
+    return this.http.delete(`${this.baseUrl}/bulk`, { body: { ids } });
+  }
 }
