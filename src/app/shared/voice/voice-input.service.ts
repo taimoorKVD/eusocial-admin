@@ -1,4 +1,4 @@
-import { Injectable, OnDestroy, signal } from '@angular/core';
+import { Injectable, NgZone, OnDestroy, inject, signal } from '@angular/core';
 
 type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
 
@@ -26,6 +26,7 @@ interface SpeechRecognitionResultListLike {
 
 interface SpeechRecognitionResultLike {
   isFinal: boolean;
+  length: number;
   [index: number]: SpeechRecognitionAlternativeLike;
 }
 
@@ -46,8 +47,9 @@ export class VoiceInputService implements OnDestroy {
   readonly finalTranscript = signal('');
   readonly errorMessage = signal('');
 
+  private readonly ngZone = inject(NgZone);
+
   private recognition: SpeechRecognitionLike | null = null;
-  private shouldRestart = false;
 
   ngOnDestroy(): void {
     this.stopListening();
@@ -77,47 +79,18 @@ export class VoiceInputService implements OnDestroy {
     recognition.lang = lang;
 
     recognition.onresult = (event) => {
-      let interim = '';
-      let finalText = '';
-
-      for (let index = event.resultIndex; index < event.results.length; index += 1) {
-        const result = event.results[index];
-        const transcript = result[0]?.transcript ?? '';
-        if (result.isFinal) {
-          finalText += transcript;
-        } else {
-          interim += transcript;
-        }
-      }
-
-      this.interimTranscript.set(interim.trim());
-      if (finalText.trim()) {
-        this.finalTranscript.set(finalText.trim());
-      }
+      this.ngZone.run(() => this.handleRecognitionResult(event));
     };
 
     recognition.onerror = (event) => {
-      if (event.error === 'aborted' || event.error === 'no-speech') {
-        return;
-      }
-
-      if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-        this.errorMessage.set('Microphone permission was denied. You can continue by typing.');
-      } else {
-        this.errorMessage.set('Voice input unavailable. You can continue by typing.');
-      }
-
-      this.listening.set(false);
+      this.ngZone.run(() => this.handleRecognitionError(event));
     };
 
     recognition.onend = () => {
-      this.listening.set(false);
-      this.interimTranscript.set('');
-      this.recognition = null;
+      this.ngZone.run(() => this.handleRecognitionEnd());
     };
 
     this.recognition = recognition;
-    this.shouldRestart = false;
 
     try {
       recognition.start();
@@ -130,7 +103,6 @@ export class VoiceInputService implements OnDestroy {
   }
 
   stopListening(): void {
-    this.shouldRestart = false;
     const recognition = this.recognition;
     this.recognition = null;
 
@@ -150,14 +122,90 @@ export class VoiceInputService implements OnDestroy {
       }
     }
 
+    this.commitPendingTranscript();
     this.listening.set(false);
     this.interimTranscript.set('');
   }
 
   consumeFinalTranscript(): string {
-    const transcript = this.finalTranscript();
+    this.commitPendingTranscript();
+    const transcript = this.finalTranscript().trim();
     this.finalTranscript.set('');
     return transcript;
+  }
+
+  private handleRecognitionResult(event: SpeechRecognitionEventLike): void {
+    let finalText = '';
+    let interimText = '';
+
+    for (let index = 0; index < event.results.length; index += 1) {
+      const result = event.results[index];
+      const transcript = this.readResultTranscript(result);
+      if (!transcript) {
+        continue;
+      }
+
+      if (result.isFinal) {
+        finalText += transcript;
+      } else {
+        interimText += transcript;
+      }
+    }
+
+    finalText = finalText.trim();
+    interimText = interimText.trim();
+
+    if (finalText) {
+      this.finalTranscript.set(finalText);
+    }
+
+    this.interimTranscript.set(interimText);
+  }
+
+  private handleRecognitionError(event: SpeechRecognitionErrorEventLike): void {
+    if (event.error === 'aborted' || event.error === 'no-speech') {
+      return;
+    }
+
+    if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+      this.errorMessage.set('Microphone permission was denied. You can continue by typing.');
+    } else {
+      this.errorMessage.set('Voice input unavailable. You can continue by typing.');
+    }
+
+    this.listening.set(false);
+  }
+
+  private handleRecognitionEnd(): void {
+    this.commitPendingTranscript();
+    this.listening.set(false);
+    this.interimTranscript.set('');
+    this.recognition = null;
+  }
+
+  private commitPendingTranscript(): void {
+    const committed = this.finalTranscript().trim();
+    const interim = this.interimTranscript().trim();
+
+    if (!committed && interim) {
+      this.finalTranscript.set(interim);
+      return;
+    }
+
+    if (committed && interim && !committed.includes(interim)) {
+      this.finalTranscript.set(`${committed} ${interim}`.trim());
+    }
+  }
+
+  private readResultTranscript(result: SpeechRecognitionResultLike): string {
+    const length = Math.max(result.length ?? 0, 1);
+    let transcript = '';
+
+    for (let index = 0; index < length; index += 1) {
+      transcript += result[index]?.transcript ?? '';
+    }
+
+    return transcript.trim();
   }
 
   private detectSupport(): boolean {

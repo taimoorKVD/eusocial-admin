@@ -383,14 +383,33 @@ export class DynamicFormComponent implements OnDestroy {
       return { success: false, unsupported: true };
     }
 
-    control.setValue(result.parsedValue);
+    let nextValue = result.parsedValue;
+
+    if (isMeasurementFieldType(field.type)) {
+      const current = normalizeMeasurementValue(control.value, field.type, {
+        unitMode: normalizeMeasurementUnitMode(field.unitMode),
+        unit: field.unit,
+      });
+      const parsed = normalizeMeasurementValue(result.parsedValue, field.type, {
+        unitMode: normalizeMeasurementUnitMode(field.unitMode),
+        unit: field.unit,
+      });
+      nextValue = {
+        value: parsed.value,
+        unit: current.unit ?? parsed.unit,
+      };
+    }
+
+    control.setValue(nextValue);
     control.markAsDirty();
     control.markAsTouched();
+    control.updateValueAndValidity();
 
     if (field.type === 'select') {
       this.handleLocationSelection(field);
     }
 
+    this.refreshConditionalEffects();
     this.emitNormalizedValue();
     this.cdr.markForCheck();
     return { success: true };

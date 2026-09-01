@@ -378,6 +378,7 @@ export class TypeformFillShellComponent implements AfterViewInit {
 
     if (this.voice.listening()) {
       this.voice.stopListening();
+      this.applyPendingVoiceTranscript();
       return;
     }
 
@@ -522,8 +523,7 @@ export class TypeformFillShellComponent implements AfterViewInit {
   private applyPendingVoiceTranscript(): void {
     const field = this.activeField();
     const form = this.formComponent();
-    const transcript =
-      this.voice.consumeFinalTranscript() || this.voice.interimTranscript().trim();
+    const transcript = this.voice.consumeFinalTranscript();
 
     if (!field || !form || !transcript) {
       return;
@@ -551,7 +551,11 @@ export class TypeformFillShellComponent implements AfterViewInit {
   }
 
   private stopVoice(): void {
-    this.voice.stopListening();
+    if (this.voice.listening()) {
+      this.voice.stopListening();
+      this.applyPendingVoiceTranscript();
+    }
+
     this.voiceHint.set('');
   }
 
