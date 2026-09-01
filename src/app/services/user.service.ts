@@ -59,6 +59,10 @@ export class UserService {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }
 
+  bulkDeleteUsers(ids: number[]): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/bulk`, { body: { ids } });
+  }
+
   /** Get single user (for edit page) */
   getUser(id: number): Observable<User> {
     return this.http

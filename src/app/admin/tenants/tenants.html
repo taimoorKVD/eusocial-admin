@@ -1,4 +1,14 @@
 <div class="platform-page">
+  <app-confirm-modal
+    [isOpen]="showBulkDeleteConfirmModal"
+    title="Delete Organizations"
+    [description]="bulkDeleteConfirmDescription"
+    confirmText="Delete"
+    cancelText="Cancel"
+    (confirmed)="onConfirmBulkDelete()"
+    (closed)="closeBulkDeleteConfirmModal()">
+  </app-confirm-modal>
+
   <section class="kpi-grid">
     <article class="kpi-card">
       <div class="kpi-card__top">
@@ -59,8 +69,13 @@
     <button type="button" class="btn-primary" (click)="addTenant()">+ Add Organization</button>
   </div>
 
+  <div *ngIf="bulkSelection.hasSelection()" class="bulk-toolbar">
+    <span>Selected: {{ bulkSelection.count() }}</span>
+    <button type="button" class="btn-danger-outline" (click)="openBulkDeleteConfirm()">Bulk Delete</button>
+  </div>
+
   <section class="platform-card">
-    <div class="platform-state" *ngIf="loading">
+    <div class="platform-state" *ngIf="loading || bulkDeleting">
       <div class="platform-spinner"></div>
       <p>Loading organizations…</p>
     </div>
@@ -69,6 +84,15 @@
       <table class="platform-table">
         <thead>
           <tr>
+            <th class="w-10">
+              <input
+                type="checkbox"
+                [checked]="isAllSelected()"
+                [indeterminate]="isIndeterminate()"
+                [disabled]="selectableTenantIds().length === 0"
+                (change)="toggleSelectAll()"
+              />
+            </th>
             <th>Organization Name</th>
             <th>Domain</th>
             <th>Plan</th>
@@ -78,7 +102,15 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let t of tenants">
+          <tr *ngFor="let t of tenants" [class.is-selected]="isSelected(t)">
+            <td class="w-10">
+              <input
+                type="checkbox"
+                [checked]="isSelected(t)"
+                [disabled]="t?.id == null"
+                (change)="toggleSelect(t, $event)"
+              />
+            </td>
             <td>
               <div class="tenant-name-cell">
                 <span class="tenant-avatar">{{ initials(t.name) }}</span>

@@ -1,9 +1,19 @@
 <!-- <div class="admin-content-container"> -->
 <div class="page-wrapper p-4 md:px-6 md:py-4 space-y-4">
 
-    <ng-container *ngIf="loading">
+    <ng-container *ngIf="loading || bulkDeleting">
       <app-eu-loader></app-eu-loader>
     </ng-container>
+
+  <app-confirm-modal
+    [isOpen]="showBulkDeleteConfirmModal"
+    title="Delete Users"
+    [description]="bulkDeleteConfirmDescription"
+    confirmText="Delete"
+    cancelText="Cancel"
+    (confirmed)="onConfirmBulkDelete()"
+    (closed)="closeBulkDeleteConfirmModal()">
+  </app-confirm-modal>
 
   <app-top-header [title]="'Users Management'" [buttonLabel]="' + Create User'" (buttonClick)="addUser()">
   </app-top-header>
@@ -12,12 +22,34 @@
   <app-global-filter [fields]="filterFields" (search)="onFilterSearch($event)" (clear)="onFilterClear()">
   </app-global-filter>
 
+  <div *ngIf="bulkSelection.hasSelection()" class="flex items-center justify-between gap-3 rounded-xl border border-gray-100 bg-white px-4 py-3 shadow-sm">
+    <span class="text-sm text-gray-500">
+      Selected: {{ bulkSelection.count() }}
+    </span>
+    <button
+      type="button"
+      class="inline-flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-sm font-medium text-red-600 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-40"
+      [disabled]="!bulkSelection.hasSelection()"
+      (click)="openBulkDeleteConfirm()">
+      Bulk Delete
+    </button>
+  </div>
+
   <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
     <div class="overflow-x-auto" *ngIf="!loading">
       <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50 text-gray-600 text-sm">
           <tr>
-            <th class="px-4 py-3 text-left w-12">#</th>
+            <th class="px-4 py-3 text-left w-10">
+              <input
+                type="checkbox"
+                class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
+                [checked]="isAllSelected()"
+                [indeterminate]="isIndeterminate()"
+                [disabled]="selectableUserIds().length === 0"
+                (change)="toggleSelectAll()"
+              />
+            </th>
             <th class="px-4 py-3 text-left">Name</th>
             <!-- <th>Last Name</th> -->
             <th class="px-4 py-3 text-left">Email</th>
@@ -27,8 +59,16 @@
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-100 text-sm text-gray-700">
-          <tr *ngFor="let user of users; index as i" class="hover:bg-gray-50 transition duration-150">
-            <td class="px-4 py-3">{{ (page - 1) * 15 + i + 1 }}</td>
+          <tr *ngFor="let user of users" class="hover:bg-gray-50 transition duration-150" [class.bg-indigo-50]="isSelected(user)">
+            <td class="px-4 py-3 w-10">
+              <input
+                type="checkbox"
+                class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
+                [checked]="isSelected(user)"
+                [disabled]="!isUserSelectable(user)"
+                (change)="toggleSelect(user)"
+              />
+            </td>
             <td class="px-4 py-3 font-medium">{{ user.name }}</td>
             <!-- <td>{{ user.last_name }}</td> -->
             <td class="px-4 py-3">{{ user.email }}</td>

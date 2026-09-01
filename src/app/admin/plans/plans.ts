@@ -4,6 +4,7 @@ import { ToastrService } from 'ngx-toastr';
 import { BillingCycle, MasterPlan } from '../../interfaces/master-billing';
 import { MasterPlanService } from '../../services/master-plan.service';
 import { displayMoney } from '../../shared/utils/money.util';
+import { BulkSelectionState } from '../../shared/dynamic-listing/bulk-selection.state';
 
 @Component({
   selector: 'app-plans',
@@ -16,8 +17,12 @@ export class Plans implements OnInit {
   loading = true;
   showDeleteModal = false;
   deleteTargetId: number | null = null;
+  showBulkDeleteConfirmModal = false;
+  bulkDeleting = false;
   openMenuId: number | null = null;
   priceCycle: BillingCycle = 'monthly';
+
+  bulkSelection = new BulkSelectionState();
 
   constructor(
     private planService: MasterPlanService,
@@ -27,6 +32,70 @@ export class Plans implements OnInit {
 
   ngOnInit(): void {
     this.loadPlans();
+  }
+
+  get bulkDeleteConfirmDescription(): string {
+    const count = this.bulkSelection.count();
+    return `Delete ${count} selected plan${count === 1 ? '' : 's'}? Plans with active subscriptions cannot be deleted.`;
+  }
+
+  selectablePlanIds(): number[] {
+    return this.plans.map((p) => p.id).filter((id) => id != null);
+  }
+
+  isSelected(plan: MasterPlan): boolean {
+    return this.bulkSelection.isSelected(plan.id);
+  }
+
+  toggleSelect(plan: MasterPlan, event?: Event): void {
+    event?.stopPropagation();
+    if (plan?.id == null) return;
+    this.bulkSelection.toggle(plan.id);
+  }
+
+  isAllSelected(): boolean {
+    return this.bulkSelection.isAllSelected(this.selectablePlanIds());
+  }
+
+  isIndeterminate(): boolean {
+    return this.bulkSelection.isIndeterminate(this.selectablePlanIds());
+  }
+
+  toggleSelectAll(): void {
+    this.bulkSelection.toggleAll(this.selectablePlanIds());
+  }
+
+  openBulkDeleteConfirm(): void {
+    if (!this.bulkSelection.hasSelection()) return;
+    this.showBulkDeleteConfirmModal = true;
+  }
+
+  closeBulkDeleteConfirmModal(): void {
+    this.showBulkDeleteConfirmModal = false;
+  }
+
+  onConfirmBulkDelete(): void {
+    const ids = [...this.bulkSelection.selectedIds()];
+    if (!ids.length) return;
+
+    this.closeBulkDeleteConfirmModal();
+    this.bulkDeleting = true;
+
+    this.planService.bulkDeletePlans(ids).subscribe({
+      next: (res) => {
+        this.toastr.success(res?.message || 'Plans deleted successfully');
+        this.bulkSelection.clear();
+        this.bulkDeleting = false;
+        this.loadPlans();
+      },
+      error: (err) => {
+        this.bulkDeleting = false;
+        const msg =
+          err?.error?.message ||
+          'Failed to delete plans. Deactivate them if they have active subscriptions.';
+        this.toastr.error(Array.isArray(msg) ? msg.join(', ') : msg);
+      },
+    });
   }
 
   loadPlans(): void {
@@ -40,6 +109,7 @@ export class Plans implements OnInit {
       },
       error: (err) => {
         this.loading = false;
+        this.bulkSelection.clear();
         this.toastr.error(err?.error?.message || 'Failed to load plans');
       },
     });
@@ -90,6 +160,7 @@ export class Plans implements OnInit {
       next: (res) => {
         this.toastr.success(res?.message || 'Plan deleted successfully');
         this.closeDeleteModal();
+        this.bulkSelection.clear();
         this.loadPlans();
       },
       error: (err) => {

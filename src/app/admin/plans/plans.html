@@ -1,4 +1,14 @@
 <div class="platform-page" (click)="closeMenus()">
+  <app-confirm-modal
+    [isOpen]="showBulkDeleteConfirmModal"
+    title="Delete Plans"
+    [description]="bulkDeleteConfirmDescription"
+    confirmText="Delete"
+    cancelText="Cancel"
+    (confirmed)="onConfirmBulkDelete()"
+    (closed)="closeBulkDeleteConfirmModal()">
+  </app-confirm-modal>
+
   <div class="platform-page__actions">
     <div class="price-cycle-tabs" role="tablist" aria-label="Billing cycle">
       <button
@@ -23,7 +33,7 @@
     <button type="button" class="btn-primary" (click)="createPlan()">+ Create Plan</button>
   </div>
 
-  <div class="platform-state" *ngIf="loading">
+  <div class="platform-state" *ngIf="loading || bulkDeleting">
     <div class="platform-spinner"></div>
     <p>Loading plans…</p>
   </div>
@@ -80,10 +90,25 @@
         <h3>All Plans</h3>
         <span class="platform-card__meta">Showing {{ priceCycle === 'yearly' ? 'yearly' : 'monthly' }} pricing</span>
       </div>
+
+      <div *ngIf="bulkSelection.hasSelection()" class="bulk-toolbar">
+        <span>Selected: {{ bulkSelection.count() }}</span>
+        <button type="button" class="btn-danger-outline" (click)="openBulkDeleteConfirm()">Bulk Delete</button>
+      </div>
+
       <div class="table-wrap">
         <table class="platform-table">
           <thead>
             <tr>
+              <th class="w-10">
+                <input
+                  type="checkbox"
+                  [checked]="isAllSelected()"
+                  [indeterminate]="isIndeterminate()"
+                  [disabled]="selectablePlanIds().length === 0"
+                  (change)="toggleSelectAll()"
+                />
+              </th>
               <th>Plan Name</th>
               <th>Price</th>
               <th>Users Limit</th>
@@ -93,7 +118,15 @@
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let plan of plans">
+            <tr *ngFor="let plan of plans" [class.is-selected]="isSelected(plan)">
+              <td class="w-10">
+                <input
+                  type="checkbox"
+                  [checked]="isSelected(plan)"
+                  [disabled]="plan?.id == null"
+                  (change)="toggleSelect(plan, $event)"
+                />
+              </td>
               <td>
                 <span class="plan-badge" [ngClass]="planBadgeClass(plan.name)">{{ plan.name }}</span>
               </td>

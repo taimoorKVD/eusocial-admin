@@ -121,6 +121,10 @@ export class TenantService {
     return this.http.delete<any>(`${this.baseUrl}/${id}`);
   }
 
+  bulkDelete(ids: number[]): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/bulk`, { body: { ids } });
+  }
+
   sendCredentials(tenantId: number, email: string) {
     return this.http.post<any>(`${this.baseUrl}/${tenantId}/send-credentials`, { email });
   }
