@@ -9,6 +9,14 @@
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.92) 100%);
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
 
+  &.dynamic-form--typeform {
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
   @media (min-width: 640px) {
     padding: 1.5rem;
   }

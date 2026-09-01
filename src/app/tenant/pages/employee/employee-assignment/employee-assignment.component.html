@@ -120,6 +120,14 @@
         </p>
       </div>
     } @else if (showForm()) {
+      @if (fillMode() === 'typeform') {
+        <app-typeform-fill-shell
+          [fields]="mergedFields()"
+          [canFill]="canFill()"
+          [submitting]="submitting()"
+          (submitRequested)="submitForm()"
+        ></app-typeform-fill-shell>
+      } @else {
       <div class="space-y-5">
         @for (section of sections(); track section.id) {
           <section class="rounded-xl border border-[#E8E8E8] bg-white p-4 shadow-sm sm:p-5">
@@ -155,6 +163,7 @@
           </div>
         }
       </div>
+      }
     }
   }
 </div>

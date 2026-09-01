@@ -124,6 +124,10 @@ import {
   normalizeMeasurementUnitCode,
   normalizeMeasurementUnitMode,
 } from './measurement-units';
+import {
+  parseVoiceTranscript,
+  VoiceApplyResult,
+} from '../voice/voice-field.adapter';
 
 @Component({
   selector: 'app-dynamic-form',
@@ -149,6 +153,9 @@ export class DynamicFormComponent implements OnDestroy {
    * is selected; they are not preloaded.
    */
   readonly enableLocationDependencies = input(false);
+  /** When true, only the field matching `activeFieldId` is rendered (Typeform mode). */
+  readonly typeformMode = input(false);
+  readonly activeFieldId = input<string | null>(null);
   readonly valueChange = output<DynamicFormValue>();
 
   form!: FormGroup;
@@ -224,6 +231,17 @@ export class DynamicFormComponent implements OnDestroy {
 
       queueMicrotask(() => this.syncSignaturePadsFromValues());
     });
+
+    effect(() => {
+      if (!this.typeformMode() || !this.activeFieldId() || !this.formReady()) {
+        return;
+      }
+
+      queueMicrotask(() => {
+        this.syncSignaturePadsFromValues();
+        this.cdr.markForCheck();
+      });
+    });
   }
 
   ngOnDestroy(): void {
@@ -250,6 +268,23 @@ export class DynamicFormComponent implements OnDestroy {
   validate(): boolean {
     this.markAllAsTouched();
     return this.form?.valid ?? false;
+  }
+
+  validateField(fieldId: string): boolean {
+    const field = this.sortedFields().find((item) => item.id === fieldId);
+    if (!field) {
+      return true;
+    }
+
+    const control = this.getControl(field.name);
+    if (!control || control.disabled) {
+      return true;
+    }
+
+    control.markAsTouched();
+    control.updateValueAndValidity();
+    this.cdr.markForCheck();
+    return control.valid;
   }
 
   markAllAsTouched(): void {
@@ -313,6 +348,15 @@ export class DynamicFormComponent implements OnDestroy {
     return effect ? effect.visible : field.isShow !== false;
   }
 
+  shouldRenderField(field: DynamicField): boolean {
+    if (!this.typeformMode()) {
+      return true;
+    }
+
+    const activeId = this.activeFieldId();
+    return !!activeId && field.id === activeId;
+  }
+
   isFieldRequired(field: DynamicField): boolean {
     return this.conditionalEffects()[field.id]?.required ?? !!field.required;
   }
@@ -323,6 +367,33 @@ export class DynamicFormComponent implements OnDestroy {
 
   getConditionalEffects(): Record<string, ConditionalFieldEffects> {
     return this.conditionalEffects();
+  }
+
+  applyVoiceTranscript(field: DynamicField, transcript: string): VoiceApplyResult {
+    const result = parseVoiceTranscript(field, transcript, {
+      getFieldOptions: (item) => this.getFieldOptions(item),
+    });
+
+    if (!result.success || result.parsedValue === undefined) {
+      return result;
+    }
+
+    const control = this.getControl(field.name);
+    if (!control || control.disabled) {
+      return { success: false, unsupported: true };
+    }
+
+    control.setValue(result.parsedValue);
+    control.markAsDirty();
+    control.markAsTouched();
+
+    if (field.type === 'select') {
+      this.handleLocationSelection(field);
+    }
+
+    this.emitNormalizedValue();
+    this.cdr.markForCheck();
+    return { success: true };
   }
 
   getErrorMessage(field: DynamicField): string | null {

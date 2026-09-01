@@ -2,16 +2,19 @@
   {{ fields }}
 </pre> -->
 @if (form && formReady()) {
-<form [formGroup]="form" class="dynamic-form" novalidate>
-  <div class="grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-6">
+<form [formGroup]="form" class="dynamic-form" [class.dynamic-form--typeform]="typeformMode()" novalidate>
+  <div
+    class="grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-6"
+    [class.md:grid-cols-1]="typeformMode()"
+  >
     @for (field of sortedFields(); track field.id + ':' + field.name) {
-      @if (isFieldVisible(field)) {
+      @if (isFieldVisible(field) && shouldRenderField(field)) {
       <div
-        [class.col-span-2]="isFullWidthField(field)"
+        [class.col-span-2]="typeformMode() || isFullWidthField(field)"
         class="field-shell"
       >
         <div class="form-group">
-          @if (field.type !== 'image') {
+          @if (field.type !== 'image' && !typeformMode()) {
             <label class="field-label" [attr.for]="field.id">
               {{ field.label }}
               @if (isFieldRequired(field)) {

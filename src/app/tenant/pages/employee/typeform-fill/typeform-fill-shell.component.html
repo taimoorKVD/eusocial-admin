@@ -1,0 +1,141 @@
+<div
+  #shellRoot
+  class="typeform-shell"
+  tabindex="-1"
+  (keydown)="onShellKeydown($event)"
+>
+  <div class="typeform-shell__card">
+    @if (isReviewPhase()) {
+      <section class="typeform-review" aria-labelledby="typeform-review-heading">
+        <p class="typeform-shell__progress" aria-hidden="true">Review</p>
+        <h2 id="typeform-review-heading" class="typeform-shell__title">
+          Review your answers
+        </h2>
+        <p class="typeform-shell__subtitle">
+          Check everything looks correct before submitting.
+        </p>
+
+        <dl class="typeform-review__list">
+          @for (item of reviewItems(); track item.field.id) {
+            <div class="typeform-review__item">
+              <dt class="typeform-review__label">{{ item.label }}</dt>
+              <dd class="typeform-review__value">{{ item.display }}</dd>
+              @if (canFill()) {
+                <button
+                  type="button"
+                  class="typeform-review__edit"
+                  (click)="jumpToQuestion(item.field.id)"
+                >
+                  Edit
+                </button>
+              }
+            </div>
+          }
+        </dl>
+      </section>
+    } @else {
+      <section
+        class="typeform-question"
+        [@questionSlide]="animationStep()"
+        aria-live="polite"
+      >
+        @if (progressLabel()) {
+          <p class="typeform-shell__progress" aria-label="Question progress">
+            {{ progressLabel() }}
+          </p>
+        }
+
+        @if (activeField(); as field) {
+          <h2 class="typeform-shell__title" [attr.id]="'typeform-q-' + field.id">
+            {{ field.label }}
+            @if (activeFieldRequired()) {
+              <span class="typeform-shell__required" aria-hidden="true">*</span>
+            }
+          </h2>
+        } @else {
+          <p class="typeform-shell__subtitle">No questions are available right now.</p>
+        }
+
+        @if (showVoiceButton()) {
+          <div class="typeform-voice" [class.typeform-voice--listening]="voice.listening()">
+            <button
+              type="button"
+              class="typeform-voice__button"
+              [attr.aria-pressed]="voice.listening()"
+              [attr.aria-label]="voice.listening() ? 'Stop voice input' : 'Start voice input'"
+              (click)="toggleVoice()"
+            >
+              @if (voice.listening()) {
+                <span class="typeform-voice__icon typeform-voice__icon--active" aria-hidden="true">●</span>
+              } @else {
+                <span class="typeform-voice__icon" aria-hidden="true">🎙️</span>
+              }
+            </button>
+
+            @if (voice.listening()) {
+              <div class="typeform-voice__wave" aria-hidden="true">
+                <span></span><span></span><span></span><span></span><span></span>
+              </div>
+            }
+          </div>
+        }
+
+        @if (voiceStatusLabel()) {
+          <p
+            class="typeform-shell__voice-status"
+            [class.typeform-shell__voice-status--error]="!!voice.errorMessage()"
+            role="status"
+          >
+            {{ voiceStatusLabel() }}
+          </p>
+        }
+      </section>
+    }
+
+    <div
+      class="typeform-shell__field"
+      [class.typeform-shell__field--hidden]="isReviewPhase()"
+      [attr.aria-hidden]="isReviewPhase()"
+    >
+      <app-dynamic-form
+        [fields]="fields()"
+        [enableLocationDependencies]="true"
+        [typeformMode]="true"
+        [activeFieldId]="navState().activeFieldId"
+        (valueChange)="onFormValueChange()"
+      ></app-dynamic-form>
+    </div>
+
+    <footer class="typeform-shell__nav">
+      <button
+        type="button"
+        class="typeform-shell__nav-btn typeform-shell__nav-btn--back"
+        [disabled]="!canGoBack()"
+        (click)="back()"
+      >
+        ← Back
+      </button>
+
+      @if (isReviewPhase()) {
+        @if (canFill()) {
+          <button
+            type="button"
+            class="typeform-shell__nav-btn typeform-shell__nav-btn--primary"
+            [disabled]="submitting()"
+            (click)="submit()"
+          >
+            Submit Form
+          </button>
+        }
+      } @else {
+        <button
+          type="button"
+          class="typeform-shell__nav-btn typeform-shell__nav-btn--primary"
+          (click)="continue()"
+        >
+          {{ continueLabel() }} →
+        </button>
+      }
+    </footer>
+  </div>
+</div>
