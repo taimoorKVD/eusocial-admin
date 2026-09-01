@@ -1,9 +1,13 @@
 import { DynamicField, DynamicFormValue } from '../../../../interfaces/dynamic-field';
+import { EmployeeAssignmentDetail, EmployeeAssignmentSectionView } from '../../../../interfaces/employee-assignment';
+import { resolveAllConditionalEffects } from '../../../../shared/conditional-logic';
 import {
   formatListingCellValue,
+  getCheckboxValues,
   getListingImageSrcs,
 } from '../../../../shared/dynamic-listing/dynamic-listing.helpers';
 import { getSignatureDisplayUrl } from '../../../../shared/dynamic-form/signature-field.utils';
+import { buildVisibleQuestionIds } from './typeform-question-navigator';
 
 export interface TypeformReviewImagePreview {
   url: string;
@@ -16,7 +20,17 @@ export interface TypeformReviewItemView {
   display: string;
   imagePreviews: TypeformReviewImagePreview[];
   signaturePreviewUrl: string | null;
+  checkboxItems: string[];
+  isEmpty: boolean;
 }
+
+export interface CompletedFormSectionView {
+  id: string;
+  name: string;
+  items: TypeformReviewItemView[];
+}
+
+export const COMPLETED_FORM_EMPTY_LABEL = 'Not provided';
 
 export function buildTypeformReviewItems(
   fields: DynamicField[],
@@ -36,12 +50,20 @@ export function buildTypeformReviewItems(
         [field.name]: values[field.name],
       };
 
+      const display = formatTypeformReviewValue(field, values);
+      const imagePreviews = getTypeformReviewImagePreviews(field, values);
+      const signaturePreviewUrl = getTypeformReviewSignaturePreview(field, values);
+      const checkboxItems =
+        field.type === 'checkbox' ? getCheckboxValues(record, field) : [];
+
       return {
         field,
         label: field.label,
-        display: formatTypeformReviewValue(field, values),
-        imagePreviews: getTypeformReviewImagePreviews(field, values),
-        signaturePreviewUrl: getTypeformReviewSignaturePreview(field, values),
+        display,
+        imagePreviews,
+        signaturePreviewUrl,
+        checkboxItems,
+        isEmpty: isReviewItemEmpty(display, imagePreviews, signaturePreviewUrl, checkboxItems),
       };
     })
     .filter((item): item is TypeformReviewItemView => !!item);
@@ -86,4 +108,85 @@ function getTypeformReviewSignaturePreview(
 
   const url = getSignatureDisplayUrl(values[field.name]);
   return url || null;
+}
+
+function isReviewItemEmpty(
+  display: string,
+  imagePreviews: TypeformReviewImagePreview[],
+  signaturePreviewUrl: string | null,
+  checkboxItems: string[],
+): boolean {
+  if (imagePreviews.length || signaturePreviewUrl || checkboxItems.length) {
+    return false;
+  }
+
+  return !display.trim() || display === '—';
+}
+
+export function answersToFormValues(
+  fields: DynamicField[],
+  answers: Record<string, unknown>,
+): DynamicFormValue {
+  const values: DynamicFormValue = {};
+
+  for (const field of fields) {
+    if (field.id && Object.prototype.hasOwnProperty.call(answers, field.id)) {
+      values[field.name] = answers[field.id];
+    } else if (field.value !== undefined) {
+      values[field.name] = field.value;
+    }
+  }
+
+  return values;
+}
+
+export function buildCompletedFormReviewItems(
+  fields: DynamicField[],
+  answers: Record<string, unknown>,
+): TypeformReviewItemView[] {
+  const values = answersToFormValues(fields, answers);
+  const effects = resolveAllConditionalEffects(fields, answers);
+  const visibleIds = buildVisibleQuestionIds(fields, effects);
+
+  return buildTypeformReviewItems(fields, visibleIds, values);
+}
+
+export function buildCompletedFormSectionViews(
+  sections: EmployeeAssignmentSectionView[],
+  answers: Record<string, unknown>,
+): CompletedFormSectionView[] {
+  return sections
+    .map((section) => ({
+      id: section.id,
+      name: section.name,
+      items: buildCompletedFormReviewItems(section.fields, answers),
+    }))
+    .filter((section) => section.items.length > 0);
+}
+
+export function readAssignmentSubmittedAt(detail: EmployeeAssignmentDetail): string | null {
+  const submission = asRecord(detail.raw['submission']);
+  const candidates = [
+    detail.raw['submittedAt'],
+    detail.raw['submitted_at'],
+    submission['submittedAt'],
+    submission['submitted_at'],
+    submission['createdAt'],
+    submission['created_at'],
+  ];
+
+  for (const candidate of candidates) {
+    const text = candidate == null ? '' : String(candidate).trim();
+    if (text) {
+      return text;
+    }
+  }
+
+  return null;
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
 }

@@ -25,6 +25,8 @@ import { DynamicField, DynamicFormValue } from '../../../../interfaces/dynamic-f
 import { mapAssignmentSectionsToBuilder } from '../utils/assignment-form.mapper';
 import { filterAnswerImages } from '../../../form-builder/utils/image-field.utils';
 import { normalizeSignatureValue } from '../../../../shared/dynamic-form/signature-field.utils';
+import { CompletedFormViewComponent } from '../typeform-fill/completed-form-view.component';
+import { readAssignmentSubmittedAt } from '../typeform-fill/format-typeform-review.utils';
 import { TypeformFillShellComponent } from '../typeform-fill/typeform-fill-shell.component';
 
 export type EmployeeFormFillMode = 'classic' | 'typeform';
@@ -32,7 +34,7 @@ export type EmployeeFormFillMode = 'classic' | 'typeform';
 @Component({
   selector: 'app-employee-assignment',
   standalone: true,
-  imports: [CommonModule, SharedModule, TypeformFillShellComponent],
+  imports: [CommonModule, SharedModule, TypeformFillShellComponent, CompletedFormViewComponent],
   templateUrl: './employee-assignment.component.html',
 })
 export class EmployeeAssignmentComponent implements OnInit {
@@ -78,6 +80,13 @@ export class EmployeeAssignmentComponent implements OnInit {
   );
   readonly mergedFields = computed(() =>
     this.sections().flatMap((section) => section.fields),
+  );
+  readonly submittedAt = computed(() => {
+    const detail = this.assignment();
+    return detail ? readAssignmentSubmittedAt(detail) : null;
+  });
+  readonly showCompletedSummary = computed(
+    () => this.showForm() && this.isCompleted(),
   );
 
   ngOnInit(): void {
