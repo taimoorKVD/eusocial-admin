@@ -22,7 +22,10 @@ import { DynamicFormComponent } from '../../../../shared/dynamic-form/dynamic-fo
 import { DynamicField } from '../../../../interfaces/dynamic-field';
 import { VoiceInputService } from '../../../../shared/voice/voice-input.service';
 import { getVoiceFieldSupport } from '../../../../shared/voice/voice-field.adapter';
-import { formatTypeformReviewValue } from './format-typeform-review.utils';
+import {
+  buildTypeformReviewItems,
+  TypeformReviewItemView,
+} from './format-typeform-review.utils';
 import {
   TypeformNavigationState,
   advanceNavigationState,
@@ -32,11 +35,7 @@ import {
   retreatNavigationState,
 } from './typeform-question-navigator';
 
-interface TypeformReviewItem {
-  field: DynamicField;
-  label: string;
-  display: string;
-}
+interface TypeformReviewItem extends TypeformReviewItemView {}
 
 @Component({
   selector: 'app-typeform-fill-shell',
@@ -82,11 +81,17 @@ export class TypeformFillShellComponent implements AfterViewInit {
   });
   readonly animationStep = signal(0);
   readonly voiceHint = signal('');
+  /** Bumped on every FormGroup change so Review reads fresh values. */
+  readonly formValuesRevision = signal(0);
+  readonly editingFromReviewFieldId = signal<string | null>(null);
+  readonly reviewLightboxUrl = signal<string | null>(null);
+  readonly brokenReviewImageUrls = signal<Set<string>>(new Set());
 
   private initialized = false;
   private wasListening = false;
 
   readonly isReviewPhase = computed(() => this.navState().phase === 'review');
+  readonly isEditingFromReview = computed(() => !!this.editingFromReviewFieldId());
 
   readonly activeField = computed(() => {
     const activeId = this.navState().activeFieldId;
@@ -187,6 +192,10 @@ export class TypeformFillShellComponent implements AfterViewInit {
   });
 
   readonly canGoBack = computed(() => {
+    if (this.isEditingFromReview()) {
+      return true;
+    }
+
     const state = this.navState();
     if (this.isReviewPhase()) {
       return state.visibleQuestionIds.length > 0;
@@ -195,11 +204,17 @@ export class TypeformFillShellComponent implements AfterViewInit {
     return state.activeQuestionIndex > 0;
   });
 
-  readonly continueLabel = computed(() =>
-    this.isLastVisibleQuestion() ? 'Review' : 'Continue',
-  );
+  readonly continueLabel = computed(() => {
+    if (this.isEditingFromReview()) {
+      return 'Save';
+    }
+
+    return this.isLastVisibleQuestion() ? 'Review' : 'Continue';
+  });
 
   readonly reviewItems = computed((): TypeformReviewItem[] => {
+    this.formValuesRevision();
+
     const form = this.formComponent();
     if (!form?.formReady()) {
       return [];
@@ -208,22 +223,8 @@ export class TypeformFillShellComponent implements AfterViewInit {
     const effects = form.getConditionalEffects();
     const visibleIds = buildVisibleQuestionIds(this.fields(), effects);
     const values = form.value ?? {};
-    const fieldMap = new Map(this.fields().map((field) => [field.id, field]));
 
-    return visibleIds
-      .map((fieldId) => {
-        const field = fieldMap.get(fieldId);
-        if (!field) {
-          return null;
-        }
-
-        return {
-          field,
-          label: field.label,
-          display: formatTypeformReviewValue(field, values),
-        };
-      })
-      .filter((item): item is TypeformReviewItem => !!item);
+    return buildTypeformReviewItems(this.fields(), visibleIds, values);
   });
 
   constructor() {
@@ -250,6 +251,7 @@ export class TypeformFillShellComponent implements AfterViewInit {
   }
 
   onFormValueChange(): void {
+    this.formValuesRevision.update((value) => value + 1);
     this.initializeIfNeeded();
     this.syncNavigationFromForm();
   }
@@ -274,13 +276,25 @@ export class TypeformFillShellComponent implements AfterViewInit {
       return;
     }
 
+    if (this.isEditingFromReview()) {
+      this.returnToReview();
+      return;
+    }
+
     this.animationStep.update((value) => value + 1);
     const effects = form.getConditionalEffects();
     this.navState.set(advanceNavigationState(state, this.fields(), effects));
+    this.formValuesRevision.update((value) => value + 1);
     this.focusActiveField();
   }
 
   back(): void {
+    if (this.isEditingFromReview()) {
+      this.stopVoice();
+      this.returnToReview();
+      return;
+    }
+
     if (!this.canGoBack()) {
       return;
     }
@@ -294,22 +308,51 @@ export class TypeformFillShellComponent implements AfterViewInit {
   jumpToQuestion(fieldId: string): void {
     this.stopVoice();
 
-    const state = this.navState();
-    const index = state.visibleQuestionIds.indexOf(fieldId);
+    const fromReview = this.isReviewPhase();
+    if (fromReview) {
+      this.editingFromReviewFieldId.set(fieldId);
+    }
+
+    const form = this.formComponent();
+    const effects = form?.getConditionalEffects() ?? {};
+    const visibleIds = buildVisibleQuestionIds(this.fields(), effects);
+    const index = visibleIds.indexOf(fieldId);
     if (index === -1) {
       return;
     }
 
-    this.animationStep.update((value) =>
-      index >= state.activeQuestionIndex ? value + 1 : value - 1,
-    );
+    this.animationStep.update((value) => (fromReview ? value - 1 : index >= this.navState().activeQuestionIndex ? value + 1 : value - 1));
     this.navState.set({
       phase: 'questions',
       activeQuestionIndex: index,
-      visibleQuestionIds: state.visibleQuestionIds,
+      visibleQuestionIds: visibleIds,
       activeFieldId: fieldId,
     });
     this.focusActiveField();
+  }
+
+  openReviewImageLightbox(url: string): void {
+    if (!url) {
+      return;
+    }
+
+    this.reviewLightboxUrl.set(url);
+  }
+
+  closeReviewImageLightbox(): void {
+    this.reviewLightboxUrl.set(null);
+  }
+
+  onReviewImageError(url: string): void {
+    this.brokenReviewImageUrls.update((current) => {
+      const next = new Set(current);
+      next.add(url);
+      return next;
+    });
+  }
+
+  isReviewImageBroken(url: string): boolean {
+    return this.brokenReviewImageUrls().has(url);
   }
 
   submit(): void {
@@ -410,8 +453,35 @@ export class TypeformFillShellComponent implements AfterViewInit {
       return;
     }
 
+    if (this.isEditingFromReview()) {
+      return;
+    }
+
     const effects = form.getConditionalEffects();
     this.navState.update((state) => rebuildNavigationState(state, this.fields(), effects));
+  }
+
+  private returnToReview(): void {
+    const form = this.formComponent();
+    if (!form) {
+      return;
+    }
+
+    this.editingFromReviewFieldId.set(null);
+    this.formValuesRevision.update((value) => value + 1);
+    this.brokenReviewImageUrls.set(new Set());
+
+    const effects = form.getConditionalEffects();
+    const visibleIds = buildVisibleQuestionIds(this.fields(), effects);
+
+    this.navState.set({
+      phase: 'review',
+      activeQuestionIndex: Math.max(visibleIds.length - 1, 0),
+      visibleQuestionIds: visibleIds,
+      activeFieldId: visibleIds[visibleIds.length - 1] ?? null,
+    });
+
+    queueMicrotask(() => this.shellRoot()?.nativeElement.focus());
   }
 
   private navigateToFirstInvalidQuestion(): void {
