@@ -5,12 +5,10 @@ import { MasterInvoice } from '../../../interfaces/master-billing';
 import { MasterInvoiceService } from '../../../services/master-invoice.service';
 import { displayMoney } from '../../../shared/utils/money.util';
 import {
+  downloadGeneratedInvoice,
   formatInvoiceDate,
   formatInvoiceStatus,
-  invoiceFileName,
-  isPdfBlob,
-  printSystemInvoice,
-  saveBlob,
+  saveRemoteOrGeneratedInvoice,
 } from '../invoice-print';
 
 @Component({
@@ -67,15 +65,11 @@ export class InvoiceView implements OnInit {
     this.invoiceService.downloadPdf(invoice.id).subscribe({
       next: (blob) => {
         this.downloading = false;
-        if (isPdfBlob(blob) && blob.size > 0) {
-          saveBlob(blob, invoiceFileName(invoice));
-          return;
-        }
-        printSystemInvoice(invoice);
+        saveRemoteOrGeneratedInvoice(blob, invoice);
       },
       error: () => {
         this.downloading = false;
-        printSystemInvoice(invoice);
+        downloadGeneratedInvoice(invoice);
       },
     });
   }

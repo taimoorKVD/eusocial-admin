@@ -1,8 +1,18 @@
 <div class="p-4">
 
-  <ng-container *ngIf="isLoading">
+  <ng-container *ngIf="isLoading || bulkDeleting">
     <app-eu-loader></app-eu-loader>
   </ng-container>
+
+  <app-confirm-modal
+    [isOpen]="showBulkDeleteConfirmModal"
+    title="Delete Permissions"
+    [description]="bulkDeleteConfirmDescription"
+    confirmText="Delete"
+    cancelText="Cancel"
+    (confirmed)="onConfirmBulkDelete()"
+    (closed)="closeBulkDeleteConfirmModal()">
+  </app-confirm-modal>
 
   <app-top-header
     [title]="'Permissions'"
@@ -16,24 +26,50 @@
     (clear)="onFilterClear()">
   </app-global-filter>
 
+  <div *ngIf="bulkSelection.hasSelection()" class="mt-4 flex items-center justify-between gap-3 rounded-xl border border-gray-100 bg-white px-4 py-3 shadow-sm">
+    <span class="text-sm text-gray-500">
+      Selected: {{ bulkSelection.count() }}
+    </span>
+    <button
+      type="button"
+      class="inline-flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-sm font-medium text-red-600 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-40"
+      [disabled]="!bulkSelection.hasSelection()"
+      (click)="openBulkDeleteConfirm()">
+      Bulk Delete
+    </button>
+  </div>
 
-  <div *ngIf="isLoading">Loading...</div>
-
-  <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mt-4">
     <div class="overflow-x-auto">
       <table class="min-w-full divide-y divide-gray-200" *ngIf="!isLoading">
         <thead class="bg-gray-50 text-gray-600 text-sm">
           <tr>
-            <th class="px-4 py-3 text-left w-12">#</th>
+            <th class="px-4 py-3 text-left w-10">
+              <input
+                type="checkbox"
+                class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
+                [checked]="isAllSelected()"
+                [indeterminate]="isIndeterminate()"
+                [disabled]="selectablePermissionIds().length === 0"
+                (change)="toggleSelectAll()"
+              />
+            </th>
             <th class="px-4 py-3 text-left">Name</th>
             <th class="px-4 py-3 text-right w-40">Actions</th>
           </tr>
         </thead>
 
         <tbody class="divide-y divide-gray-100 text-sm text-gray-700">
-          <tr class="hover:bg-gray-50 transition duration-150" *ngFor="let p of permissions; let i = index">
-            <!-- <td class="px-4 py-3">{{ p.id }}</td> -->
-            <td class="px-4 py-3">{{ i + 1 }}</td>
+          <tr class="hover:bg-gray-50 transition duration-150" *ngFor="let p of permissions" [class.bg-indigo-50]="isSelected(p)">
+            <td class="px-4 py-3 w-10">
+              <input
+                type="checkbox"
+                class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
+                [checked]="isSelected(p)"
+                [disabled]="p?.id == null"
+                (change)="toggleSelect(p)"
+              />
+            </td>
             <td class="px-4 py-3">{{ p.name }}</td>
 
             <td class="px-4 py-3 text-right">
@@ -64,6 +100,10 @@
                 </button>
               </div>
             </td>
+          </tr>
+
+          <tr *ngIf="!permissions.length">
+            <td colspan="3" class="px-4 py-10 text-center text-sm text-gray-500">No data found.</td>
           </tr>
         </tbody>
       </table>

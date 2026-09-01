@@ -45,4 +45,10 @@ export class MasterPlanService {
   deletePlan(id: number): Observable<{ success: boolean; message?: string }> {
     return this.http.delete<{ success: boolean; message?: string }>(`${this.baseUrl}/${id}`);
   }
+
+  bulkDeletePlans(ids: number[]): Observable<{ success: boolean; message?: string }> {
+    return this.http.delete<{ success: boolean; message?: string }>(`${this.baseUrl}/bulk`, {
+      body: { ids },
+    });
+  }
 }

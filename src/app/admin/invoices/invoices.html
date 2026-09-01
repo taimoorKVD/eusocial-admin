@@ -83,25 +83,19 @@
               <span class="status-pill" [ngClass]="statusClass(invoice.status)">{{ formatStatus(invoice.status) }}</span>
             </td>
             <td class="actions">
-              <div class="invoice-actions">
-                <button type="button" class="icon-btn" title="View invoice" (click)="viewInvoice(invoice)">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7s-8.268-2.943-9.542-7z"/><circle cx="12" cy="12" r="3"/></svg>
+              <div class="plan-card__menu" style="display:inline-block" (click)="$event.stopPropagation()">
+                <button type="button" class="icon-btn" (click)="toggleMenu(invoice.id, $event)" aria-label="Actions">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>
                 </button>
-                <button type="button" class="icon-btn" title="Download invoice" (click)="downloadInvoice(invoice)">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M7.5 10.5 12 15m0 0 4.5-4.5M12 15V3"/></svg>
-                </button>
-                <div class="plan-card__menu" style="display:inline-block" (click)="$event.stopPropagation()">
-                  <button type="button" class="icon-btn" (click)="toggleMenu(invoice.id, $event)" aria-label="Actions">
-                    <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>
+                <div class="menu-pop menu-pop--wide" *ngIf="openMenuId === invoice.id">
+                  <button type="button" (click)="viewInvoice(invoice)">View Invoice</button>
+                  <button type="button" (click)="downloadInvoice(invoice)">Download Invoice</button>
+                  <button type="button" (click)="viewStripeInvoice(invoice)" [disabled]="!canViewStripe(invoice)">
+                    View Stripe Invoice
                   </button>
-                  <div class="menu-pop menu-pop--wide" *ngIf="openMenuId === invoice.id">
-                    <button type="button" (click)="viewStripeInvoice(invoice)" [disabled]="!canViewStripe(invoice)">
-                      View Stripe Invoice
-                    </button>
-                    <button type="button" (click)="downloadStripeInvoice(invoice)" [disabled]="!canDownloadStripe(invoice)">
-                      Download Stripe Invoice
-                    </button>
-                  </div>
+                  <button type="button" (click)="downloadStripeInvoice(invoice)" [disabled]="!canDownloadStripe(invoice)">
+                    Download Stripe Invoice
+                  </button>
                 </div>
               </div>
             </td>

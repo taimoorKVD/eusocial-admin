@@ -11,20 +11,51 @@
         </button>
     </div>
 
+    <ng-container *ngIf="loading || bulkDeleting">
+        <app-eu-loader></app-eu-loader>
+    </ng-container>
+
+    <app-confirm-modal
+      [isOpen]="showBulkDeleteConfirmModal"
+      title="Delete Products"
+      [description]="bulkDeleteConfirmDescription"
+      confirmText="Delete"
+      cancelText="Cancel"
+      (confirmed)="onConfirmBulkDelete()"
+      (closed)="closeBulkDeleteConfirmModal()">
+    </app-confirm-modal>
+
+    <div *ngIf="bulkSelection.hasSelection()" class="flex items-center justify-between gap-3 rounded-xl border border-gray-100 bg-white px-4 py-3 shadow-sm">
+      <span class="text-sm text-gray-500">
+        Selected: {{ bulkSelection.count() }}
+      </span>
+      <button
+        type="button"
+        class="inline-flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-sm font-medium text-red-600 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-40"
+        [disabled]="!bulkSelection.hasSelection()"
+        (click)="openBulkDeleteConfirm()">
+        Bulk Delete
+      </button>
+    </div>
+
     <!-- Products Table -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div>
-            <!-- Loader -->
-            <div *ngIf="loading" class="py-10 flex justify-center">
-                <div class="h-10 w-10 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin" role="status"></div>
-            </div>
-
             <!-- Table -->
             <div class="overflow-x-auto" *ngIf="!loading && products.length">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50 text-gray-600 text-sm">
                     <tr>
-                        <th class="px-4 py-3 text-left w-12">#</th>
+                        <th class="px-4 py-3 text-left w-10">
+                          <input
+                            type="checkbox"
+                            class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
+                            [checked]="isAllSelected()"
+                            [indeterminate]="isIndeterminate()"
+                            [disabled]="selectableProductIds().length === 0"
+                            (change)="toggleSelectAll()"
+                          />
+                        </th>
                         <th class="px-4 py-3 text-left">Name</th>
                         <th class="px-4 py-3 text-left">Price</th>
                         <th class="px-4 py-3 text-left">Image</th>
@@ -34,8 +65,16 @@
                 </thead>
 
                 <tbody class="divide-y divide-gray-100 text-sm text-gray-700">
-                    <tr *ngFor="let p of products; index as i" class="hover:bg-gray-50 transition duration-150">
-                        <td class="px-4 py-3">{{ (page - 1) * 15 + i + 1 }}</td>
+                    <tr *ngFor="let p of products" class="hover:bg-gray-50 transition duration-150" [class.bg-indigo-50]="isSelected(p)">
+                        <td class="px-4 py-3 w-10">
+                          <input
+                            type="checkbox"
+                            class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
+                            [checked]="isSelected(p)"
+                            [disabled]="p?.id == null"
+                            (change)="toggleSelect(p)"
+                          />
+                        </td>
                         <td class="px-4 py-3 font-medium">{{ p.name }}</td>
                         <td class="px-4 py-3">£{{ p.price | number: '1.2-2' }}</td>
                         <td class="px-4 py-3">

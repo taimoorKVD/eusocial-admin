@@ -73,4 +73,8 @@ export class RoleService {
   deleteRole(id: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }
+
+  bulkDeleteRoles(ids: number[]): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/bulk`, { body: { ids } });
+  }
 }

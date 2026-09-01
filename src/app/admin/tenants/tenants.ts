@@ -7,6 +7,7 @@ import { Tenant } from '../../interfaces/tenant';
 import { TenantService } from '../../services/tenant.service';
 import { MasterDashboardService } from '../../services/master-dashboard.service';
 import { environment } from '../../../environments/environment';
+import { BulkSelectionState } from '../../shared/dynamic-listing/bulk-selection.state';
 
 interface TenantStats {
   total: number;
@@ -35,7 +36,11 @@ export class Tenants implements OnInit {
 
   showDeleteModal = false;
   deleteTargetId: number | null = null;
+  showBulkDeleteConfirmModal = false;
+  bulkDeleting = false;
   openMenuId: number | null = null;
+
+  bulkSelection = new BulkSelectionState();
 
   readonly statusOptions = [
     { value: '', label: 'All Status' },
@@ -53,6 +58,74 @@ export class Tenants implements OnInit {
 
   ngOnInit(): void {
     this.bootstrap();
+  }
+
+  get bulkDeleteConfirmDescription(): string {
+    const count = this.bulkSelection.count();
+    return `Delete ${count} selected organization${count === 1 ? '' : 's'}? This action cannot be undone.`;
+  }
+
+  selectableTenantIds(): number[] {
+    return this.tenants.map((t) => t.id).filter((id) => id != null);
+  }
+
+  isSelected(tenant: Tenant): boolean {
+    return this.bulkSelection.isSelected(tenant.id);
+  }
+
+  toggleSelect(tenant: Tenant, event?: Event): void {
+    event?.stopPropagation();
+    if (tenant?.id == null) return;
+    this.bulkSelection.toggle(tenant.id);
+  }
+
+  isAllSelected(): boolean {
+    return this.bulkSelection.isAllSelected(this.selectableTenantIds());
+  }
+
+  isIndeterminate(): boolean {
+    return this.bulkSelection.isIndeterminate(this.selectableTenantIds());
+  }
+
+  toggleSelectAll(): void {
+    this.bulkSelection.toggleAll(this.selectableTenantIds());
+  }
+
+  openBulkDeleteConfirm(): void {
+    if (!this.bulkSelection.hasSelection()) return;
+    this.showBulkDeleteConfirmModal = true;
+  }
+
+  closeBulkDeleteConfirmModal(): void {
+    this.showBulkDeleteConfirmModal = false;
+  }
+
+  onConfirmBulkDelete(): void {
+    const ids = [...this.bulkSelection.selectedIds()];
+    if (!ids.length) return;
+
+    const allVisibleSelected =
+      this.tenants.length > 0 && this.bulkSelection.count() === this.tenants.length;
+
+    this.closeBulkDeleteConfirmModal();
+    this.bulkDeleting = true;
+
+    this.tenantService.bulkDelete(ids).subscribe({
+      next: () => {
+        this.toastr.success('Organizations deleted successfully');
+        this.bulkSelection.clear();
+        this.bulkDeleting = false;
+        if (allVisibleSelected && this.page > 1) {
+          this.allTenants(this.page - 1);
+        } else {
+          this.allTenants(this.page);
+        }
+      },
+      error: (err) => {
+        this.bulkDeleting = false;
+        this.toastr.error(err?.error?.message || 'Failed to delete organizations');
+      },
+    });
   }
 
   @HostListener('document:click')
@@ -75,6 +148,7 @@ export class Tenants implements OnInit {
         this.tenants = [];
         this.total = 0;
         this.loading = false;
+        this.bulkSelection.clear();
         this.toastr.error('Failed to load organizations');
       },
     });
@@ -83,6 +157,7 @@ export class Tenants implements OnInit {
   allTenants(page: number = 1): void {
     this.page = page;
     this.loading = true;
+    this.bulkSelection.clear();
     this.fetchList$(page).subscribe({
       next: (res) => {
         this.applyList(res);
@@ -93,18 +168,21 @@ export class Tenants implements OnInit {
         this.tenants = [];
         this.total = 0;
         this.loading = false;
+        this.bulkSelection.clear();
         this.toastr.error('Failed to load organizations');
       },
     });
   }
 
   applyFilters(): void {
+    this.bulkSelection.clear();
     this.allTenants(1);
   }
 
   clearFilters(): void {
     this.search = '';
     this.status = '';
+    this.bulkSelection.clear();
     this.allTenants(1);
   }
 
@@ -147,6 +225,7 @@ export class Tenants implements OnInit {
     this.tenantService.delete(id).subscribe({
       next: () => {
         this.toastr.success('Organization deleted successfully');
+        this.bulkSelection.clear();
         this.allTenants(this.page);
       },
       error: (err) => {
@@ -240,13 +319,35 @@ export class Tenants implements OnInit {
   private fetchList$(page: number) {
     const search = this.search.trim();
     const status = this.status;
+    const apiSearch = this.toApiSearch(search);
 
     return this.tenantService
       .getTenants(page, this.limit, {
-        search: search || undefined,
+        search: apiSearch || undefined,
         status: status || undefined,
       })
       .pipe(map((res) => this.ensureFiltered(res, search, status)));
+  }
+
+  /**
+   * UI shows google.eusocial.thebetawebsite.com, but the API stores slug / google.com.
+   * Strip the platform host so a domain-column search still hits the list endpoint.
+   */
+  private toApiSearch(search: string): string {
+    const raw = (search || '').trim();
+    if (!raw) return '';
+
+    const host = raw.toLowerCase().replace(/^https?:\/\//, '').split('/')[0];
+    const base = (environment.baseDomain || 'eusocial.thebetawebsite.com').toLowerCase();
+
+    for (const suffix of [`.${base}`, '.eusocial.com']) {
+      if (host.endsWith(suffix) && host.length > suffix.length) {
+        const slug = host.slice(0, -suffix.length).split('.').filter(Boolean)[0];
+        if (slug) return slug;
+      }
+    }
+
+    return raw;
   }
 
   /** Keep UI correct even if API ignores status/search on the list endpoint. */
@@ -271,6 +372,7 @@ export class Tenants implements OnInit {
           t?.subdomain,
           t?.customDomain,
           t?.custom_domain,
+          this.domainOf(t),
         ]
           .filter(Boolean)
           .join(' ')
