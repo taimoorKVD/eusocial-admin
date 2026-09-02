@@ -56,7 +56,6 @@
               (change)="toggleSelectAll()"
             />
           </th>
-          <th class="px-4 py-3 w-[70px]">ID</th>
           <th class="px-4 py-3 w-[160px]">Name</th>
           <!-- <th class="px-4 py-3">Description</th> -->
           <th class="px-4 py-3 w-[560px]">Permissions</th>
@@ -66,7 +65,7 @@
 
       <tbody>
 
-        <tr *ngFor="let job of jobPositions; let i = index" class="border-t" [class.bg-orange-50]="isSelected(job)">
+        <tr *ngFor="let job of jobPositions" class="border-t" [class.bg-orange-50]="isSelected(job)">
 
           <td class="px-4 py-3 w-10">
             <input
@@ -76,10 +75,6 @@
               [disabled]="job?.id == null"
               (change)="toggleSelect(job)"
             />
-          </td>
-
-          <td class="px-4 py-3">
-            {{ (page - 1) * 15 + i + 1 }}
           </td>
 
           <td class="px-4 py-3">
@@ -117,7 +112,7 @@
 
         <!-- Empty State -->
         <tr *ngIf="jobPositions.length === 0">
-          <td colspan="5" class="text-center py-6 text-gray-400">
+          <td colspan="4" class="text-center py-6 text-gray-400">
             No job positions found
           </td>
         </tr>

@@ -58,7 +58,7 @@ export class TenantVendorService {
   }
 
   bulkDeleteVendors(ids: number[]) {
-    return this.http.delete('', { body: { ids } });
+    return this.http.delete(`${this.vendor}/bulk`, { body: { ids } });
   }
 
 //   getStates() {

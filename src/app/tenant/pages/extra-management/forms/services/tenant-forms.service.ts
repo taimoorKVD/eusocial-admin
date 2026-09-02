@@ -134,7 +134,9 @@ export class TenantFormsService {
 
   bulkDeleteForms(ids: number[]): Observable<TenantFormsApiResponse> {
     const payload: BulkDeletePayload = { ids };
-    return this.http.delete<TenantFormsApiResponse>('', { body: payload });
+    return this.http.delete<TenantFormsApiResponse>(`${this.apiUrl}/bulk`, {
+      body: payload,
+    });
   }
 
   private extractItem(response: TenantFormsApiResponse): TenantFormsApiItem {
