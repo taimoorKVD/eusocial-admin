@@ -79,6 +79,7 @@ import {
   SavedDynamicForm,
   buildDynamicFormPayload,
   createId,
+  sanitizeFrequencyRecurring,
 } from '../models/dynamic-form.models';
 
 interface WizardStep {
@@ -490,6 +491,10 @@ export class CreateFormComponent implements OnInit {
       }
     });
 
+    this.frequencyForm.controls.monthMode.valueChanges
+      .pipe(takeUntilDestroyed())
+      .subscribe((mode) => this.resetFieldsForMonthMode(mode));
+
     this.destroyRef.onDestroy(() => this.destroyFlatpickr());
   }
 
@@ -699,21 +704,23 @@ export class CreateFormComponent implements OnInit {
 
   private applyFrequencyToForm(payload: DynamicFormPayload): void {
     const frequency = payload.frequency ?? ({} as DynamicFormPayload['frequency']);
-    const recurring = frequency.recurring ?? createDefaultFrequencyRecurring();
+    const recurring = sanitizeFrequencyRecurring(
+      frequency.recurring ?? createDefaultFrequencyRecurring(),
+    );
 
     this.frequencyForm.patchValue({
       type: frequency.type ?? 'atOnce',
       date: frequency.date ?? null,
-      every: recurring.every ?? 1,
-      interval: recurring.interval ?? 'month',
-      repeatCount: recurring.repeatCount ?? 1,
-      monthMode: recurring.monthMode ?? 'dayOfMonth',
-      dayOfMonth: recurring.dayOfMonth ?? 1,
-      weekOrder: recurring.weekOrder ?? 'first',
-      onTheMonth: recurring.onTheMonth ?? 'january',
-      daysOfWeek: [...(recurring.daysOfWeek ?? [])],
-      yearMonth: recurring.yearMonth ?? 'january',
-      yearDay: recurring.yearDay ?? 1,
+      every: recurring.every,
+      interval: recurring.interval,
+      repeatCount: recurring.repeatCount,
+      monthMode: recurring.monthMode,
+      dayOfMonth: recurring.dayOfMonth,
+      weekOrder: recurring.weekOrder,
+      onTheMonth: recurring.onTheMonth,
+      daysOfWeek: [...recurring.daysOfWeek],
+      yearMonth: recurring.yearMonth,
+      yearDay: recurring.yearDay,
     });
   }
 
@@ -787,19 +794,87 @@ export class CreateFormComponent implements OnInit {
   }
 
   selectFreqOption(
-  controlName: 'type' | 'interval' | 'weekOrder' | 'onTheMonth' | 'yearMonth',
-  value: string,
-  dropdownSignal: WritableSignal<boolean>,
-  searchSignal: WritableSignal<string>,
-): void {
-  this.frequencyForm.get(controlName)?.setValue(value);
+    controlName: 'type' | 'interval' | 'weekOrder' | 'onTheMonth' | 'yearMonth',
+    value: string,
+    dropdownSignal: WritableSignal<boolean>,
+    searchSignal: WritableSignal<string>,
+  ): void {
+    const previous = this.frequencyForm.controls[controlName].value;
+    this.frequencyForm.get(controlName)?.setValue(value);
 
-  searchSignal.set('');
-  dropdownSignal.set(false);
-}
+    if (controlName === 'interval' && previous !== value) {
+      this.resetFieldsForInterval(value as FrequencyInterval);
+    }
+
+    searchSignal.set('');
+    dropdownSignal.set(false);
+  }
 
   onFreqSearch(event: Event, searchSignal: WritableSignal<string>): void {
     searchSignal.set((event.target as HTMLInputElement).value);
+  }
+
+  /** Clear schedule fields that belong to other intervals after a unit switch. */
+  private resetFieldsForInterval(interval: FrequencyInterval): void {
+    const defaults = createDefaultFrequencyRecurring();
+    switch (interval) {
+      case 'day':
+        this.frequencyForm.patchValue({
+          daysOfWeek: [],
+          monthMode: 'dayOfMonth',
+          dayOfMonth: defaults.dayOfMonth,
+          weekOrder: defaults.weekOrder,
+          onTheMonth: defaults.onTheMonth,
+          yearMonth: defaults.yearMonth,
+          yearDay: defaults.yearDay,
+        });
+        break;
+      case 'week':
+        this.frequencyForm.patchValue({
+          monthMode: 'dayOfMonth',
+          dayOfMonth: defaults.dayOfMonth,
+          weekOrder: defaults.weekOrder,
+          onTheMonth: defaults.onTheMonth,
+          yearMonth: defaults.yearMonth,
+          yearDay: defaults.yearDay,
+        });
+        break;
+      case 'month':
+        this.frequencyForm.patchValue({
+          daysOfWeek: [],
+          yearMonth: defaults.yearMonth,
+          yearDay: defaults.yearDay,
+        });
+        break;
+      case 'year':
+        this.frequencyForm.patchValue({
+          daysOfWeek: [],
+          monthMode: 'dayOfMonth',
+          dayOfMonth: defaults.dayOfMonth,
+          weekOrder: defaults.weekOrder,
+          onTheMonth: defaults.onTheMonth,
+        });
+        break;
+    }
+  }
+
+  /** Clear the inactive monthly sub-mode so stale onThe/dayOfMonth cannot mix. */
+  private resetFieldsForMonthMode(mode: FrequencyMonthMode): void {
+    if (this.frequencyForm.controls.interval.value !== 'month') {
+      return;
+    }
+    const defaults = createDefaultFrequencyRecurring();
+    if (mode === 'dayOfMonth') {
+      this.frequencyForm.patchValue({
+        daysOfWeek: [],
+        weekOrder: defaults.weekOrder,
+        onTheMonth: defaults.onTheMonth,
+      });
+    } else {
+      this.frequencyForm.patchValue({
+        dayOfMonth: defaults.dayOfMonth,
+      });
+    }
   }
 
   private syncFrequencyToMeta(): void {
@@ -808,7 +883,7 @@ export class CreateFormComponent implements OnInit {
       ...current,
       frequencyDate: value.date,
       frequencyType: value.type,
-      frequencyRecurring: {
+      frequencyRecurring: sanitizeFrequencyRecurring({
         every: Number(value.every) || 1,
         interval: value.interval,
         repeatCount: Number(value.repeatCount) || 1,
@@ -819,7 +894,7 @@ export class CreateFormComponent implements OnInit {
         onTheMonth: value.onTheMonth,
         yearMonth: value.yearMonth,
         yearDay: Number(value.yearDay) || 1,
-      },
+      }),
     }));
   }
 

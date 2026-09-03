@@ -140,6 +140,124 @@ export function createDefaultFrequencyRecurring(): FrequencyRecurringConfig {
   };
 }
 
+const MONTH_NUMBER: Record<string, number> = {
+  january: 1,
+  february: 2,
+  march: 3,
+  april: 4,
+  may: 5,
+  june: 6,
+  july: 7,
+  august: 8,
+  september: 9,
+  october: 10,
+  november: 11,
+  december: 12,
+};
+
+/**
+ * Drop fields that do not apply to the active interval/mode so leftover
+ * weekly/monthly "onThe" values cannot override yearly day-of-month schedules.
+ */
+export function sanitizeFrequencyRecurring(
+  recurring: FrequencyRecurringConfig,
+): FrequencyRecurringConfig {
+  const defaults = createDefaultFrequencyRecurring();
+  const every = Number(recurring.every) || 1;
+  const repeatCount = Number(recurring.repeatCount) || 1;
+  const interval = recurring.interval || defaults.interval;
+
+  switch (interval) {
+    case 'day':
+      return {
+        ...defaults,
+        every,
+        interval,
+        repeatCount,
+      };
+    case 'week':
+      return {
+        ...defaults,
+        every,
+        interval,
+        repeatCount,
+        daysOfWeek: [...(recurring.daysOfWeek ?? [])],
+      };
+    case 'month': {
+      const monthMode: FrequencyMonthMode =
+        recurring.monthMode === 'onThe' ? 'onThe' : 'dayOfMonth';
+      if (monthMode === 'dayOfMonth') {
+        return {
+          ...defaults,
+          every,
+          interval,
+          repeatCount,
+          monthMode,
+          dayOfMonth: Number(recurring.dayOfMonth) || 1,
+        };
+      }
+      return {
+        ...defaults,
+        every,
+        interval,
+        repeatCount,
+        monthMode,
+        weekOrder: recurring.weekOrder || defaults.weekOrder,
+        onTheMonth: recurring.onTheMonth || defaults.onTheMonth,
+        daysOfWeek: [...(recurring.daysOfWeek ?? [])],
+      };
+    }
+    case 'year':
+      // Yearly UI is day-of-month only (yearMonth + yearDay). Never keep onThe leftovers.
+      return {
+        ...defaults,
+        every,
+        interval,
+        repeatCount,
+        monthMode: 'dayOfMonth',
+        yearMonth: recurring.yearMonth || defaults.yearMonth,
+        yearDay: Number(recurring.yearDay) || 1,
+      };
+    default:
+      return {
+        ...defaults,
+        every,
+        interval: 'month',
+        repeatCount,
+      };
+  }
+}
+
+/** Anchor date for the first occurrence (used by the API for recurring series). */
+export function resolveFrequencyDate(
+  type: FrequencyType,
+  frequencyDate: string | null,
+  recurring: FrequencyRecurringConfig | null,
+  today: Date = new Date(),
+): string | null {
+  if (type === 'atOnce') {
+    return frequencyDate;
+  }
+  if (!recurring || recurring.interval !== 'year') {
+    return null;
+  }
+
+  const month = MONTH_NUMBER[recurring.yearMonth] ?? 1;
+  const day = Math.min(Math.max(Number(recurring.yearDay) || 1, 1), 31);
+  let year = today.getFullYear();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const safeDay = Math.min(day, daysInMonth);
+  const candidate = `${year}-${pad(month)}-${pad(safeDay)}`;
+  const todayStr = `${year}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+  if (candidate < todayStr) {
+    year += 1;
+    const nextDays = new Date(year, month, 0).getDate();
+    return `${year}-${pad(month)}-${pad(Math.min(day, nextDays))}`;
+  }
+  return candidate;
+}
+
 export interface FormMetaConfig {
   assignJobPosition: string[];
   assignUsers: string[];
@@ -306,6 +424,11 @@ export function buildDynamicFormPayload(
   const reportJobPositionIds = resolveSelectedIds(meta.reportJobPosition, options.jobPositions);
   const reportUserIds = resolveSelectedIds(meta.reportUsers, options.users);
 
+  const recurring =
+    meta.frequencyType === 'recurring'
+      ? sanitizeFrequencyRecurring(meta.frequencyRecurring)
+      : null;
+
   return {
     formName: formName.trim(),
     assign: {
@@ -317,11 +440,12 @@ export function buildDynamicFormPayload(
       users: reportUserIds.length ? reportUserIds : null,
     },
     frequency: {
-      jobPosition: meta.frequencyJobPosition.length ? meta.frequencyJobPosition.join(', ') : null,
-      date: meta.frequencyType === 'atOnce' ? meta.frequencyDate : null,
+      jobPosition: meta.frequencyJobPosition.length
+        ? meta.frequencyJobPosition.join(', ')
+        : null,
+      date: resolveFrequencyDate(meta.frequencyType, meta.frequencyDate, recurring),
       type: meta.frequencyType,
-      recurring:
-        meta.frequencyType === 'recurring' ? { ...meta.frequencyRecurring } : null,
+      recurring,
     },
     sections: sections.map((section) => ({
       id: section.id,

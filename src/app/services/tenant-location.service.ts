@@ -53,6 +53,10 @@ export class TenantLocationService {
     return this.http.delete(`${this.apiUrl}/${id}`);
   }
 
+  bulkDeleteLocations(ids: number[]): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/bulk`, { body: { ids } });
+  }
+
   // COUNTRIES
 getCountries(): Observable<any> {
   return this.http.get(this.countriesUrl);
