@@ -666,9 +666,14 @@ export class CreateFormComponent implements OnInit {
   private deserializeField(
     field: DynamicFormPayload['sections'][number]['rows'][number]['fields'][number] & {
       id?: string;
+      selectionType?: string;
+      selection_type?: string;
     },
   ): FormFieldConfig {
     const type = field?.type ?? 'text';
+    const selectionType =
+      type === 'select' ? this.resolveLoadedSelectionType(field) : undefined;
+
     return {
       ...field,
       id: field?.id ?? createId('field'),
@@ -676,6 +681,7 @@ export class CreateFormComponent implements OnInit {
       label: field?.label ?? '',
       name: field?.name ?? '',
       required: field?.required ?? false,
+      selectionType,
       allowDecimal: type === 'number' || (type === 'range' && normalizeRangeType((field as any)?.rangeType) === 'number')
         ? (field as any)?.allowDecimal === true
         : undefined,
@@ -700,6 +706,17 @@ export class CreateFormComponent implements OnInit {
           ? normalizeRangeTimeFormat((field as any)?.timeFormat)
           : undefined,
     };
+  }
+
+  private resolveLoadedSelectionType(field: {
+    selectionType?: string;
+    selection_type?: string;
+    optionSource?: { type?: string; endpoint?: string };
+  }): 'single' | 'multi' {
+    const raw = String(field.selectionType ?? field.selection_type ?? '')
+      .trim()
+      .toLowerCase();
+    return raw === 'multi' || raw === 'multiple' ? 'multi' : 'single';
   }
 
   private applyFrequencyToForm(payload: DynamicFormPayload): void {
@@ -1030,7 +1047,7 @@ export class CreateFormComponent implements OnInit {
     section: CustomFormSection,
     rowId: string,
     fieldId: string,
-    value: string,
+    value: string | string[],
   ): void {
     const row = section.rows.find((item) => item.id === rowId);
     if (!row) return;
@@ -1046,7 +1063,14 @@ export class CreateFormComponent implements OnInit {
       ),
     });
 
-    this.applyRowLocationDependencies(section.id, rowId, fieldId, value, nextFields);
+    const dependencyValue = Array.isArray(value) ? value[0] ?? '' : value;
+    this.applyRowLocationDependencies(
+      section.id,
+      rowId,
+      fieldId,
+      dependencyValue,
+      nextFields,
+    );
   }
 
   sectionHasFields(section: CustomFormSection): boolean {
@@ -1122,8 +1146,13 @@ export class CreateFormComponent implements OnInit {
     this.resetBuilderDraft();
 
     // Strip any all-States/all-Cities options that live field edits may have written.
+    // Never let location refresh block exiting the builder after a successful Save.
     if (target) {
-      this.initializeRowLocationDependencies(target.sectionId, target.rowId);
+      try {
+        this.initializeRowLocationDependencies(target.sectionId, target.rowId);
+      } catch {
+        // Location cascade refresh is best-effort; form fields are already persisted.
+      }
     }
   }
 
@@ -1249,10 +1278,7 @@ export class CreateFormComponent implements OnInit {
     if (selected && this.isExistingRowField(selected.id)) {
       this.selectedFieldId.set(null);
       this.builderActiveTab.set('fields');
-      const target = this.pendingFieldTarget();
-      if (target) {
-        this.initializeRowLocationDependencies(target.sectionId, target.rowId);
-      }
+      this.closeFieldBuilder();
       return;
     }
 
@@ -1262,16 +1288,13 @@ export class CreateFormComponent implements OnInit {
     const fieldsToAdd = this.builderSchema().filter((field) => !!field.label?.trim());
     if (!fieldsToAdd.length) return;
 
-    const target = this.pendingFieldTarget();
     for (const field of fieldsToAdd) {
       this.appendFieldToPendingTarget(
         mapBuilderFieldToConfig(field, { preserveId: true }),
       );
     }
 
-    if (target) {
-      this.initializeRowLocationDependencies(target.sectionId, target.rowId);
-    }
+    // closeFieldBuilder also refreshes row location dependencies for the target row.
     this.closeFieldBuilder();
   }
 
@@ -1464,16 +1487,39 @@ export class CreateFormComponent implements OnInit {
     const { country, state, city } = getRowLocationFields(fields);
 
     if (state && country) {
-      this.loadStateOptionsForRow(sectionId, rowId, state, country.value);
+      this.loadStateOptionsForRow(
+        sectionId,
+        rowId,
+        state,
+        this.toLocationDependencyValue(country.value),
+      );
     }
 
     if (!city) return;
 
     if (state) {
-      this.loadCityOptionsForStateRow(sectionId, rowId, city, state.value);
+      this.loadCityOptionsForStateRow(
+        sectionId,
+        rowId,
+        city,
+        this.toLocationDependencyValue(state.value),
+      );
     } else if (country) {
-      this.loadCityOptionsForCountryRow(sectionId, rowId, city, country.value);
+      this.loadCityOptionsForCountryRow(
+        sectionId,
+        rowId,
+        city,
+        this.toLocationDependencyValue(country.value),
+      );
     }
+  }
+
+  /** Location cascade APIs expect a scalar parent id (multi → first selected). */
+  private toLocationDependencyValue(value: FormFieldConfig['value']): string {
+    if (Array.isArray(value)) {
+      return String(value[0] ?? '');
+    }
+    return String(value ?? '');
   }
 
   /**

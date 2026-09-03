@@ -535,14 +535,22 @@ export class FieldSettingsComponent {
     this.referencePreviewUrl = null;
   }
 
-  /** Selection Type (Single/Multi) — only for user/item/vendor setup Form Builders. */
+  /**
+   * Selection Type (Single/Multi) — setup Form Builders (users/items/vendors)
+   * and Extra Management Form Module (`dynamic-forms`).
+   */
   get supportsSelectSelectionType(): boolean {
     if (!this.isSelectField) {
       return false;
     }
 
     const moduleName = (this.activeModuleName || '').trim().toLowerCase();
-    return moduleName === 'users' || moduleName === 'items' || moduleName === 'vendors';
+    return (
+      moduleName === 'users' ||
+      moduleName === 'items' ||
+      moduleName === 'vendors' ||
+      moduleName === 'dynamic-forms'
+    );
   }
 
   /** Countries / States / Cities: Multi is hidden; only Single is allowed. */
@@ -571,6 +579,7 @@ export class FieldSettingsComponent {
     }
 
     this._field.selectionType = type;
+    this.skipFieldReinitialize = true;
     this.onChange();
   }
 

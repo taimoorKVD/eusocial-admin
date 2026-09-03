@@ -23,7 +23,7 @@
         <button
           type="button"
           class="section-input font-ibm flex items-center justify-between cursor-pointer w-full"
-          [class.text-[#A0A0A0]]="!field.value"
+          [class.text-[#A0A0A0]]="!hasSelectValue"
           [disabled]="isSelectDisabled"
           [class.cursor-not-allowed]="isSelectDisabled"
           [class.opacity-60]="isSelectDisabled"
@@ -31,7 +31,7 @@
         >
           <span class="truncate">{{ selectDisplayLabel }}</span>
           <div class="flex items-center gap-2 shrink-0">
-            @if (field.value && !isSelectDisabled) {
+            @if (hasSelectValue && !isSelectDisabled) {
               <button
                 type="button"
                 class="flex items-center justify-center w-5 h-5 rounded-full hover:bg-gray-200 transition-colors"

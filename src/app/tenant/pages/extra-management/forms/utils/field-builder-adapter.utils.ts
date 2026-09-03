@@ -22,6 +22,10 @@ import {
   createFieldFromTemplate,
   toFieldName,
 } from '../../../../form-builder/utils/form-field.factory';
+import {
+  isMultiSelectionTypeHiddenForModule,
+  resolveBuilderLocationKind,
+} from '../../../../form-builder/utils/location-field-dependencies.utils';
 import { FieldType, FormFieldConfig, createId } from '../models/dynamic-form.models';
 
 /** Builder type picker options (maps to FormField + FormFieldConfig). */
@@ -117,6 +121,8 @@ export function mapConfigFieldToBuilder(field: FormFieldConfig): FormField {
     isShow: field.isShow !== false,
     options: builderOptions,
     optionSource: cloneOptionSource(field.optionSource),
+    selectionType:
+      formFieldType === 'select' ? resolveConfigSelectionType(field) : undefined,
     width: widthToGridUnits(field.width),
     value: field.value,
     defaultValue: field.defaultValue ?? field.value ?? '',
@@ -184,8 +190,9 @@ export function mapBuilderFieldToConfig(
     options: optionLabels.length ? optionLabels : undefined,
     width: mapBuilderWidthToPercent(field.width),
     isDefault: false,
-    value: field.value != null ? String(field.value) : undefined,
+    value: normalizeConfigFieldValue(field.value),
     optionSource: cloneOptionSource(field.optionSource),
+    selectionType: type === 'select' ? resolveBuilderSelectionType(field) : undefined,
     fieldTypeName: field.fieldTypeName ?? type,
     isEditable: field.isEditable,
     isShow: field.isShow,
@@ -310,6 +317,50 @@ function resolveConfigType(field: FormField, selectedType?: string): FieldType {
   }
 
   return 'text';
+}
+
+/** Match setup-user defaults: missing/unknown → single; location modules forced single. */
+function resolveBuilderSelectionType(field: FormField): 'single' | 'multi' {
+  if (
+    field.optionSource?.type === 'dynamic' &&
+    (resolveBuilderLocationKind(field.optionSource.endpoint) != null ||
+      isMultiSelectionTypeHiddenForModule(field.optionSource.endpoint))
+  ) {
+    return 'single';
+  }
+
+  return field.selectionType === 'multi' ? 'multi' : 'single';
+}
+
+function resolveConfigSelectionType(field: FormFieldConfig): 'single' | 'multi' {
+  if (
+    field.optionSource?.type === 'dynamic' &&
+    (resolveBuilderLocationKind(field.optionSource.endpoint) != null ||
+      isMultiSelectionTypeHiddenForModule(field.optionSource.endpoint))
+  ) {
+    return 'single';
+  }
+
+  const raw = String(field.selectionType ?? '').trim().toLowerCase();
+  if (raw === 'multi' || raw === 'multiple') {
+    return 'multi';
+  }
+
+  return 'single';
+}
+
+function normalizeConfigFieldValue(
+  value: unknown,
+): string | string[] | undefined {
+  if (value == null) {
+    return undefined;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item));
+  }
+
+  return String(value);
 }
 
 /** Convert FormField 12-col width to a CSS percentage used by section layout. */

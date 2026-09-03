@@ -1,5 +1,8 @@
 import { FieldCondition } from '../../../../../shared/conditional-logic';
-import { OptionSource } from '../../../../form-builder/models/form-field.model';
+import {
+  OptionSource,
+  SelectSelectionType,
+} from '../../../../form-builder/models/form-field.model';
 
 export type FieldType =
   | 'text'
@@ -45,8 +48,13 @@ export interface FormFieldConfig {
   isDefault?: boolean;
   /** Static / dynamic select options (preview / payload). */
   options?: FormSelectOption[];
-  /** User-entered value for this field. */
-  value?: string;
+  /**
+   * Select field only. Defaults to `single` for backward compatibility
+   * (same convention as setup-user Form Builder).
+   */
+  selectionType?: SelectSelectionType;
+  /** User-entered value for this field. Multi-select stores an array. */
+  value?: string | string[];
   /** Preserved from Form Builder — enables dynamic option editing on reload. */
   optionSource?: OptionSource;
   fieldTypeName?: string;

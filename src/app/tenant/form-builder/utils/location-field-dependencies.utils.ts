@@ -5,11 +5,11 @@ export type BuilderLocationKind = 'countries' | 'states' | 'cities';
 export function resolveBuilderLocationKind(
   endpoint?: string | null
 ): BuilderLocationKind | null {
-  if (!endpoint) {
+  if (endpoint == null || endpoint === '') {
     return null;
   }
 
-  const normalized = endpoint
+  const normalized = String(endpoint)
     .trim()
     .toLowerCase()
     .replace(/^\/+/, '')
