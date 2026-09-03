@@ -77,7 +77,7 @@ export class EmployeeAssignmentsService {
 
     return {
       id: this.readId(item),
-      status: this.readString(item['status']) || 'pending',
+      status: this.normalizeStatus(item['status']),
       title: this.readTitle(item),
       dueDate: this.readDate(item),
       createdAt: this.readCreatedAt(item),
@@ -97,7 +97,7 @@ export class EmployeeAssignmentsService {
 
     return {
       id: this.readId(item) || fallbackId,
-      status: this.readString(item['status']) || 'pending',
+      status: this.normalizeStatus(item['status']),
       title: this.readTitle(item),
       dueDate: this.readDate(item),
       createdAt: this.readCreatedAt(item),
@@ -261,6 +261,32 @@ export class EmployeeAssignmentsService {
       return '';
     }
     return String(value).trim();
+  }
+
+  /** Map API status variants onto the statuses used by the employee UI. */
+  private normalizeStatus(value: unknown): string {
+    const raw = this.readString(value).toLowerCase().replace(/[\s-]+/g, '_');
+    if (!raw) {
+      return 'pending';
+    }
+
+    if (raw === 'inprogress' || raw === 'in_progress' || raw === 'started' || raw === 'active') {
+      return 'in_progress';
+    }
+    if (raw === 'complete' || raw === 'completed' || raw === 'submitted' || raw === 'done') {
+      return 'completed';
+    }
+    if (raw === 'cancel' || raw === 'cancelled' || raw === 'canceled') {
+      return 'cancelled';
+    }
+    if (raw === 'overdue' || raw === 'past_due' || raw === 'pastdue') {
+      return 'overdue';
+    }
+    if (raw === 'pending' || raw === 'assigned' || raw === 'new' || raw === 'not_started') {
+      return 'pending';
+    }
+
+    return raw;
   }
 
   private toNumber(value: unknown): number {

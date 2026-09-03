@@ -34,7 +34,11 @@ export class TenantRoleService {
     return this.http.delete(`${this.apiUrl}/${id}`);
   }
 
+  bulkDeleteRoles(ids: number[]) {
+    return this.http.delete(`${this.apiUrl}/bulk`, { body: { ids } });
+  }
+
   getPermissions() {
-  return this.http.get(`${environment.tenantApiUrl}/permissions`);
-}
+    return this.http.get(`${environment.tenantApiUrl}/permissions`);
+  }
 }

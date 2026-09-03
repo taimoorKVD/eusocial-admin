@@ -44,6 +44,6 @@ export class TenantJobPositionService {
   }
 
   bulkDeleteJobPositions(ids: number[]) {
-    return this.http.delete('', { body: { ids } });
+    return this.http.delete(`${this.jobPosition}/bulk`, { body: { ids } });
   }
 }

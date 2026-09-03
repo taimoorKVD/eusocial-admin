@@ -30,6 +30,8 @@ import { readAssignmentSubmittedAt } from '../typeform-fill/format-typeform-revi
 import { TypeformFillShellComponent } from '../typeform-fill/typeform-fill-shell.component';
 
 export type EmployeeFormFillMode = 'classic' | 'typeform';
+/** Interaction layer after Start Assignment — presentation only, not a second form store. */
+export type EmployeeInteractionMode = 'manual' | 'voice';
 
 @Component({
   selector: 'app-employee-assignment',
@@ -47,8 +49,14 @@ export class EmployeeAssignmentComponent implements OnInit {
   private readonly dynamicForms = viewChildren(DynamicFormComponent);
   private readonly typeformShell = viewChild(TypeformFillShellComponent);
 
-  /** Assigned employee forms use Typeform mode by default. */
+  /** Assigned employee forms use Typeform layout by default. */
   readonly fillMode = signal<EmployeeFormFillMode>('typeform');
+  /**
+   * null until the employee explicitly chooses Fill Manually / Fill with Voice
+   * for this visit. Presentation only — never a second form data store.
+   * Reset on every assignment load so IN_PROGRESS resumes also show the gate.
+   */
+  readonly interactionMode = signal<EmployeeInteractionMode | null>(null);
 
   readonly loading = signal(true);
   readonly starting = signal(false);
@@ -88,6 +96,32 @@ export class EmployeeAssignmentComponent implements OnInit {
   readonly showCompletedSummary = computed(
     () => this.showForm() && this.isCompleted(),
   );
+  /**
+   * Gate for EVERY non-completed fillable assignment (new in_progress after Start
+   * AND resumed in_progress / overdue). Does not depend on hydration.
+   * in_progress must never bypass this.
+   */
+  readonly showModeSelection = computed(
+    () =>
+      !!this.assignment() &&
+      this.canFill() &&
+      this.interactionMode() === null &&
+      !this.isPending() &&
+      !this.isCompleted() &&
+      !this.isCancelled() &&
+      !this.showSuccess() &&
+      !this.formError(),
+  );
+  /** Shell mounts only after an explicit mode choice AND fields are ready. */
+  readonly showActiveForm = computed(
+    () =>
+      this.canFill() &&
+      this.hasForm() &&
+      !this.showSuccess() &&
+      !this.isCancelled() &&
+      !this.formError() &&
+      this.interactionMode() !== null,
+  );
 
   ngOnInit(): void {
     const fillMode = this.route.snapshot.queryParamMap.get('fillMode');
@@ -95,17 +129,29 @@ export class EmployeeAssignmentComponent implements OnInit {
       this.fillMode.set('classic');
     }
 
-    const id = this.route.snapshot.paramMap.get('id');
-    if (!id) {
-      this.loading.set(false);
-      this.errorMessage.set('Assignment id is missing.');
-      return;
-    }
-    this.loadAssignment(id);
+    // Reload on every navigation to :id (Continue / deep-link / Start path).
+    this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      const id = params.get('id');
+      if (!id) {
+        this.loading.set(false);
+        this.errorMessage.set('Assignment id is missing.');
+        return;
+      }
+      this.loadAssignment(id);
+    });
   }
 
   goBack(): void {
     this.router.navigate(['/my-forms']);
+  }
+
+  selectInteractionMode(mode: EmployeeInteractionMode): void {
+    if (!this.canFill() || this.isCompleted() || this.isCancelled()) {
+      return;
+    }
+
+    // Presentation choice only — do not reset FormGroup / answers / progress.
+    this.interactionMode.set(mode);
   }
 
   statusLabel(status: string | undefined): string {
@@ -147,6 +193,8 @@ export class EmployeeAssignmentComponent implements OnInit {
     }
 
     this.starting.set(true);
+    // Mode must be chosen after start — never open the shell yet.
+    this.interactionMode.set(null);
 
     this.assignmentsService
       .startAssignment(current.id)
@@ -168,7 +216,9 @@ export class EmployeeAssignmentComponent implements OnInit {
       )
       .subscribe({
         next: (detail) => {
-          this.applyAssignment(this.mergeDetail(current, detail));
+          const merged = this.ensureStartedStatus(this.mergeDetail(current, detail));
+          this.interactionMode.set(null);
+          this.applyAssignment(merged);
           this.toastr.success('Assignment started');
         },
         error: (err) => {
@@ -215,6 +265,7 @@ export class EmployeeAssignmentComponent implements OnInit {
 
   viewSubmittedForm(): void {
     this.showSuccess.set(false);
+    this.interactionMode.set(null);
     const current = this.assignment();
     if (current) {
       this.applyAssignment(current);
@@ -233,6 +284,8 @@ export class EmployeeAssignmentComponent implements OnInit {
     this.errorMessage.set('');
     this.formError.set('');
     this.showSuccess.set(false);
+    // Every open/resume visit must re-ask for mode (do not persist prior session mode).
+    this.interactionMode.set(null);
     this.sections.set([]);
 
     this.assignmentsService
@@ -274,8 +327,18 @@ export class EmployeeAssignmentComponent implements OnInit {
       });
   }
 
+  /** Start API sometimes omits status — never leave a just-started assignment as pending. */
+  private ensureStartedStatus(detail: EmployeeAssignmentDetail): EmployeeAssignmentDetail {
+    if (detail.status === 'pending' || !detail.status) {
+      return { ...detail, status: 'in_progress' };
+    }
+    return detail;
+  }
+
   private hydrateSections(detail: EmployeeAssignmentDetail) {
-    const answers = detail.status === 'completed' ? detail.answers : {};
+    // Preserve saved/draft answers for in_progress + completed. Pending has none.
+    const answers =
+      detail.status === 'pending' ? {} : detail.answers ?? {};
     const mapped = mapAssignmentSectionsToBuilder(detail.sections, detail.schema, answers);
     const readonly = detail.status === 'completed';
 
