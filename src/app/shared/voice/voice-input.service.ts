@@ -39,6 +39,11 @@ interface SpeechRecognitionErrorEventLike {
   message?: string;
 }
 
+const SHORT_ANSWER_FAST_PATH_MAX_WORDS = 3;
+const SHORT_ANSWER_FAST_PATH_MAX_CHARS = 22;
+const SHORT_ANSWER_FAST_PATH_GRACE_MS = 300;
+const SHORT_ANSWER_FAST_PATH_PENDING_RESULTS_MAX = 1;
+
 @Injectable()
 export class VoiceInputService implements OnDestroy {
   readonly isSupported = signal(this.detectSupport());
@@ -50,6 +55,7 @@ export class VoiceInputService implements OnDestroy {
   private readonly ngZone = inject(NgZone);
 
   private recognition: SpeechRecognitionLike | null = null;
+  private shortAnswerStopTimer: ReturnType<typeof setTimeout> | null = null;
 
   ngOnDestroy(): void {
     this.stopListening();
@@ -105,6 +111,7 @@ export class VoiceInputService implements OnDestroy {
   stopListening(): void {
     const recognition = this.recognition;
     this.recognition = null;
+    this.clearShortAnswerStopTimer();
 
     if (!recognition) {
       this.listening.set(false);
@@ -157,6 +164,24 @@ export class VoiceInputService implements OnDestroy {
 
     if (finalText) {
       this.finalTranscript.set(finalText);
+
+      // Fast-path: for very short answers, don't wait for the browser's end-of-speech
+      // heuristic (which can be slow under background noise). We only do this when:
+      // - the onresult batch is simple (typically a single final result)
+      // - the transcript "looks short"
+      // - we are not currently seeing interim speech continuation
+      if (
+        event.results.length <= SHORT_ANSWER_FAST_PATH_PENDING_RESULTS_MAX &&
+        this.shouldFastStopForShortAnswer(finalText) &&
+        !interimText
+      ) {
+        this.scheduleShortAnswerStop();
+      }
+    }
+
+    // If we see interim speech after a final, cancel any fast stop — user may be continuing.
+    if (interimText) {
+      this.clearShortAnswerStopTimer();
     }
 
     this.interimTranscript.set(interimText);
@@ -181,6 +206,7 @@ export class VoiceInputService implements OnDestroy {
     this.listening.set(false);
     this.interimTranscript.set('');
     this.recognition = null;
+    this.clearShortAnswerStopTimer();
   }
 
   private commitPendingTranscript(): void {
@@ -223,5 +249,59 @@ export class VoiceInputService implements OnDestroy {
     };
 
     return browserWindow.SpeechRecognition ?? browserWindow.webkitSpeechRecognition ?? null;
+  }
+
+  private shouldFastStopForShortAnswer(transcript: string): boolean {
+    const cleaned = transcript
+      .trim()
+      .replace(/[^\w\s'-]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .toLowerCase();
+
+    const words = cleaned.split(' ').filter(Boolean);
+    if (!words.length) {
+      return false;
+    }
+
+    // Avoid early stop for apparent continuation (common for long answers that pause mid-sentence).
+    if (/\b(and|but|because|so|though|however|um|uh)\b$/.test(words[words.length - 1])) {
+      return false;
+    }
+
+    if (words.length > SHORT_ANSWER_FAST_PATH_MAX_WORDS) {
+      return false;
+    }
+
+    // Keep it tight so "Satisfied" / "Very satisfied" / "Ten kilograms" are fast,
+    // but longer sentences (textarea-style answers) are not.
+    if (cleaned.length > SHORT_ANSWER_FAST_PATH_MAX_CHARS) {
+      return false;
+    }
+
+    return true;
+  }
+
+  private scheduleShortAnswerStop(): void {
+    // Don't stack timers; we'll handle only one end-of-speech decision per utterance.
+    if (this.shortAnswerStopTimer) {
+      return;
+    }
+
+    // Small grace prevents cutting off answers when the browser emits a final slightly early.
+    this.shortAnswerStopTimer = setTimeout(() => {
+      this.shortAnswerStopTimer = null;
+      if (!this.recognition) {
+        return;
+      }
+      // Stop recognition so the shell can process the final transcript immediately.
+      this.stopListening();
+    }, SHORT_ANSWER_FAST_PATH_GRACE_MS);
+  }
+
+  private clearShortAnswerStopTimer(): void {
+    if (this.shortAnswerStopTimer) {
+      clearTimeout(this.shortAnswerStopTimer);
+      this.shortAnswerStopTimer = null;
+    }
   }
 }

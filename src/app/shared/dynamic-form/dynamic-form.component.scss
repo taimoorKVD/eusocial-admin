@@ -62,6 +62,174 @@
       font-weight: 500;
     }
 
+    /*
+     * Typeform Selectbox presentation only.
+     * Isolated from classic dropdown and shared radio/checkbox chrome.
+     */
+    .typeform-select-options {
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      width: 100%;
+      max-height: min(55vh, 28rem);
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      padding: 0.15rem 0.2rem 0.35rem 0;
+      scroll-padding-block: 0.5rem;
+      -webkit-overflow-scrolling: touch;
+
+      &::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: rgba(148, 163, 184, 0.5);
+        border-radius: 999px;
+      }
+    }
+
+    .typeform-select-empty {
+      padding: 1.1rem 1.15rem;
+      border: 1px dashed #e2e8f0;
+      border-radius: 0.75rem;
+      color: #64748b;
+      font-size: 0.95rem;
+      text-align: center;
+      background: #fafafa;
+    }
+
+    .typeform-choice {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      width: 100%;
+      min-height: 3.35rem;
+      margin: 0;
+      padding: 0.95rem 1.1rem;
+      border: 1.5px solid #e8e8e8;
+      border-radius: 0.65rem;
+      background: #ffffff;
+      color: #191919;
+      cursor: pointer;
+      user-select: none;
+      transition:
+        border-color 160ms ease,
+        background-color 160ms ease,
+        box-shadow 160ms ease,
+        transform 160ms ease;
+
+      &:hover:not(.typeform-choice--disabled):not(.typeform-choice--selected) {
+        border-color: #ffc48a;
+        background: #fffbf7;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+      }
+
+      &:focus-within {
+        outline: none;
+        border-color: #ff9015;
+        box-shadow: 0 0 0 3px rgba(255, 144, 21, 0.18);
+      }
+
+      &--selected {
+        border-color: #ff9015;
+        background: #fff7ed;
+        box-shadow: 0 0 0 1px rgba(255, 144, 21, 0.35);
+      }
+
+      &--disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+        box-shadow: none;
+        transform: none;
+      }
+    }
+
+    .typeform-choice__input {
+      position: absolute;
+      opacity: 0;
+      width: 1px;
+      height: 1px;
+      margin: 0;
+      pointer-events: none;
+    }
+
+    .typeform-choice__marker {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      width: 1.35rem;
+      height: 1.35rem;
+      border: 1.5px solid #c4c4c4;
+      background: #fff;
+      color: transparent;
+      transition:
+        border-color 160ms ease,
+        background-color 160ms ease,
+        color 160ms ease,
+        box-shadow 160ms ease;
+
+      &--radio {
+        border-radius: 999px;
+      }
+
+      &--check {
+        border-radius: 0.3rem;
+      }
+    }
+
+    .typeform-choice--selected .typeform-choice__marker {
+      border-color: #ff9015;
+      background: #ff9015;
+      color: #fff;
+      box-shadow: 0 0 0 3px rgba(255, 144, 21, 0.14);
+    }
+
+    .typeform-choice--selected .typeform-choice__marker--radio {
+      background: #fff;
+      box-shadow: inset 0 0 0 4px #ff9015;
+    }
+
+    .typeform-choice__check {
+      width: 0.85rem;
+      height: 0.85rem;
+      opacity: 0;
+      transition: opacity 120ms ease;
+    }
+
+    .typeform-choice--selected .typeform-choice__check {
+      opacity: 1;
+    }
+
+    .typeform-choice__label {
+      flex: 1 1 auto;
+      min-width: 0;
+      font-size: 1.05rem;
+      line-height: 1.4;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+      color: inherit;
+      word-break: break-word;
+    }
+
+    @media (max-width: 639px) {
+      .typeform-choice {
+        min-height: 3.1rem;
+        padding: 0.85rem 0.95rem;
+        gap: 0.75rem;
+      }
+
+      .typeform-choice__label {
+        font-size: 1rem;
+      }
+
+      .typeform-select-options {
+        max-height: min(50vh, 24rem);
+        gap: 0.55rem;
+      }
+    }
+
     .field-error {
       display: none;
     }

@@ -400,6 +400,22 @@ export class DynamicFormComponent implements OnDestroy {
       };
     }
 
+    // Multi-select voice merges spoken options with any already clicked values.
+    if (
+      field.type === 'select' &&
+      isMultiSelectField(field) &&
+      Array.isArray(nextValue)
+    ) {
+      const current = Array.isArray(control.value) ? control.value : [];
+      const merged = [...current];
+      for (const value of nextValue) {
+        if (!merged.some((item) => String(item) === String(value))) {
+          merged.push(value);
+        }
+      }
+      nextValue = merged;
+    }
+
     control.setValue(nextValue);
     control.markAsDirty();
     control.markAsTouched();

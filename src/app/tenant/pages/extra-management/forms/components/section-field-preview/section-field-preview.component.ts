@@ -77,11 +77,28 @@ export class SectionFieldPreviewComponent {
   @Input({ required: true }) field!: FormFieldConfig;
   @Input() forceRequired: boolean | null = null;
   @Input() forceDisabled = false;
-  @Output() valueChange = new EventEmitter<string>();
+  @Output() valueChange = new EventEmitter<string | string[]>();
 
   readonly selectDropdownOpen = signal(false);
   readonly selectSearchQuery = signal('');
   readonly dropdownPosition = signal<{ top: number; left: number; width: number } | null>(null);
+
+  get isMultiSelect(): boolean {
+    return this.field?.type === 'select' && this.field.selectionType === 'multi';
+  }
+
+  get hasSelectValue(): boolean {
+    if (this.isMultiSelect) {
+      return this.getMultiSelectedValues().length > 0;
+    }
+
+    const value = this.field?.value;
+    if (Array.isArray(value)) {
+      return value.some((item) => String(item ?? '').trim().length > 0);
+    }
+
+    return String(value ?? '').trim().length > 0;
+  }
 
   get filteredSelectOptions(): FormSelectOption[] {
     const options = this.field?.options ?? [];
@@ -99,14 +116,33 @@ export class SectionFieldPreviewComponent {
   }
 
   get selectDisplayLabel(): string {
-    if (!this.field.value) {
+    if (this.isMultiSelect) {
+      const selected = this.getMultiSelectedValues();
+      if (!selected.length) {
+        return this.selectPlaceholder;
+      }
+
+      const labels = selected.map((value) => {
+        const match = (this.field.options ?? []).find(
+          (opt) => this.optionValue(opt) === value,
+        );
+        return match ? this.optionLabel(match) : value;
+      });
+
+      return labels.join(', ');
+    }
+
+    if (!this.hasSelectValue) {
       return this.selectPlaceholder;
     }
 
+    const current = Array.isArray(this.field.value)
+      ? String(this.field.value[0] ?? '')
+      : String(this.field.value);
     const match = (this.field.options ?? []).find(
-      (opt) => this.optionValue(opt) === String(this.field.value),
+      (opt) => this.optionValue(opt) === current,
     );
-    return match ? this.optionLabel(match) : String(this.field.value);
+    return match ? this.optionLabel(match) : current;
   }
 
   get isFieldRequired(): boolean {
@@ -131,7 +167,25 @@ export class SectionFieldPreviewComponent {
   }
 
   isOptionSelected(option: FormSelectOption): boolean {
-    return String(this.field.value ?? '') === this.optionValue(option);
+    const optionValue = this.optionValue(option);
+    if (this.isMultiSelect) {
+      return this.getMultiSelectedValues().includes(optionValue);
+    }
+
+    return String(this.field.value ?? '') === optionValue;
+  }
+
+  private getMultiSelectedValues(): string[] {
+    const value = this.field.value;
+    if (Array.isArray(value)) {
+      return value.map(String).filter((item) => item.length > 0);
+    }
+
+    if (value == null || value === '') {
+      return [];
+    }
+
+    return [String(value)];
   }
 
   @HostListener('document:click', ['$event'])
@@ -182,13 +236,24 @@ export class SectionFieldPreviewComponent {
   }
 
   selectOption(option: FormSelectOption): void {
-    this.valueChange.emit(this.optionValue(option));
+    const optionValue = this.optionValue(option);
+
+    if (this.isMultiSelect) {
+      const current = this.getMultiSelectedValues();
+      const next = current.includes(optionValue)
+        ? current.filter((item) => item !== optionValue)
+        : [...current, optionValue];
+      this.valueChange.emit(next);
+      return;
+    }
+
+    this.valueChange.emit(optionValue);
     this.closeSelectDropdown();
   }
 
   clearSelection(event: MouseEvent): void {
     event.stopPropagation();
-    this.valueChange.emit('');
+    this.valueChange.emit(this.isMultiSelect ? [] : '');
   }
 
   onSelectSearch(event: Event): void {
@@ -561,8 +626,13 @@ export class SectionFieldPreviewComponent {
   }
 
   private selectedOptions(): string[] {
-    const raw = this.field.value ?? '';
-    if (!raw.trim()) return [];
-    return raw.split(',').map((part) => part.trim()).filter(Boolean);
+    const raw = this.field.value;
+    if (Array.isArray(raw)) {
+      return raw.map((part) => String(part).trim()).filter(Boolean);
+    }
+
+    const text = String(raw ?? '');
+    if (!text.trim()) return [];
+    return text.split(',').map((part) => part.trim()).filter(Boolean);
   }
 }

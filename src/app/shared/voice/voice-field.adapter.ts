@@ -146,6 +146,11 @@ function parseStructuredVoiceValue(
     return parseCheckboxVoiceValue(field, transcript, options);
   }
 
+  // Multi-select uses the same multi-option matching as checkbox (array FormControl).
+  if (field.type === 'select' && field.selectionType === 'multi') {
+    return parseCheckboxVoiceValue(field, transcript, options);
+  }
+
   const normalizedTranscript = stripOptionFillers(normalizeSpeechText(transcript));
   const scored = options
     .map((option, index) => {

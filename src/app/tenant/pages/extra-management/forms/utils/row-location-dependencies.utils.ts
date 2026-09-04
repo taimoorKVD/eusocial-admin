@@ -18,6 +18,15 @@ export function getConfigFieldLocationKind(
   return getFieldLocationKind(mapConfigFieldToBuilder(field));
 }
 
+/** True when a select field currently has a non-empty selection. */
+export function hasSelectFieldValue(value: FormFieldConfig['value']): boolean {
+  if (Array.isArray(value)) {
+    return value.some((item) => String(item ?? '').trim().length > 0);
+  }
+
+  return String(value ?? '').trim().length > 0;
+}
+
 /** Locate Country / State / City selects within a single Form Details row. */
 export function getRowLocationFields(fields: FormFieldConfig[]): RowLocationFields {
   let country: FormFieldConfig | null = null;
@@ -50,7 +59,7 @@ export function clearDependentLocationOptions(
       return {
         ...field,
         options: [],
-        value: country.value?.trim() ? field.value : '',
+        value: hasSelectFieldValue(country.value) ? field.value : '',
       };
     }
 
@@ -59,7 +68,7 @@ export function clearDependentLocationOptions(
         return {
           ...field,
           options: [],
-          value: state.value?.trim() ? field.value : '',
+          value: hasSelectFieldValue(state.value) ? field.value : '',
         };
       }
 
@@ -67,7 +76,7 @@ export function clearDependentLocationOptions(
         return {
           ...field,
           options: [],
-          value: country.value?.trim() ? field.value : '',
+          value: hasSelectFieldValue(country.value) ? field.value : '',
         };
       }
     }
@@ -146,5 +155,13 @@ export function isLocationEndpoint(endpoint?: string | null): boolean {
 }
 
 export function isEmptyLocationValue(value: unknown): boolean {
-  return value === null || value === undefined || String(value).trim() === '';
+  if (value === null || value === undefined) {
+    return true;
+  }
+
+  if (Array.isArray(value)) {
+    return !value.some((item) => String(item ?? '').trim().length > 0);
+  }
+
+  return String(value).trim() === '';
 }

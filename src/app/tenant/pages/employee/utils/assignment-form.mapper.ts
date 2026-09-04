@@ -53,6 +53,30 @@ function applyAnswer(
   }
 
   const answer = answers[field.id];
+  const isMultiSelect =
+    field.type === 'select' &&
+    (field.selectionType === 'multi' ||
+      String((field as { selection_type?: string }).selection_type || '')
+        .trim()
+        .toLowerCase() === 'multi' ||
+      String((field as { selection_type?: string }).selection_type || '')
+        .trim()
+        .toLowerCase() === 'multiple');
+
+  if (isMultiSelect) {
+    const values = Array.isArray(answer)
+      ? answer.map(String)
+      : answer == null || answer === ''
+        ? []
+        : [String(answer)];
+
+    return {
+      ...field,
+      value: values,
+      defaultValue: values,
+    };
+  }
+
   return {
     ...field,
     value: normalizeDisplayValue(answer),
