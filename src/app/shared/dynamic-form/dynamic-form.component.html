@@ -437,6 +437,62 @@
             }
 
             @case ('select') {
+              @if (typeformMode()) {
+                <!-- Typeform / Voice: Typeform-style choice cards (not a dropdown). -->
+                <div
+                  class="typeform-select-options"
+                  [class.typeform-select-options--multi]="isMultiSelect(field)"
+                  [class.typeform-select-options--single]="!isMultiSelect(field)"
+                  [attr.role]="isMultiSelect(field) ? 'group' : 'radiogroup'"
+                  [attr.aria-label]="field.label"
+                  [id]="field.id"
+                >
+                  @if (!getFieldOptions(field).length) {
+                    <div class="typeform-select-empty font-ibm">
+                      No options available
+                    </div>
+                  } @else {
+                    @for (option of getFieldOptions(field); track getOptionValue(option, $index); let i = $index) {
+                      <label
+                        class="typeform-choice"
+                        [class.typeform-choice--selected]="isSelectOptionSelected(field, option, i)"
+                        [class.typeform-choice--disabled]="isFieldDisabled(field)"
+                        [for]="field.id + '-tf-opt-' + i"
+                      >
+                        <input
+                          class="typeform-choice__input"
+                          [type]="isMultiSelect(field) ? 'checkbox' : 'radio'"
+                          [id]="field.id + '-tf-opt-' + i"
+                          [name]="field.name + (isMultiSelect(field) ? '-' + i : '')"
+                          [value]="getOptionValue(option, i)"
+                          [checked]="isSelectOptionSelected(field, option, i)"
+                          [disabled]="isFieldDisabled(field)"
+                          (change)="selectOption(field, option, i)"
+                        />
+                        <span
+                          class="typeform-choice__marker"
+                          [class.typeform-choice__marker--radio]="!isMultiSelect(field)"
+                          [class.typeform-choice__marker--check]="isMultiSelect(field)"
+                          aria-hidden="true"
+                        >
+                          @if (isMultiSelect(field)) {
+                            <svg class="typeform-choice__check" viewBox="0 0 16 16" fill="none">
+                              <path
+                                d="M3.5 8.2 6.4 11l6.1-6.5"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                              />
+                            </svg>
+                          }
+                        </span>
+                        <span class="typeform-choice__label font-ibm">{{ getOptionLabel(option) }}</span>
+                      </label>
+                    }
+                  }
+                </div>
+              } @else {
               <div
                 class="relative"
                 appDropdownPanel
@@ -585,6 +641,7 @@
                   </div>
                 }
               </div>
+              }
             }
 
             @case ('checkbox') {
