@@ -1,156 +1,285 @@
- <ng-container *ngIf="isLoading">
-    <app-eu-loader></app-eu-loader>
+<ng-container *ngIf="isLoading || isSavingPermissions">
+  <app-eu-loader></app-eu-loader>
+</ng-container>
+
+<div class="bg-gray-100 p-4 min-h-screen flex flex-col">
+
+  <!-- Header -->
+  <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <button
+        type="button"
+        class="cursor-pointer text-[14px] font-medium font-ibm text-[#ea580c] hover:underline mb-1"
+        (click)="goToJobListing()"
+      >
+        ← Job Positions
+      </button>
+      <h2 class="text-[20px] font-semibold font-ibm text-[#161616]">
+        {{ pageTitle }}
+      </h2>
+    </div>
+
+    <!-- Step indicator -->
+    <div class="flex items-center gap-2 text-sm font-ibm">
+      <span
+        class="inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-semibold"
+        [ngClass]="currentStep === 1 ? 'bg-[#fe9015] text-white' : 'bg-[#D0DD28] text-[#161616]'"
+      >
+        1
+      </span>
+      <span class="text-gray-600">Details</span>
+      <span class="text-gray-300 mx-1">—</span>
+      <span
+        class="inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-semibold"
+        [ngClass]="currentStep === 2 ? 'bg-[#fe9015] text-white' : 'bg-gray-200 text-gray-500'"
+      >
+        2
+      </span>
+      <span class="text-gray-600">Permissions</span>
+    </div>
+  </div>
+
+  <!-- ═══════════════ STEP 1: Job details ═══════════════ -->
+  <ng-container *ngIf="currentStep === 1">
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 max-w-2xl">
+      <h3 class="text-[15px] font-semibold text-[#111827] font-ibm mb-1">
+        Job Position Information
+      </h3>
+      <p class="text-[13px] text-gray-500 font-ibm mb-6">
+        Enter the job position details, then continue to configure permissions.
+      </p>
+
+      <div class="mb-2">
+        <label class="block text-[13px] font-medium text-gray-700 font-ibm mb-2">
+          Job Position Name <span class="text-red-500">*</span>
+        </label>
+        <input
+          type="text"
+          [(ngModel)]="jobTitle"
+          name="jobTitle"
+          placeholder="Enter Job Title"
+          class="border border-[#FF9015] px-3 w-full placeholder-[#A8A8A8] text-[#161616] focus:outline-none py-3 text-[14px] bg-transparent rounded-lg font-ibm"
+        />
+        <p class="text-xs text-gray-400 mt-1 font-ibm">Job Position Field</p>
+      </div>
+    </div>
+
+    <div class="flex justify-end gap-3 mt-8">
+      @if (isEditMode) {
+        <button type="button" (click)="deleteJob()" class="btn btn--delete" [disabled]="isLoading">
+          Delete
+        </button>
+      }
+
+      <button type="button" (click)="resetForm()" class="btn btn--cancel" [disabled]="isLoading">
+        Cancel
+      </button>
+
+      <button
+        type="button"
+        (click)="continueToPermissions()"
+        class="btn btn--save"
+        [disabled]="isLoading"
+      >
+        {{ isEditMode ? 'Continue to Permissions' : 'Save & Continue' }}
+      </button>
+    </div>
   </ng-container>
 
-<div class="bg-gray-100 p-4 flex flex-col justify-between">
+  <!-- ═══════════════ STEP 2: Permissions ═══════════════ -->
+  <ng-container *ngIf="currentStep === 2">
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex-1 flex flex-col min-h-[28rem]">
 
-  <!-- Loader -->
-  <!-- <div *ngIf="isLoading" class="fixed inset-0 bg-white/50 flex items-center justify-center z-50">
-    <div class="text-blue-600 text-lg">Loading...</div>
-  </div> -->
+      <!-- Permissions toolbar -->
+      <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-gray-100 bg-gray-50">
+        <div>
+          <h3 class="text-[15px] font-semibold text-[#111827] font-ibm">
+            {{ jobTitle || 'Job Position' }} — Permissions
+          </h3>
+          <p class="text-[12px] text-gray-500 font-ibm mt-0.5">
+            Select permissions by module. Only selected permission IDs will be submitted.
+          </p>
+        </div>
 
-  <!-- Top Section -->
-  <div>
-
-    <!-- Header -->
-    <div class="grid grid-cols-3 gap-x-12 gap-y-6 mb-[60px] items-center">
-
-      <!-- Dropdown -->
-      <div>
-        <h2
-          class="cursor-pointer text-[16px] font-medium font-ibm text-[#ea580c] hover:underline"
-          (click)="goToJobListing()"
-        >
-          Create / View Job Positions
-        </h2>
+        <div class="flex items-center gap-3">
+          <span class="text-[13px] font-medium font-ibm text-[#ea580c] bg-orange-50 border border-orange-100 px-3 py-1.5 rounded-lg">
+            {{ selectedCount }} selected
+          </span>
+        </div>
       </div>
-      <div></div>
-    </div>
 
-    <!-- Input -->
-    <div class="grid grid-cols-3 gap-x-12 gap-y-6">
-      <div class="mb-6">
-        <input type="text" [(ngModel)]="jobTitle" placeholder="Enter Job Title"
-          class="border border-[#FF9015] px-3 w-full placeholder-[#A8A8A8] text-[#161616] focus:outline-none py-3 text-[14px] bg-transparent" />
-        <p class="text-xs text-gray-400 mt-1">Job Position Field</p>
+      <!-- Loading permissions -->
+      <div *ngIf="isLoadingPermissions" class="flex-1 flex items-center justify-center p-10">
+        <div class="text-center">
+          <div class="inline-block w-8 h-8 border-2 border-[#fe9015] border-t-transparent rounded-full animate-spin mb-3"></div>
+          <p class="text-sm text-gray-600 font-ibm">Loading permissions...</p>
+        </div>
       </div>
-    </div>
 
-    <!-- Permissions -->
-    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+      <!-- Error state -->
+      <div *ngIf="!isLoadingPermissions && permissionsLoadError" class="flex-1 flex items-center justify-center p-10">
+        <div class="text-center max-w-sm">
+          <p class="text-sm text-red-600 font-ibm mb-4">
+            Failed to load permissions. Please try again.
+          </p>
+          <button type="button" class="btn btn--cancel" (click)="loadPermissions()">
+            Retry
+          </button>
+        </div>
+      </div>
 
-      <!-- MODULE CARD -->
-      <div *ngFor="let group of groupedPermissions | keyvalue"
-        class="bg-white border border-grey-500 rounded-3xl p-5 shadow-sm hover:shadow-xl transition-all duration-300">
+      <!-- Empty state -->
+      <div
+        *ngIf="!isLoadingPermissions && !permissionsLoadError && permissionModules.length === 0"
+        class="flex-1 flex items-center justify-center p-10"
+      >
+        <p class="text-sm text-gray-500 font-ibm">No permissions available.</p>
+      </div>
 
-        <!-- Header -->
-        <div class="flex items-start justify-between mb-6">
+      <!-- Module / permission split panel -->
+      <div
+        *ngIf="!isLoadingPermissions && !permissionsLoadError && permissionModules.length > 0"
+        class="flex flex-col md:flex-row flex-1 min-h-0"
+      >
 
-          <div>
+        <!-- Left: modules -->
+        <aside class="md:w-64 lg:w-72 border-b md:border-b-0 md:border-r border-gray-100 bg-white flex flex-col shrink-0">
+          <div class="p-3 border-b border-gray-100">
+            <input
+              type="search"
+              [(ngModel)]="moduleSearch"
+              (ngModelChange)="onModuleSearchChange()"
+              name="moduleSearch"
+              placeholder="Search modules..."
+              class="w-full border border-gray-200 rounded-lg px-3 py-2 text-[13px] font-ibm text-[#161616] placeholder-gray-400 focus:outline-none focus:border-[#FF9015]"
+            />
+          </div>
 
-            <h3 class="text-[17px] font-semibold text-[#111827] capitalize tracking-wide">
-              {{ ($any(group.key)).replace('-', ' ') }}
-            </h3>
+          <div class="overflow-y-auto max-h-48 md:max-h-none md:flex-1 p-2">
+            <button
+              type="button"
+              *ngFor="let module of filteredModules; let i = index"
+              class="w-full text-left px-3 py-2.5 rounded-lg mb-1 transition-colors font-ibm"
+              [ngClass]="i === activeModuleIndex
+                ? 'bg-orange-50 text-[#ea580c] border border-orange-200'
+                : 'text-gray-700 hover:bg-gray-50 border border-transparent'"
+              (click)="selectModule(i)"
+            >
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-[13px] font-medium truncate">{{ module.name }}</span>
+                <span
+                  *ngIf="moduleSelectedCount(module) > 0"
+                  class="text-[11px] font-semibold bg-[#fe9015] text-white rounded-full min-w-[1.25rem] h-5 px-1.5 inline-flex items-center justify-center"
+                >
+                  {{ moduleSelectedCount(module) }}
+                </span>
+              </div>
+            </button>
 
-            <p class="text-[12px] text-[#FF9015] mt-1">
-              Manage module permissions
+            <p *ngIf="filteredModules.length === 0" class="text-[12px] text-gray-400 px-3 py-4 font-ibm">
+              No modules match your search.
             </p>
           </div>
-        </div>
+        </aside>
 
-        <!-- TOGGLES -->
-        <div class="space-y-4">
+        <!-- Right: permissions for active module -->
+        <section class="flex-1 p-5 md:p-6 min-w-0">
+          <ng-container *ngIf="activeModule as module">
+            <div class="flex flex-wrap items-start justify-between gap-3 mb-5">
+              <div>
+                <h4 class="text-[16px] font-semibold text-[#111827] font-ibm">
+                  {{ module.name }} Permissions
+                </h4>
+                <p class="text-[12px] text-gray-500 font-ibm mt-1">
+                  {{ activeModuleSelectedCount }} of {{ module.permissions.length }} selected in this module
+                </p>
+              </div>
 
-          <div *ngFor="let perm of $any(group.value)"
-            class="flex items-center justify-between rounded-2xl border border-[#FF9015] bg-gray-50 px-4 py-3 transition-all duration-200 hover:border-gray-300 hover:bg-white">
-
-            <!-- Permission Name -->
-            <div>
-
-              <h4 class="text-[14px] font-semibold text-[#111827] capitalize">
-                {{ perm.name.split('-')[0] }}
-              </h4>
-
-              <p class="text-[11px] text-gray-500 mt-0.5">
-                Allow user to {{ perm.name.split('-')[0] }}
-              </p>
-
+              <label class="inline-flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  class="h-4 w-4 rounded border-gray-300 text-[#ea580c] focus:ring-[#ea580c]"
+                  [checked]="isModuleFullySelected(module)"
+                  [indeterminate]="isModulePartiallySelected(module)"
+                  (change)="onSelectAllChange($event)"
+                />
+                <span class="text-[13px] font-medium text-gray-700 font-ibm">Select all</span>
+              </label>
             </div>
 
-            <!-- Toggle -->
-            <label class="relative inline-flex items-center cursor-pointer">
+            <div class="space-y-2 max-w-xl">
+              <label
+                *ngFor="let perm of module.permissions"
+                class="flex items-center justify-between gap-4 rounded-xl border px-4 py-3 cursor-pointer transition-all duration-150"
+                [ngClass]="isPermissionSelected(perm.id)
+                  ? 'border-[#fe9015] bg-orange-50'
+                  : 'border-gray-200 bg-gray-50 hover:border-gray-300 hover:bg-white'"
+              >
+                <span class="text-[14px] font-medium text-[#111827] font-ibm">
+                  {{ perm.name }}
+                </span>
 
-              <input type="checkbox" class="sr-only peer" [checked]="selectedPermissions.includes(perm.id)"
-                (change)="onPermissionChange($event, perm.id)" />
+                <input
+                  type="checkbox"
+                  class="h-4 w-4 rounded border-gray-300 text-[#ea580c] focus:ring-[#ea580c]"
+                  [checked]="isPermissionSelected(perm.id)"
+                  (change)="onPermissionCheckboxChange($event, perm.id)"
+                />
+              </label>
+            </div>
 
-              <!-- Toggle Background -->
-              <div class="w-12 h-7 bg-gray-300 rounded-full peer transition-all duration-300
-
-                   peer-checked:bg-[#fe9015]
-
-                   after:content-['']
-                   after:absolute
-                   after:top-[2px]
-                   after:left-[2px]
-                   after:bg-white
-                   after:border
-                   after:border-gray-200
-                   after:rounded-full
-                   after:h-6
-                   after:w-6
-                   after:transition-all
-                   after:duration-300
-
-                   peer-checked:after:translate-x-5
-                   peer-checked:after:border-white
-                   shadow-sm">
-              </div>
-            </label>
-          </div>
-        </div>
+            <div *ngIf="module.permissions.length === 0" class="text-sm text-gray-400 font-ibm py-6">
+              No permissions in this module.
+            </div>
+          </ng-container>
+        </section>
       </div>
     </div>
 
-
     <!-- Validation -->
-    <div *ngIf="permissionsTouched && selectedPermissions.length === 0"
-      class="mt-4 flex items-center gap-2 text-red-500 text-sm font-medium">
-
-      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-
+    <div
+      *ngIf="permissionsTouched && selectedPermissionIds.length === 0"
+      class="mt-4 flex items-center gap-2 text-red-500 text-sm font-medium font-ibm"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
           d="M12 8v4m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z" />
-
       </svg>
-
-      <span>
-        Please select at least one permission
-      </span>
-
+      <span>Please select at least one permission</span>
     </div>
-  </div>
 
-  <!-- Bottom Buttons -->
-  <div class="flex justify-end gap-3 mt-10">
-
-    @if (selectedJobId) {
-      <button type="button" (click)="deleteJob()" class="btn btn--delete">
-        Delete
+    <!-- Bottom actions -->
+    <div class="flex flex-wrap justify-between gap-3 mt-8">
+      <button
+        type="button"
+        (click)="backToDetails()"
+        class="btn btn--cancel"
+        [disabled]="isSavingPermissions"
+      >
+        Back
       </button>
-    }
 
-    <button (click)="resetForm()" type="button" class="btn btn--cancel">
-      Cancel
-    </button>
+      <div class="flex gap-3">
+        <button
+          type="button"
+          (click)="resetForm()"
+          class="btn btn--cancel"
+          [disabled]="isSavingPermissions"
+        >
+          Cancel
+        </button>
 
-    <button
-      type="button"
-      (click)="saveJob()"
-      class="btn btn--save"
-    >
-      Save
-    </button>
-  </div>
+        <button
+          type="button"
+          (click)="savePermissions()"
+          class="btn btn--save"
+          [disabled]="isSavingPermissions || isLoadingPermissions"
+        >
+          {{ isSavingPermissions ? 'Saving permissions...' : 'Save Permissions' }}
+        </button>
+      </div>
+    </div>
+  </ng-container>
 </div>
 
 <app-confirm-modal
