@@ -81,11 +81,31 @@
             {{ job.name }}
           </td>
 
-          <td class="px-4 py-3">
-            <span *ngFor="let perm of job.permissions; let last = last"
-              class="inline-block text-xs bg-[#fe9015] text-[#fff] font-bold px-2 py-1 mr-1 mb-1">
-              {{ perm.name }}<span *ngIf="!last">,</span>
-            </span>
+          <td class="px-4 py-3 align-top">
+            @let permissionGroups = getPermissionGroups(job);
+
+            @if (permissionGroups.length === 0) {
+              <span class="text-xs text-gray-400 font-ibm">No permissions</span>
+            } @else {
+              <div class="flex flex-col gap-2.5">
+                @for (group of permissionGroups; track trackPermissionGroup($index, group)) {
+                  <div>
+                    <div class="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-600 font-ibm">
+                      {{ group.module.name }}
+                    </div>
+                    <div class="flex flex-wrap gap-1">
+                      @for (perm of group.permissions; track trackPermission($index, perm)) {
+                        <span
+                          class="inline-block text-xs bg-[#fe9015] text-[#fff] font-bold px-2 py-1"
+                        >
+                          {{ perm.name }}
+                        </span>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            }
           </td>
 
           <td class="px-4 py-3 text-right space-x-3">

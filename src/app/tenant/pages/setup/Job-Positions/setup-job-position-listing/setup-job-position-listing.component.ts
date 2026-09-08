@@ -5,6 +5,20 @@ import { ToastrService } from 'ngx-toastr';
 import { environment } from '../../../../../../environments/environment.prod';
 import { BulkSelectionState, toNumericIds } from '../../../../../shared/dynamic-listing/bulk-selection.state';
 
+/** Single permission under a module (new API shape). */
+export interface JobPositionPermissionItem {
+  id: number;
+  name: string;
+}
+
+/** Module + its permissions (new API shape). */
+export interface JobPositionPermissionGroup {
+  module: {
+    name: string;
+  };
+  permissions: JobPositionPermissionItem[];
+}
+
 @Component({
   selector: 'app-setup-job-position-listing',
   standalone: false,
@@ -41,6 +55,77 @@ export class SetupJobPositionListingComponent {
 
   ngOnInit(): void {
     this.loadJobPositions();
+  }
+
+  /**
+   * Map `job.permissions` to module groups for the listing column.
+   * Supports the new nested API response; safely ignores empty modules.
+   */
+  getPermissionGroups(job: any): JobPositionPermissionGroup[] {
+    const raw = Array.isArray(job?.permissions) ? job.permissions : [];
+    if (!raw.length) {
+      return [];
+    }
+
+    const first = raw[0];
+
+    // New shape: [{ module: { name }, permissions: [{ id, name }] }]
+    if (first?.module != null && Array.isArray(first?.permissions)) {
+      return raw
+        .map((group: any) => {
+          const moduleName = String(
+            group?.module?.name ?? group?.module ?? '',
+          ).trim();
+          const permissions = (Array.isArray(group?.permissions) ? group.permissions : [])
+            .map((perm: any) => ({
+              id: Number(perm?.id),
+              name: String(perm?.name ?? '').trim(),
+            }))
+            .filter(
+              (perm: JobPositionPermissionItem) =>
+                !!perm.name && Number.isFinite(perm.id) && perm.id > 0,
+            );
+
+          return {
+            module: { name: moduleName },
+            permissions,
+          } as JobPositionPermissionGroup;
+        })
+        .filter(
+          (group: JobPositionPermissionGroup) =>
+            !!group.module.name && group.permissions.length > 0,
+        );
+    }
+
+    // Legacy flat shape: [{ id, name }] — keep listing usable during transition
+    const flatPermissions = raw
+      .map((perm: any) => ({
+        id: Number(perm?.id),
+        name: String(perm?.name ?? '').trim(),
+      }))
+      .filter(
+        (perm: JobPositionPermissionItem) =>
+          !!perm.name && Number.isFinite(perm.id) && perm.id > 0,
+      );
+
+    if (!flatPermissions.length) {
+      return [];
+    }
+
+    return [
+      {
+        module: { name: 'Permissions' },
+        permissions: flatPermissions,
+      },
+    ];
+  }
+
+  trackPermissionGroup(_index: number, group: JobPositionPermissionGroup): string {
+    return group?.module?.name || String(_index);
+  }
+
+  trackPermission(_index: number, perm: JobPositionPermissionItem): number | string {
+    return perm?.id ?? _index;
   }
 
   // 🔹 Fetch all job positions
