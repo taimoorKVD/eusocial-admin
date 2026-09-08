@@ -23,6 +23,8 @@ import {
 import { BulkSelectionState } from '../../../../../shared/dynamic-listing/bulk-selection.state';
 import { loadDynamicDropdownOptions } from '../../../../../shared/dynamic-listing/dynamic-field-options.loader';
 import { ToastrService } from 'ngx-toastr';
+import { TenantPermissionService } from '../../../../../services/tenant-permission.service';
+import { PERMISSIONS } from '../../../../../constants/permissions';
 
 const USERS_LISTING_FILTER_EXCLUDE_TYPES: DynamicFieldType[] = ['image'];
 
@@ -40,6 +42,11 @@ export class SetupUsersListing {
   private readonly router = inject(Router);
   private readonly formStorageService = inject(FormStorageService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly permissionService = inject(TenantPermissionService);
+
+  readonly canCreate = this.permissionService.hasPermissionName(PERMISSIONS.USERS.CREATE);
+  readonly canEdit = this.permissionService.hasPermissionName(PERMISSIONS.USERS.EDIT);
+  readonly canDelete = this.permissionService.hasPermissionName(PERMISSIONS.USERS.DELETE);
 
   readonly users = signal<Record<string, unknown>[]>([]);
   readonly formFields = signal<DynamicField[]>([]);
@@ -240,7 +247,7 @@ export class SetupUsersListing {
           }
 
           const fields = normalizeFieldOrder(
-            (res.fields || []).filter((field) => field.label !== 'Role' && field.name !== 'password'),
+            (res.fields || []).filter((field) => field.name !== 'password'),
           ) as DynamicField[];
 
           this.formFields.set(fields);

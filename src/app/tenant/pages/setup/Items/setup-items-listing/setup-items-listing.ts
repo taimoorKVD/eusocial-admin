@@ -23,6 +23,8 @@ import {
 import { BulkSelectionState } from '../../../../../shared/dynamic-listing/bulk-selection.state';
 import { loadDynamicDropdownOptions } from '../../../../../shared/dynamic-listing/dynamic-field-options.loader';
 import { ToastrService } from 'ngx-toastr';
+import { TenantPermissionService } from '../../../../../services/tenant-permission.service';
+import { PERMISSIONS } from '../../../../../constants/permissions';
 
 const ITEMS_LISTING_FILTER_EXCLUDE_TYPES: DynamicFieldType[] = ['image'];
 
@@ -40,6 +42,11 @@ export class SetupItemsListing {
   private readonly router = inject(Router);
   private readonly formStorageService = inject(FormStorageService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly permissionService = inject(TenantPermissionService);
+
+  readonly canCreate = this.permissionService.hasPermissionName(PERMISSIONS.ITEMS.CREATE);
+  readonly canEdit = this.permissionService.hasPermissionName(PERMISSIONS.ITEMS.EDIT);
+  readonly canDelete = this.permissionService.hasPermissionName(PERMISSIONS.ITEMS.DELETE);
 
   readonly items = signal<Record<string, unknown>[]>([]);
   readonly formFields = signal<DynamicField[]>([]);

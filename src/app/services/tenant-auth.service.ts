@@ -1,15 +1,17 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { environment } from '../../environments/environment';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { catchError, Observable, tap, throwError } from 'rxjs';
 import { PortalService } from './portal.service';
+import { TenantSessionService } from './tenant-session.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class TenantAuthService {
   private apiUrl = `${environment.tenantApiUrl}`;
+  private readonly session = inject(TenantSessionService);
 
 
   constructor(
@@ -40,7 +42,16 @@ export class TenantAuthService {
           }
 
           if (response.user) {
-            localStorage.setItem('tenant_user', JSON.stringify(response.user));
+            const hydratedUser = {
+              ...response.user,
+              allowedModules:
+                response.user?.allowedModules ??
+                response.user?.allowed_modules ??
+                response.allowedModules ??
+                response.allowed_modules,
+              modules: response.user?.modules ?? response.modules,
+            };
+            localStorage.setItem('tenant_user', JSON.stringify(hydratedUser));
           }
 
         } else {
@@ -93,10 +104,7 @@ export class TenantAuthService {
   }
 
 logout(): void {
-  localStorage.removeItem('tenant_token');
-  localStorage.removeItem('tenant_slug');
-  localStorage.removeItem('tenant_user');
-
+  this.session.clear();
   this.router.navigate(['/login']);
 }
 

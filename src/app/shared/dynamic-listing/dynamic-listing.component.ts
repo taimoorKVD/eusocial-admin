@@ -62,6 +62,10 @@ export class DynamicListingComponent {
   readonly storageKey = input('');
   readonly defaultVisibleCount = input(4);
   readonly showActions = input(true);
+  /** When false, hides the edit action while keeping delete (if enabled). */
+  readonly showEditAction = input(true);
+  /** When false, hides the delete action while keeping edit (if enabled). */
+  readonly showDeleteAction = input(true);
   readonly emptyMessage = input('No records found');
   readonly selectable = input(false);
   readonly bulkSelection = input<BulkSelectionState | undefined>(undefined);
@@ -72,6 +76,10 @@ export class DynamicListingComponent {
 
   readonly sortedFields = signal<DynamicField[]>([]);
   readonly visibleFieldIds = signal<Set<string>>(new Set());
+
+  readonly showActionsColumn = computed(
+    () => this.showActions() && (this.showEditAction() || this.showDeleteAction()),
+  );
 
   readonly selectedIds = computed(() => this.bulkSelection()?.selectedIds() ?? []);
 

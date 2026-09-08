@@ -16,6 +16,7 @@
   <app-top-header
     [title]="'Locations'"
     [buttonLabel]="'+ Create Location'"
+    [showButton]="canCreate"
     (buttonClick)="goToCreate()">
   </app-top-header>
 
@@ -25,7 +26,7 @@
     (clear)="onFilterClear()">
   </app-global-filter>
 
-  <div *ngIf="bulkSelection.hasSelection()" class="mt-5 flex items-center justify-between gap-3 rounded bg-white px-4 py-3 shadow">
+  <div *ngIf="canDelete && bulkSelection.hasSelection()" class="mt-5 flex items-center justify-between gap-3 rounded bg-white px-4 py-3 shadow">
     <span class="text-sm font-ibm text-gray-500">
       Selected: {{ bulkSelection.count() }}
     </span>
@@ -46,7 +47,7 @@
 
       <thead class="bg-gray-200 text-gray-700">
         <tr>
-          <th class="px-4 py-3 w-10">
+          <th class="px-4 py-3 w-10" *ngIf="canDelete">
             <input
               type="checkbox"
               class="h-4 w-4 rounded border-gray-300 text-[#ea580c] focus:ring-[#ea580c]"
@@ -61,7 +62,7 @@
           <th class="px-4 py-3">State</th>
           <th class="px-4 py-3">City</th>
           <th class="px-4 py-3">Postal Code</th>
-          <th class="px-4 py-3 text-right">Actions</th>
+          <th class="px-4 py-3 text-right" *ngIf="canEdit || canDelete">Actions</th>
         </tr>
       </thead>
 
@@ -71,7 +72,7 @@
           class="border-b hover:bg-gray-50"
           [class.bg-orange-50]="isSelected(loc)">
 
-          <td class="px-4 py-3 w-10">
+          <td class="px-4 py-3 w-10" *ngIf="canDelete">
             <input
               type="checkbox"
               class="h-4 w-4 rounded border-gray-300 text-[#ea580c] focus:ring-[#ea580c]"
@@ -86,8 +87,8 @@
           <td class="px-4 py-3">{{ getName(cities, loc.cityId) }}</td>
           <td class="px-4 py-3">{{ loc.postalCode }}</td>
 
-          <td class="px-4 py-3 text-right flex justify-end gap-2">
-            <button (click)="goToEdit(loc.id)" class="text-blue-600 hover:text-blue-900">
+          <td class="px-4 py-3 text-right flex justify-end gap-2" *ngIf="canEdit || canDelete">
+            <button *ngIf="canEdit" (click)="goToEdit(loc.id)" class="text-blue-600 hover:text-blue-900">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                 stroke="currentColor" class="w-5 h-5">
                 <path stroke-linecap="round" stroke-linejoin="round"
@@ -95,7 +96,7 @@
               </svg>
             </button>
 
-            <button (click)="deleteLocation(loc.id)" class="text-red-600 hover:text-red-900">
+            <button *ngIf="canDelete" (click)="deleteLocation(loc.id)" class="text-red-600 hover:text-red-900">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                 stroke="currentColor" class="w-5 h-5">
                 <path stroke-linecap="round" stroke-linejoin="round"

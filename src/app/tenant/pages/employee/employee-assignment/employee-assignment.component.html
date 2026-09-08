@@ -87,13 +87,15 @@
           Your answers were sent successfully. Thank you for completing this assignment.
         </p>
         <div class="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <button
-            type="button"
-            class="inline-flex min-h-[3rem] w-full items-center justify-center rounded-xl border border-[#FF9015] bg-white px-5 py-2.5 text-sm font-semibold text-[#FF9015] transition-colors hover:bg-[#FFF4EA] font-ibm sm:w-auto sm:text-base"
-            (click)="viewSubmittedForm()"
-          >
-            View submitted form
-          </button>
+          @if (canViewSubmission) {
+            <button
+              type="button"
+              class="inline-flex min-h-[3rem] w-full items-center justify-center rounded-xl border border-[#FF9015] bg-white px-5 py-2.5 text-sm font-semibold text-[#FF9015] transition-colors hover:bg-[#FFF4EA] font-ibm sm:w-auto sm:text-base"
+              (click)="viewSubmittedForm()"
+            >
+              View submitted form
+            </button>
+          }
           <button
             type="button"
             class="inline-flex min-h-[3rem] w-full items-center justify-center rounded-xl bg-[#FF9015] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#e57f0f] font-ibm sm:w-auto sm:text-base"
@@ -118,14 +120,20 @@
         <p class="mt-2 m-0 text-sm leading-6 text-[#6F6F6F] font-ibm">
           Start this assignment to mark it in progress, then choose how you want to fill it.
         </p>
-        <button
-          type="button"
-          class="mt-5 rounded-lg bg-[#FF9015] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#e57f0f] disabled:opacity-50 font-ibm"
-          [disabled]="starting()"
-          (click)="startAssignment()"
-        >
-          Start Assignment
-        </button>
+        @if (canCompleteAssignment) {
+          <button
+            type="button"
+            class="mt-5 rounded-lg bg-[#FF9015] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#e57f0f] disabled:opacity-50 font-ibm"
+            [disabled]="starting()"
+            (click)="startAssignment()"
+          >
+            Start Assignment
+          </button>
+        } @else {
+          <p class="mt-5 m-0 text-sm text-[#6F6F6F] font-ibm">
+            You do not have permission to complete this assignment.
+          </p>
+        }
       </div>
     } @else if (showModeSelection()) {
       <!--

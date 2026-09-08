@@ -8,7 +8,6 @@ import { UserDashboardComponent } from './pages/user-dashboard/user-dashboard.co
 import { EmployeeMyFormsComponent } from './pages/employee/employee-my-forms/employee-my-forms.component';
 import { EmployeeAssignmentComponent } from './pages/employee/employee-assignment/employee-assignment.component';
 import { EmployeeHistoryComponent } from './pages/employee/employee-history/employee-history.component';
-// import { SetupUserComponent } from './pages/setup/setup-user/setup-user.component';
 import { SetupJobPositionComponent } from './pages/setup/Job-Positions/setup-job-position/setup-job-position.component';
 import { TenantLoginComponent } from './tenant-login/tenant-login.component';
 
@@ -32,6 +31,7 @@ import {
   tenantEmployeeGuard,
   tenantHomeRedirectGuard,
 } from '../guards/tenant-role.guard';
+import { permissionGuard } from '../guards/permission.guard';
 import { SetupVendorsListing } from './pages/setup/Vendor/setup-vendors-listing/setup-vendors-listing';
 
 import { TenantForgotPasswordComponent } from './tenant-forgot-password/tenant-forgot-password.component';
@@ -40,59 +40,26 @@ import { TenantResetPasswordComponent } from './tenant-reset-password/tenant-res
 import { RoleComponent } from './pages/setup/Roles/role/role.component';
 import { RoleListingComponent } from './pages/setup/Roles/role-listing/role-listing.component';
 import { TenantProfileComponent } from './pages/profile/tenant-profile.component';
+import { PERMISSIONS } from '../constants/permissions';
 
 const routes: Routes = [
-
-  /*
-   * ============================================================
-   * TENANT PUBLIC ROUTES
-   *
-   * tenant1.eusocial.thebetawebsite.com/login
-   * folio3.eusocial.thebetawebsite.com/login
-   *
-   * ============================================================
-   */
-
   {
     path: 'login',
     component: TenantLoginComponent,
   },
-
   {
     path: 'forgot-password',
     component: TenantForgotPasswordComponent,
   },
-
   {
     path: 'reset-password',
     component: TenantResetPasswordComponent,
   },
-
-  /*
-   * ============================================================
-   * TENANT APPLICATION
-   *
-   * The tenant slug is NOT part of the URL anymore.
-   *
-   * It comes from PortalService.tenantSlug.
-   *
-   * Example:
-   *
-   * tenant1.eusocial.thebetawebsite.com
-   *                         ↓
-   *                    tenantSlug
-   *                         ↓
-   *                       tenant1
-   *
-   * ============================================================
-   */
-
   {
     path: '',
     component: TenantLayoutComponent,
     canActivate: [tenantAuthGuard],
     canActivateChild: [tenantAuthGuard],
-
     children: [
       {
         path: '',
@@ -111,31 +78,126 @@ const routes: Routes = [
         children: [
           { path: 'home', component: HomeComponent },
 
-          { path: 'users', component: SetupUsersListing },
-          { path: 'users/create', component: SetupUserComponent },
-          { path: 'users/edit/:id', component: SetupUserComponent },
+          {
+            path: 'users',
+            component: SetupUsersListing,
+            canActivate: [permissionGuard],
+            data: { permission: PERMISSIONS.USERS.VIEW },
+          },
+          {
+            path: 'users/create',
+            component: SetupUserComponent,
+            canActivate: [permissionGuard],
+            data: { permission: PERMISSIONS.USERS.CREATE },
+          },
+          {
+            path: 'users/edit/:id',
+            component: SetupUserComponent,
+            canActivate: [permissionGuard],
+            data: { permission: PERMISSIONS.USERS.EDIT },
+          },
 
-          { path: 'roles', component: RoleListingComponent },
-          { path: 'roles/create', component: RoleComponent },
-          { path: 'roles/edit/:id', component: RoleComponent },
+          {
+            path: 'roles',
+            component: RoleListingComponent,
+            canActivate: [permissionGuard],
+            data: { permission: PERMISSIONS.ROLES.VIEW },
+          },
+          {
+            path: 'roles/create',
+            component: RoleComponent,
+            canActivate: [permissionGuard],
+            data: { permission: PERMISSIONS.ROLES.CREATE },
+          },
+          {
+            path: 'roles/edit/:id',
+            component: RoleComponent,
+            canActivate: [permissionGuard],
+            data: { permission: PERMISSIONS.ROLES.EDIT },
+          },
 
-          { path: 'job-position', component: SetupJobPositionListingComponent },
-          { path: 'job-position/create', component: SetupJobPositionComponent },
-          { path: 'job-position/edit/:id', component: SetupJobPositionComponent },
+          {
+            path: 'job-position',
+            component: SetupJobPositionListingComponent,
+            canActivate: [permissionGuard],
+            data: { permission: PERMISSIONS.JOB_POSITIONS.VIEW },
+          },
+          {
+            path: 'job-position/create',
+            component: SetupJobPositionComponent,
+            canActivate: [permissionGuard],
+            data: { permission: PERMISSIONS.JOB_POSITIONS.CREATE },
+          },
+          {
+            path: 'job-position/edit/:id',
+            component: SetupJobPositionComponent,
+            canActivate: [permissionGuard],
+            data: { permission: PERMISSIONS.JOB_POSITIONS.EDIT },
+          },
 
-          { path: 'vendors', component: SetupVendorsListing },
-          { path: 'vendors/create', component: SetupVendorComponent },
-          { path: 'vendors/edit/:id', component: SetupVendorComponent },
+          {
+            path: 'vendors',
+            component: SetupVendorsListing,
+            canActivate: [permissionGuard],
+            data: { permission: PERMISSIONS.VENDORS.VIEW },
+          },
+          {
+            path: 'vendors/create',
+            component: SetupVendorComponent,
+            canActivate: [permissionGuard],
+            data: { permission: PERMISSIONS.VENDORS.CREATE },
+          },
+          {
+            path: 'vendors/edit/:id',
+            component: SetupVendorComponent,
+            canActivate: [permissionGuard],
+            data: { permission: PERMISSIONS.VENDORS.EDIT },
+          },
 
-          { path: 'items', component: SetupItemsListing },
-          { path: 'items/create', component: SetupItemComponent },
-          { path: 'items/edit/:id', component: SetupItemComponent },
+          {
+            path: 'items',
+            component: SetupItemsListing,
+            canActivate: [permissionGuard],
+            data: { permission: PERMISSIONS.ITEMS.VIEW },
+          },
+          {
+            path: 'items/create',
+            component: SetupItemComponent,
+            canActivate: [permissionGuard],
+            data: { permission: PERMISSIONS.ITEMS.CREATE },
+          },
+          {
+            path: 'items/edit/:id',
+            component: SetupItemComponent,
+            canActivate: [permissionGuard],
+            data: { permission: PERMISSIONS.ITEMS.EDIT },
+          },
 
-          { path: 'reporting-group', component: SetupReportingGroup },
+          {
+            path: 'reporting-group',
+            component: SetupReportingGroup,
+            canActivate: [permissionGuard],
+            data: { permission: PERMISSIONS.REPORTING_GROUPS.VIEW },
+          },
 
-          { path: 'location', component: LocationListingComponent },
-          { path: 'location/create', component: LocationComponent },
-          { path: 'location/edit/:id', component: LocationComponent },
+          {
+            path: 'location',
+            component: LocationListingComponent,
+            canActivate: [permissionGuard],
+            data: { permission: PERMISSIONS.LOCATIONS.VIEW },
+          },
+          {
+            path: 'location/create',
+            component: LocationComponent,
+            canActivate: [permissionGuard],
+            data: { permission: PERMISSIONS.LOCATIONS.CREATE },
+          },
+          {
+            path: 'location/edit/:id',
+            component: LocationComponent,
+            canActivate: [permissionGuard],
+            data: { permission: PERMISSIONS.LOCATIONS.EDIT },
+          },
 
           {
             path: 'dynamic-forms',
@@ -147,6 +209,14 @@ const routes: Routes = [
 
           {
             path: 'forms',
+            canActivate: [permissionGuard],
+            data: {
+              anyPermission: [
+                PERMISSIONS.FORM_BUILDER.VIEW,
+                PERMISSIONS.FORM_BUILDER.CREATE,
+                PERMISSIONS.FORM_BUILDER.EDIT,
+              ],
+            },
             loadChildren: () =>
               import('./forms/forms-module').then((m) => m.FormsModule),
           },
@@ -156,16 +226,34 @@ const routes: Routes = [
         path: '',
         canActivate: [tenantEmployeeGuard],
         children: [
-          { path: 'my-forms', component: EmployeeMyFormsComponent },
-          { path: 'my-forms/:id', component: EmployeeAssignmentComponent },
-          { path: 'history', component: EmployeeHistoryComponent },
+          {
+            path: 'my-forms',
+            component: EmployeeMyFormsComponent,
+            canActivate: [permissionGuard],
+            data: { permission: PERMISSIONS.DATA_COLLECTION.VIEW_ASSIGNMENT },
+          },
+          {
+            path: 'my-forms/:id',
+            component: EmployeeAssignmentComponent,
+            canActivate: [permissionGuard],
+            data: {
+              anyPermission: [
+                PERMISSIONS.DATA_COLLECTION.VIEW_ASSIGNMENT,
+                PERMISSIONS.DATA_COLLECTION.COMPLETE_ASSIGNMENT,
+                PERMISSIONS.DATA_COLLECTION.VIEW_SUBMISSION,
+              ],
+            },
+          },
+          {
+            path: 'history',
+            component: EmployeeHistoryComponent,
+            canActivate: [permissionGuard],
+            data: { permission: PERMISSIONS.DATA_COLLECTION.VIEW_SUBMISSION },
+          },
         ],
       },
     ],
   },
-  /*
-   * Tenant fallback
-   */
   {
     path: '**',
     redirectTo: 'login',
@@ -173,11 +261,7 @@ const routes: Routes = [
 ];
 
 @NgModule({
-  imports: [
-    RouterModule.forChild(routes),
-  ],
-  exports: [
-    RouterModule,
-  ],
+  imports: [RouterModule.forChild(routes)],
+  exports: [RouterModule],
 })
 export class TenantRoutingModule {}

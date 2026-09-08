@@ -172,7 +172,11 @@ export class SetupJobPositionComponent {
 
     if (!this.permissionModules.length && !this.isLoadingPermissions) {
       this.loadPermissions();
+      return;
     }
+
+    // Master list already loaded (e.g. user went back then forward) — re-bind by ID.
+    this.syncSelectedPermissionsWithCatalog();
   }
 
   backToDetails(): void {
@@ -189,6 +193,7 @@ export class SetupJobPositionComponent {
       next: (res: any) => {
         this.permissionModules = this.normalizePermissionModules(res?.data);
         this.isLoadingPermissions = false;
+        this.syncSelectedPermissionsWithCatalog();
 
         if (this.filteredModules.length) {
           this.activeModuleIndex = 0;
@@ -277,20 +282,126 @@ export class SetupJobPositionComponent {
       next: (res: any) => {
         const job = res?.data ?? res;
         this.jobTitle = job?.name || '';
-
-        const existing = Array.isArray(job?.permissions) ? job.permissions : [];
-        this.selectedPermissionIds = existing
-          .map((p: any) => Number(p?.id))
-          .filter((id: number) => Number.isFinite(id) && id > 0);
-
+        this.selectedPermissionIds = this.extractPermissionIdsFromJob(job);
         this.permissionsTouched = false;
         this.isLoading = false;
+
+        // If the user already opened step 2 (or master list is cached), bind now.
+        if (this.permissionModules.length) {
+          this.syncSelectedPermissionsWithCatalog();
+        }
       },
       error: () => {
         this.isLoading = false;
         this.toastr.error('Failed to load job details');
       },
     });
+  }
+
+  /**
+   * Pull selected permission IDs from the job edit payload.
+   * Prefer IDs over names. Supports:
+   * - permissionIds: number[]
+   * - nested: [{ module, permissions: [{ id }] }]
+   * - flat: [{ id, name }]
+   */
+  private extractPermissionIdsFromJob(job: any): number[] {
+    if (!job || typeof job !== 'object') {
+      return [];
+    }
+
+    const fromIds = this.normalizeIdList(
+      job.permissionIds ?? job.permission_ids ?? job.selectedPermissionIds,
+    );
+    if (fromIds.length) {
+      return fromIds;
+    }
+
+    const raw = job.permissions;
+    if (!Array.isArray(raw) || raw.length === 0) {
+      return [];
+    }
+
+    const first = raw[0];
+
+    // Nested module groups (same shape as listing /permissions catalog)
+    if (
+      first &&
+      typeof first === 'object' &&
+      (first as { module?: unknown }).module != null &&
+      Array.isArray((first as { permissions?: unknown }).permissions)
+    ) {
+      const nestedIds: number[] = [];
+      for (const group of raw) {
+        const perms = Array.isArray(group?.permissions) ? group.permissions : [];
+        for (const perm of perms) {
+          const id = Number(perm?.id ?? perm?.permissionId ?? perm?.permission_id);
+          if (Number.isFinite(id) && id > 0) {
+            nestedIds.push(id);
+          }
+        }
+      }
+      return Array.from(new Set(nestedIds));
+    }
+
+    // Flat permission objects or bare ids
+    return this.normalizeIdList(raw);
+  }
+
+  private normalizeIdList(raw: unknown): number[] {
+    if (!Array.isArray(raw) || raw.length === 0) {
+      return [];
+    }
+
+    const ids: number[] = [];
+    for (const item of raw) {
+      if (typeof item === 'number' || typeof item === 'string') {
+        const id = Number(item);
+        if (Number.isFinite(id) && id > 0) {
+          ids.push(id);
+        }
+        continue;
+      }
+      if (item && typeof item === 'object') {
+        const id = Number(
+          (item as { id?: unknown; permissionId?: unknown; permission_id?: unknown }).id ??
+            (item as { permissionId?: unknown }).permissionId ??
+            (item as { permission_id?: unknown }).permission_id,
+        );
+        if (Number.isFinite(id) && id > 0) {
+          ids.push(id);
+        }
+      }
+    }
+
+    return Array.from(new Set(ids));
+  }
+
+  /**
+   * Once the master permission catalog is available, keep selections that exist
+   * in that catalog (matched by permission ID only).
+   */
+  private syncSelectedPermissionsWithCatalog(): void {
+    if (!this.permissionModules.length || !this.selectedPermissionIds.length) {
+      return;
+    }
+
+    const catalogIds = new Set<number>();
+    for (const module of this.permissionModules) {
+      for (const perm of module.permissions) {
+        if (Number.isFinite(perm.id) && perm.id > 0) {
+          catalogIds.add(perm.id);
+        }
+      }
+    }
+
+    if (!catalogIds.size) {
+      return;
+    }
+
+    this.selectedPermissionIds = this.selectedPermissionIds.filter((id) =>
+      catalogIds.has(id),
+    );
   }
 
   // ─── Permission selection ──────────────────────────────────────────

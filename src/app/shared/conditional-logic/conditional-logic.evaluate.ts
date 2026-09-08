@@ -283,10 +283,6 @@ export function hasEnabledVisibilityCondition(
 export function shouldIncludeFieldInRuntimeForm(
   field: ConditionalLogicFieldLike & { label?: string }
 ): boolean {
-  if (field.label === 'Role') {
-    return false;
-  }
-
   if (hasEnabledVisibilityCondition(field)) {
     return true;
   }

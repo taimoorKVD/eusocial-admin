@@ -19,6 +19,8 @@ import {
   ReportingGroupAssignedItem,
   ReportingGroupCategory,
 } from '../../../../interfaces/reporting-group';
+import { TenantPermissionService } from '../../../../services/tenant-permission.service';
+import { PERMISSIONS } from '../../../../constants/permissions';
 
 type ModalMode = 'create-group' | 'edit-group' | 'add-category' | 'edit-category' | 'assign-items' | null;
 
@@ -48,6 +50,11 @@ export class SetupReportingGroup implements OnInit {
   private readonly formStorageService = inject(FormStorageService);
   private readonly toastr = inject(ToastrService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly permissionService = inject(TenantPermissionService);
+
+  readonly canCreate = this.permissionService.hasPermissionName(PERMISSIONS.REPORTING_GROUPS.CREATE);
+  readonly canEdit = this.permissionService.hasPermissionName(PERMISSIONS.REPORTING_GROUPS.EDIT);
+  readonly canDelete = this.permissionService.hasPermissionName(PERMISSIONS.REPORTING_GROUPS.DELETE);
 
   readonly groups = this.reportingGroupService.groups;
   readonly loading = signal(false);

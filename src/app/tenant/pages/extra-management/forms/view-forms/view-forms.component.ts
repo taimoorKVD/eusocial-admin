@@ -10,6 +10,8 @@ import { GlobalFilterField } from '../../../../../shared/global-filter/global-fi
 import { pruneFiltersByAllowedKeys } from '../../../../../shared/dynamic-listing/dynamic-listing.helpers';
 import { TenantFormsService } from '../services/tenant-forms.service';
 import { SavedDynamicForm } from '../models/dynamic-form.models';
+import { TenantPermissionService } from '../../../../../services/tenant-permission.service';
+import { PERMISSIONS } from '../../../../../constants/permissions';
 
 const FORM_FILTER_FIELDS: GlobalFilterField[] = [
   { key: 'name', label: 'Form Name', placeholder: 'Search by form name', type: 'text' },
@@ -28,6 +30,17 @@ export class ViewFormsComponent implements OnInit {
   private readonly formsService = inject(TenantFormsService);
   private readonly toastr = inject(ToastrService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly permissionService = inject(TenantPermissionService);
+
+  readonly canCreate = this.permissionService.hasPermissionName(
+    PERMISSIONS.DATA_COLLECTION.CREATE_TEMPLATE,
+  );
+  readonly canEdit = this.permissionService.hasPermissionName(
+    PERMISSIONS.DATA_COLLECTION.EDIT_TEMPLATE,
+  );
+  readonly canDelete = this.permissionService.hasPermissionName(
+    PERMISSIONS.DATA_COLLECTION.DELETE_TEMPLATE,
+  );
 
   readonly forms = signal<SavedDynamicForm[]>([]);
   readonly loading = signal(false);

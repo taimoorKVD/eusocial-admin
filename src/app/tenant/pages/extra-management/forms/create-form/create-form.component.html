@@ -446,25 +446,33 @@
             <p class="assign-report-panel__hint font-ibm">Who should fill out this form?</p>
 
             <div class="wizard-content__fields wizard-content__fields--full">
-              <div class="underlined-field relative multi-select-dropdown">
+              <div
+                class="underlined-field relative multi-select-dropdown"
+                [class.opacity-50]="assignUsersDisabled()"
+                [class.pointer-events-none]="assignUsersDisabled()"
+              >
                 <label class="underlined-field__label font-ibm">
                   <span class="req">*</span>Users
                 </label>
                 <button
                   type="button"
                   class="underlined-field__input font-ibm flex items-center justify-between cursor-pointer min-h-[40px]"
+                  [disabled]="assignUsersDisabled()"
+                  [attr.aria-disabled]="assignUsersDisabled()"
                   (click)="$event.stopPropagation(); toggleMultiSelect('assignUsersDropdownOpen')"
                 >
                   <div class="flex flex-wrap gap-1 flex-1">
                     @if (meta().assignUsers.length === 0) {
-                      <span class="text-[#A0A0A0]">Search users...</span>
+                      <span class="text-[#A0A0A0]">
+                        {{ assignUsersDisabled() ? 'Clear job positions to select users' : 'Search users...' }}
+                      </span>
                     }
                     @for (user of meta().assignUsers; track user) {
                       <span class="inline-flex items-center gap-1 bg-[#fff5eb] border border-[#ffd9b3] rounded px-1.5 py-0.5 text-xs font-medium text-[#FF9015]">
                         {{ user }}
                         <button
                           type="button"
-                          class="ml-0.5 text-[#FF9015] hover:text-[#e07800] font-semibold leading-none"
+                          class="ml-0.5 text-[#FF9015] hover:text-[#e07800] font-semibold leading-none pointer-events-auto"
                           (click)="$event.stopPropagation(); removeMultiSelectOption('assignUsers', user)"
                         >×</button>
                       </span>
@@ -511,25 +519,33 @@
                 }
               </div>
 
-              <div class="underlined-field mt-4 relative multi-select-dropdown">
+              <div
+                class="underlined-field mt-4 relative multi-select-dropdown"
+                [class.opacity-50]="assignPositionsDisabled()"
+                [class.pointer-events-none]="assignPositionsDisabled()"
+              >
                 <label class="underlined-field__label font-ibm">
                   <span class="req">*</span>Job Positions
                 </label>
                 <button
                   type="button"
                   class="underlined-field__input font-ibm flex items-center justify-between cursor-pointer min-h-[40px]"
+                  [disabled]="assignPositionsDisabled()"
+                  [attr.aria-disabled]="assignPositionsDisabled()"
                   (click)="$event.stopPropagation(); toggleMultiSelect('assignPositionsDropdownOpen')"
                 >
                   <div class="flex flex-wrap gap-1 flex-1">
                     @if (meta().assignJobPosition.length === 0) {
-                      <span class="text-[#A0A0A0]">Search job positions...</span>
+                      <span class="text-[#A0A0A0]">
+                        {{ assignPositionsDisabled() ? 'Clear users to select job positions' : 'Search job positions...' }}
+                      </span>
                     }
                     @for (pos of meta().assignJobPosition; track pos) {
                       <span class="inline-flex items-center gap-1 bg-[#fff5eb] border border-[#ffd9b3] rounded px-1.5 py-0.5 text-xs font-medium text-[#FF9015]">
                         {{ pos }}
                         <button
                           type="button"
-                          class="ml-0.5 text-[#FF9015] hover:text-[#e07800] font-semibold leading-none"
+                          class="ml-0.5 text-[#FF9015] hover:text-[#e07800] font-semibold leading-none pointer-events-auto"
                           (click)="$event.stopPropagation(); removeMultiSelectOption('assignJobPosition', pos)"
                         >×</button>
                       </span>
@@ -575,6 +591,9 @@
                   </div>
                 }
               </div>
+              <p class="mt-2 text-xs text-[#6F6F6F] font-ibm">
+                Choose either Users or Job Positions for Assign — not both.
+              </p>
             </div>
           </section>
 
@@ -595,25 +614,33 @@
             <p class="assign-report-panel__hint font-ibm">Who should receive the results?</p>
 
             <div class="wizard-content__fields wizard-content__fields--full">
-              <div class="underlined-field relative multi-select-dropdown">
+              <div
+                class="underlined-field relative multi-select-dropdown"
+                [class.opacity-50]="reportUsersDisabled()"
+                [class.pointer-events-none]="reportUsersDisabled()"
+              >
                 <label class="underlined-field__label font-ibm">
                   <span class="req">*</span>Users
                 </label>
                 <button
                   type="button"
                   class="underlined-field__input font-ibm flex items-center justify-between cursor-pointer min-h-[40px]"
+                  [disabled]="reportUsersDisabled()"
+                  [attr.aria-disabled]="reportUsersDisabled()"
                   (click)="$event.stopPropagation(); toggleMultiSelect('reportUsersDropdownOpen')"
                 >
                   <div class="flex flex-wrap gap-1 flex-1">
                     @if (meta().reportUsers.length === 0) {
-                      <span class="text-[#A0A0A0]">Search users...</span>
+                      <span class="text-[#A0A0A0]">
+                        {{ reportUsersDisabled() ? 'Clear job positions to select users' : 'Search users...' }}
+                      </span>
                     }
                     @for (user of meta().reportUsers; track user) {
                       <span class="inline-flex items-center gap-1 bg-[#fff5eb] border border-[#ffd9b3] rounded px-1.5 py-0.5 text-xs font-medium text-[#FF9015]">
                         {{ user }}
                         <button
                           type="button"
-                          class="ml-0.5 text-[#FF9015] hover:text-[#e07800] font-semibold leading-none"
+                          class="ml-0.5 text-[#FF9015] hover:text-[#e07800] font-semibold leading-none pointer-events-auto"
                           (click)="$event.stopPropagation(); removeMultiSelectOption('reportUsers', user)"
                         >×</button>
                       </span>
@@ -660,25 +687,33 @@
                 }
               </div>
 
-              <div class="underlined-field mt-4 relative multi-select-dropdown">
+              <div
+                class="underlined-field mt-4 relative multi-select-dropdown"
+                [class.opacity-50]="reportPositionsDisabled()"
+                [class.pointer-events-none]="reportPositionsDisabled()"
+              >
                 <label class="underlined-field__label font-ibm">
                   <span class="req">*</span>Job Positions
                 </label>
                 <button
                   type="button"
                   class="underlined-field__input font-ibm flex items-center justify-between cursor-pointer min-h-[40px]"
+                  [disabled]="reportPositionsDisabled()"
+                  [attr.aria-disabled]="reportPositionsDisabled()"
                   (click)="$event.stopPropagation(); toggleMultiSelect('reportPositionsDropdownOpen')"
                 >
                   <div class="flex flex-wrap gap-1 flex-1">
                     @if (meta().reportJobPosition.length === 0) {
-                      <span class="text-[#A0A0A0]">Search job positions...</span>
+                      <span class="text-[#A0A0A0]">
+                        {{ reportPositionsDisabled() ? 'Clear users to select job positions' : 'Search job positions...' }}
+                      </span>
                     }
                     @for (pos of meta().reportJobPosition; track pos) {
                       <span class="inline-flex items-center gap-1 bg-[#fff5eb] border border-[#ffd9b3] rounded px-1.5 py-0.5 text-xs font-medium text-[#FF9015]">
                         {{ pos }}
                         <button
                           type="button"
-                          class="ml-0.5 text-[#FF9015] hover:text-[#e07800] font-semibold leading-none"
+                          class="ml-0.5 text-[#FF9015] hover:text-[#e07800] font-semibold leading-none pointer-events-auto"
                           (click)="$event.stopPropagation(); removeMultiSelectOption('reportJobPosition', pos)"
                         >×</button>
                       </span>
@@ -724,6 +759,9 @@
                   </div>
                 }
               </div>
+              <p class="mt-2 text-xs text-[#6F6F6F] font-ibm">
+                Choose either Users or Job Positions for Report To — not both.
+              </p>
             </div>
           </section>
         </div>
