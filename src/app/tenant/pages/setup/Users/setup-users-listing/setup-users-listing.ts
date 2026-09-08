@@ -247,7 +247,7 @@ export class SetupUsersListing {
           }
 
           const fields = normalizeFieldOrder(
-            (res.fields || []).filter((field) => field.label !== 'Role' && field.name !== 'password'),
+            (res.fields || []).filter((field) => field.name !== 'password'),
           ) as DynamicField[];
 
           this.formFields.set(fields);

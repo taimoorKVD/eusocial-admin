@@ -469,7 +469,7 @@ export class SetupUserComponent {
           }
 
           const fields = normalizeFieldOrder(
-            res.fields.filter((field) => field.label !== 'Role') || [],
+            res.fields || [],
           ) as DynamicField[];
 
           return loadDynamicDropdownOptions(this.formStorageService, fields).pipe(
