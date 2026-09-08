@@ -11,6 +11,7 @@ import { DynamicFormComponent } from './dynamic-form/dynamic-form.component';
 import { DynamicListingComponent } from './dynamic-listing/dynamic-listing.component';
 import { DropdownPanelDirective } from './directives/dropdown-panel/dropdown-panel.directive';
 import { FlatpickrDirective } from './directives/flatpickr/flatpickr.directive';
+import { HasPermissionDirective } from './directives/has-permission.directive';
 
 @NgModule({
   declarations: [
@@ -22,7 +23,14 @@ import { FlatpickrDirective } from './directives/flatpickr/flatpickr.directive';
     DynamicListingComponent,
     DropdownPanelDirective,
   ],
-  imports: [CommonModule, FormsModule, DragDropModule, ReactiveFormsModule, FlatpickrDirective],
+  imports: [
+    CommonModule,
+    FormsModule,
+    DragDropModule,
+    ReactiveFormsModule,
+    FlatpickrDirective,
+    HasPermissionDirective,
+  ],
   exports: [
     GlobalFilterComponent,
     TopHeaderComponent,
@@ -33,6 +41,7 @@ import { FlatpickrDirective } from './directives/flatpickr/flatpickr.directive';
     DynamicListingComponent,
     DropdownPanelDirective,
     FlatpickrDirective,
+    HasPermissionDirective,
   ],
 })
 export class SharedModule {}

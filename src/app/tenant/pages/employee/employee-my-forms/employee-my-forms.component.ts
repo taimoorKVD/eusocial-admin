@@ -10,6 +10,8 @@ import {
   EmployeeAssignmentListItem,
   EmployeeAssignmentStatus,
 } from '../../../../interfaces/employee-assignment';
+import { TenantPermissionService } from '../../../../services/tenant-permission.service';
+import { PERMISSIONS } from '../../../../constants/permissions';
 
 interface StatusFilter {
   label: string;
@@ -27,6 +29,14 @@ export class EmployeeMyFormsComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly permissionService = inject(TenantPermissionService);
+
+  readonly canCompleteAssignment = this.permissionService.hasPermissionName(
+    PERMISSIONS.DATA_COLLECTION.COMPLETE_ASSIGNMENT,
+  );
+  readonly canViewSubmission = this.permissionService.hasPermissionName(
+    PERMISSIONS.DATA_COLLECTION.VIEW_SUBMISSION,
+  );
 
   readonly filters: StatusFilter[] = [
     { label: 'All', value: '' },
@@ -92,6 +102,16 @@ export class EmployeeMyFormsComponent implements OnInit {
 
   openAssignment(item: EmployeeAssignmentListItem): void {
     this.router.navigate(['/my-forms', item.id]);
+  }
+
+  canOpenAssignment(item: EmployeeAssignmentListItem): boolean {
+    if (item.status === 'completed') {
+      return this.canViewSubmission;
+    }
+    if (item.status === 'cancelled') {
+      return true;
+    }
+    return this.canCompleteAssignment;
   }
 
   statusLabel(status: string): string {

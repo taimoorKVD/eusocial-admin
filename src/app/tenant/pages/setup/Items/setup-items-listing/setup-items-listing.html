@@ -27,6 +27,7 @@
   <app-top-header
     [title]="'Items'"
     [buttonLabel]="'Create Item'"
+    [showButton]="canCreate"
     (buttonClick)="goToCreate()">
   </app-top-header>
 
@@ -38,7 +39,7 @@
     </app-global-filter>
   }
 
-  @if (hasFormFields() && bulkSelection.hasSelection()) {
+  @if (hasFormFields() && canDelete && bulkSelection.hasSelection()) {
     <div class="mt-5 flex items-center justify-between gap-3 rounded bg-white px-4 py-3 shadow">
       <span class="text-sm font-ibm text-gray-500">
         Selected: {{ bulkSelection.count() }}
@@ -62,8 +63,10 @@
         [records]="displayItems()"
         [storageKey]="columnStorageKey"
         [defaultVisibleCount]="defaultVisibleCount"
-        [showActions]="true"
-        [selectable]="true"
+        [showActions]="canEdit || canDelete"
+        [showEditAction]="canEdit"
+        [showDeleteAction]="canDelete"
+        [selectable]="canDelete"
         [bulkSelection]="bulkSelection"
         emptyMessage="No items found"
         (visibleColumnsChange)="onVisibleColumnsChange($event)"

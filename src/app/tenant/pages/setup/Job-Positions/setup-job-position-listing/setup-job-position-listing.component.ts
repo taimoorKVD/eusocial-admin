@@ -1,9 +1,11 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { TenantJobPositionService } from '../../../../../services/tenant-job-position.service';
 import { ToastrService } from 'ngx-toastr';
 import { environment } from '../../../../../../environments/environment.prod';
 import { BulkSelectionState, toNumericIds } from '../../../../../shared/dynamic-listing/bulk-selection.state';
+import { TenantPermissionService } from '../../../../../services/tenant-permission.service';
+import { PERMISSIONS } from '../../../../../constants/permissions';
 
 /** Single permission under a module (new API shape). */
 export interface JobPositionPermissionItem {
@@ -26,6 +28,12 @@ export interface JobPositionPermissionGroup {
   styleUrl: './setup-job-position-listing.component.scss',
 })
 export class SetupJobPositionListingComponent {
+  private readonly permissionService = inject(TenantPermissionService);
+
+  readonly canCreate = this.permissionService.hasPermissionName(PERMISSIONS.JOB_POSITIONS.CREATE);
+  readonly canEdit = this.permissionService.hasPermissionName(PERMISSIONS.JOB_POSITIONS.EDIT);
+  readonly canDelete = this.permissionService.hasPermissionName(PERMISSIONS.JOB_POSITIONS.DELETE);
+
   jobPositions: any[] = [];
   isLoading = false;
   page = 1;

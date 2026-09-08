@@ -28,6 +28,8 @@ import { normalizeSignatureValue } from '../../../../shared/dynamic-form/signatu
 import { CompletedFormViewComponent } from '../typeform-fill/completed-form-view.component';
 import { readAssignmentSubmittedAt } from '../typeform-fill/format-typeform-review.utils';
 import { TypeformFillShellComponent } from '../typeform-fill/typeform-fill-shell.component';
+import { TenantPermissionService } from '../../../../services/tenant-permission.service';
+import { PERMISSIONS } from '../../../../constants/permissions';
 
 export type EmployeeFormFillMode = 'classic' | 'typeform';
 /** Interaction layer after Start Assignment — presentation only, not a second form store. */
@@ -46,8 +48,19 @@ export class EmployeeAssignmentComponent implements OnInit {
   private readonly fieldMapper = inject(DynamicFormFieldMapperService);
   private readonly toastr = inject(ToastrService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly permissionService = inject(TenantPermissionService);
   private readonly dynamicForms = viewChildren(DynamicFormComponent);
   private readonly typeformShell = viewChild(TypeformFillShellComponent);
+
+  readonly canCompleteAssignment = this.permissionService.hasPermissionName(
+    PERMISSIONS.DATA_COLLECTION.COMPLETE_ASSIGNMENT,
+  );
+  readonly canViewSubmission = this.permissionService.hasPermissionName(
+    PERMISSIONS.DATA_COLLECTION.VIEW_SUBMISSION,
+  );
+  readonly canReviewSubmission = this.permissionService.hasPermissionName(
+    PERMISSIONS.DATA_COLLECTION.REVIEW_SUBMISSION,
+  );
 
   /** Assigned employee forms use Typeform layout by default. */
   readonly fillMode = signal<EmployeeFormFillMode>('typeform');
@@ -74,6 +87,9 @@ export class EmployeeAssignmentComponent implements OnInit {
   readonly isCancelled = computed(() => this.assignment()?.status === 'cancelled');
   readonly isCompleted = computed(() => this.assignment()?.status === 'completed');
   readonly canFill = computed(() => {
+    if (!this.canCompleteAssignment) {
+      return false;
+    }
     const status = this.assignment()?.status;
     return status === 'in_progress' || status === 'overdue';
   });
@@ -84,7 +100,7 @@ export class EmployeeAssignmentComponent implements OnInit {
       !this.showSuccess() &&
       !this.isCancelled() &&
       !this.formError() &&
-      (this.canFill() || this.isCompleted()),
+      (this.canFill() || (this.isCompleted() && this.canViewSubmission)),
   );
   readonly mergedFields = computed(() =>
     this.sections().flatMap((section) => section.fields),
@@ -94,7 +110,7 @@ export class EmployeeAssignmentComponent implements OnInit {
     return detail ? readAssignmentSubmittedAt(detail) : null;
   });
   readonly showCompletedSummary = computed(
-    () => this.showForm() && this.isCompleted(),
+    () => this.showForm() && this.isCompleted() && this.canViewSubmission,
   );
   /**
    * Gate for EVERY non-completed fillable assignment (new in_progress after Start

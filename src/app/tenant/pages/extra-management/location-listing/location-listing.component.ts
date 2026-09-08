@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { TenantLocationService } from '../../../../services/tenant-location.service';
@@ -8,6 +8,8 @@ import {
   BulkSelectionState,
   toNumericIds,
 } from '../../../../shared/dynamic-listing/bulk-selection.state';
+import { TenantPermissionService } from '../../../../services/tenant-permission.service';
+import { PERMISSIONS } from '../../../../constants/permissions';
 
 @Component({
   selector: 'app-location-listing',
@@ -16,6 +18,12 @@ import {
   styleUrl: './location-listing.component.scss',
 })
 export class LocationListingComponent {
+  private readonly permissionService = inject(TenantPermissionService);
+
+  readonly canCreate = this.permissionService.hasPermissionName(PERMISSIONS.LOCATIONS.CREATE);
+  readonly canEdit = this.permissionService.hasPermissionName(PERMISSIONS.LOCATIONS.EDIT);
+  readonly canDelete = this.permissionService.hasPermissionName(PERMISSIONS.LOCATIONS.DELETE);
+
   locations: any[] = [];
   isLoading = false;
   deleting = false;

@@ -185,6 +185,15 @@ export class CreateFormComponent implements OnInit {
     return filtered.map((o) => ({ ...o, selected: selected.has(o.name) }));
   });
 
+  /** Assign: Job Positions disabled while any User is selected. */
+  readonly assignPositionsDisabled = computed(() => this.meta().assignUsers.length > 0);
+  /** Assign: Users disabled while any Job Position is selected. */
+  readonly assignUsersDisabled = computed(() => this.meta().assignJobPosition.length > 0);
+  /** Report: Job Positions disabled while any User is selected. */
+  readonly reportPositionsDisabled = computed(() => this.meta().reportUsers.length > 0);
+  /** Report: Users disabled while any Job Position is selected. */
+  readonly reportUsersDisabled = computed(() => this.meta().reportJobPosition.length > 0);
+
   readonly formName = signal('');
   readonly sections = signal<FormSection[]>([]);
 
@@ -749,17 +758,40 @@ export class CreateFormComponent implements OnInit {
     const userOptions = this.userOptions();
     const positionOptions = this.jobPositionOptions();
 
+    const assign = this.enforceExclusiveUserOrPosition(
+      this.resolveSelectedNames(schema.assign?.users, userOptions),
+      this.resolveSelectedNames(schema.assign?.jobPosition, positionOptions),
+    );
+    const report = this.enforceExclusiveUserOrPosition(
+      this.resolveSelectedNames(schema.report?.users, userOptions),
+      this.resolveSelectedNames(schema.report?.jobPosition, positionOptions),
+    );
+
     this.meta.update((current) => ({
       ...current,
-      assignJobPosition: this.resolveSelectedNames(schema.assign?.jobPosition, positionOptions),
-      assignUsers: this.resolveSelectedNames(schema.assign?.users, userOptions),
-      reportJobPosition: this.resolveSelectedNames(schema.report?.jobPosition, positionOptions),
-      reportUsers: this.resolveSelectedNames(schema.report?.users, userOptions),
+      assignUsers: assign.users,
+      assignJobPosition: assign.positions,
+      reportUsers: report.users,
+      reportJobPosition: report.positions,
       frequencyJobPosition: (schema.frequency?.jobPosition ?? '')
         .split(', ')
         .map((name) => name.trim())
         .filter(Boolean),
     }));
+  }
+
+  /**
+   * Prefer Users when both Users and Job Positions are present (legacy edits).
+   * Otherwise preserve whichever side has values.
+   */
+  private enforceExclusiveUserOrPosition(
+    users: string[],
+    positions: string[],
+  ): { users: string[]; positions: string[] } {
+    if (users.length > 0 && positions.length > 0) {
+      return { users, positions: [] };
+    }
+    return { users, positions };
   }
 
   private resolveSelectedNames(
@@ -1754,6 +1786,15 @@ export class CreateFormComponent implements OnInit {
   toggleMultiSelect(
     key: 'assignUsersDropdownOpen' | 'assignPositionsDropdownOpen' | 'reportUsersDropdownOpen' | 'reportPositionsDropdownOpen',
   ): void {
+    if (
+      (key === 'assignUsersDropdownOpen' && this.assignUsersDisabled()) ||
+      (key === 'assignPositionsDropdownOpen' && this.assignPositionsDisabled()) ||
+      (key === 'reportUsersDropdownOpen' && this.reportUsersDisabled()) ||
+      (key === 'reportPositionsDropdownOpen' && this.reportPositionsDisabled())
+    ) {
+      return;
+    }
+
     const wasOpen = this[key]();
     this.closeAllMultiSelectDropdowns();
     if (!wasOpen) {
@@ -1777,10 +1818,37 @@ export class CreateFormComponent implements OnInit {
     value: string,
   ): void {
     const current = this.meta()[metaKey] as string[];
-    const updated = current.includes(value)
+    const isRemoving = current.includes(value);
+    const updated = isRemoving
       ? current.filter((v) => v !== value)
       : [...current, value];
-    this.updateMeta(metaKey, updated as any);
+
+    this.meta.update((m) => {
+      const next = { ...m, [metaKey]: updated };
+
+      // Selecting a value clears the exclusive counterpart in the same panel.
+      if (!isRemoving) {
+        if (metaKey === 'assignUsers') {
+          next.assignJobPosition = [];
+          this.assignPositionsDropdownOpen.set(false);
+          this.assignPositionsSearch.set('');
+        } else if (metaKey === 'assignJobPosition') {
+          next.assignUsers = [];
+          this.assignUsersDropdownOpen.set(false);
+          this.assignUsersSearch.set('');
+        } else if (metaKey === 'reportUsers') {
+          next.reportJobPosition = [];
+          this.reportPositionsDropdownOpen.set(false);
+          this.reportPositionsSearch.set('');
+        } else if (metaKey === 'reportJobPosition') {
+          next.reportUsers = [];
+          this.reportUsersDropdownOpen.set(false);
+          this.reportUsersSearch.set('');
+        }
+      }
+
+      return next;
+    });
   }
 
   removeMultiSelectOption(

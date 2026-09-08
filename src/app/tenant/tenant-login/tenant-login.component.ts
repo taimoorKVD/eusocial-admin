@@ -84,6 +84,13 @@ import { PortalService } from '../../services/portal.service';
           res.user?.accountType ??
           res.account_type ??
           res.accountType,
+        // Plan/module availability may live on the login root or on user.
+        allowedModules:
+          res.user?.allowedModules ??
+          res.user?.allowed_modules ??
+          res.allowedModules ??
+          res.allowed_modules,
+        modules: res.user?.modules ?? res.modules,
       };
 
       if (!slug) {

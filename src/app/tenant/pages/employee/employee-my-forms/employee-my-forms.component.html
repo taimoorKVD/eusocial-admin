@@ -78,13 +78,15 @@
           </div>
 
           <div class="mt-4 flex justify-end">
-            <button
-              type="button"
-              class="rounded-lg bg-[#FF9015] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#e57f0f] font-ibm"
-              (click)="openAssignment(item)"
-            >
-              {{ item.status === 'pending' ? 'Open' : item.status === 'completed' ? 'View' : 'Continue' }}
-            </button>
+            @if (canOpenAssignment(item)) {
+              <button
+                type="button"
+                class="rounded-lg bg-[#FF9015] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#e57f0f] font-ibm"
+                (click)="openAssignment(item)"
+              >
+                {{ item.status === 'pending' ? 'Open' : item.status === 'completed' ? 'View' : 'Continue' }}
+              </button>
+            }
           </div>
         </article>
       }

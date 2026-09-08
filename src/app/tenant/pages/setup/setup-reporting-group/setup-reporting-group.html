@@ -20,6 +20,7 @@
     </div>
 
     <button
+      *ngIf="canCreate"
       type="button"
       class="inline-flex items-center justify-center gap-2 rounded border border-[#FF9015] bg-[#FF9015] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#e57f0f] font-ibm"
       (click)="openCreateGroup()"
@@ -41,6 +42,7 @@
         Create a reporting group, add categories, then assign existing items.
       </p>
       <button
+        *ngIf="canCreate"
         type="button"
         class="mt-6 inline-flex items-center justify-center rounded border border-[#FF9015] px-4 py-2 text-sm font-medium text-[#FF9015] transition hover:bg-[#FFF4EA] font-ibm"
         (click)="openCreateGroup()"
@@ -73,6 +75,7 @@
 
             <div class="flex shrink-0 items-center gap-2" (click)="$event.stopPropagation()">
               <button
+                *ngIf="canEdit"
                 type="button"
                 class="rounded border border-[#FF9015]/40 px-2.5 py-1 text-xs font-medium text-[#FF9015] hover:bg-[#FFF4EA] font-ibm"
                 (click)="openAddCategory(group, $event)"
@@ -80,6 +83,7 @@
                 + Category
               </button>
               <button
+                *ngIf="canEdit"
                 type="button"
                 class="rounded border border-[#C6C6C6] px-2.5 py-1 text-xs font-medium text-[#525252] hover:bg-gray-50 font-ibm"
                 (click)="openEditGroup(group, $event)"
@@ -87,6 +91,7 @@
                 Edit
               </button>
               <button
+                *ngIf="canDelete"
                 type="button"
                 class="rounded border border-red-200 px-2.5 py-1 text-xs font-medium text-red-500 hover:bg-red-50 font-ibm"
                 (click)="confirmDeleteGroup(group, $event)"
@@ -136,6 +141,7 @@
 
                         <div class="flex shrink-0 items-center gap-2" (click)="$event.stopPropagation()">
                           <button
+                            *ngIf="canEdit"
                             type="button"
                             class="rounded border border-[#0054AC]/30 px-2 py-1 text-xs font-medium text-[#0054AC] hover:bg-[#EEF5FC] font-ibm"
                             (click)="openAssignItems(group, category, $event)"
@@ -143,6 +149,7 @@
                             Assign Items
                           </button>
                           <button
+                            *ngIf="canEdit"
                             type="button"
                             class="rounded border border-[#C6C6C6] px-2 py-1 text-xs font-medium text-[#525252] hover:bg-white font-ibm"
                             (click)="openEditCategory(group, category, $event)"
@@ -150,6 +157,7 @@
                             Edit
                           </button>
                           <button
+                            *ngIf="canDelete"
                             type="button"
                             class="rounded border border-red-200 px-2 py-1 text-xs font-medium text-red-500 hover:bg-red-50 font-ibm"
                             (click)="confirmDeleteCategory(group, category, $event)"

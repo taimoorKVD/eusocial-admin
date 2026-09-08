@@ -17,6 +17,7 @@
     <app-top-header
       [title]="'Job Positions'"
       [buttonLabel]="' + Create Job Position'"
+      [showButton]="canCreate"
       (buttonClick)="goToCreate()">
     </app-top-header>
 
@@ -26,7 +27,7 @@
       (clear)="onFilterClear()">
     </app-global-filter>
 
-    <div *ngIf="bulkSelection.hasSelection()" class="mt-5 flex items-center justify-between gap-3 rounded bg-white px-4 py-3 shadow">
+    <div *ngIf="canDelete && bulkSelection.hasSelection()" class="mt-5 flex items-center justify-between gap-3 rounded bg-white px-4 py-3 shadow">
       <span class="text-sm font-ibm text-gray-500">
         Selected: {{ bulkSelection.count() }}
       </span>
@@ -46,7 +47,7 @@
 
       <thead class="bg-gray-200 text-gray-700">
         <tr>
-          <th class="px-4 py-3 w-10">
+          <th class="px-4 py-3 w-10" *ngIf="canDelete">
             <input
               type="checkbox"
               class="h-4 w-4 rounded border-gray-300 text-[#ea580c] focus:ring-[#ea580c]"
@@ -59,7 +60,7 @@
           <th class="px-4 py-3 w-[160px]">Name</th>
           <!-- <th class="px-4 py-3">Description</th> -->
           <th class="px-4 py-3 w-[560px]">Permissions</th>
-          <th class="px-4 py-3 text-right">Action</th>
+          <th class="px-4 py-3 text-right" *ngIf="canEdit || canDelete">Action</th>
         </tr>
       </thead>
 
@@ -67,7 +68,7 @@
 
         <tr *ngFor="let job of jobPositions" class="border-t" [class.bg-orange-50]="isSelected(job)">
 
-          <td class="px-4 py-3 w-10">
+          <td class="px-4 py-3 w-10" *ngIf="canDelete">
             <input
               type="checkbox"
               class="h-4 w-4 rounded border-gray-300 text-[#ea580c] focus:ring-[#ea580c]"
@@ -108,10 +109,10 @@
             }
           </td>
 
-          <td class="px-4 py-3 text-right space-x-3">
+          <td class="px-4 py-3 text-right space-x-3" *ngIf="canEdit || canDelete">
 
             <!-- Edit -->
-            <button (click)="goToEdit(job.id)" class="text-blue-600 hover:text-blue-900">
+            <button *ngIf="canEdit" (click)="goToEdit(job.id)" class="text-blue-600 hover:text-blue-900">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                 stroke="currentColor" class="w-5 h-5">
                 <path stroke-linecap="round" stroke-linejoin="round"
@@ -120,7 +121,7 @@
             </button>
 
             <!-- Delete -->
-            <button (click)="deleteJob(job.id)" class="text-red-600 hover:text-red-900">
+            <button *ngIf="canDelete" (click)="deleteJob(job.id)" class="text-red-600 hover:text-red-900">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                 stroke="currentColor" class="w-5 h-5">
                 <path stroke-linecap="round" stroke-linejoin="round"
