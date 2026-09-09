@@ -1,0 +1,31 @@
+.jp-permissions-modal-backdrop {
+  animation: jp-permissions-backdrop-in 0.18s ease-out;
+}
+
+.jp-permissions-modal {
+  animation: jp-permissions-panel-in 0.22s ease-out;
+}
+
+.jp-permissions-trigger:focus-visible {
+  outline: none;
+}
+
+@keyframes jp-permissions-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes jp-permissions-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

@@ -136,6 +136,84 @@ export class SetupJobPositionListingComponent {
     return perm?.id ?? _index;
   }
 
+  getPermissionCount(job: any): number {
+    return this.getPermissionGroups(job).reduce(
+      (total, group) => total + group.permissions.length,
+      0,
+    );
+  }
+
+  /** First few permission names for the compact cell preview. */
+  getPermissionPreview(job: any, limit: number = 3): string[] {
+    const names: string[] = [];
+    for (const group of this.getPermissionGroups(job)) {
+      for (const perm of group.permissions) {
+        if (names.length >= limit) {
+          return names;
+        }
+        names.push(perm.name);
+      }
+    }
+    return names;
+  }
+
+  // ── Permissions detail modal (UI only) ─────────────────────────
+
+  permissionsModalOpen = false;
+  permissionsModalTitle = '';
+  permissionsModalGroups: JobPositionPermissionGroup[] = [];
+  permissionsModalSearch = '';
+
+  get filteredPermissionsModalGroups(): JobPositionPermissionGroup[] {
+    const query = this.permissionsModalSearch.trim().toLowerCase();
+    if (!query) {
+      return this.permissionsModalGroups;
+    }
+
+    return this.permissionsModalGroups
+      .map((group) => {
+        const moduleMatch = group.module.name.toLowerCase().includes(query);
+        const permissions = moduleMatch
+          ? group.permissions
+          : group.permissions.filter((perm) =>
+              perm.name.toLowerCase().includes(query),
+            );
+        return { ...group, permissions };
+      })
+      .filter((group) => group.permissions.length > 0);
+  }
+
+  get permissionsModalTotalCount(): number {
+    return this.permissionsModalGroups.reduce(
+      (total, group) => total + group.permissions.length,
+      0,
+    );
+  }
+
+  openPermissionsModal(job: any, event?: Event): void {
+    event?.stopPropagation();
+    const groups = this.getPermissionGroups(job);
+    if (!groups.length) {
+      return;
+    }
+
+    this.permissionsModalTitle = String(job?.name || 'Job Position').trim() || 'Job Position';
+    this.permissionsModalGroups = groups;
+    this.permissionsModalSearch = '';
+    this.permissionsModalOpen = true;
+  }
+
+  closePermissionsModal(): void {
+    this.permissionsModalOpen = false;
+    this.permissionsModalTitle = '';
+    this.permissionsModalGroups = [];
+    this.permissionsModalSearch = '';
+  }
+
+  onPermissionsModalSearch(event: Event): void {
+    this.permissionsModalSearch = (event.target as HTMLInputElement).value;
+  }
+
   // 🔹 Fetch all job positions
   loadJobPositions(page: number = 1) {
 
