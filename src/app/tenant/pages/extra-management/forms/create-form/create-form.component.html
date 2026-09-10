@@ -508,7 +508,12 @@
                                 <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/>
                               </svg>
                             }
-                            {{ opt.name }}
+                            <span class="flex flex-col min-w-0">
+                              <span class="truncate">{{ opt.name }}</span>
+                              @if (opt.jobPosition) {
+                                <span class="text-xs opacity-60 truncate">{{ opt.jobPosition }}</span>
+                              }
+                            </span>
                           </button>
                         </li>
                       } @empty {
@@ -676,7 +681,12 @@
                                 <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/>
                               </svg>
                             }
-                            {{ opt.name }}
+                            <span class="flex flex-col min-w-0">
+                              <span class="truncate">{{ opt.name }}</span>
+                              @if (opt.jobPosition) {
+                                <span class="text-xs opacity-60 truncate">{{ opt.jobPosition }}</span>
+                              }
+                            </span>
                           </button>
                         </li>
                       } @empty {
