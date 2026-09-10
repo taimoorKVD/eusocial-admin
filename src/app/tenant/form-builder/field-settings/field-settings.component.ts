@@ -1788,7 +1788,7 @@ export class FieldSettingsComponent {
     }
 
     if (emitUpdate) {
-      this._field.options = [];
+      this._field.options = [...this.availableDynamicOptions];
       this.skipFieldReinitialize = true;
       this.onChange();
     }
