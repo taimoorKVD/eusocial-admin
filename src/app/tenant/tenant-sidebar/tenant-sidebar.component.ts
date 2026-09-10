@@ -63,12 +63,7 @@ export class TenantSidebarComponent {
 
   canSeeUsers(): boolean {
     return this.permissions.hasModuleAccess(PERMISSION_MODULES.USERS)
-      || this.permissions.hasAnyPermission(
-        PERMISSIONS.USERS.VIEW,
-        PERMISSIONS.USERS.CREATE,
-        PERMISSIONS.USERS.EDIT,
-        PERMISSIONS.USERS.DELETE,
-      );
+      || this.permissions.hasPermissionName(PERMISSIONS.USERS.VIEW);
   }
 
   canSeeJobPositions(): boolean {
@@ -83,22 +78,12 @@ export class TenantSidebarComponent {
 
   canSeeItems(): boolean {
     return this.permissions.hasModuleAccess(PERMISSION_MODULES.ITEMS)
-      || this.permissions.hasAnyPermission(
-        PERMISSIONS.ITEMS.VIEW,
-        PERMISSIONS.ITEMS.CREATE,
-        PERMISSIONS.ITEMS.EDIT,
-        PERMISSIONS.ITEMS.DELETE,
-      );
+      || this.permissions.hasPermissionName(PERMISSIONS.ITEMS.VIEW);
   }
 
   canSeeVendors(): boolean {
     return this.permissions.hasModuleAccess(PERMISSION_MODULES.VENDORS)
-      || this.permissions.hasAnyPermission(
-        PERMISSIONS.VENDORS.VIEW,
-        PERMISSIONS.VENDORS.CREATE,
-        PERMISSIONS.VENDORS.EDIT,
-        PERMISSIONS.VENDORS.DELETE,
-      );
+      || this.permissions.hasPermissionName(PERMISSIONS.VENDORS.VIEW);
   }
 
   canSeeReportingGroups(): boolean {
@@ -113,31 +98,16 @@ export class TenantSidebarComponent {
 
   canSeeLocations(): boolean {
     return this.permissions.hasModuleAccess(PERMISSION_MODULES.LOCATIONS)
-      || this.permissions.hasAnyPermission(
-        PERMISSIONS.LOCATIONS.VIEW,
-        PERMISSIONS.LOCATIONS.CREATE,
-        PERMISSIONS.LOCATIONS.EDIT,
-        PERMISSIONS.LOCATIONS.DELETE,
-      );
+      || this.permissions.hasPermissionName(PERMISSIONS.LOCATIONS.VIEW);
   }
 
-  /** Data-collection template management (sidebar "Forms"). */
-  canSeeTemplates(): boolean {
+  /**
+   * Form Templates (/dynamic-forms) — gated by view-dc-template (or module access).
+   * Form-builder (/forms) remains an admin-experience feature.
+   */
+  canSeeFormTemplates(): boolean {
     return this.permissions.hasModuleAccess(PERMISSION_MODULES.DATA_COLLECTION)
-      || this.permissions.hasModuleAccess(PERMISSION_MODULES.FORM_BUILDER)
-      || this.permissions.hasModuleAccess('form')
-      || this.permissions.hasAnyPermission(
-        PERMISSIONS.DATA_COLLECTION.VIEW_TEMPLATE,
-        PERMISSIONS.DATA_COLLECTION.CREATE_TEMPLATE,
-        PERMISSIONS.DATA_COLLECTION.EDIT_TEMPLATE,
-        PERMISSIONS.DATA_COLLECTION.DELETE_TEMPLATE,
-        PERMISSIONS.DATA_COLLECTION.ACTIVATE_TEMPLATE,
-        PERMISSIONS.DATA_COLLECTION.ARCHIVE_TEMPLATE,
-        PERMISSIONS.FORM_BUILDER.VIEW,
-        PERMISSIONS.FORM_BUILDER.CREATE,
-        PERMISSIONS.FORM_BUILDER.EDIT,
-        PERMISSIONS.FORM_BUILDER.DELETE,
-      );
+      || this.permissions.hasPermissionName(PERMISSIONS.DATA_COLLECTION.VIEW_TEMPLATE);
   }
 
   canSeeMyForms(): boolean {
@@ -152,13 +122,17 @@ export class TenantSidebarComponent {
       || this.permissions.hasPermissionName(PERMISSIONS.DATA_COLLECTION.REVIEW_SUBMISSION);
   }
 
+  /** Admin-only setup entries (still gated by permissions for tenant_admin). */
+  canSeeAdminOnlySetup(): boolean {
+    return !this.isEmployee && (this.canSeeJobPositions() || this.canSeeReportingGroups());
+  }
+
   get showSetupMenu(): boolean {
     return (
       this.canSeeUsers()
-      || this.canSeeJobPositions()
       || this.canSeeItems()
       || this.canSeeVendors()
-      || this.canSeeReportingGroups()
+      || this.canSeeAdminOnlySetup()
     );
   }
 

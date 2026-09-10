@@ -52,6 +52,8 @@ export class SetupUserComponent {
   private readonly dynamicForm = viewChild(DynamicFormComponent);
 
   readonly loading = signal(false);
+  /** True while create/update user API is in flight. */
+  readonly submitting = signal(false);
   readonly formFields = signal<DynamicField[]>([]);
   readonly userId = signal('');
   readonly latestFormValue = signal<DynamicFormValue>({});
@@ -109,6 +111,10 @@ export class SetupUserComponent {
   }
 
   onFormSubmit(): void {
+    if (this.submitting()) {
+      return;
+    }
+
     const form = this.dynamicForm();
     if (!form) {
       return;
@@ -122,33 +128,29 @@ export class SetupUserComponent {
     const formValues = this.mapFormValuesToFieldIds(form.value);
     const id = this.userId();
 
-    if (id) {
-      this.userService
-        .updateUser(Number(id), formValues)
-        .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe({
-          next: () => {
-            this.toastr.success('User updated successfully');
-            this.router.navigate(['/users']);
-          },
-          error: (err) => {
-            this.toastr.error(err?.error?.message || 'Failed to update user');
-          },
-        });
-      return;
-    }
+    this.submitting.set(true);
 
-    this.userService
-      .createUser(formValues)
-      .pipe(takeUntilDestroyed(this.destroyRef))
+    const request$ = id
+      ? this.userService.updateUser(Number(id), formValues)
+      : this.userService.createUser(formValues);
+
+    request$
+      .pipe(
+        finalize(() => this.submitting.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
       .subscribe({
         next: () => {
-          this.toastr.success('User created successfully');
+          this.toastr.success(id ? 'User updated successfully' : 'User created successfully');
           this.router.navigate(['/users']);
         },
         error: (err) => {
-          console.error('Create user error:', err);
-          this.toastr.error(err?.error?.message || 'Failed to create user');
+          if (!id) {
+            console.error('Create user error:', err);
+          }
+          this.toastr.error(
+            err?.error?.message || (id ? 'Failed to update user' : 'Failed to create user'),
+          );
         },
       });
   }

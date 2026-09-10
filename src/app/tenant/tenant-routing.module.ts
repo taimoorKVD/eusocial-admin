@@ -42,6 +42,15 @@ import { RoleListingComponent } from './pages/setup/Roles/role-listing/role-list
 import { TenantProfileComponent } from './pages/profile/tenant-profile.component';
 import { PERMISSIONS } from '../constants/permissions';
 
+/**
+ * Route groups under the authenticated tenant layout:
+ *
+ * 1. Shared reusable features — permissionGuard only (any account_type)
+ * 2. Tenant-admin experience — tenantAdminGuard (+ permissions where set)
+ * 3. Employee experience — tenantEmployeeGuard (+ permissions where set)
+ *
+ * account_type selects portal experience; permissions gate feature access.
+ */
 const routes: Routes = [
   {
     path: 'login',
@@ -72,12 +81,13 @@ const routes: Routes = [
       { path: 'user-dashboard', component: UserDashboardComponent },
       { path: 'employee-dashboard', redirectTo: 'user-dashboard', pathMatch: 'full' },
 
+      /*
+       * Reusable features: Users, Items, Vendors, Locations, Form Templates.
+       * Accessible to tenant_admin and tenant_user when permissions allow.
+       */
       {
         path: '',
-        canActivate: [tenantAdminGuard],
         children: [
-          { path: 'home', component: HomeComponent },
-
           {
             path: 'users',
             component: SetupUsersListing,
@@ -95,44 +105,6 @@ const routes: Routes = [
             component: SetupUserComponent,
             canActivate: [permissionGuard],
             data: { permission: PERMISSIONS.USERS.EDIT },
-          },
-
-          {
-            path: 'roles',
-            component: RoleListingComponent,
-            canActivate: [permissionGuard],
-            data: { permission: PERMISSIONS.ROLES.VIEW },
-          },
-          {
-            path: 'roles/create',
-            component: RoleComponent,
-            canActivate: [permissionGuard],
-            data: { permission: PERMISSIONS.ROLES.CREATE },
-          },
-          {
-            path: 'roles/edit/:id',
-            component: RoleComponent,
-            canActivate: [permissionGuard],
-            data: { permission: PERMISSIONS.ROLES.EDIT },
-          },
-
-          {
-            path: 'job-position',
-            component: SetupJobPositionListingComponent,
-            canActivate: [permissionGuard],
-            data: { permission: PERMISSIONS.JOB_POSITIONS.VIEW },
-          },
-          {
-            path: 'job-position/create',
-            component: SetupJobPositionComponent,
-            canActivate: [permissionGuard],
-            data: { permission: PERMISSIONS.JOB_POSITIONS.CREATE },
-          },
-          {
-            path: 'job-position/edit/:id',
-            component: SetupJobPositionComponent,
-            canActivate: [permissionGuard],
-            data: { permission: PERMISSIONS.JOB_POSITIONS.EDIT },
           },
 
           {
@@ -174,13 +146,6 @@ const routes: Routes = [
           },
 
           {
-            path: 'reporting-group',
-            component: SetupReportingGroup,
-            canActivate: [permissionGuard],
-            data: { permission: PERMISSIONS.REPORTING_GROUPS.VIEW },
-          },
-
-          {
             path: 'location',
             component: LocationListingComponent,
             canActivate: [permissionGuard],
@@ -206,6 +171,62 @@ const routes: Routes = [
                 (m) => m.DYNAMIC_FORMS_ROUTES,
               ),
           },
+        ],
+      },
+
+      /*
+       * Tenant Admin experience-only features.
+       */
+      {
+        path: '',
+        canActivate: [tenantAdminGuard],
+        children: [
+          { path: 'home', component: HomeComponent },
+
+          {
+            path: 'roles',
+            component: RoleListingComponent,
+            canActivate: [permissionGuard],
+            data: { permission: PERMISSIONS.ROLES.VIEW },
+          },
+          {
+            path: 'roles/create',
+            component: RoleComponent,
+            canActivate: [permissionGuard],
+            data: { permission: PERMISSIONS.ROLES.CREATE },
+          },
+          {
+            path: 'roles/edit/:id',
+            component: RoleComponent,
+            canActivate: [permissionGuard],
+            data: { permission: PERMISSIONS.ROLES.EDIT },
+          },
+
+          {
+            path: 'job-position',
+            component: SetupJobPositionListingComponent,
+            canActivate: [permissionGuard],
+            data: { permission: PERMISSIONS.JOB_POSITIONS.VIEW },
+          },
+          {
+            path: 'job-position/create',
+            component: SetupJobPositionComponent,
+            canActivate: [permissionGuard],
+            data: { permission: PERMISSIONS.JOB_POSITIONS.CREATE },
+          },
+          {
+            path: 'job-position/edit/:id',
+            component: SetupJobPositionComponent,
+            canActivate: [permissionGuard],
+            data: { permission: PERMISSIONS.JOB_POSITIONS.EDIT },
+          },
+
+          {
+            path: 'reporting-group',
+            component: SetupReportingGroup,
+            canActivate: [permissionGuard],
+            data: { permission: PERMISSIONS.REPORTING_GROUPS.VIEW },
+          },
 
           {
             path: 'forms',
@@ -222,6 +243,10 @@ const routes: Routes = [
           },
         ],
       },
+
+      /*
+       * Employee experience-only features.
+       */
       {
         path: '',
         canActivate: [tenantEmployeeGuard],
