@@ -13,7 +13,7 @@ export const tenantHomeRedirectGuard: CanActivateFn = () => {
   return homeTree(session, router);
 };
 
-/** Tenant Admin setup / dashboard routes. Employees are redirected home. */
+/** Tenant Admin experience-only routes. Employees are redirected home. */
 export const tenantAdminGuard: CanActivateFn = () => {
   const session = inject(TenantSessionService);
   const router = inject(Router);
@@ -25,7 +25,7 @@ export const tenantAdminGuard: CanActivateFn = () => {
   return homeTree(session, router);
 };
 
-/** Employee / staff operational routes. Tenant admins are redirected home. */
+/** Employee experience-only routes. Tenant admins are redirected home. */
 export const tenantEmployeeGuard: CanActivateFn = () => {
   const session = inject(TenantSessionService);
   const router = inject(Router);

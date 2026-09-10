@@ -25,6 +25,7 @@
   <!-- Menu -->
   <div class="tenant-sidebar__menu overflow-y-auto flex-1">
 
+    <!-- Employee experience links -->
     @if (isEmployee) {
       <a [routerLink]="['/user-dashboard']"
         routerLinkActive="tenant-sidebar__link--active"
@@ -65,40 +66,10 @@
           History
         </a>
       }
-
-      <a [routerLink]="['/profile']"
-        routerLinkActive="tenant-sidebar__link--active"
-        class="tenant-sidebar__link font-ibm">
-        <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-          xmlns="http://www.w3.org/2000/svg">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M16 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
-          <path stroke-linecap="round" stroke-linejoin="round" d="M8 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" />
-          <path stroke-linecap="round" stroke-linejoin="round" d="M2.5 20a5.5 5.5 0 0 1 11 0" />
-          <path stroke-linecap="round" stroke-linejoin="round" d="M13 18.5a4.5 4.5 0 0 1 8 1.5" />
-        </svg>
-        Profile
-      </a>
-
-      <button
-        type="button"
-        class="tenant-sidebar__link font-ibm"
-        (click)="logout()">
-        <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-          xmlns="http://www.w3.org/2000/svg">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6A2.25 2.25 0 0 0 5.25 5.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15" />
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9l3 3-3 3" />
-          <path stroke-linecap="round" stroke-linejoin="round" d="M15 12H3" />
-        </svg>
-        Logout
-      </button>
     } @else {
-    <!-- HOME -->
+    <!-- Tenant Admin experience links -->
     <a [routerLink]="['/home']" routerLinkActive="tenant-sidebar__link--active"
       class="tenant-sidebar__link font-ibm">
-
-      <!-- <svg style="opacity: 0" width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M6.83333 1V12.6667M1 6.83333L6.83333 12.6667L12.6667 6.83333" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg> -->
 
       <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
         xmlns="http://www.w3.org/2000/svg">
@@ -110,14 +81,9 @@
       Home
     </a>
 
-    <!-- USER DASHBOARD -->
     <a [routerLink]="['/user-dashboard']"
       routerLinkActive="tenant-sidebar__link--active"
       class="tenant-sidebar__link font-ibm">
-
-       <!-- <svg style="opacity: 0" width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M6.83333 1V12.6667M1 6.83333L6.83333 12.6667L12.6667 6.83333" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg> -->
 
       <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
         xmlns="http://www.w3.org/2000/svg">
@@ -129,8 +95,9 @@
 
       User Dashboard
     </a>
+    }
 
-    <!-- SETUP MENU -->
+    <!-- Shared permission-driven features (admin + employee) -->
     @if (showSetupMenu) {
     <div>
 
@@ -152,7 +119,6 @@
           Setup
       </button>
 
-      <!-- SUB MENU -->
       <div *ngIf="openSetup" class="tenant-sidebar__submenu">
 
         @if (canSeeUsers()) {
@@ -170,7 +136,7 @@
         </a>
         }
 
-        @if (canSeeJobPositions()) {
+        @if (!isEmployee && canSeeJobPositions()) {
         <a [routerLink]="['/job-position']"
           routerLinkActive="tenant-sidebar__sublink--active"
           class="tenant-sidebar__sublink font-ibm">
@@ -214,7 +180,7 @@
         </a>
         }
 
-        @if (canSeeReportingGroups()) {
+        @if (!isEmployee && canSeeReportingGroups()) {
         <a [routerLink]="['/reporting-group']"
           routerLinkActive="tenant-sidebar__sublink--active"
           class="tenant-sidebar__sublink font-ibm">
@@ -233,7 +199,6 @@
     </div>
     }
 
-    <!-- Extra Management -->
     @if (showExtraManagement) {
     <div>
 
@@ -254,7 +219,6 @@
           Extra Management
       </button>
 
-      <!-- SUB MENU -->
       <div *ngIf="openExtraManagement" class="tenant-sidebar__submenu">
 
         @if (canSeeLocations()) {
@@ -271,12 +235,11 @@
         </a>
         }
 
-
       </div>
     </div>
     }
 
-    @if (canSeeTemplates()) {
+    @if (canSeeFormTemplates()) {
     <a [routerLink]="['/dynamic-forms']"
       routerLinkActive="tenant-sidebar__sublink--active"
       class="tenant-sidebar__link font-ibm">
@@ -284,31 +247,17 @@
         xmlns="http://www.w3.org/2000/svg">
         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2Z" />
       </svg>
-      Forms
+      Forms Templates
     </a>
     }
 
-    <!-- FORMS -->
-    <!-- <a [routerLink]="['/forms']"
-      routerLinkActive="text-[#333333] border-l-4 border-blue-500 font-bold"
-      class="text-[#525252] font-ibm flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100">
-      <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-        xmlns="http://www.w3.org/2000/svg">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M4 20h16" />
-        <path stroke-linecap="round" stroke-linejoin="round" d="M7 16V9" />
-        <path stroke-linecap="round" stroke-linejoin="round" d="M12 16V5" />
-        <path stroke-linecap="round" stroke-linejoin="round" d="M17 16v-3" />
-      </svg>
-      Forms Module
-    </a> -->
-
-    <!-- Extra Management -->
+    <!-- Admin-only hidden Form Builder toggle (unchanged) -->
+    @if (!isEmployee) {
     <div>
 
       <button (click)="toggleOpenFormBuilder()"
         class="tenant-sidebar__group-toggle font-ibm !hidden">
 
-        <!-- <span class="tenant-sidebar__chevron">{{ openFormBuilder ? '▼' : '▶' }}</span> -->
         <span *ngIf="!openFormBuilder">
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M4.16667 10L15.8333 10M10 15.8334L15.8333 10L10 4.16671" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -320,22 +269,11 @@
           </svg>
         </span>
 
-          <!-- <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-            stroke-width="1.8" xmlns="http://www.w3.org/2000/svg">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M5 6h14" />
-            <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h8" />
-            <path stroke-linecap="round" stroke-linejoin="round" d="M10 18h4" />
-            <circle cx="7" cy="6" r="1" fill="currentColor" stroke="none" />
-            <circle cx="15" cy="12" r="1" fill="currentColor" stroke="none" />
-            <circle cx="13" cy="18" r="1" fill="currentColor" stroke="none" />
-          </svg> -->
           Form Builder
       </button>
 
-      <!-- SUB MENU -->
       <div *ngIf="openFormBuilder" class="tenant-sidebar__submenu">
 
-        <!-- <a [routerLink]="['/users']" -->
         <a [routerLink]="['/forms', 'users']"
           routerLinkActive="tenant-sidebar__sublink--active"
           class="tenant-sidebar__sublink font-ibm">
@@ -348,46 +286,37 @@
           </svg>
           Users
         </a>
-
-        <!-- <a [routerLink]="['/forms', 'vendors']"
-          routerLinkActive="tenant-sidebar__sublink--active"
-          class="tenant-sidebar__sublink font-ibm">
-          <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-            xmlns="http://www.w3.org/2000/svg">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M3 8h12l3 4v6H3V8Z" />
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15 8V5h4v7" />
-            <circle cx="7" cy="18" r="1.5" />
-            <circle cx="15" cy="18" r="1.5" />
-          </svg>
-          Vendors
-        </a>
-
-        <a [routerLink]="['/forms', 'job-positions']"
-          routerLinkActive="tenant-sidebar__sublink--active"
-          class="tenant-sidebar__sublink font-ibm">
-          <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-            xmlns="http://www.w3.org/2000/svg">
-            <path stroke-linecap="round" stroke-linejoin="round"
-              d="M9 7.5V6A1.5 1.5 0 0 1 10.5 4.5h3A1.5 1.5 0 0 1 15 6v1.5" />
-            <rect x="3" y="7.5" width="18" height="12" rx="1.5" />
-            <path stroke-linecap="round" stroke-linejoin="round" d="M3 12h18" />
-          </svg>
-          Job-postions
-        </a>
-
-        <a [routerLink]="['/forms', 'items']"
-          routerLinkActive="tenant-sidebar__sublink--active"
-          class="tenant-sidebar__sublink font-ibm">
-          <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-            xmlns="http://www.w3.org/2000/svg">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3 20 7.5 12 12 4 7.5 12 3Z" />
-            <path stroke-linecap="round" stroke-linejoin="round" d="M4 12.5 12 17l8-4.5" />
-            <path stroke-linecap="round" stroke-linejoin="round" d="M4 17 12 21l8-4" />
-          </svg>
-          Items
-        </a> -->
       </div>
     </div>
+    }
+
+    <!-- Employee account links -->
+    @if (isEmployee) {
+      <a [routerLink]="['/profile']"
+        routerLinkActive="tenant-sidebar__link--active"
+        class="tenant-sidebar__link font-ibm">
+        <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+          xmlns="http://www.w3.org/2000/svg">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M16 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M8 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M2.5 20a5.5 5.5 0 0 1 11 0" />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M13 18.5a4.5 4.5 0 0 1 8 1.5" />
+        </svg>
+        Profile
+      </a>
+
+      <button
+        type="button"
+        class="tenant-sidebar__link font-ibm"
+        (click)="logout()">
+        <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+          xmlns="http://www.w3.org/2000/svg">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6A2.25 2.25 0 0 0 5.25 5.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15" />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9l3 3-3 3" />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 12H3" />
+        </svg>
+        Logout
+      </button>
     }
   </div>
 </div>
