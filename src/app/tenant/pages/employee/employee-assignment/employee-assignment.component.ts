@@ -28,18 +28,30 @@ import { normalizeSignatureValue } from '../../../../shared/dynamic-form/signatu
 import { CompletedFormViewComponent } from '../typeform-fill/completed-form-view.component';
 import { readAssignmentSubmittedAt } from '../typeform-fill/format-typeform-review.utils';
 import { TypeformFillShellComponent } from '../typeform-fill/typeform-fill-shell.component';
+import { NormalFormShellComponent } from '../normal-form/normal-form-shell.component';
 import { TenantPermissionService } from '../../../../services/tenant-permission.service';
 import { PERMISSIONS } from '../../../../constants/permissions';
 
 export type EmployeeFormFillMode = 'classic' | 'typeform';
-/** Interaction layer after Start Assignment — presentation only, not a second form store. */
-export type EmployeeInteractionMode = 'manual' | 'voice';
+/** Presentation-only fill mode — not a second form data store. */
+export type EmployeeInteractionMode = 'manual' | 'voice' | 'normal';
 
 @Component({
   selector: 'app-employee-assignment',
   standalone: true,
-  imports: [CommonModule, SharedModule, TypeformFillShellComponent, CompletedFormViewComponent],
+  imports: [
+    CommonModule,
+    SharedModule,
+    TypeformFillShellComponent,
+    NormalFormShellComponent,
+    CompletedFormViewComponent,
+  ],
   templateUrl: './employee-assignment.component.html',
+  host: {
+    class: 'block min-h-0',
+    '[class.h-full]': 'showActiveForm()',
+    '[class.overflow-hidden]': 'showActiveForm()',
+  },
 })
 export class EmployeeAssignmentComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
@@ -51,6 +63,7 @@ export class EmployeeAssignmentComponent implements OnInit {
   private readonly permissionService = inject(TenantPermissionService);
   private readonly dynamicForms = viewChildren(DynamicFormComponent);
   private readonly typeformShell = viewChild(TypeformFillShellComponent);
+  private readonly normalFormShell = viewChild(NormalFormShellComponent);
 
   readonly canCompleteAssignment = this.permissionService.hasPermissionName(
     PERMISSIONS.DATA_COLLECTION.COMPLETE_ASSIGNMENT,
@@ -65,10 +78,15 @@ export class EmployeeAssignmentComponent implements OnInit {
   /** Assigned employee forms use Typeform layout by default. */
   readonly fillMode = signal<EmployeeFormFillMode>('typeform');
   /**
-   * Presentation-only Manual/Voice choice. Defaults to 'manual' so the form
-   * opens immediately (no mode-selection gate). Never a second form data store.
+   * Presentation-only Manual / Voice / Normal choice. Defaults to 'manual'
+   * so Regular Form opens immediately. Never a second form data store.
    */
   readonly interactionMode = signal<EmployeeInteractionMode | null>(null);
+  /**
+   * Field-id keyed draft answers used when remounting shells on mode switch.
+   * Keeps FormGroup values continuous across Regular / Voice / Normal.
+   */
+  readonly workingAnswers = signal<Record<string, unknown>>({});
 
   readonly loading = signal(true);
   readonly starting = signal(false);
@@ -151,7 +169,13 @@ export class EmployeeAssignmentComponent implements OnInit {
       return;
     }
 
-    // Presentation choice only — do not reset FormGroup / answers / progress.
+    if (mode === this.interactionMode()) {
+      return;
+    }
+
+    // Snapshot answers before remounting so Regular / Voice / Normal share state.
+    this.captureWorkingAnswersFromActiveForm();
+    this.applyWorkingAnswersToSections();
     this.interactionMode.set(mode);
   }
 
@@ -293,6 +317,7 @@ export class EmployeeAssignmentComponent implements OnInit {
     this.showSuccess.set(false);
     // Default Manual on each open/resume — answers still hydrate from the API.
     this.interactionMode.set(null);
+    this.workingAnswers.set({});
     this.sections.set([]);
 
     this.assignmentsService
@@ -362,9 +387,16 @@ export class EmployeeAssignmentComponent implements OnInit {
   }
 
   private hydrateSections(detail: EmployeeAssignmentDetail) {
-    // Preserve saved/draft answers for in_progress + completed. Pending has none.
+    // Prefer in-session draft answers (mode switches); fall back to API answers.
+    const apiAnswers = detail.status === 'pending' ? {} : detail.answers ?? {};
+    const draft = this.workingAnswers();
     const answers =
-      detail.status === 'pending' ? {} : detail.answers ?? {};
+      Object.keys(draft).length > 0 ? { ...apiAnswers, ...draft } : apiAnswers;
+
+    if (Object.keys(answers).length) {
+      this.workingAnswers.set(answers);
+    }
+
     const mapped = mapAssignmentSectionsToBuilder(detail.sections, detail.schema, answers);
     const readonly = detail.status === 'completed';
 
@@ -417,7 +449,12 @@ export class EmployeeAssignmentComponent implements OnInit {
   }
 
   private resolveSubmissionForms(): DynamicFormComponent[] {
-    if (this.fillMode() === 'typeform') {
+    if (this.interactionMode() === 'normal') {
+      const form = this.normalFormShell()?.getFormComponent();
+      return form ? [form] : [];
+    }
+
+    if (this.fillMode() === 'typeform' || this.interactionMode() === 'manual' || this.interactionMode() === 'voice') {
       const form = this.typeformShell()?.getFormComponent();
       return form ? [form] : [];
     }
@@ -426,7 +463,12 @@ export class EmployeeAssignmentComponent implements OnInit {
   }
 
   private buildAnswers(forms: readonly DynamicFormComponent[]): Record<string, unknown> {
-    if (this.fillMode() === 'typeform') {
+    if (
+      this.interactionMode() === 'normal' ||
+      this.fillMode() === 'typeform' ||
+      this.interactionMode() === 'manual' ||
+      this.interactionMode() === 'voice'
+    ) {
       return this.buildAnswersFromFields(forms[0], this.mergedFields());
     }
 
@@ -463,6 +505,34 @@ export class EmployeeAssignmentComponent implements OnInit {
     }
 
     return answers;
+  }
+
+  private captureWorkingAnswersFromActiveForm(): void {
+    const form =
+      this.interactionMode() === 'normal'
+        ? this.normalFormShell()?.getFormComponent()
+        : this.typeformShell()?.getFormComponent();
+
+    if (!form?.formReady()) {
+      return;
+    }
+
+    const captured = this.buildAnswersFromFields(form, this.mergedFields());
+    this.workingAnswers.update((current) => ({ ...current, ...captured }));
+  }
+
+  private applyWorkingAnswersToSections(): void {
+    const answers = this.workingAnswers();
+    if (!Object.keys(answers).length) {
+      return;
+    }
+
+    this.sections.update((sections) =>
+      sections.map((section) => ({
+        ...section,
+        fields: this.withAnswersAndReadonly(section.fields, answers, false),
+      })),
+    );
   }
 
   private mapFieldAnswer(field: DynamicField, values: DynamicFormValue): unknown {

@@ -174,9 +174,23 @@
         border-radius: 999px;
       }
 
+      &--letter {
+        width: 1.6rem;
+        height: 1.6rem;
+        border-radius: 0.35rem;
+        color: #525252;
+        font-size: 0.75rem;
+        font-weight: 700;
+      }
+
       &--check {
         border-radius: 0.3rem;
       }
+    }
+
+    .typeform-choice__letter {
+      line-height: 1;
+      color: inherit;
     }
 
     .typeform-choice--selected .typeform-choice__marker {
@@ -186,9 +200,14 @@
       box-shadow: 0 0 0 3px rgba(255, 144, 21, 0.14);
     }
 
-    .typeform-choice--selected .typeform-choice__marker--radio {
+    .typeform-choice--selected .typeform-choice__marker--radio:not(.typeform-choice__marker--letter) {
       background: #fff;
       box-shadow: inset 0 0 0 4px #ff9015;
+    }
+
+    .typeform-choice--selected .typeform-choice__marker--letter {
+      background: #ff9015;
+      color: #fff;
     }
 
     .typeform-choice__check {

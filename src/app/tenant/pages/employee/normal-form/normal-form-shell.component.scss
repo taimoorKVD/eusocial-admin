@@ -1,0 +1,228 @@
+:host {
+  display: block;
+  height: 100%;
+  min-height: 0;
+}
+
+.normal-form-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 100%;
+  background: #f7f7f7;
+  color: #111;
+}
+
+.normal-form-shell__header {
+  flex-shrink: 0;
+  padding: 1.25rem 1.25rem 0.85rem;
+}
+
+@media (min-width: 640px) {
+  .normal-form-shell__header {
+    padding: 1.75rem 2rem 1rem;
+  }
+}
+
+.normal-form-shell__header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.normal-form-shell__identity {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.normal-form-shell__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #ff9015;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.normal-form-shell__back:hover {
+  text-decoration: underline;
+}
+
+.normal-form-shell__title {
+  margin: 0.55rem 0 0;
+  font-size: clamp(1.35rem, 2.4vw, 1.75rem);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: #111;
+}
+
+.normal-form-shell__due {
+  margin: 0.35rem 0 0;
+  font-size: 0.875rem;
+  color: #6f6f6f;
+}
+
+.normal-form-shell__mode {
+  display: inline-flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  justify-content: flex-end;
+}
+
+.normal-form-shell__mode-btn {
+  min-height: 2.25rem;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid #e6e6e6;
+  border-radius: 0.4rem;
+  background: #fff;
+  color: #525252;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    color 140ms ease,
+    border-color 140ms ease,
+    background-color 140ms ease;
+}
+
+@media (min-width: 640px) {
+  .normal-form-shell__mode-btn {
+    font-size: 0.8125rem;
+    padding: 0.4rem 0.85rem;
+  }
+}
+
+.normal-form-shell__mode-btn--active {
+  border-color: #ff9015;
+  color: #ff9015;
+  background: #fff;
+}
+
+.normal-form-shell__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.5rem 1rem 1.5rem;
+}
+
+@media (min-width: 640px) {
+  .normal-form-shell__body {
+    padding: 0.75rem 2rem 2rem;
+  }
+}
+
+.normal-form-shell__card {
+  width: 100%;
+  max-width: 56rem;
+  margin: 0 auto;
+  padding: 1.25rem 1rem 1.35rem;
+  border: 1px solid #e8e8e8;
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.05);
+}
+
+@media (min-width: 640px) {
+  .normal-form-shell__card {
+    padding: 1.75rem 1.75rem 1.5rem;
+  }
+}
+
+/* Match screenshot: clean 2-col form, uppercase labels, light inputs. */
+.normal-form-shell__card ::ng-deep .dynamic-form {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.normal-form-shell__card ::ng-deep .field-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6f6f6f;
+}
+
+.normal-form-shell__card ::ng-deep .dynamic-control {
+  min-height: 2.85rem;
+  border-radius: 0.5rem;
+  border-color: #e5e7eb;
+  background: #fff;
+  padding: 0.7rem 0.9rem;
+  font-size: 0.95rem;
+}
+
+.normal-form-shell__card ::ng-deep .dynamic-control:focus {
+  border-color: #ff9015;
+  box-shadow: 0 0 0 3px rgba(255, 144, 21, 0.14);
+}
+
+.normal-form-shell__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+  padding-top: 1.15rem;
+  border-top: 1px solid #f0f0f0;
+}
+
+.normal-form-shell__submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.85rem;
+  padding: 0.65rem 1.35rem;
+  border: 1px solid #ff9015;
+  border-radius: 0.75rem;
+  background: #ff9015;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    opacity 140ms ease;
+}
+
+.normal-form-shell__submit:hover:not(:disabled) {
+  background: #e57f0f;
+  border-color: #e57f0f;
+}
+
+.normal-form-shell__submit:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (max-width: 639px) {
+  .normal-form-shell__header-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .normal-form-shell__mode {
+    justify-content: stretch;
+  }
+
+  .normal-form-shell__mode-btn {
+    flex: 1 1 auto;
+  }
+
+  .normal-form-shell__actions {
+    justify-content: stretch;
+  }
+
+  .normal-form-shell__submit {
+    width: 100%;
+  }
+}

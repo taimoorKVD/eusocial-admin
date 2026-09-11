@@ -30,6 +30,7 @@ import {
 } from '../../../../shared/voice/voice-field.adapter';
 import {
   buildTypeformReviewItems,
+  COMPLETED_FORM_EMPTY_LABEL,
   TypeformReviewItemView,
 } from './format-typeform-review.utils';
 import {
@@ -41,7 +42,7 @@ import {
   retreatNavigationState,
 } from './typeform-question-navigator';
 
-export type TypeformInteractionMode = 'manual' | 'voice';
+export type TypeformInteractionMode = 'manual' | 'voice' | 'normal';
 
 export type IntelligentVoiceUiState =
   | 'idle'
@@ -93,6 +94,8 @@ export class TypeformFillShellComponent implements AfterViewInit, OnDestroy {
   readonly submitRequested = output<void>();
   /** Emit when the top-right Regular Form / Voice Reply control changes. */
   readonly interactionModeChange = output<TypeformInteractionMode>();
+  /** Top-left Back — leave the full-screen form. */
+  readonly exitRequested = output<void>();
 
   readonly voice = inject(VoiceInputService);
   readonly voiceOut = inject(VoiceOutputService);
@@ -247,15 +250,38 @@ export class TypeformFillShellComponent implements AfterViewInit, OnDestroy {
 
   readonly progressTotal = computed(() => this.navState().visibleQuestionIds.length);
 
+  /** Count of visible questions that already have an answer (screenshot progress copy). */
+  readonly answeredCount = computed(() => {
+    this.formValuesRevision();
+    const form = this.formComponent();
+    if (!form?.formReady()) {
+      return 0;
+    }
+
+    const values = form.value ?? {};
+    const fieldMap = new Map(this.fields().map((field) => [field.id, field]));
+    let count = 0;
+
+    for (const id of this.navState().visibleQuestionIds) {
+      const field = fieldMap.get(id);
+      if (!field) {
+        continue;
+      }
+      if (this.hasAnswerValue(values[field.name])) {
+        count += 1;
+      }
+    }
+
+    return count;
+  });
+
   readonly progressLabel = computed(() => {
     const total = this.progressTotal();
     if (!total || this.isReviewPhase()) {
       return '';
     }
 
-    const current = String(this.progressCurrent()).padStart(2, '0');
-    const totalLabel = String(total).padStart(2, '0');
-    return `${current} / ${totalLabel}`;
+    return `${this.answeredCount()} of ${total} answered`;
   });
 
   readonly progressPercent = computed(() => {
@@ -264,7 +290,134 @@ export class TypeformFillShellComponent implements AfterViewInit, OnDestroy {
       return 0;
     }
 
-    return Math.round((this.progressCurrent() / total) * 100);
+    return Math.round((this.answeredCount() / total) * 100);
+  });
+
+  readonly activeQuestionNumber = computed(() => {
+    const current = this.progressCurrent();
+    return current > 0 ? String(current).padStart(2, '0') : '';
+  });
+
+  readonly activeBadgeLabel = computed(() => {
+    const field = this.activeField();
+    if (!field) {
+      return '';
+    }
+
+    const name = typeof field.name === 'string' ? field.name.trim() : '';
+    if (name && !/^(field|q|question)\d*$/i.test(name) && name.length <= 24) {
+      return name.replace(/[_-]+/g, ' ').toUpperCase();
+    }
+
+    const label = (field.label || '').trim();
+    if (!label) {
+      return '';
+    }
+
+    if (label.length > 28) {
+      const words = label
+        .replace(/[?!.,]/g, ' ')
+        .split(/\s+/)
+        .filter((word) => word.length > 2 && !/^(how|many|are|the|what|is|for|and)$/i.test(word));
+      return (words[words.length - 1] || label).toUpperCase().slice(0, 18);
+    }
+
+    return label.toUpperCase().slice(0, 18);
+  });
+
+  /** Voice "HEARD" panel text — transcript / last recognition / current value. */
+  readonly heardDisplay = computed(() => {
+    this.formValuesRevision();
+    if (this.voiceTranscriptPreview()) {
+      return this.voiceTranscriptPreview();
+    }
+    if (this.lastRecognizedAnswer()) {
+      return this.lastRecognizedAnswer();
+    }
+
+    const field = this.activeField();
+    const form = this.formComponent();
+    if (!field || !form?.formReady()) {
+      return '';
+    }
+
+    const value = form.value?.[field.name];
+    if (value === null || value === undefined || value === '') {
+      return '';
+    }
+
+    return String(value);
+  });
+
+  readonly showHeardPanel = computed(() => {
+    if (this.isReviewPhase() || !this.canFill()) {
+      return false;
+    }
+
+    if (this.isVoiceMode()) {
+      return true;
+    }
+
+    return this.voice.listening() || !!this.heardDisplay();
+  });
+
+  readonly showHoldToReply = computed(() => {
+    if (!this.canFill() || this.isReviewPhase()) {
+      return false;
+    }
+
+    if (this.isVoiceMode()) {
+      return this.activeFieldVoiceSupported() && this.voice.isSupported();
+    }
+
+    return this.showManualVoiceButton();
+  });
+
+  readonly holdToReplyDisabled = computed(() => {
+    if (!this.showHoldToReply()) {
+      return true;
+    }
+
+    if (this.isVoiceMode()) {
+      return (
+        this.isManualFallbackActive() ||
+        this.voiceUiState() === 'reading' ||
+        this.processingVoice()
+      );
+    }
+
+    return false;
+  });
+
+  /** Soft peek of the previous answered question (screenshot stack cue). */
+  readonly previousAnswerPeek = computed(() => {
+    this.formValuesRevision();
+    if (this.isReviewPhase()) {
+      return null;
+    }
+
+    const state = this.navState();
+    if (state.activeQuestionIndex <= 0) {
+      return null;
+    }
+
+    const prevId = state.visibleQuestionIds[state.activeQuestionIndex - 1];
+    const field = this.fields().find((item) => item.id === prevId);
+    const form = this.formComponent();
+    if (!field || !form?.formReady()) {
+      return null;
+    }
+
+    const value = form.value?.[field.name];
+    if (!this.hasAnswerValue(value)) {
+      return null;
+    }
+
+    const display = Array.isArray(value) ? value.join(', ') : String(value);
+    return {
+      label: field.label || field.name,
+      value: display,
+    };
   });
 
   readonly activeFieldError = computed(() => {
@@ -305,6 +458,8 @@ export class TypeformFillShellComponent implements AfterViewInit, OnDestroy {
 
     return this.isLastVisibleQuestion() ? 'Review' : 'Continue';
   });
+
+  readonly emptyLabel = COMPLETED_FORM_EMPTY_LABEL;
 
   readonly reviewItems = computed((): TypeformReviewItem[] => {
     this.formValuesRevision();
@@ -520,6 +675,30 @@ export class TypeformFillShellComponent implements AfterViewInit, OnDestroy {
     this.voiceHint.set('');
     this.voiceUiState.set('idle');
     this.interactionModeChange.emit(mode);
+  }
+
+  requestExit(): void {
+    this.stopVoiceActivity({ applyTranscript: false });
+    this.exitRequested.emit();
+  }
+
+  /** Black Hold to Reply — same voice pipeline, screenshot presentation. */
+  onHoldToReplyClick(): void {
+    if (this.isVoiceMode()) {
+      if (this.isManualFallbackActive() || this.voiceUiState() === 'reading' || this.processingVoice()) {
+        return;
+      }
+
+      if (this.voice.listening()) {
+        this.voice.stopListening();
+        return;
+      }
+
+      this.retryVoiceListen();
+      return;
+    }
+
+    this.toggleVoice();
   }
 
   toggleVoice(): void {
@@ -1166,5 +1345,25 @@ export class TypeformFillShellComponent implements AfterViewInit, OnDestroy {
 
       this.shellRoot()?.nativeElement.focus();
     });
+  }
+
+  private hasAnswerValue(value: unknown): boolean {
+    if (value === null || value === undefined) {
+      return false;
+    }
+
+    if (typeof value === 'string') {
+      return value.trim().length > 0;
+    }
+
+    if (Array.isArray(value)) {
+      return value.length > 0;
+    }
+
+    if (typeof value === 'object') {
+      return Object.keys(value as object).length > 0;
+    }
+
+    return true;
   }
 }
