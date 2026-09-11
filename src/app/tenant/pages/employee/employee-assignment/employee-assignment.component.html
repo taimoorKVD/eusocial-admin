@@ -112,28 +112,18 @@
         </p>
       </div>
     } @else if (isPending()) {
-      <!-- Step 1: Start Assignment only. Do NOT mount the form shell here. -->
+      <!--
+        Reached only when the employee can view but not complete the assignment
+        (pending + no COMPLETE_ASSIGNMENT permission). Employees with full
+        permission are auto-started on open and never see this screen.
+      -->
       <div class="rounded-xl border border-[#E8E8E8] bg-white p-5 shadow-sm sm:p-6">
         <h2 class="m-0 text-base font-semibold text-[#161616] font-ibm">
-          Ready to start
+          {{ formTitle() }}
         </h2>
         <p class="mt-2 m-0 text-sm leading-6 text-[#6F6F6F] font-ibm">
-          Start this assignment to mark it in progress, then choose how you want to fill it.
+          You do not have permission to complete this assignment.
         </p>
-        @if (canCompleteAssignment) {
-          <button
-            type="button"
-            class="mt-5 rounded-lg bg-[#FF9015] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#e57f0f] disabled:opacity-50 font-ibm"
-            [disabled]="starting()"
-            (click)="startAssignment()"
-          >
-            Start Assignment
-          </button>
-        } @else {
-          <p class="mt-5 m-0 text-sm text-[#6F6F6F] font-ibm">
-            You do not have permission to complete this assignment.
-          </p>
-        }
       </div>
     } @else if (showModeSelection()) {
       <!--

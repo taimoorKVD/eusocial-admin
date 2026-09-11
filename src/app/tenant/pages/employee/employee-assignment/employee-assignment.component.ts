@@ -202,45 +202,51 @@ export class EmployeeAssignmentComponent implements OnInit {
     }
   }
 
-  startAssignment(): void {
-    const current = this.assignment();
-    if (!current || this.starting() || current.status !== 'pending') {
-      return;
-    }
-
+  /**
+   * Skips the "Start Assignment" landing screen: transitions a pending
+   * assignment straight to in_progress via the existing start API, then lets
+   * the standard mode-selection gate take over.
+   */
+  private autoStartAssignment(detail: EmployeeAssignmentDetail): void {
     this.starting.set(true);
-    // Mode must be chosen after start — never open the shell yet.
+    // Mode must be chosen after start.
     this.interactionMode.set(null);
 
-    this.assignmentsService
-      .startAssignment(current.id)
+    this.runStartRequest(detail)
       .pipe(
-        catchError((err) => {
-          const message = String(err?.error?.message || '').toLowerCase();
-          const alreadyStarted =
-            err?.status === 409 ||
-            message.includes('already') ||
-            message.includes('in_progress') ||
-            message.includes('in progress');
-
-          return alreadyStarted
-            ? this.assignmentsService.getAssignment(current.id)
-            : throwError(() => err);
-        }),
         finalize(() => this.starting.set(false)),
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-        next: (detail) => {
-          const merged = this.ensureStartedStatus(this.mergeDetail(current, detail));
-          this.interactionMode.set(null);
+        next: (startedDetail) => {
+          const merged = this.ensureStartedStatus(this.mergeDetail(detail, startedDetail));
           this.applyAssignment(merged);
           this.toastr.success('Assignment started');
         },
         error: (err) => {
           this.toastr.error(err?.error?.message || 'Unable to start this assignment.');
+          this.assignment.set(null);
+          this.sections.set([]);
+          this.errorMessage.set('Unable to start this assignment. Please try again.');
         },
       });
+  }
+
+  private runStartRequest(detail: EmployeeAssignmentDetail) {
+    return this.assignmentsService.startAssignment(detail.id).pipe(
+      catchError((err) => {
+        const message = String(err?.error?.message || '').toLowerCase();
+        const alreadyStarted =
+          err?.status === 409 ||
+          message.includes('already') ||
+          message.includes('in_progress') ||
+          message.includes('in progress');
+
+        return alreadyStarted
+          ? this.assignmentsService.getAssignment(detail.id)
+          : throwError(() => err);
+      }),
+    );
   }
 
   submitForm(): void {
@@ -311,7 +317,15 @@ export class EmployeeAssignmentComponent implements OnInit {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-        next: (detail) => this.applyAssignment(detail),
+        next: (detail) => {
+          // Fresh assignments open straight into the fill flow — auto-start them
+          // so the intermediate "Start Assignment" screen never appears.
+          if (detail.status === 'pending' && this.canCompleteAssignment) {
+            this.autoStartAssignment(detail);
+            return;
+          }
+          this.applyAssignment(detail);
+        },
         error: (err) => {
           this.assignment.set(null);
           this.sections.set([]);
