@@ -222,7 +222,7 @@ export class EmployeeAssignmentComponent implements OnInit {
    */
   private autoStartAssignment(detail: EmployeeAssignmentDetail): void {
     this.starting.set(true);
-    this.interactionMode.set('manual');
+    this.interactionMode.set('normal');
 
     this.runStartRequest(detail)
       .pipe(
@@ -232,7 +232,7 @@ export class EmployeeAssignmentComponent implements OnInit {
       .subscribe({
         next: (startedDetail) => {
           const merged = this.ensureStartedStatus(this.mergeDetail(detail, startedDetail));
-          this.interactionMode.set('manual');
+          this.interactionMode.set('normal');
           this.applyAssignment(merged);
           this.toastr.success('Assignment started');
         },
@@ -362,7 +362,7 @@ export class EmployeeAssignmentComponent implements OnInit {
 
     const fillable = detail.status === 'in_progress' || detail.status === 'overdue';
     if (fillable && this.canCompleteAssignment) {
-      this.interactionMode.set(this.interactionMode() ?? 'manual');
+      this.interactionMode.set(this.interactionMode() ?? 'normal');
     } else if (
       detail.status === 'completed' ||
       detail.status === 'pending' ||

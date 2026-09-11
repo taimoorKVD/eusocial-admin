@@ -36,20 +36,20 @@
         <button
           type="button"
           class="typeform-shell__mode-btn"
-          [class.typeform-shell__mode-btn--active]="isManualMode()"
-          [attr.aria-pressed]="isManualMode()"
-          (click)="setInteractionMode('manual')"
-        >
-          Voice Reply
-        </button>
-        <button
-          type="button"
-          class="typeform-shell__mode-btn"
           [class.typeform-shell__mode-btn--active]="interactionMode() === 'normal'"
           [attr.aria-pressed]="interactionMode() === 'normal'"
           (click)="setInteractionMode('normal')"
         >
           Regular Form
+        </button>
+        <button
+          type="button"
+          class="typeform-shell__mode-btn"
+          [class.typeform-shell__mode-btn--active]="isManualMode()"
+          [attr.aria-pressed]="isManualMode()"
+          (click)="setInteractionMode('manual')"
+        >
+          Voice Reply
         </button>
       </div>
     </div>

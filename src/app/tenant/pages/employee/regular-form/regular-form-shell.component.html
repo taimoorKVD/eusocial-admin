@@ -22,20 +22,20 @@
         <button
           type="button"
           class="regular-form-shell__mode-btn"
-          [class.regular-form-shell__mode-btn--active]="isManualMode()"
-          [attr.aria-pressed]="isManualMode()"
-          (click)="setInteractionMode('manual')"
-        >
-          Voice Reply
-        </button>
-        <button
-          type="button"
-          class="regular-form-shell__mode-btn"
           [class.regular-form-shell__mode-btn--active]="isNormalMode()"
           [attr.aria-pressed]="isNormalMode()"
           (click)="setInteractionMode('normal')"
         >
           Regular Form
+        </button>
+        <button
+          type="button"
+          class="regular-form-shell__mode-btn"
+          [class.regular-form-shell__mode-btn--active]="isManualMode()"
+          [attr.aria-pressed]="isManualMode()"
+          (click)="setInteractionMode('manual')"
+        >
+          Voice Reply
         </button>
       </div>
     </div>
