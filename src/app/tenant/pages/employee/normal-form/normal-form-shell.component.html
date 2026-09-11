@@ -3,7 +3,7 @@
     <div class="normal-form-shell__header-row">
       <div class="normal-form-shell__identity">
         <button type="button" class="normal-form-shell__back" (click)="requestExit()">
-          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M19 12H5M12 19l-7-7 7-7" />
           </svg>
           Back
@@ -50,8 +50,9 @@
     </div>
   </header>
 
+  <!-- Left-aligned traditional form (screenshot) — not Typeform-centered. -->
   <div class="normal-form-shell__body">
-    <div class="normal-form-shell__card">
+    <div class="normal-form-shell__content">
       <app-dynamic-form
         [fields]="fields()"
         [enableLocationDependencies]="true"
