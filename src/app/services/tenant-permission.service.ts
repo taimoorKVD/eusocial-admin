@@ -109,6 +109,13 @@ export class TenantPermissionService {
       );
     }
 
+    // Form Template / Task expand into data-collection permission names.
+    if (moduleKey === 'form-template' || moduleKey === 'task') {
+      if (this.permissionsByModule().get('data-collection')?.has(permissionName)) {
+        return true;
+      }
+    }
+
     // If module metadata is missing on stored permissions, fall back to name-only.
     if (!this.permissionsByModule().size) {
       return this.permissionNameSet().has(permissionName);
@@ -158,6 +165,26 @@ export class TenantPermissionService {
           'view-dc-submission',
           'review-dc-submission',
         )
+      );
+    }
+
+    if (moduleKey === 'form-template') {
+      return this.hasAnyPermission(
+        'view-dc-template',
+        'create-dc-template',
+        'edit-dc-template',
+        'delete-dc-template',
+        'activate-dc-template',
+        'archive-dc-template',
+      );
+    }
+
+    if (moduleKey === 'task') {
+      return this.hasAnyPermission(
+        'view-dc-assignment',
+        'complete-dc-assignment',
+        'view-dc-submission',
+        'review-dc-submission',
       );
     }
 

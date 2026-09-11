@@ -28,6 +28,7 @@ import { normalizeSignatureValue } from '../../../../shared/dynamic-form/signatu
 import { CompletedFormViewComponent } from '../typeform-fill/completed-form-view.component';
 import { readAssignmentSubmittedAt } from '../typeform-fill/format-typeform-review.utils';
 import { TypeformFillShellComponent } from '../typeform-fill/typeform-fill-shell.component';
+/** Normal Form mode UI — provided by RegularFormShellComponent (not a separate normal-form module). */
 import { RegularFormShellComponent } from '../regular-form/regular-form-shell.component';
 import { TenantPermissionService } from '../../../../services/tenant-permission.service';
 import { PERMISSIONS } from '../../../../constants/permissions';

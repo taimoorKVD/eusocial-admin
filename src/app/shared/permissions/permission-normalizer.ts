@@ -4,7 +4,15 @@ import { Permission } from '../../interfaces/permission';
 /** Canonical module keys used by sidebar/guards. */
 export type CanonicalModule =
   | typeof PERMISSION_MODULES[keyof typeof PERMISSION_MODULES]
-  | 'form';
+  | 'form'
+  | 'form-template'
+  | 'task';
+
+/** Form Template module (Extra Management) — formerly API name "Template". */
+export const FORM_TEMPLATE_MODULE = 'form-template';
+
+/** Task module (Employee My Forms) — formerly API name "Form". */
+export const TASK_MODULE = 'task';
 
 /**
  * Flatten login / role permission payloads into a uniform list.
@@ -80,10 +88,17 @@ export function canonicalizeModuleKey(raw: string): string {
     forms: 'form',
     'form builder': PERMISSION_MODULES.FORM_BUILDER,
     'form-builder': PERMISSION_MODULES.FORM_BUILDER,
+    // New API: "Form Template" (Extra Management templates). Old: "Template".
+    'form template': FORM_TEMPLATE_MODULE,
+    'form-template': FORM_TEMPLATE_MODULE,
+    formtemplate: FORM_TEMPLATE_MODULE,
+    template: FORM_TEMPLATE_MODULE,
+    templates: FORM_TEMPLATE_MODULE,
+    // New API: "Task" (Employee My Forms / assignments). Old: "Form" stays as ambiguous 'form'.
+    task: TASK_MODULE,
+    tasks: TASK_MODULE,
     'data collection': PERMISSION_MODULES.DATA_COLLECTION,
     'data-collection': PERMISSION_MODULES.DATA_COLLECTION,
-    template: PERMISSION_MODULES.DATA_COLLECTION,
-    templates: PERMISSION_MODULES.DATA_COLLECTION,
     assignment: PERMISSION_MODULES.DATA_COLLECTION,
     assignments: PERMISSION_MODULES.DATA_COLLECTION,
     submission: PERMISSION_MODULES.DATA_COLLECTION,
@@ -163,11 +178,50 @@ function actionToPermissionNames(moduleKey: string, action: string): string[] {
       return [`${action}-form`];
     case PERMISSION_MODULES.DATA_COLLECTION:
       return dataCollectionNamesForAction(action);
+    case FORM_TEMPLATE_MODULE:
+      return formTemplateNamesForAction(action);
+    case TASK_MODULE:
+      return taskNamesForAction(action);
     case 'form':
-      // Ambiguous "Form" module from API — cover builder + DC template + assignment flows.
+      // Legacy ambiguous "Form" module — cover builder + DC template + assignment flows.
       return formModuleNamesForAction(action);
     default:
       return [`${action}-${moduleKey.replace(/s$/, '')}`];
+  }
+}
+
+/** Extra Management → Form Template permissions (IDs 33–40). */
+function formTemplateNamesForAction(action: string): string[] {
+  switch (action) {
+    case 'create':
+      return [PERMISSIONS.DATA_COLLECTION.CREATE_TEMPLATE];
+    case 'view':
+      return [PERMISSIONS.DATA_COLLECTION.VIEW_TEMPLATE];
+    case 'edit':
+      return [PERMISSIONS.DATA_COLLECTION.EDIT_TEMPLATE];
+    case 'delete':
+      return [PERMISSIONS.DATA_COLLECTION.DELETE_TEMPLATE];
+    case 'activate':
+      return [PERMISSIONS.DATA_COLLECTION.ACTIVATE_TEMPLATE];
+    case 'archive':
+      return [PERMISSIONS.DATA_COLLECTION.ARCHIVE_TEMPLATE];
+    default:
+      return [`${action}-dc-template`];
+  }
+}
+
+/** Employee Portal → Task / My Forms permissions (IDs 41, 43, 45). */
+function taskNamesForAction(action: string): string[] {
+  switch (action) {
+    case 'view':
+      return [PERMISSIONS.DATA_COLLECTION.VIEW_ASSIGNMENT];
+    case 'submit':
+    case 'complete':
+      return [PERMISSIONS.DATA_COLLECTION.COMPLETE_ASSIGNMENT];
+    case 'review':
+      return [PERMISSIONS.DATA_COLLECTION.REVIEW_SUBMISSION];
+    default:
+      return [`${action}-dc-assignment`];
   }
 }
 
@@ -236,6 +290,9 @@ function moduleForExpandedName(name: string, fallback: string): string {
   }
   if (name.endsWith('-form') || name.includes('-form')) {
     return PERMISSION_MODULES.FORM_BUILDER;
+  }
+  if (fallback === FORM_TEMPLATE_MODULE || fallback === TASK_MODULE) {
+    return PERMISSION_MODULES.DATA_COLLECTION;
   }
   return fallback === 'form' ? PERMISSION_MODULES.FORM_BUILDER : fallback;
 }
@@ -369,8 +426,19 @@ export function moduleAllowanceKeys(module: string): string[] {
   switch (key) {
     case PERMISSION_MODULES.FORM_BUILDER:
     case PERMISSION_MODULES.DATA_COLLECTION:
+    case FORM_TEMPLATE_MODULE:
+    case TASK_MODULE:
     case 'form':
-      return [PERMISSION_MODULES.FORM_BUILDER, PERMISSION_MODULES.DATA_COLLECTION, 'form', 'forms'];
+      return [
+        PERMISSION_MODULES.FORM_BUILDER,
+        PERMISSION_MODULES.DATA_COLLECTION,
+        FORM_TEMPLATE_MODULE,
+        TASK_MODULE,
+        'form',
+        'forms',
+        'template',
+        'templates',
+      ];
     default:
       return key ? [key] : [];
   }

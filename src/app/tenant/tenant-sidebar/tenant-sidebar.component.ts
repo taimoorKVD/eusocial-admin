@@ -4,6 +4,10 @@ import { TenantSessionService } from '../../services/tenant-session.service';
 import { TenantAuthService } from '../../services/tenant-auth.service';
 import { TenantPermissionService } from '../../services/tenant-permission.service';
 import { PERMISSIONS, PERMISSION_MODULES } from '../../constants/permissions';
+import {
+  FORM_TEMPLATE_MODULE,
+  TASK_MODULE,
+} from '../../shared/permissions/permission-normalizer';
 
 @Component({
   selector: 'app-tenant-sidebar',
@@ -102,19 +106,19 @@ export class TenantSidebarComponent {
   }
 
   /**
-   * Form Templates (/dynamic-forms) — gated by view-dc-template (or module access).
+   * Form Templates (/dynamic-forms) — gated by Form Template module (view-dc-template).
    * Form-builder (/forms) remains an admin-experience feature.
    */
   canSeeFormTemplates(): boolean {
-    return this.permissions.hasModuleAccess(PERMISSION_MODULES.DATA_COLLECTION)
+    return this.permissions.hasModuleAccess(FORM_TEMPLATE_MODULE)
       || this.permissions.hasPermissionName(PERMISSIONS.DATA_COLLECTION.VIEW_TEMPLATE);
   }
 
+  /** My Forms — gated by Task module (view-dc-assignment / complete-dc-assignment). */
   canSeeMyForms(): boolean {
-    return this.permissions.hasPermissionName(PERMISSIONS.DATA_COLLECTION.VIEW_ASSIGNMENT)
-      || this.permissions.hasPermissionName(PERMISSIONS.DATA_COLLECTION.COMPLETE_ASSIGNMENT)
-      || this.permissions.hasPermissionName(PERMISSIONS.FORM_BUILDER.VIEW)
-      || this.permissions.hasPermissionName(PERMISSIONS.FORM_BUILDER.SUBMIT);
+    return this.permissions.hasModuleAccess(TASK_MODULE)
+      || this.permissions.hasPermissionName(PERMISSIONS.DATA_COLLECTION.VIEW_ASSIGNMENT)
+      || this.permissions.hasPermissionName(PERMISSIONS.DATA_COLLECTION.COMPLETE_ASSIGNMENT);
   }
 
   canSeeHistory(): boolean {
