@@ -21,11 +21,8 @@
     <header class="border-b border-[#F0F0F0] px-4 pb-4 pt-5 sm:px-8 sm:pb-5 sm:pt-7">
       <div class="flex items-start justify-between gap-3">
         <div class="min-w-0 flex-1">
-          <p class="m-0 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#FF9015]">
-            Kitchen Operations
-          </p>
           @if (formTitle()) {
-            <h1 class="mt-1.5 truncate text-lg font-semibold text-[#161616] sm:text-xl">
+            <h1 class="m-0 truncate text-xl font-bold tracking-tight text-[#111] sm:text-2xl">
               {{ formTitle() }}
             </h1>
           }
@@ -35,14 +32,38 @@
             </p>
           }
         </div>
-        @if (statusLabel()) {
-          <span
-            class="inline-flex shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold sm:text-xs"
-            [ngClass]="statusClass()"
+
+        <!-- Top-right Manual / Voice segmented control (screenshot) -->
+        <div
+          class="inline-flex shrink-0 rounded-lg border border-[#E6E6E6] bg-[#F3F3F3] p-0.5"
+          role="group"
+          aria-label="Form fill mode"
+        >
+          <button
+            type="button"
+            class="min-h-[2.25rem] rounded-md px-3 py-1.5 text-[13px] font-semibold transition-colors sm:px-3.5 sm:text-sm"
+            [class.bg-white]="isManualMode()"
+            [class.text-[#FF9015]]="isManualMode()"
+            [class.shadow-sm]="isManualMode()"
+            [class.text-[#6F6F6F]]="!isManualMode()"
+            [attr.aria-pressed]="isManualMode()"
+            (click)="setInteractionMode('manual')"
           >
-            {{ statusLabel() }}
-          </span>
-        }
+            Regular Form
+          </button>
+          <button
+            type="button"
+            class="min-h-[2.25rem] rounded-md px-3 py-1.5 text-[13px] font-semibold transition-colors sm:px-3.5 sm:text-sm"
+            [class.bg-white]="isVoiceMode()"
+            [class.text-[#FF9015]]="isVoiceMode()"
+            [class.shadow-sm]="isVoiceMode()"
+            [class.text-[#6F6F6F]]="!isVoiceMode()"
+            [attr.aria-pressed]="isVoiceMode()"
+            (click)="setInteractionMode('voice')"
+          >
+            Voice Reply
+          </button>
+        </div>
       </div>
 
       @if (isEditingFromReview()) {

@@ -65,9 +65,8 @@ export class EmployeeAssignmentComponent implements OnInit {
   /** Assigned employee forms use Typeform layout by default. */
   readonly fillMode = signal<EmployeeFormFillMode>('typeform');
   /**
-   * null until the employee explicitly chooses Fill Manually / Fill with Voice
-   * for this visit. Presentation only — never a second form data store.
-   * Reset on every assignment load so IN_PROGRESS resumes also show the gate.
+   * Presentation-only Manual/Voice choice. Defaults to 'manual' so the form
+   * opens immediately (no mode-selection gate). Never a second form data store.
    */
   readonly interactionMode = signal<EmployeeInteractionMode | null>(null);
 
@@ -112,23 +111,9 @@ export class EmployeeAssignmentComponent implements OnInit {
   readonly showCompletedSummary = computed(
     () => this.showForm() && this.isCompleted() && this.canViewSubmission,
   );
-  /**
-   * Gate for EVERY non-completed fillable assignment (new in_progress after Start
-   * AND resumed in_progress / overdue). Does not depend on hydration.
-   * in_progress must never bypass this.
-   */
-  readonly showModeSelection = computed(
-    () =>
-      !!this.assignment() &&
-      this.canFill() &&
-      this.interactionMode() === null &&
-      !this.isPending() &&
-      !this.isCompleted() &&
-      !this.isCancelled() &&
-      !this.showSuccess() &&
-      !this.formError(),
-  );
-  /** Shell mounts only after an explicit mode choice AND fields are ready. */
+  /** Mode-selection gate removed — form opens directly in Manual mode. */
+  readonly showModeSelection = computed(() => false);
+  /** Shell mounts once fillable fields are ready (mode defaults to manual). */
   readonly showActiveForm = computed(
     () =>
       this.canFill() &&
@@ -204,13 +189,12 @@ export class EmployeeAssignmentComponent implements OnInit {
 
   /**
    * Skips the "Start Assignment" landing screen: transitions a pending
-   * assignment straight to in_progress via the existing start API, then lets
-   * the standard mode-selection gate take over.
+   * assignment straight to in_progress via the existing start API, then opens
+   * the form in Manual mode by default.
    */
   private autoStartAssignment(detail: EmployeeAssignmentDetail): void {
     this.starting.set(true);
-    // Mode must be chosen after start.
-    this.interactionMode.set(null);
+    this.interactionMode.set('manual');
 
     this.runStartRequest(detail)
       .pipe(
@@ -220,6 +204,7 @@ export class EmployeeAssignmentComponent implements OnInit {
       .subscribe({
         next: (startedDetail) => {
           const merged = this.ensureStartedStatus(this.mergeDetail(detail, startedDetail));
+          this.interactionMode.set('manual');
           this.applyAssignment(merged);
           this.toastr.success('Assignment started');
         },
@@ -306,7 +291,7 @@ export class EmployeeAssignmentComponent implements OnInit {
     this.errorMessage.set('');
     this.formError.set('');
     this.showSuccess.set(false);
-    // Every open/resume visit must re-ask for mode (do not persist prior session mode).
+    // Default Manual on each open/resume — answers still hydrate from the API.
     this.interactionMode.set(null);
     this.sections.set([]);
 
@@ -344,6 +329,17 @@ export class EmployeeAssignmentComponent implements OnInit {
       this.formError.set('This assignment does not include a form schema to display.');
       this.sections.set([]);
       return;
+    }
+
+    const fillable = detail.status === 'in_progress' || detail.status === 'overdue';
+    if (fillable && this.canCompleteAssignment) {
+      this.interactionMode.set(this.interactionMode() ?? 'manual');
+    } else if (
+      detail.status === 'completed' ||
+      detail.status === 'pending' ||
+      detail.status === 'cancelled'
+    ) {
+      this.interactionMode.set(null);
     }
 
     this.hydrateSections(detail)

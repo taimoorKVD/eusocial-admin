@@ -87,10 +87,12 @@ export class TypeformFillShellComponent implements AfterViewInit, OnDestroy {
   readonly statusClass = input('');
   readonly canFill = input(true);
   readonly submitting = input(false);
-  /** Chosen at EmployeeAssignment gate — presentation only. */
+  /** Chosen at EmployeeAssignment — presentation only. */
   readonly interactionMode = input.required<TypeformInteractionMode>();
 
   readonly submitRequested = output<void>();
+  /** Emit when the top-right Regular Form / Voice Reply control changes. */
+  readonly interactionModeChange = output<TypeformInteractionMode>();
 
   readonly voice = inject(VoiceInputService);
   readonly voiceOut = inject(VoiceOutputService);
@@ -501,6 +503,23 @@ export class TypeformFillShellComponent implements AfterViewInit, OnDestroy {
     }
 
     this.submitRequested.emit();
+  }
+
+  /**
+   * Top-right Regular Form / Voice Reply switch.
+   * Presentation only — does not reset FormGroup / answers / progress.
+   */
+  setInteractionMode(mode: TypeformInteractionMode): void {
+    if (mode === this.interactionMode()) {
+      return;
+    }
+
+    this.stopVoiceActivity({ applyTranscript: false });
+    this.manualFallbackFieldId.set(null);
+    this.lastRecognizedAnswer.set('');
+    this.voiceHint.set('');
+    this.voiceUiState.set('idle');
+    this.interactionModeChange.emit(mode);
   }
 
   toggleVoice(): void {
