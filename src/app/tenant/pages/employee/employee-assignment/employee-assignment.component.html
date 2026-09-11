@@ -149,7 +149,8 @@
       ></app-completed-form-view>
     } @else if (showActiveForm() && interactionMode(); as mode) {
       @if (mode === 'normal') {
-        <app-normal-form-shell
+        <!-- Normal Form: traditional all-fields layout (direct submit, no Review). -->
+        <app-regular-form-shell
           class="block h-full min-h-0"
           [fields]="mergedFields()"
           [formTitle]="formTitle()"
@@ -160,9 +161,9 @@
           (interactionModeChange)="selectInteractionMode($event)"
           (exitRequested)="goBack()"
           (submitRequested)="submitForm()"
-        ></app-normal-form-shell>
+        ></app-regular-form-shell>
       } @else {
-        <!-- Regular Form + Voice Reply: existing Typeform shell (unchanged flow). -->
+        <!-- Regular Form: Typeform shell. -->
         <app-typeform-fill-shell
           class="block h-full min-h-0"
           [fields]="mergedFields()"

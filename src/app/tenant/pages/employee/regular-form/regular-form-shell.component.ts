@@ -9,18 +9,20 @@ import { CommonModule } from '@angular/common';
 import { SharedModule } from '../../../../shared/shared.module';
 import { DynamicFormComponent } from '../../../../shared/dynamic-form/dynamic-form.component';
 import { DynamicField } from '../../../../interfaces/dynamic-field';
+import { AssignmentFormMode } from '../assignment-form-mode';
 
-/** Shared presentation modes for the employee assignment fill experience. */
-export type AssignmentFormMode = 'manual' | 'voice' | 'normal';
-
+/**
+ * Normal Form shell — traditional multi-field layout (all fields, direct submit).
+ * Presentation only; reuses DynamicForm / FormGroup.
+ */
 @Component({
-  selector: 'app-normal-form-shell',
+  selector: 'app-regular-form-shell',
   standalone: true,
   imports: [CommonModule, SharedModule],
-  templateUrl: './normal-form-shell.component.html',
-  styleUrls: ['./normal-form-shell.component.scss'],
+  templateUrl: './regular-form-shell.component.html',
+  styleUrls: ['./regular-form-shell.component.scss'],
 })
-export class NormalFormShellComponent {
+export class RegularFormShellComponent {
   readonly fields = input.required<DynamicField[]>();
   readonly formTitle = input('');
   readonly dueDateLabel = input('');
@@ -34,9 +36,8 @@ export class NormalFormShellComponent {
 
   private readonly formComponent = viewChild(DynamicFormComponent);
 
-  readonly isNormalMode = computed(() => this.interactionMode() === 'normal');
   readonly isManualMode = computed(() => this.interactionMode() === 'manual');
-  readonly isVoiceMode = computed(() => this.interactionMode() === 'voice');
+  readonly isNormalMode = computed(() => this.interactionMode() === 'normal');
 
   getFormComponent(): DynamicFormComponent | undefined {
     return this.formComponent();
@@ -75,7 +76,7 @@ export class NormalFormShellComponent {
   private scrollToFirstInvalid(): void {
     queueMicrotask(() => {
       const invalid = document.querySelector(
-        '.normal-form-shell .ng-invalid, .normal-form-shell .field-shell--error, .normal-form-shell .field-error',
+        '.regular-form-shell .ng-invalid, .regular-form-shell .field-shell--error, .regular-form-shell .field-error',
       );
       if (invalid instanceof HTMLElement) {
         invalid.scrollIntoView({ behavior: 'smooth', block: 'center' });

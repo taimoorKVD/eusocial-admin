@@ -28,13 +28,16 @@ import { normalizeSignatureValue } from '../../../../shared/dynamic-form/signatu
 import { CompletedFormViewComponent } from '../typeform-fill/completed-form-view.component';
 import { readAssignmentSubmittedAt } from '../typeform-fill/format-typeform-review.utils';
 import { TypeformFillShellComponent } from '../typeform-fill/typeform-fill-shell.component';
-import { NormalFormShellComponent } from '../normal-form/normal-form-shell.component';
+import { RegularFormShellComponent } from '../regular-form/regular-form-shell.component';
 import { TenantPermissionService } from '../../../../services/tenant-permission.service';
 import { PERMISSIONS } from '../../../../constants/permissions';
+import {
+  AssignmentFormMode,
+  EmployeeInteractionMode,
+} from '../assignment-form-mode';
 
+export type { EmployeeInteractionMode, AssignmentFormMode } from '../assignment-form-mode';
 export type EmployeeFormFillMode = 'classic' | 'typeform';
-/** Presentation-only fill mode — not a second form data store. */
-export type EmployeeInteractionMode = 'manual' | 'voice' | 'normal';
 
 @Component({
   selector: 'app-employee-assignment',
@@ -43,7 +46,7 @@ export type EmployeeInteractionMode = 'manual' | 'voice' | 'normal';
     CommonModule,
     SharedModule,
     TypeformFillShellComponent,
-    NormalFormShellComponent,
+    RegularFormShellComponent,
     CompletedFormViewComponent,
   ],
   templateUrl: './employee-assignment.component.html',
@@ -63,7 +66,7 @@ export class EmployeeAssignmentComponent implements OnInit {
   private readonly permissionService = inject(TenantPermissionService);
   private readonly dynamicForms = viewChildren(DynamicFormComponent);
   private readonly typeformShell = viewChild(TypeformFillShellComponent);
-  private readonly normalFormShell = viewChild(NormalFormShellComponent);
+  private readonly regularFormShell = viewChild(RegularFormShellComponent);
 
   readonly canCompleteAssignment = this.permissionService.hasPermissionName(
     PERMISSIONS.DATA_COLLECTION.COMPLETE_ASSIGNMENT,
@@ -78,13 +81,13 @@ export class EmployeeAssignmentComponent implements OnInit {
   /** Assigned employee forms use Typeform layout by default. */
   readonly fillMode = signal<EmployeeFormFillMode>('typeform');
   /**
-   * Presentation-only Manual / Voice / Normal choice. Defaults to 'manual'
-   * so Regular Form opens immediately. Never a second form data store.
+   * Presentation-only Regular Form / Normal Form choice.
+   * Defaults to 'manual' (Regular Form). Never a second form data store.
    */
   readonly interactionMode = signal<EmployeeInteractionMode | null>(null);
   /**
    * Field-id keyed draft answers used when remounting shells on mode switch.
-   * Keeps FormGroup values continuous across Regular / Voice / Normal.
+   * Keeps answers continuous across Regular Form ↔ Normal Form.
    */
   readonly workingAnswers = signal<Record<string, unknown>>({});
 
@@ -164,7 +167,7 @@ export class EmployeeAssignmentComponent implements OnInit {
     this.router.navigate(['/my-forms']);
   }
 
-  selectInteractionMode(mode: EmployeeInteractionMode): void {
+  selectInteractionMode(mode: AssignmentFormMode): void {
     if (!this.canFill() || this.isCompleted() || this.isCancelled()) {
       return;
     }
@@ -173,7 +176,7 @@ export class EmployeeAssignmentComponent implements OnInit {
       return;
     }
 
-    // Snapshot answers before remounting so Regular / Voice / Normal share state.
+    // Snapshot answers before remounting so Regular Form ↔ Normal Form share state.
     this.captureWorkingAnswersFromActiveForm();
     this.applyWorkingAnswersToSections();
     this.interactionMode.set(mode);
@@ -450,11 +453,11 @@ export class EmployeeAssignmentComponent implements OnInit {
 
   private resolveSubmissionForms(): DynamicFormComponent[] {
     if (this.interactionMode() === 'normal') {
-      const form = this.normalFormShell()?.getFormComponent();
+      const form = this.regularFormShell()?.getFormComponent();
       return form ? [form] : [];
     }
 
-    if (this.fillMode() === 'typeform' || this.interactionMode() === 'manual' || this.interactionMode() === 'voice') {
+    if (this.fillMode() === 'typeform' || this.interactionMode() === 'manual') {
       const form = this.typeformShell()?.getFormComponent();
       return form ? [form] : [];
     }
@@ -464,10 +467,9 @@ export class EmployeeAssignmentComponent implements OnInit {
 
   private buildAnswers(forms: readonly DynamicFormComponent[]): Record<string, unknown> {
     if (
-      this.interactionMode() === 'normal' ||
       this.fillMode() === 'typeform' ||
       this.interactionMode() === 'manual' ||
-      this.interactionMode() === 'voice'
+      this.interactionMode() === 'normal'
     ) {
       return this.buildAnswersFromFields(forms[0], this.mergedFields());
     }
@@ -510,7 +512,7 @@ export class EmployeeAssignmentComponent implements OnInit {
   private captureWorkingAnswersFromActiveForm(): void {
     const form =
       this.interactionMode() === 'normal'
-        ? this.normalFormShell()?.getFormComponent()
+        ? this.regularFormShell()?.getFormComponent()
         : this.typeformShell()?.getFormComponent();
 
     if (!form?.formReady()) {

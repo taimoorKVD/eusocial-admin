@@ -4,7 +4,7 @@
   min-height: 0;
 }
 
-.normal-form-shell {
+.regular-form-shell {
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -14,37 +14,37 @@
   color: #111;
 }
 
-.normal-form-shell__header {
+.regular-form-shell__header {
   flex-shrink: 0;
   padding: 1.15rem 1.25rem 0.35rem;
 }
 
 @media (min-width: 640px) {
-  .normal-form-shell__header {
+  .regular-form-shell__header {
     padding: 1.35rem 2rem 0.25rem;
   }
 }
 
 @media (min-width: 1024px) {
-  .normal-form-shell__header {
+  .regular-form-shell__header {
     padding: 1.5rem 2.5rem 0.35rem;
   }
 }
 
-.normal-form-shell__header-row {
+.regular-form-shell__header-row {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
 }
 
-.normal-form-shell__identity {
+.regular-form-shell__identity {
   min-width: 0;
   flex: 1 1 auto;
 }
 
 /* Screenshot: muted grey Back, not orange Typeform accent */
-.normal-form-shell__back {
+.regular-form-shell__back {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
@@ -58,12 +58,12 @@
   cursor: pointer;
 }
 
-.normal-form-shell__back:hover {
+.regular-form-shell__back:hover {
   color: #525252;
   text-decoration: underline;
 }
 
-.normal-form-shell__title {
+.regular-form-shell__title {
   margin: 0.4rem 0 0;
   font-size: clamp(1.5rem, 2.6vw, 1.875rem);
   font-weight: 700;
@@ -72,13 +72,13 @@
   color: #111;
 }
 
-.normal-form-shell__due {
+.regular-form-shell__due {
   margin: 0.3rem 0 0;
   font-size: 0.875rem;
   color: #6f6f6f;
 }
 
-.normal-form-shell__mode {
+.regular-form-shell__mode {
   display: inline-flex;
   flex-shrink: 0;
   flex-wrap: wrap;
@@ -86,7 +86,7 @@
   justify-content: flex-end;
 }
 
-.normal-form-shell__mode-btn {
+.regular-form-shell__mode-btn {
   min-height: 2.15rem;
   padding: 0.35rem 0.7rem;
   border: 1px solid #e6e6e6;
@@ -103,13 +103,13 @@
 }
 
 @media (min-width: 640px) {
-  .normal-form-shell__mode-btn {
+  .regular-form-shell__mode-btn {
     font-size: 0.8125rem;
     padding: 0.4rem 0.85rem;
   }
 }
 
-.normal-form-shell__mode-btn--active {
+.regular-form-shell__mode-btn--active {
   border-color: #ff9015;
   color: #ff9015;
   background: #fff;
@@ -118,7 +118,7 @@
 /*
  * Body: scroll naturally from the top — never vertically center content.
  */
-.normal-form-shell__body {
+.regular-form-shell__body {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
@@ -127,19 +127,19 @@
 }
 
 @media (min-width: 640px) {
-  .normal-form-shell__body {
+  .regular-form-shell__body {
     padding: 1rem 2rem 2rem;
   }
 }
 
 @media (min-width: 1024px) {
-  .normal-form-shell__body {
+  .regular-form-shell__body {
     padding: 1.1rem 2.5rem 2.25rem;
   }
 }
 
 /* Left-aligned content — no centered card / max-width auto margin */
-.normal-form-shell__content {
+.regular-form-shell__content {
   width: 100%;
   max-width: none;
   margin: 0;
@@ -151,7 +151,7 @@
 }
 
 /* Strip DynamicForm chrome so fields sit on the page like the screenshot */
-.normal-form-shell__content ::ng-deep .dynamic-form {
+.regular-form-shell__content ::ng-deep .dynamic-form {
   width: 100%;
   max-width: 100%;
   padding: 0;
@@ -161,25 +161,25 @@
   box-shadow: none;
 }
 
-.normal-form-shell__content ::ng-deep .dynamic-form > .grid {
+.regular-form-shell__content ::ng-deep .dynamic-form > .grid {
   gap: 1.35rem 2rem;
 }
 
 @media (min-width: 768px) {
-  .normal-form-shell__content ::ng-deep .dynamic-form > .grid {
+  .regular-form-shell__content ::ng-deep .dynamic-form > .grid {
     gap: 1.5rem 2.75rem;
   }
 }
 
-.normal-form-shell__content ::ng-deep .field-shell {
+.regular-form-shell__content ::ng-deep .field-shell {
   margin: 0;
 }
 
-.normal-form-shell__content ::ng-deep .form-group {
+.regular-form-shell__content ::ng-deep .form-group {
   gap: 0.4rem;
 }
 
-.normal-form-shell__content ::ng-deep .field-label {
+.regular-form-shell__content ::ng-deep .field-label {
   font-size: 0.6875rem;
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -187,7 +187,7 @@
   color: #6f6f6f;
 }
 
-.normal-form-shell__content ::ng-deep .dynamic-control {
+.regular-form-shell__content ::ng-deep .dynamic-control {
   min-height: 2.75rem;
   border-radius: 0.5rem;
   border: 1px solid #e5e7eb;
@@ -198,22 +198,22 @@
   box-shadow: none;
 }
 
-.normal-form-shell__content ::ng-deep .dynamic-control::placeholder {
+.regular-form-shell__content ::ng-deep .dynamic-control::placeholder {
   color: #a8a8a8;
 }
 
-.normal-form-shell__content ::ng-deep .dynamic-control:hover {
+.regular-form-shell__content ::ng-deep .dynamic-control:hover {
   border-color: #d4d4d4;
   background: #fff;
 }
 
-.normal-form-shell__content ::ng-deep .dynamic-control:focus {
+.regular-form-shell__content ::ng-deep .dynamic-control:focus {
   border-color: #ff9015;
   box-shadow: 0 0 0 3px rgba(255, 144, 21, 0.12);
   background: #fff;
 }
 
-.normal-form-shell__actions {
+.regular-form-shell__actions {
   display: flex;
   justify-content: flex-end;
   margin-top: 1.75rem;
@@ -221,7 +221,7 @@
   border-top: 1px solid #f0f0f0;
 }
 
-.normal-form-shell__submit {
+.regular-form-shell__submit {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -240,35 +240,35 @@
     opacity 140ms ease;
 }
 
-.normal-form-shell__submit:hover:not(:disabled) {
+.regular-form-shell__submit:hover:not(:disabled) {
   background: #e57f0f;
   border-color: #e57f0f;
 }
 
-.normal-form-shell__submit:disabled {
+.regular-form-shell__submit:disabled {
   opacity: 0.55;
   cursor: not-allowed;
 }
 
 @media (max-width: 639px) {
-  .normal-form-shell__header-row {
+  .regular-form-shell__header-row {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .normal-form-shell__mode {
+  .regular-form-shell__mode {
     justify-content: stretch;
   }
 
-  .normal-form-shell__mode-btn {
+  .regular-form-shell__mode-btn {
     flex: 1 1 auto;
   }
 
-  .normal-form-shell__actions {
+  .regular-form-shell__actions {
     justify-content: stretch;
   }
 
-  .normal-form-shell__submit {
+  .regular-form-shell__submit {
     width: 100%;
   }
 }

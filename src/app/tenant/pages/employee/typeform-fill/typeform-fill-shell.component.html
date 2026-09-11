@@ -4,7 +4,7 @@
   tabindex="-1"
   (keydown)="onShellKeydown($event)"
 >
-  <!-- Top header: Back + title + due | Regular Form / Voice Reply -->
+  <!-- Top header: Back + title + due | Regular Form / Normal Form -->
   <header class="typeform-shell__header">
     <div class="typeform-shell__header-row">
       <div class="typeform-shell__identity">
@@ -41,15 +41,6 @@
           (click)="setInteractionMode('manual')"
         >
           Regular Form
-        </button>
-        <button
-          type="button"
-          class="typeform-shell__mode-btn"
-          [class.typeform-shell__mode-btn--active]="isVoiceMode()"
-          [attr.aria-pressed]="isVoiceMode()"
-          (click)="setInteractionMode('voice')"
-        >
-          Voice Reply
         </button>
         <button
           type="button"

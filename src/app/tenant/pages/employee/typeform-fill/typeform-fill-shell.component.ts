@@ -41,8 +41,9 @@ import {
   rebuildNavigationState,
   retreatNavigationState,
 } from './typeform-question-navigator';
+import { AssignmentFormMode } from '../assignment-form-mode';
 
-export type TypeformInteractionMode = 'manual' | 'voice' | 'normal';
+export type TypeformInteractionMode = AssignmentFormMode;
 
 export type IntelligentVoiceUiState =
   | 'idle'
@@ -92,7 +93,7 @@ export class TypeformFillShellComponent implements AfterViewInit, OnDestroy {
   readonly interactionMode = input.required<TypeformInteractionMode>();
 
   readonly submitRequested = output<void>();
-  /** Emit when the top-right Regular Form / Voice Reply control changes. */
+  /** Emit when the top-right Regular Form / Normal Form control changes. */
   readonly interactionModeChange = output<TypeformInteractionMode>();
   /** Top-left Back — leave the full-screen form. */
   readonly exitRequested = output<void>();
@@ -134,7 +135,8 @@ export class TypeformFillShellComponent implements AfterViewInit, OnDestroy {
   private consecutiveEmptyResults = 0;
 
   readonly isManualMode = computed(() => this.interactionMode() === 'manual');
-  readonly isVoiceMode = computed(() => this.interactionMode() === 'voice');
+  /** Voice Reply mode removed — intelligent voice mode is no longer selectable. */
+  readonly isVoiceMode = computed(() => false);
 
   readonly isReviewPhase = computed(() => this.navState().phase === 'review');
   readonly isEditingFromReview = computed(() => !!this.editingFromReviewFieldId());
@@ -661,7 +663,7 @@ export class TypeformFillShellComponent implements AfterViewInit, OnDestroy {
   }
 
   /**
-   * Top-right Regular Form / Voice Reply switch.
+   * Top-right Regular Form / Normal Form switch.
    * Presentation only — does not reset FormGroup / answers / progress.
    */
   setInteractionMode(mode: TypeformInteractionMode): void {
