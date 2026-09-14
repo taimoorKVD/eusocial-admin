@@ -181,43 +181,9 @@
   display: flex;
   flex-direction: column;
   align-items: stretch;
+  justify-content: center;
   gap: 0.75rem;
   padding: 0.5rem 0 1rem;
-}
-
-.typeform-shell__peek {
-  opacity: 0.55;
-  transform: scale(0.97);
-  transform-origin: bottom center;
-  padding: 0.75rem 1rem;
-  border: 1px solid #e8e8e8;
-  border-radius: 0.75rem;
-  background: #fff;
-  pointer-events: none;
-}
-
-.typeform-shell__peek-label {
-  margin: 0;
-  font-size: 0.75rem;
-  color: #8d8d8d;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.typeform-shell__peek-value {
-  margin-top: 0.35rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 2rem;
-  min-height: 2rem;
-  padding: 0.2rem 0.55rem;
-  border: 1.5px solid #ff9015;
-  border-radius: 0.4rem;
-  color: #111;
-  font-weight: 600;
-  font-size: 0.95rem;
 }
 
 .typeform-question-card {
@@ -459,6 +425,10 @@
   border-top: 1px solid #ececec;
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(8px);
+}
+
+.typeform-shell__footer--review-only {
+  justify-content: flex-end;
 }
 
 @media (min-width: 640px) {

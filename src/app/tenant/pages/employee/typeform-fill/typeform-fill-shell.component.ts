@@ -134,6 +134,18 @@ export class TypeformFillShellComponent implements AfterViewInit, OnDestroy {
   /** Consecutive empty STT results — avoids endless spoken retry loops. */
   private consecutiveEmptyResults = 0;
 
+  /** Scroll → Continue/Back: one gesture = one question until slide animation ends. */
+  private scrollNavLocked = false;
+  private scrollNavAccum = 0;
+  private scrollNavUnlockTimer: ReturnType<typeof setTimeout> | null = null;
+  private touchStartY: number | null = null;
+  private readonly onShellWheelBound = (event: WheelEvent) => this.onShellWheel(event);
+  private readonly onShellTouchStartBound = (event: TouchEvent) => this.onShellTouchStart(event);
+  private readonly onShellTouchEndBound = (event: TouchEvent) => this.onShellTouchEnd(event);
+  private static readonly SCROLL_NAV_THRESHOLD = 40;
+  private static readonly SCROLL_NAV_LOCK_MS = 280;
+  private static readonly TOUCH_NAV_THRESHOLD = 56;
+
   readonly isManualMode = computed(() => this.interactionMode() === 'manual');
   /** Voice Reply mode removed — intelligent voice mode is no longer selectable. */
   readonly isVoiceMode = computed(() => false);
@@ -391,37 +403,6 @@ export class TypeformFillShellComponent implements AfterViewInit, OnDestroy {
     return false;
   });
 
-  /** Soft peek of the previous answered question (screenshot stack cue). */
-  readonly previousAnswerPeek = computed(() => {
-    this.formValuesRevision();
-    if (this.isReviewPhase()) {
-      return null;
-    }
-
-    const state = this.navState();
-    if (state.activeQuestionIndex <= 0) {
-      return null;
-    }
-
-    const prevId = state.visibleQuestionIds[state.activeQuestionIndex - 1];
-    const field = this.fields().find((item) => item.id === prevId);
-    const form = this.formComponent();
-    if (!field || !form?.formReady()) {
-      return null;
-    }
-
-    const value = form.value?.[field.name];
-    if (!this.hasAnswerValue(value)) {
-      return null;
-    }
-
-    const display = Array.isArray(value) ? value.join(', ') : String(value);
-    return {
-      label: field.label || field.name,
-      value: display,
-    };
-  });
-
   readonly activeFieldError = computed(() => {
     const field = this.activeField();
     const form = this.formComponent();
@@ -460,6 +441,15 @@ export class TypeformFillShellComponent implements AfterViewInit, OnDestroy {
 
     return this.isLastVisibleQuestion() ? 'Review' : 'Continue';
   });
+
+  /** Last question only: enter Review (scroll does not advance past the last question). */
+  readonly showQuestionReviewCta = computed(
+    () =>
+      this.canFill() &&
+      !this.isReviewPhase() &&
+      !this.isEditingFromReview() &&
+      this.isLastVisibleQuestion(),
+  );
 
   readonly emptyLabel = COMPLETED_FORM_EMPTY_LABEL;
 
@@ -511,6 +501,14 @@ export class TypeformFillShellComponent implements AfterViewInit, OnDestroy {
 
   ngAfterViewInit(): void {
     queueMicrotask(() => this.initializeIfNeeded());
+    const root = this.shellRoot()?.nativeElement;
+    if (!root) {
+      return;
+    }
+
+    root.addEventListener('wheel', this.onShellWheelBound, { passive: false });
+    root.addEventListener('touchstart', this.onShellTouchStartBound, { passive: true });
+    root.addEventListener('touchend', this.onShellTouchEndBound, { passive: true });
   }
 
   ngOnDestroy(): void {
@@ -518,6 +516,14 @@ export class TypeformFillShellComponent implements AfterViewInit, OnDestroy {
     this.voiceOut.stop();
     this.suppressTranscriptApply = true;
     this.voice.stopListening();
+    this.clearScrollNavLock();
+
+    const root = this.shellRoot()?.nativeElement;
+    if (root) {
+      root.removeEventListener('wheel', this.onShellWheelBound);
+      root.removeEventListener('touchstart', this.onShellTouchStartBound);
+      root.removeEventListener('touchend', this.onShellTouchEndBound);
+    }
   }
 
   getFormComponent(): DynamicFormComponent | undefined {
@@ -794,6 +800,178 @@ export class TypeformFillShellComponent implements AfterViewInit, OnDestroy {
 
     event.preventDefault();
     this.continue();
+  }
+
+  /** Wheel/trackpad → next/previous question (not Review). */
+  private onShellWheel(event: WheelEvent): void {
+    if (!this.shouldHandleScrollNavigation()) {
+      return;
+    }
+
+    if (this.scrollNavLocked) {
+      event.preventDefault();
+      return;
+    }
+
+    if (this.isScrollableFieldOverflow(event.target, event.deltaY)) {
+      this.scrollNavAccum = 0;
+      return;
+    }
+
+    // Tall question / option lists: let the shell body scroll first.
+    if (this.isShellBodyScrollable(event.deltaY)) {
+      this.scrollNavAccum = 0;
+      return;
+    }
+
+    event.preventDefault();
+    this.scrollNavAccum += event.deltaY;
+
+    if (Math.abs(this.scrollNavAccum) < TypeformFillShellComponent.SCROLL_NAV_THRESHOLD) {
+      return;
+    }
+
+    const goingDown = this.scrollNavAccum > 0;
+    this.scrollNavAccum = 0;
+    this.triggerScrollNavigation(goingDown ? 'next' : 'previous');
+  }
+
+  private onShellTouchStart(event: TouchEvent): void {
+    if (!this.shouldHandleScrollNavigation()) {
+      this.touchStartY = null;
+      return;
+    }
+
+    this.touchStartY = event.changedTouches[0]?.clientY ?? null;
+  }
+
+  private onShellTouchEnd(event: TouchEvent): void {
+    if (!this.shouldHandleScrollNavigation() || this.scrollNavLocked || this.touchStartY == null) {
+      this.touchStartY = null;
+      return;
+    }
+
+    const endY = event.changedTouches[0]?.clientY;
+    if (endY == null) {
+      this.touchStartY = null;
+      return;
+    }
+
+    const deltaY = this.touchStartY - endY;
+    this.touchStartY = null;
+
+    if (Math.abs(deltaY) < TypeformFillShellComponent.TOUCH_NAV_THRESHOLD) {
+      return;
+    }
+
+    if (this.isScrollableFieldOverflow(event.target, deltaY)) {
+      return;
+    }
+
+    if (this.isShellBodyScrollable(deltaY)) {
+      return;
+    }
+
+    this.triggerScrollNavigation(deltaY > 0 ? 'next' : 'previous');
+  }
+
+  private shouldHandleScrollNavigation(): boolean {
+    return this.canFill() && !this.isReviewPhase() && !this.isEditingFromReview();
+  }
+
+  private triggerScrollNavigation(direction: 'next' | 'previous'): void {
+    if (direction === 'next') {
+      // Last question: scroll does nothing (Review is via CTA).
+      if (this.isLastVisibleQuestion()) {
+        return;
+      }
+      this.lockScrollNav();
+      this.continue();
+      return;
+    }
+
+    if (!this.canGoBack()) {
+      return;
+    }
+
+    this.lockScrollNav();
+    this.back();
+  }
+
+  private lockScrollNav(): void {
+    this.scrollNavLocked = true;
+    this.scrollNavAccum = 0;
+    if (this.scrollNavUnlockTimer) {
+      clearTimeout(this.scrollNavUnlockTimer);
+    }
+    this.scrollNavUnlockTimer = setTimeout(() => {
+      this.scrollNavLocked = false;
+      this.scrollNavAccum = 0;
+      this.scrollNavUnlockTimer = null;
+    }, TypeformFillShellComponent.SCROLL_NAV_LOCK_MS);
+  }
+
+  private clearScrollNavLock(): void {
+    this.scrollNavLocked = false;
+    this.scrollNavAccum = 0;
+    this.touchStartY = null;
+    if (this.scrollNavUnlockTimer) {
+      clearTimeout(this.scrollNavUnlockTimer);
+      this.scrollNavUnlockTimer = null;
+    }
+  }
+
+  /** Nested option lists / textareas that still have room to scroll. */
+  private isScrollableFieldOverflow(target: EventTarget | null, deltaY: number): boolean {
+    const root = this.shellRoot()?.nativeElement;
+    let el = target instanceof Element ? target : null;
+
+    while (el && el !== root) {
+      if (el instanceof HTMLElement) {
+        if (this.elementCanScrollFurther(el, deltaY)) {
+          return true;
+        }
+      }
+
+      el = el.parentElement;
+    }
+
+    return false;
+  }
+
+  /** When the question card is taller than the viewport, scroll the body before changing question. */
+  private isShellBodyScrollable(deltaY: number): boolean {
+    const root = this.shellRoot()?.nativeElement;
+    const body = root?.querySelector('.typeform-shell__body');
+    if (!(body instanceof HTMLElement)) {
+      return false;
+    }
+
+    return this.elementCanScrollFurther(body, deltaY);
+  }
+
+  private elementCanScrollFurther(el: HTMLElement, deltaY: number): boolean {
+    const style = getComputedStyle(el);
+    const overflowY = style.overflowY;
+    const overflowAllowsScroll =
+      overflowY === 'auto' || overflowY === 'scroll' || overflowY === 'overlay';
+    const isTextarea = el instanceof HTMLTextAreaElement;
+    const canScrollY =
+      (overflowAllowsScroll || isTextarea) && el.scrollHeight > el.clientHeight + 1;
+
+    if (!canScrollY) {
+      return false;
+    }
+
+    if (deltaY > 0 && el.scrollTop + el.clientHeight < el.scrollHeight - 1) {
+      return true;
+    }
+
+    if (deltaY < 0 && el.scrollTop > 1) {
+      return true;
+    }
+
+    return false;
   }
 
   private shouldContinueOnEnter(field: DynamicField): boolean {

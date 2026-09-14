@@ -189,15 +189,6 @@
       [attr.aria-hidden]="isReviewPhase()"
       [@questionSlide]="animationStep()"
     >
-      @if (!isReviewPhase()) {
-        @if (previousAnswerPeek(); as peek) {
-          <div class="typeform-shell__peek" aria-hidden="true">
-            <p class="typeform-shell__peek-label">{{ peek.label }}</p>
-            <div class="typeform-shell__peek-value">{{ peek.value }}</div>
-          </div>
-        }
-      }
-
       <section
         class="typeform-question-card"
         [class.typeform-question-card--review-host]="isReviewPhase()"
@@ -347,47 +338,66 @@
     </div>
   </div>
 
-  <!-- Bottom navigation (existing continue / back / submit) -->
-  <footer class="typeform-shell__footer">
-    <button
-      type="button"
-      class="typeform-nav-btn typeform-nav-btn--ghost"
-      [disabled]="!canGoBack()"
-      (click)="back()"
-    >
-      <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M19 12H5M12 19l-7-7 7-7" />
-      </svg>
-      {{ isEditingFromReview() ? 'Back to Review' : 'Back' }}
-    </button>
+  <!--
+    Question fill: no Continue/Back — scroll moves one question at a time.
+    Last question: Review CTA (scroll does not leave the last question).
+    Review / edit-from-review: existing footer actions.
+  -->
+  @if (isReviewPhase() || isEditingFromReview()) {
+    <footer class="typeform-shell__footer">
+      <button
+        type="button"
+        class="typeform-nav-btn typeform-nav-btn--ghost"
+        [disabled]="!canGoBack()"
+        (click)="back()"
+      >
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19 12H5M12 19l-7-7 7-7" />
+        </svg>
+        {{ isEditingFromReview() ? 'Back to Review' : 'Back' }}
+      </button>
 
-    @if (isReviewPhase()) {
-      @if (canFill()) {
+      @if (isReviewPhase()) {
+        @if (canFill()) {
+          <button
+            type="button"
+            class="typeform-nav-btn typeform-nav-btn--primary"
+            [disabled]="submitting()"
+            (click)="submit()"
+          >
+            Submit Form
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          </button>
+        }
+      } @else {
         <button
           type="button"
           class="typeform-nav-btn typeform-nav-btn--primary"
-          [disabled]="submitting()"
-          (click)="submit()"
+          (click)="continue()"
         >
-          Submit Form
+          {{ continueLabel() }}
           <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M12 5l7 7-7 7" />
           </svg>
         </button>
       }
-    } @else {
+    </footer>
+  } @else if (showQuestionReviewCta()) {
+    <footer class="typeform-shell__footer typeform-shell__footer--review-only">
       <button
         type="button"
         class="typeform-nav-btn typeform-nav-btn--primary"
         (click)="continue()"
       >
-        {{ continueLabel() }}
+        Review
         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M12 5l7 7-7 7" />
         </svg>
       </button>
-    }
-  </footer>
+    </footer>
+  }
 </div>
 
 @if (reviewLightboxUrl(); as previewUrl) {
