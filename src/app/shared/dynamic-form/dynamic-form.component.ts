@@ -444,6 +444,19 @@ export class DynamicFormComponent implements OnDestroy {
     return typeof option === 'string' ? option : option.label;
   }
 
+  /** Typeform-style A–Z marker for single-select options (presentation only). */
+  getTypeformOptionLetter(index: number): string {
+    if (index < 0) {
+      return '';
+    }
+
+    if (index < 26) {
+      return String.fromCharCode(65 + index);
+    }
+
+    return String(index + 1);
+  }
+
   getOptionValue(option: string | DynamicFieldOption, index = 0): string | number {
     return getOptionValue(option, index);
   }

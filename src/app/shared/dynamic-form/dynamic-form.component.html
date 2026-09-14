@@ -473,6 +473,7 @@
                           class="typeform-choice__marker"
                           [class.typeform-choice__marker--radio]="!isMultiSelect(field)"
                           [class.typeform-choice__marker--check]="isMultiSelect(field)"
+                          [class.typeform-choice__marker--letter]="!isMultiSelect(field)"
                           aria-hidden="true"
                         >
                           @if (isMultiSelect(field)) {
@@ -485,6 +486,8 @@
                                 stroke-linejoin="round"
                               />
                             </svg>
+                          } @else {
+                            <span class="typeform-choice__letter">{{ getTypeformOptionLetter(i) }}</span>
                           }
                         </span>
                         <span class="typeform-choice__label font-ibm">{{ getOptionLabel(option) }}</span>

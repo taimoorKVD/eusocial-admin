@@ -30,6 +30,7 @@ import {
 } from '../../../../shared/voice/voice-field.adapter';
 import {
   buildTypeformReviewItems,
+  COMPLETED_FORM_EMPTY_LABEL,
   TypeformReviewItemView,
 } from './format-typeform-review.utils';
 import {
@@ -40,8 +41,9 @@ import {
   rebuildNavigationState,
   retreatNavigationState,
 } from './typeform-question-navigator';
+import { AssignmentFormMode } from '../assignment-form-mode';
 
-export type TypeformInteractionMode = 'manual' | 'voice';
+export type TypeformInteractionMode = AssignmentFormMode;
 
 export type IntelligentVoiceUiState =
   | 'idle'
@@ -87,10 +89,14 @@ export class TypeformFillShellComponent implements AfterViewInit, OnDestroy {
   readonly statusClass = input('');
   readonly canFill = input(true);
   readonly submitting = input(false);
-  /** Chosen at EmployeeAssignment gate — presentation only. */
+  /** Chosen at EmployeeAssignment — presentation only. */
   readonly interactionMode = input.required<TypeformInteractionMode>();
 
   readonly submitRequested = output<void>();
+  /** Emit when the top-right Regular Form / Normal Form control changes. */
+  readonly interactionModeChange = output<TypeformInteractionMode>();
+  /** Top-left Back — leave the full-screen form. */
+  readonly exitRequested = output<void>();
 
   readonly voice = inject(VoiceInputService);
   readonly voiceOut = inject(VoiceOutputService);
@@ -128,8 +134,21 @@ export class TypeformFillShellComponent implements AfterViewInit, OnDestroy {
   /** Consecutive empty STT results — avoids endless spoken retry loops. */
   private consecutiveEmptyResults = 0;
 
+  /** Scroll → Continue/Back: one gesture = one question until slide animation ends. */
+  private scrollNavLocked = false;
+  private scrollNavAccum = 0;
+  private scrollNavUnlockTimer: ReturnType<typeof setTimeout> | null = null;
+  private touchStartY: number | null = null;
+  private readonly onShellWheelBound = (event: WheelEvent) => this.onShellWheel(event);
+  private readonly onShellTouchStartBound = (event: TouchEvent) => this.onShellTouchStart(event);
+  private readonly onShellTouchEndBound = (event: TouchEvent) => this.onShellTouchEnd(event);
+  private static readonly SCROLL_NAV_THRESHOLD = 40;
+  private static readonly SCROLL_NAV_LOCK_MS = 280;
+  private static readonly TOUCH_NAV_THRESHOLD = 56;
+
   readonly isManualMode = computed(() => this.interactionMode() === 'manual');
-  readonly isVoiceMode = computed(() => this.interactionMode() === 'voice');
+  /** Voice Reply mode removed — intelligent voice mode is no longer selectable. */
+  readonly isVoiceMode = computed(() => false);
 
   readonly isReviewPhase = computed(() => this.navState().phase === 'review');
   readonly isEditingFromReview = computed(() => !!this.editingFromReviewFieldId());
@@ -245,15 +264,38 @@ export class TypeformFillShellComponent implements AfterViewInit, OnDestroy {
 
   readonly progressTotal = computed(() => this.navState().visibleQuestionIds.length);
 
+  /** Count of visible questions that already have an answer (screenshot progress copy). */
+  readonly answeredCount = computed(() => {
+    this.formValuesRevision();
+    const form = this.formComponent();
+    if (!form?.formReady()) {
+      return 0;
+    }
+
+    const values = form.value ?? {};
+    const fieldMap = new Map(this.fields().map((field) => [field.id, field]));
+    let count = 0;
+
+    for (const id of this.navState().visibleQuestionIds) {
+      const field = fieldMap.get(id);
+      if (!field) {
+        continue;
+      }
+      if (this.hasAnswerValue(values[field.name])) {
+        count += 1;
+      }
+    }
+
+    return count;
+  });
+
   readonly progressLabel = computed(() => {
     const total = this.progressTotal();
     if (!total || this.isReviewPhase()) {
       return '';
     }
 
-    const current = String(this.progressCurrent()).padStart(2, '0');
-    const totalLabel = String(total).padStart(2, '0');
-    return `${current} / ${totalLabel}`;
+    return `${this.answeredCount()} of ${total} answered`;
   });
 
   readonly progressPercent = computed(() => {
@@ -262,7 +304,103 @@ export class TypeformFillShellComponent implements AfterViewInit, OnDestroy {
       return 0;
     }
 
-    return Math.round((this.progressCurrent() / total) * 100);
+    return Math.round((this.answeredCount() / total) * 100);
+  });
+
+  readonly activeQuestionNumber = computed(() => {
+    const current = this.progressCurrent();
+    return current > 0 ? String(current).padStart(2, '0') : '';
+  });
+
+  readonly activeBadgeLabel = computed(() => {
+    const field = this.activeField();
+    if (!field) {
+      return '';
+    }
+
+    const name = typeof field.name === 'string' ? field.name.trim() : '';
+    if (name && !/^(field|q|question)\d*$/i.test(name) && name.length <= 24) {
+      return name.replace(/[_-]+/g, ' ').toUpperCase();
+    }
+
+    const label = (field.label || '').trim();
+    if (!label) {
+      return '';
+    }
+
+    if (label.length > 28) {
+      const words = label
+        .replace(/[?!.,]/g, ' ')
+        .split(/\s+/)
+        .filter((word) => word.length > 2 && !/^(how|many|are|the|what|is|for|and)$/i.test(word));
+      return (words[words.length - 1] || label).toUpperCase().slice(0, 18);
+    }
+
+    return label.toUpperCase().slice(0, 18);
+  });
+
+  /** Voice "HEARD" panel text — transcript / last recognition / current value. */
+  readonly heardDisplay = computed(() => {
+    this.formValuesRevision();
+    if (this.voiceTranscriptPreview()) {
+      return this.voiceTranscriptPreview();
+    }
+    if (this.lastRecognizedAnswer()) {
+      return this.lastRecognizedAnswer();
+    }
+
+    const field = this.activeField();
+    const form = this.formComponent();
+    if (!field || !form?.formReady()) {
+      return '';
+    }
+
+    const value = form.value?.[field.name];
+    if (value === null || value === undefined || value === '') {
+      return '';
+    }
+
+    return String(value);
+  });
+
+  readonly showHeardPanel = computed(() => {
+    if (this.isReviewPhase() || !this.canFill()) {
+      return false;
+    }
+
+    if (this.isVoiceMode()) {
+      return true;
+    }
+
+    return this.voice.listening() || !!this.heardDisplay();
+  });
+
+  readonly showHoldToReply = computed(() => {
+    if (!this.canFill() || this.isReviewPhase()) {
+      return false;
+    }
+
+    if (this.isVoiceMode()) {
+      return this.activeFieldVoiceSupported() && this.voice.isSupported();
+    }
+
+    return this.showManualVoiceButton();
+  });
+
+  readonly holdToReplyDisabled = computed(() => {
+    if (!this.showHoldToReply()) {
+      return true;
+    }
+
+    if (this.isVoiceMode()) {
+      return (
+        this.isManualFallbackActive() ||
+        this.voiceUiState() === 'reading' ||
+        this.processingVoice()
+      );
+    }
+
+    return false;
   });
 
   readonly activeFieldError = computed(() => {
@@ -303,6 +441,17 @@ export class TypeformFillShellComponent implements AfterViewInit, OnDestroy {
 
     return this.isLastVisibleQuestion() ? 'Review' : 'Continue';
   });
+
+  /** Last question only: final action CTA (Review entry kept in code for later). */
+  readonly showQuestionReviewCta = computed(
+    () =>
+      this.canFill() &&
+      !this.isReviewPhase() &&
+      !this.isEditingFromReview() &&
+      this.isLastVisibleQuestion(),
+  );
+
+  readonly emptyLabel = COMPLETED_FORM_EMPTY_LABEL;
 
   readonly reviewItems = computed((): TypeformReviewItem[] => {
     this.formValuesRevision();
@@ -352,6 +501,14 @@ export class TypeformFillShellComponent implements AfterViewInit, OnDestroy {
 
   ngAfterViewInit(): void {
     queueMicrotask(() => this.initializeIfNeeded());
+    const root = this.shellRoot()?.nativeElement;
+    if (!root) {
+      return;
+    }
+
+    root.addEventListener('wheel', this.onShellWheelBound, { passive: false });
+    root.addEventListener('touchstart', this.onShellTouchStartBound, { passive: true });
+    root.addEventListener('touchend', this.onShellTouchEndBound, { passive: true });
   }
 
   ngOnDestroy(): void {
@@ -359,6 +516,14 @@ export class TypeformFillShellComponent implements AfterViewInit, OnDestroy {
     this.voiceOut.stop();
     this.suppressTranscriptApply = true;
     this.voice.stopListening();
+    this.clearScrollNavLock();
+
+    const root = this.shellRoot()?.nativeElement;
+    if (root) {
+      root.removeEventListener('wheel', this.onShellWheelBound);
+      root.removeEventListener('touchstart', this.onShellTouchStartBound);
+      root.removeEventListener('touchend', this.onShellTouchEndBound);
+    }
   }
 
   getFormComponent(): DynamicFormComponent | undefined {
@@ -503,6 +668,47 @@ export class TypeformFillShellComponent implements AfterViewInit, OnDestroy {
     this.submitRequested.emit();
   }
 
+  /**
+   * Top-right Regular Form / Normal Form switch.
+   * Presentation only — does not reset FormGroup / answers / progress.
+   */
+  setInteractionMode(mode: TypeformInteractionMode): void {
+    if (mode === this.interactionMode()) {
+      return;
+    }
+
+    this.stopVoiceActivity({ applyTranscript: false });
+    this.manualFallbackFieldId.set(null);
+    this.lastRecognizedAnswer.set('');
+    this.voiceHint.set('');
+    this.voiceUiState.set('idle');
+    this.interactionModeChange.emit(mode);
+  }
+
+  requestExit(): void {
+    this.stopVoiceActivity({ applyTranscript: false });
+    this.exitRequested.emit();
+  }
+
+  /** Black Hold to Reply — same voice pipeline, screenshot presentation. */
+  onHoldToReplyClick(): void {
+    if (this.isVoiceMode()) {
+      if (this.isManualFallbackActive() || this.voiceUiState() === 'reading' || this.processingVoice()) {
+        return;
+      }
+
+      if (this.voice.listening()) {
+        this.voice.stopListening();
+        return;
+      }
+
+      this.retryVoiceListen();
+      return;
+    }
+
+    this.toggleVoice();
+  }
+
   toggleVoice(): void {
     if (!this.showManualVoiceButton()) {
       return;
@@ -594,6 +800,178 @@ export class TypeformFillShellComponent implements AfterViewInit, OnDestroy {
 
     event.preventDefault();
     this.continue();
+  }
+
+  /** Wheel/trackpad → next/previous question (not Review). */
+  private onShellWheel(event: WheelEvent): void {
+    if (!this.shouldHandleScrollNavigation()) {
+      return;
+    }
+
+    if (this.scrollNavLocked) {
+      event.preventDefault();
+      return;
+    }
+
+    if (this.isScrollableFieldOverflow(event.target, event.deltaY)) {
+      this.scrollNavAccum = 0;
+      return;
+    }
+
+    // Tall question / option lists: let the shell body scroll first.
+    if (this.isShellBodyScrollable(event.deltaY)) {
+      this.scrollNavAccum = 0;
+      return;
+    }
+
+    event.preventDefault();
+    this.scrollNavAccum += event.deltaY;
+
+    if (Math.abs(this.scrollNavAccum) < TypeformFillShellComponent.SCROLL_NAV_THRESHOLD) {
+      return;
+    }
+
+    const goingDown = this.scrollNavAccum > 0;
+    this.scrollNavAccum = 0;
+    this.triggerScrollNavigation(goingDown ? 'next' : 'previous');
+  }
+
+  private onShellTouchStart(event: TouchEvent): void {
+    if (!this.shouldHandleScrollNavigation()) {
+      this.touchStartY = null;
+      return;
+    }
+
+    this.touchStartY = event.changedTouches[0]?.clientY ?? null;
+  }
+
+  private onShellTouchEnd(event: TouchEvent): void {
+    if (!this.shouldHandleScrollNavigation() || this.scrollNavLocked || this.touchStartY == null) {
+      this.touchStartY = null;
+      return;
+    }
+
+    const endY = event.changedTouches[0]?.clientY;
+    if (endY == null) {
+      this.touchStartY = null;
+      return;
+    }
+
+    const deltaY = this.touchStartY - endY;
+    this.touchStartY = null;
+
+    if (Math.abs(deltaY) < TypeformFillShellComponent.TOUCH_NAV_THRESHOLD) {
+      return;
+    }
+
+    if (this.isScrollableFieldOverflow(event.target, deltaY)) {
+      return;
+    }
+
+    if (this.isShellBodyScrollable(deltaY)) {
+      return;
+    }
+
+    this.triggerScrollNavigation(deltaY > 0 ? 'next' : 'previous');
+  }
+
+  private shouldHandleScrollNavigation(): boolean {
+    return this.canFill() && !this.isReviewPhase() && !this.isEditingFromReview();
+  }
+
+  private triggerScrollNavigation(direction: 'next' | 'previous'): void {
+    if (direction === 'next') {
+      // Last question: scroll does nothing (Review is via CTA).
+      if (this.isLastVisibleQuestion()) {
+        return;
+      }
+      this.lockScrollNav();
+      this.continue();
+      return;
+    }
+
+    if (!this.canGoBack()) {
+      return;
+    }
+
+    this.lockScrollNav();
+    this.back();
+  }
+
+  private lockScrollNav(): void {
+    this.scrollNavLocked = true;
+    this.scrollNavAccum = 0;
+    if (this.scrollNavUnlockTimer) {
+      clearTimeout(this.scrollNavUnlockTimer);
+    }
+    this.scrollNavUnlockTimer = setTimeout(() => {
+      this.scrollNavLocked = false;
+      this.scrollNavAccum = 0;
+      this.scrollNavUnlockTimer = null;
+    }, TypeformFillShellComponent.SCROLL_NAV_LOCK_MS);
+  }
+
+  private clearScrollNavLock(): void {
+    this.scrollNavLocked = false;
+    this.scrollNavAccum = 0;
+    this.touchStartY = null;
+    if (this.scrollNavUnlockTimer) {
+      clearTimeout(this.scrollNavUnlockTimer);
+      this.scrollNavUnlockTimer = null;
+    }
+  }
+
+  /** Nested option lists / textareas that still have room to scroll. */
+  private isScrollableFieldOverflow(target: EventTarget | null, deltaY: number): boolean {
+    const root = this.shellRoot()?.nativeElement;
+    let el = target instanceof Element ? target : null;
+
+    while (el && el !== root) {
+      if (el instanceof HTMLElement) {
+        if (this.elementCanScrollFurther(el, deltaY)) {
+          return true;
+        }
+      }
+
+      el = el.parentElement;
+    }
+
+    return false;
+  }
+
+  /** When the question card is taller than the viewport, scroll the body before changing question. */
+  private isShellBodyScrollable(deltaY: number): boolean {
+    const root = this.shellRoot()?.nativeElement;
+    const body = root?.querySelector('.typeform-shell__body');
+    if (!(body instanceof HTMLElement)) {
+      return false;
+    }
+
+    return this.elementCanScrollFurther(body, deltaY);
+  }
+
+  private elementCanScrollFurther(el: HTMLElement, deltaY: number): boolean {
+    const style = getComputedStyle(el);
+    const overflowY = style.overflowY;
+    const overflowAllowsScroll =
+      overflowY === 'auto' || overflowY === 'scroll' || overflowY === 'overlay';
+    const isTextarea = el instanceof HTMLTextAreaElement;
+    const canScrollY =
+      (overflowAllowsScroll || isTextarea) && el.scrollHeight > el.clientHeight + 1;
+
+    if (!canScrollY) {
+      return false;
+    }
+
+    if (deltaY > 0 && el.scrollTop + el.clientHeight < el.scrollHeight - 1) {
+      return true;
+    }
+
+    if (deltaY < 0 && el.scrollTop > 1) {
+      return true;
+    }
+
+    return false;
   }
 
   private shouldContinueOnEnter(field: DynamicField): boolean {
@@ -1147,5 +1525,25 @@ export class TypeformFillShellComponent implements AfterViewInit, OnDestroy {
 
       this.shellRoot()?.nativeElement.focus();
     });
+  }
+
+  private hasAnswerValue(value: unknown): boolean {
+    if (value === null || value === undefined) {
+      return false;
+    }
+
+    if (typeof value === 'string') {
+      return value.trim().length > 0;
+    }
+
+    if (Array.isArray(value)) {
+      return value.length > 0;
+    }
+
+    if (typeof value === 'object') {
+      return Object.keys(value as object).length > 0;
+    }
+
+    return true;
   }
 }

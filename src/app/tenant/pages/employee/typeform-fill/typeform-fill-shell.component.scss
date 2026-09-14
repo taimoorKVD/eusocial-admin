@@ -1,5 +1,718 @@
+:host {
+  display: block;
+  height: 100%;
+  min-height: 0;
+}
+
+.typeform-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 100%;
+  background: #f7f7f7;
+  color: #111;
+}
+
+.typeform-shell__header {
+  flex-shrink: 0;
+  padding: 1.25rem 1.25rem 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .typeform-shell__header {
+    padding: 1.75rem 2rem 1rem;
+  }
+}
+
+.typeform-shell__header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.typeform-shell__identity {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.typeform-shell__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #ff9015;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.typeform-shell__back:hover {
+  text-decoration: underline;
+}
+
+.typeform-shell__title {
+  margin: 0.55rem 0 0;
+  font-size: clamp(1.35rem, 2.4vw, 1.75rem);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: #111;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.typeform-shell__due {
+  margin: 0.35rem 0 0;
+  font-size: 0.875rem;
+  color: #6f6f6f;
+}
+
+.typeform-shell__mode {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.typeform-shell__mode-btn {
+  min-height: 2.25rem;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid #e6e6e6;
+  border-radius: 0.4rem;
+  background: #fff;
+  color: #525252;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    color 140ms ease,
+    border-color 140ms ease,
+    background-color 140ms ease;
+}
+
+@media (min-width: 640px) {
+  .typeform-shell__mode-btn {
+    font-size: 0.8125rem;
+    padding: 0.4rem 0.85rem;
+  }
+}
+
+.typeform-shell__mode-btn--active {
+  border-color: #ff9015;
+  color: #ff9015;
+  background: #fff;
+}
+
+.typeform-shell__edit-banner {
+  margin-top: 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid #ffd7ae;
+  border-radius: 0.75rem;
+  background: #fffbf5;
+}
+
+.typeform-shell__edit-banner-title {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #c2410c;
+}
+
+.typeform-shell__edit-banner-copy {
+  margin: 0.25rem 0 0;
+  font-size: 0.875rem;
+  color: #6f6f6f;
+}
+
+.typeform-shell__progress {
+  margin-top: 1.15rem;
+}
+
+.typeform-shell__progress-label {
+  margin: 0 0 0.45rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #6f6f6f;
+}
+
+.typeform-shell__progress-track {
+  height: 0.28rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #ebebeb;
+}
+
+.typeform-shell__progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: #ff9015;
+  transition: width 400ms ease;
+}
+
+.typeform-shell__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  padding: 0.5rem 1rem 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .typeform-shell__body {
+    padding: 0.75rem 2rem 1.5rem;
+  }
+}
+
+.typeform-shell__stage {
+  margin: auto;
+  width: 100%;
+  max-width: 36rem;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0 1rem;
+}
+
+.typeform-question-card {
+  width: 100%;
+  padding: 1.35rem 1.25rem 1.25rem;
+  border: 1px solid #e6e6e6;
+  border-radius: 0.75rem;
+  background: #fff;
+  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.06);
+}
+
+.typeform-question-card--review-host {
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+  background: transparent;
+}
+
+@media (min-width: 640px) {
+  .typeform-question-card {
+    padding: 1.6rem 1.5rem 1.4rem;
+  }
+}
+
+.typeform-question-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 0.85rem;
+}
+
+.typeform-question-card__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  height: 1.55rem;
+  padding: 0 0.55rem;
+  border-radius: 999px;
+  background: #111;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.typeform-question-card__category {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #a8a8a8;
+}
+
+.typeform-question-card__title {
+  margin: 0;
+  font-size: clamp(1.2rem, 2.2vw, 1.45rem);
+  font-weight: 700;
+  line-height: 1.3;
+  color: #111;
+}
+
+.typeform-question-card__required {
+  margin-left: 0.15rem;
+  color: #b42318;
+}
+
+.typeform-question-card__hint {
+  margin: 0.5rem 0 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: #6f6f6f;
+}
+
+.typeform-question-card__empty {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #6f6f6f;
+}
+
+.typeform-question-card__field {
+  margin-top: 1.1rem;
+}
+
+/* Hide duplicate field labels inside dynamic-form — card title is the question. */
+.typeform-question-card__field ::ng-deep .field-label,
+.typeform-question-card__field ::ng-deep label.field-label {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.typeform-question-card__field ::ng-deep .field-shell {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.typeform-question-card__error {
+  margin-top: 0.75rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid #fecaca;
+  border-radius: 0.65rem;
+  background: #fef2f2;
+  color: #b42318;
+  font-size: 0.875rem;
+}
+
+.typeform-question-card__heard {
+  margin-top: 1.15rem;
+}
+
+.typeform-question-card__heard-label {
+  margin: 0 0 0.4rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #a8a8a8;
+}
+
+.typeform-question-card__heard-box {
+  min-height: 2.75rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid #e6e6e6;
+  border-radius: 0.5rem;
+  background: #fff;
+  color: #111;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.typeform-question-card__heard-box--listening {
+  border-color: #ffd7ae;
+  background: #fffbf5;
+}
+
+.typeform-question-card__heard-placeholder {
+  color: #a8a8a8;
+  font-weight: 400;
+}
+
+.typeform-question-card__voice-status {
+  margin: 0.85rem 0 0;
+  font-size: 0.875rem;
+  color: #6f6f6f;
+}
+
+.typeform-question-card__voice-status--error {
+  color: #b42318;
+}
+
+.typeform-question-card__wave {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.25rem;
+  height: 1rem;
+  margin-top: 0.75rem;
+}
+
+.typeform-question-card__actions {
+  margin-top: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.typeform-question-card__voice-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.typeform-hold-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 3rem;
+  padding: 0.7rem 1.35rem;
+  border: 0;
+  border-radius: 999px;
+  background: #111;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    transform 140ms ease,
+    opacity 140ms ease;
+}
+
+.typeform-hold-btn:hover:not(:disabled) {
+  background: #222;
+}
+
+.typeform-hold-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.typeform-hold-btn--active {
+  background: #b42318;
+}
+
+.typeform-link-btn {
+  min-height: 2rem;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid #e8e8e8;
+  border-radius: 0.5rem;
+  background: #fff;
+  color: #525252;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.typeform-link-btn:hover {
+  background: #f5f5f5;
+}
+
+.typeform-shell__footer {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.9rem 1.25rem 1.15rem;
+  border-top: 1px solid #ececec;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+}
+
+.typeform-shell__footer--review-only {
+  justify-content: flex-end;
+}
+
+@media (min-width: 640px) {
+  .typeform-shell__footer {
+    padding: 1rem 2rem 1.35rem;
+  }
+}
+
+.typeform-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 2.85rem;
+  padding: 0.55rem 1rem;
+  border-radius: 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease,
+    opacity 140ms ease;
+}
+
+.typeform-nav-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.typeform-nav-btn--ghost {
+  border: 1px solid #e8e8e8;
+  background: #fff;
+  color: #525252;
+}
+
+.typeform-nav-btn--ghost:hover:not(:disabled) {
+  background: #f5f5f5;
+}
+
+.typeform-nav-btn--primary {
+  border: 1px solid #ff9015;
+  background: #ff9015;
+  color: #fff;
+}
+
+.typeform-nav-btn--primary:hover:not(:disabled) {
+  background: #e57f0f;
+  border-color: #e57f0f;
+}
+
+.typeform-shell__review {
+  width: 100%;
+  max-width: 44rem;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 0.5rem 0 1.5rem;
+}
+
+.typeform-shell__review-header {
+  margin-bottom: 1.4rem;
+}
+
+.typeform-shell__eyebrow {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #ff9015;
+}
+
+.typeform-shell__review-title {
+  margin: 0.45rem 0 0;
+  font-size: clamp(1.5rem, 3vw, 1.85rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: #161616;
+}
+
+.typeform-shell__review-copy {
+  margin: 0.5rem 0 0;
+  max-width: 36rem;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: #6f6f6f;
+}
+
+.typeform-shell__review-list {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.typeform-shell__review-item {
+  position: relative;
+  padding: 1rem 1.15rem 1.1rem;
+  border: 1px solid #ececec;
+  border-radius: 0.85rem;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.typeform-shell__review-item:hover {
+  border-color: #ffd7ae;
+  box-shadow: 0 2px 10px rgba(255, 144, 21, 0.08);
+}
+
+.typeform-shell__review-item--empty {
+  background: #fafafa;
+}
+
+.typeform-shell__review-item-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.typeform-shell__review-item-number {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #ff9015;
+}
+
+.typeform-shell__review-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+  padding: 0.3rem 0.65rem;
+  border: 1px solid #ffd7ae;
+  border-radius: 0.5rem;
+  background: #fffbf5;
+  color: #ff9015;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease;
+}
+
+.typeform-shell__review-edit:hover {
+  border-color: #ff9015;
+  background: #fff4ea;
+}
+
+.typeform-shell__review-item-question {
+  margin: 0.55rem 0 0;
+  font-size: 1.02rem;
+  font-weight: 600;
+  line-height: 1.45;
+  color: #161616;
+  word-break: break-word;
+}
+
+.typeform-shell__review-item-divider {
+  height: 1px;
+  margin: 0.75rem 0 0.6rem;
+  background: #f0f0f0;
+}
+
+.typeform-shell__review-item-answer {
+  margin: 0;
+}
+
+.typeform-shell__review-item-answer-label {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #a8a8a8;
+}
+
+.typeform-shell__review-item-value {
+  margin: 0.35rem 0 0;
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.6;
+  color: #161616;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.typeform-shell__review-item-value--empty {
+  color: #a8a8a8;
+  font-style: italic;
+}
+
+.typeform-shell__review-images {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.45rem;
+}
+
+.typeform-shell__review-images--multi {
+  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+}
+
+.typeform-shell__review-image-btn {
+  display: block;
+  overflow: hidden;
+  padding: 0.2rem;
+  border: 1px solid #ececec;
+  border-radius: 0.65rem;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 150ms ease;
+}
+
+.typeform-shell__review-image-btn:hover {
+  border-color: #ffd7ae;
+}
+
+.typeform-shell__review-image-btn img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 0.45rem;
+}
+
+.typeform-shell__review-image-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 7rem;
+  padding: 0 0.75rem;
+  border: 1px solid #ececec;
+  border-radius: 0.65rem;
+  background: #fff;
+  color: #6f6f6f;
+  font-size: 0.875rem;
+}
+
+.typeform-shell__review-signature {
+  display: block;
+  margin-top: 0.45rem;
+  max-width: 22rem;
+  padding: 0.45rem;
+  border: 1px solid #ececec;
+  border-radius: 0.65rem;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 150ms ease;
+}
+
+.typeform-shell__review-signature:hover {
+  border-color: #ffd7ae;
+}
+
+.typeform-shell__review-signature img {
+  display: block;
+  width: 100%;
+  max-height: 7rem;
+  object-fit: contain;
+}
+
+.typeform-shell__review-meta {
+  margin: 0.45rem 0 0;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #6f6f6f;
+}
+
 .typeform-voice-bar {
+  display: inline-block;
+  width: 0.2rem;
   height: 0.45rem;
+  border-radius: 999px;
+  background: #ff9015;
   animation: typeform-voice-wave 900ms ease-in-out infinite;
 }
 
@@ -19,5 +732,24 @@
 @media (prefers-reduced-motion: reduce) {
   .typeform-voice-bar {
     animation: none !important;
+  }
+}
+
+@media (max-width: 639px) {
+  .typeform-shell__header-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .typeform-shell__mode {
+    justify-content: stretch;
+  }
+
+  .typeform-shell__mode-btn {
+    flex: 1 1 0;
+  }
+
+  .typeform-shell__title {
+    white-space: normal;
   }
 }

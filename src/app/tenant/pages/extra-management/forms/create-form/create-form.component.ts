@@ -157,7 +157,9 @@ export class CreateFormComponent implements OnInit {
     const q = this.assignUsersSearch().trim().toLowerCase();
     const selected = new Set(this.meta().assignUsers);
     const opts = this.userOptions();
-    const filtered = q ? opts.filter((o) => o.name.toLowerCase().includes(q)) : opts;
+    const filtered = q
+      ? opts.filter((o) => o.name.toLowerCase().includes(q) || (o.jobPosition || '').toLowerCase().includes(q))
+      : opts;
     return filtered.map((o) => ({ ...o, selected: selected.has(o.name) }));
   });
 
@@ -173,7 +175,9 @@ export class CreateFormComponent implements OnInit {
     const q = this.reportUsersSearch().trim().toLowerCase();
     const selected = new Set(this.meta().reportUsers);
     const opts = this.userOptions();
-    const filtered = q ? opts.filter((o) => o.name.toLowerCase().includes(q)) : opts;
+    const filtered = q
+      ? opts.filter((o) => o.name.toLowerCase().includes(q) || (o.jobPosition || '').toLowerCase().includes(q))
+      : opts;
     return filtered.map((o) => ({ ...o, selected: selected.has(o.name) }));
   });
 
@@ -457,7 +461,7 @@ export class CreateFormComponent implements OnInit {
 
   // ── Dynamic Options ──────────────────────────────────────────
   readonly jobPositionOptions = signal<{ id: string; name: string }[]>([]);
-  readonly userOptions = signal<{ id: string; name: string }[]>([]);
+  readonly userOptions = signal<{ id: string; name: string; jobPosition?: string }[]>([]);
 
   constructor() {
     this.frequencyForm.valueChanges
@@ -594,6 +598,7 @@ export class CreateFormComponent implements OnInit {
                   this.userOptions.set(data.map((u: any) => ({
                     id: String(u.id),
                     name: nameFieldId ? String(u[nameFieldId] ?? '') : '',
+                    jobPosition: u.job_position?.name || u.jobPosition?.name || '',
                   })));
                 }
                 this.applyLoadedMeta();
@@ -615,6 +620,7 @@ export class CreateFormComponent implements OnInit {
                   this.userOptions.set(data.map((u: any) => ({
                     id: String(u.id),
                     name: '',
+                    jobPosition: u.job_position?.name || u.jobPosition?.name || '',
                   })));
                 }
                 this.applyLoadedMeta();
