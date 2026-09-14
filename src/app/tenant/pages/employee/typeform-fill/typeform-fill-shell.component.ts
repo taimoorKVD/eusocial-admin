@@ -442,7 +442,7 @@ export class TypeformFillShellComponent implements AfterViewInit, OnDestroy {
     return this.isLastVisibleQuestion() ? 'Review' : 'Continue';
   });
 
-  /** Last question only: enter Review (scroll does not advance past the last question). */
+  /** Last question only: final action CTA (Review entry kept in code for later). */
   readonly showQuestionReviewCta = computed(
     () =>
       this.canFill() &&

@@ -340,8 +340,8 @@
 
   <!--
     Question fill: no Continue/Back — scroll moves one question at a time.
-    Last question: Review CTA (scroll does not leave the last question).
-    Review / edit-from-review: existing footer actions.
+    Last question: Submit CTA (Review UI hidden for now; review code retained).
+    Review / edit-from-review: existing footer actions (kept for later re-enable).
   -->
   @if (isReviewPhase() || isEditingFromReview()) {
     <footer class="typeform-shell__footer">
@@ -389,11 +389,12 @@
       <button
         type="button"
         class="typeform-nav-btn typeform-nav-btn--primary"
-        (click)="continue()"
+        [disabled]="submitting()"
+        (click)="submit()"
       >
-        Review
+        Submit
         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M12 5l7 7-7 7" />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
         </svg>
       </button>
     </footer>
