@@ -13,9 +13,12 @@ import {
 import { TenantPermissionService } from '../../../../services/tenant-permission.service';
 import { PERMISSIONS } from '../../../../constants/permissions';
 
+/** Listing filter values — includes API filter `today` (not an assignment status). */
+type MyFormsStatusFilter = EmployeeAssignmentStatus | 'today' | '';
+
 interface StatusFilter {
   label: string;
-  value: EmployeeAssignmentStatus | '';
+  value: MyFormsStatusFilter;
 }
 
 @Component({
@@ -40,6 +43,7 @@ export class EmployeeMyFormsComponent implements OnInit {
 
   readonly filters: StatusFilter[] = [
     { label: 'All', value: '' },
+    { label: 'Today', value: 'today' },
     { label: 'Pending', value: 'pending' },
     { label: 'In Progress', value: 'in_progress' },
     { label: 'Completed', value: 'completed' },
@@ -47,57 +51,32 @@ export class EmployeeMyFormsComponent implements OnInit {
     { label: 'Cancelled', value: 'cancelled' },
   ];
 
-  /** Unfiltered page payload from the API (status already applied server-side). */
-  private readonly loadedAssignments = signal<EmployeeAssignmentListItem[]>([]);
-
+  readonly assignments = signal<EmployeeAssignmentListItem[]>([]);
   readonly loading = signal(false);
   readonly errorMessage = signal('');
   readonly page = signal(1);
   readonly lastPage = signal(1);
   readonly total = signal(0);
-  readonly status = signal<EmployeeAssignmentStatus | ''>('');
-  /** `Y-m-d` calendar date, or null when date filter is cleared. Defaults to today. */
-  readonly dueDateFilter = signal<string | null>(localTodayDateKey());
+  /** Defaults to Today — backend returns today's tasks via `status=today`. */
+  readonly status = signal<MyFormsStatusFilter>('today');
+  /** Optional `Y-m-d` due-date query param. */
+  readonly dueDateFilter = signal<string | null>(null);
   readonly filtersOpen = signal(false);
 
-  readonly filteredAssignments = computed(() => {
-    const dateKey = this.dueDateFilter();
-    const items = this.loadedAssignments();
-    if (!dateKey) {
-      return items;
-    }
-    return items.filter((item) => assignmentDueDateKey(item.dueDate) === dateKey);
-  });
-
-  readonly assignments = computed(() => {
-    const items = this.filteredAssignments();
-    if (!this.dueDateFilter()) {
-      return items;
-    }
-    const limit = this.defaultLimit;
-    const start = (this.page() - 1) * limit;
-    return items.slice(start, start + limit);
-  });
-
   readonly hasAssignments = computed(() => this.assignments().length > 0);
-  readonly showPagination = computed(() => {
-    if (this.loading() || !this.hasAssignments()) {
-      return false;
-    }
-    return this.lastPage() > 1;
-  });
+  readonly showPagination = computed(
+    () => !this.loading() && this.hasAssignments() && this.lastPage() > 1,
+  );
 
   readonly activeFilterSummary = computed(() => {
     const status = this.status();
     const dateKey = this.dueDateFilter();
-    const statusText = status ? this.statusLabel(status) : '';
-    const today = localTodayDateKey();
+    const statusText = status ? this.filterLabel(status) : '';
+    const dateText = dateKey ? formatDisplayDateKey(dateKey) : '';
 
-    if (dateKey === today && !status) {
+    if (status === 'today' && !dateKey) {
       return "Today's Tasks";
     }
-
-    const dateText = dateKey ? formatDisplayDateKey(dateKey) : '';
 
     if (statusText && dateText) {
       return `${statusText} · ${dateText}`;
@@ -112,36 +91,37 @@ export class EmployeeMyFormsComponent implements OnInit {
   });
 
   readonly hasActiveFilters = computed(
-    () => !!this.status() || this.dueDateFilter() !== null,
+    () => this.status() !== '' || this.dueDateFilter() !== null,
   );
 
   private readonly defaultLimit = environment.limit;
-  /** When filtering by date, load a larger page so client-side date match is complete. */
-  private readonly dateFilterFetchLimit = 200;
 
   ngOnInit(): void {
     const initialStatus = this.route.snapshot.queryParamMap.get('status');
-    if (this.isSupportedStatus(initialStatus)) {
+    if (this.isSupportedStatusFilter(initialStatus)) {
       this.status.set(initialStatus);
     }
-    this.loadAssignments(1);
+
+    const initialDate = this.route.snapshot.queryParamMap.get('date');
+    if (initialDate && /^\d{4}-\d{2}-\d{2}$/.test(initialDate)) {
+      this.dueDateFilter.set(initialDate);
+    }
+
+    this.syncQueryParams();
+    this.loadAssignments(this.page());
   }
 
   toggleFilters(): void {
     this.filtersOpen.update((open) => !open);
   }
 
-  onFilterChange(value: EmployeeAssignmentStatus | ''): void {
+  onFilterChange(value: MyFormsStatusFilter): void {
     if (this.status() === value) {
       return;
     }
     this.status.set(value);
     this.page.set(1);
-    this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: value ? { status: value } : {},
-      replaceUrl: true,
-    });
+    this.syncQueryParams();
     this.loadAssignments(1);
   }
 
@@ -152,6 +132,7 @@ export class EmployeeMyFormsComponent implements OnInit {
     }
     this.dueDateFilter.set(next);
     this.page.set(1);
+    this.syncQueryParams();
     this.loadAssignments(1);
   }
 
@@ -161,22 +142,12 @@ export class EmployeeMyFormsComponent implements OnInit {
 
   prevPage(): void {
     if (this.page() > 1) {
-      if (this.dueDateFilter()) {
-        this.page.update((p) => p - 1);
-        this.syncClientPaginationMeta();
-        return;
-      }
       this.loadAssignments(this.page() - 1);
     }
   }
 
   nextPage(): void {
     if (this.page() < this.lastPage()) {
-      if (this.dueDateFilter()) {
-        this.page.update((p) => p + 1);
-        this.syncClientPaginationMeta();
-        return;
-      }
       this.loadAssignments(this.page() + 1);
     }
   }
@@ -199,8 +170,17 @@ export class EmployeeMyFormsComponent implements OnInit {
     return this.canCompleteAssignment;
   }
 
+  filterLabel(status: MyFormsStatusFilter): string {
+    if (status === 'today') {
+      return 'Today';
+    }
+    return this.statusLabel(status);
+  }
+
   statusLabel(status: string): string {
     switch (status) {
+      case 'today':
+        return 'Today';
       case 'in_progress':
         return 'In Progress';
       case 'pending':
@@ -235,15 +215,12 @@ export class EmployeeMyFormsComponent implements OnInit {
     this.loading.set(true);
     this.errorMessage.set('');
 
-    const dateFilter = this.dueDateFilter();
-    const requestPage = dateFilter ? 1 : page;
-    const requestLimit = dateFilter ? this.dateFilterFetchLimit : this.defaultLimit;
-
     this.assignmentsService
       .getMyWork({
-        page: requestPage,
-        limit: requestLimit,
+        page,
+        limit: this.defaultLimit,
         status: this.status(),
+        date: this.dueDateFilter(),
       })
       .pipe(
         finalize(() => this.loading.set(false)),
@@ -251,20 +228,13 @@ export class EmployeeMyFormsComponent implements OnInit {
       )
       .subscribe({
         next: (result) => {
-          this.loadedAssignments.set(result.items);
-
-          if (dateFilter) {
-            this.page.set(1);
-            this.syncClientPaginationMeta();
-            return;
-          }
-
+          this.assignments.set(result.items);
           this.total.set(result.total);
           this.page.set(result.page || page);
           this.lastPage.set(Math.max(1, result.lastPage || 1));
         },
         error: (err) => {
-          this.loadedAssignments.set([]);
+          this.assignments.set([]);
           this.total.set(0);
           this.lastPage.set(1);
           this.errorMessage.set(
@@ -274,17 +244,23 @@ export class EmployeeMyFormsComponent implements OnInit {
       });
   }
 
-  private syncClientPaginationMeta(): void {
-    const total = this.filteredAssignments().length;
-    const lastPage = Math.max(1, Math.ceil(total / this.defaultLimit) || 1);
-    const page = Math.min(Math.max(1, this.page()), lastPage);
-    this.total.set(total);
-    this.lastPage.set(lastPage);
-    this.page.set(page);
+  private syncQueryParams(): void {
+    const status = this.status();
+    const date = this.dueDateFilter();
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {
+        status: status || null,
+        date: date || null,
+      },
+      queryParamsHandling: '',
+      replaceUrl: true,
+    });
   }
 
-  private isSupportedStatus(value: string | null): value is EmployeeAssignmentStatus {
+  private isSupportedStatusFilter(value: string | null): value is MyFormsStatusFilter {
     return (
+      value === 'today' ||
       value === 'pending' ||
       value === 'in_progress' ||
       value === 'completed' ||
@@ -292,40 +268,6 @@ export class EmployeeMyFormsComponent implements OnInit {
       value === 'cancelled'
     );
   }
-}
-
-/** Local calendar today as `Y-m-d` (not UTC). */
-function localTodayDateKey(): string {
-  const now = new Date();
-  return formatLocalDateKey(now);
-}
-
-/**
- * Calendar due-date key for comparison.
- * Prefer the API `YYYY-MM-DD` prefix (from dueAt ISO) so UTC midnight
- * does not shift the due day via local timezone conversion.
- */
-function assignmentDueDateKey(dueDate: string | null | undefined): string | null {
-  if (!dueDate) {
-    return null;
-  }
-  const trimmed = String(dueDate).trim();
-  const prefix = trimmed.match(/^(\d{4}-\d{2}-\d{2})/);
-  if (prefix) {
-    return prefix[1];
-  }
-  const parsed = new Date(trimmed);
-  if (Number.isNaN(parsed.getTime())) {
-    return null;
-  }
-  return formatLocalDateKey(parsed);
-}
-
-function formatLocalDateKey(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
 }
 
 function formatDisplayDateKey(dateKey: string): string {
