@@ -4,27 +4,34 @@ import {
   FormSection,
 } from '../../extra-management/forms/models/dynamic-form.models';
 import { mapConfigFieldToBuilder } from '../../extra-management/forms/utils/field-builder-adapter.utils';
-import { EmployeeAssignmentSectionView } from '../../../../interfaces/employee-assignment';
+
+export interface AssignmentSectionBuilder {
+  id: string;
+  name: string;
+  builderFields: FormField[];
+  /** Builder fields preserved per API row (section.rows -> row.fields). */
+  builderRows: FormField[][];
+}
 
 /**
  * Map assignment schema sections into builder fields.
  * Answers are applied by field.id only (backend answer keys).
+ * `builderRows` keeps the API's logical row grouping for the Regular Form layout.
  */
 export function mapAssignmentSectionsToBuilder(
   sections: FormSection[],
   schema: Record<string, unknown> = {},
   answers: Record<string, unknown> = {},
-): Array<Omit<EmployeeAssignmentSectionView, 'fields'>> {
+): AssignmentSectionBuilder[] {
   const fromSections = (sections || [])
     .map((section, sectionIndex) => {
-      const fields = flattenSectionFields(section).map((field, fieldIndex) =>
-        toBuilderField(applyAnswer(field, answers), sectionIndex, fieldIndex),
-      );
+      const { fields, rows } = buildSectionBuilder(section, sectionIndex, answers);
 
       return {
         id: String(section?.id ?? `section_${sectionIndex}`),
         name: String(section?.name ?? `Section ${sectionIndex + 1}`),
         builderFields: fields,
+        builderRows: rows,
       };
     })
     .filter((section) => section.builderFields.length > 0);
@@ -41,7 +48,41 @@ export function mapAssignmentSectionsToBuilder(
     return [];
   }
 
-  return [{ id: 'section_default', name: 'Form', builderFields: fallback }];
+  return [
+    {
+      id: 'section_default',
+      name: 'Form',
+      builderFields: fallback,
+      builderRows: [fallback],
+    },
+  ];
+}
+
+function buildSectionBuilder(
+  section: FormSection,
+  sectionIndex: number,
+  answers: Record<string, unknown>,
+): { fields: FormField[]; rows: FormField[][] } {
+  const fields: FormField[] = [];
+  const rows: FormField[][] = [];
+
+  for (const row of section?.rows || []) {
+    const rowFields: FormField[] = [];
+    for (const field of row?.fields || []) {
+      if (field && typeof field === 'object') {
+        const builder = toBuilderField(
+          applyAnswer(field as FormFieldConfig, answers),
+          sectionIndex,
+          fields.length,
+        );
+        fields.push(builder);
+        rowFields.push(builder);
+      }
+    }
+    rows.push(rowFields);
+  }
+
+  return { fields, rows };
 }
 
 function applyAnswer(
@@ -95,18 +136,6 @@ function normalizeDisplayValue(answer: unknown): string {
     return answer ? 'true' : 'false';
   }
   return String(answer);
-}
-
-function flattenSectionFields(section: FormSection): FormFieldConfig[] {
-  const fields: FormFieldConfig[] = [];
-  for (const row of section?.rows || []) {
-    for (const field of row?.fields || []) {
-      if (field && typeof field === 'object') {
-        fields.push(field as FormFieldConfig);
-      }
-    }
-  }
-  return fields;
 }
 
 function extractFallbackFields(schema: Record<string, unknown>): FormFieldConfig[] {

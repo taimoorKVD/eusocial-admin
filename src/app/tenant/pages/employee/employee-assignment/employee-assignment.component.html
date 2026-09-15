@@ -149,10 +149,10 @@
       ></app-completed-form-view>
     } @else if (showActiveForm() && interactionMode(); as mode) {
       @if (mode === 'normal') {
-        <!-- Normal Form: traditional all-fields layout (direct submit, no Review). -->
+        <!-- Regular Form: dedicated Employee Portal component — full sections -> rows -> fields. -->
         <app-regular-form-shell
           class="block h-full min-h-0"
-          [fields]="mergedFields()"
+          [sections]="sections()"
           [formTitle]="formTitle()"
           [dueDateLabel]="current.dueDate ? (current.dueDate | date: 'mediumDate') : ''"
           [canFill]="canFill()"
