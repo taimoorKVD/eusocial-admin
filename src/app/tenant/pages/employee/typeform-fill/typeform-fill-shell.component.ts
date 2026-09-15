@@ -31,6 +31,7 @@ import {
 import {
   buildTypeformReviewItems,
   COMPLETED_FORM_EMPTY_LABEL,
+  formatHeardDisplayValue,
   TypeformReviewItemView,
 } from './format-typeform-review.utils';
 import {
@@ -356,11 +357,7 @@ export class TypeformFillShellComponent implements AfterViewInit, OnDestroy {
     }
 
     const value = form.value?.[field.name];
-    if (value === null || value === undefined || value === '') {
-      return '';
-    }
-
-    return String(value);
+    return formatHeardDisplayValue(field, value);
   });
 
   readonly showHeardPanel = computed(() => {
