@@ -272,8 +272,6 @@ const routes: Routes = [
           {
             path: 'history',
             component: EmployeeHistoryComponent,
-            canActivate: [permissionGuard],
-            data: { permission: PERMISSIONS.DATA_COLLECTION.VIEW_SUBMISSION },
           },
         ],
       },
