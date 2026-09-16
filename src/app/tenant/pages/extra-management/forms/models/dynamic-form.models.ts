@@ -120,6 +120,21 @@ export type FrequencyType = 'atOnce' | 'recurring';
 export type FrequencyInterval = 'day' | 'week' | 'month' | 'year';
 export type FrequencyMonthMode = 'dayOfMonth' | 'onThe';
 
+/** Assign / Report distribution mode stored on the template schema. */
+export type AssignReportMode = 'individual' | 'shared';
+
+export const ASSIGN_REPORT_MODE_OPTIONS: { label: string; value: AssignReportMode }[] = [
+  { label: 'Individual', value: 'individual' },
+  { label: 'Shared', value: 'shared' },
+];
+
+export function normalizeAssignReportMode(value: unknown): AssignReportMode {
+  const raw = String(value ?? '')
+    .trim()
+    .toLowerCase();
+  return raw === 'shared' ? 'shared' : 'individual';
+}
+
 export interface FrequencyRecurringConfig {
   every: number;
   interval: FrequencyInterval;
@@ -269,8 +284,10 @@ export function resolveFrequencyDate(
 export interface FormMetaConfig {
   assignJobPosition: string[];
   assignUsers: string[];
+  assignMode: AssignReportMode;
   reportJobPosition: string[];
   reportUsers: string[];
+  reportMode: AssignReportMode;
   frequencyJobPosition: string[];
   frequencyDate: string | null;
   frequencyType: FrequencyType;
@@ -282,10 +299,12 @@ export interface DynamicFormPayload {
   assign: {
     jobPosition: number[] | null;
     users: number[] | null;
+    mode: AssignReportMode;
   };
   report: {
     jobPosition: number[] | null;
     users: number[] | null;
+    mode: AssignReportMode;
   };
   frequency: {
     jobPosition: string | null;
@@ -442,10 +461,12 @@ export function buildDynamicFormPayload(
     assign: {
       jobPosition: assignJobPositionIds.length ? assignJobPositionIds : null,
       users: assignUserIds.length ? assignUserIds : null,
+      mode: normalizeAssignReportMode(meta.assignMode),
     },
     report: {
       jobPosition: reportJobPositionIds.length ? reportJobPositionIds : null,
       users: reportUserIds.length ? reportUserIds : null,
+      mode: normalizeAssignReportMode(meta.reportMode),
     },
     frequency: {
       jobPosition: meta.frequencyJobPosition.length

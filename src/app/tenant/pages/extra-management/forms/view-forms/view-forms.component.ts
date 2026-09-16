@@ -1,6 +1,5 @@
-import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, HostListener, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs';
@@ -29,11 +28,19 @@ interface StatusFilterOption {
 @Component({
   selector: 'app-view-forms',
   standalone: true,
-  imports: [CommonModule, FormsModule, SharedModule],
+  imports: [CommonModule, SharedModule],
   templateUrl: './view-forms.component.html',
   styleUrl: './view-forms.component.scss',
 })
 export class ViewFormsComponent implements OnInit {
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.status-filter-dropdown')) {
+      this.statusDropdownOpen.set(false);
+    }
+  }
+
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly formsService = inject(TenantFormsService);
@@ -73,7 +80,13 @@ export class ViewFormsComponent implements OnInit {
   readonly hasFilterFields = computed(() => this.filterFields().length > 0);
   /** Always sent to the listing API as `status`. */
   readonly statusFilter = signal<TenantFormStatusFilter>('active');
+  readonly statusDropdownOpen = signal(false);
   readonly isArchivedView = computed(() => this.statusFilter() === 'archived');
+  readonly statusFilterLabel = computed(
+    () =>
+      this.statusFilters.find((option) => option.value === this.statusFilter())?.label ??
+      'Active',
+  );
 
   readonly showPagination = computed(() => !this.loading() && this.forms().length > 0);
 
@@ -165,12 +178,18 @@ export class ViewFormsComponent implements OnInit {
 
   onStatusFilterChange(value: TenantFormStatusFilter): void {
     if (this.statusFilter() === value) {
+      this.statusDropdownOpen.set(false);
       return;
     }
     this.statusFilter.set(value);
+    this.statusDropdownOpen.set(false);
     this.selectedIds.set([]);
     this.page.set(1);
     this.loadForms(1);
+  }
+
+  toggleStatusDropdown(): void {
+    this.statusDropdownOpen.update((open) => !open);
   }
 
   prevPage(): void {

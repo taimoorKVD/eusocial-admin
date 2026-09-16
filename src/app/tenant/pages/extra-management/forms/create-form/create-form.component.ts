@@ -77,8 +77,11 @@ import {
   FrequencyMonthMode,
   FrequencyType,
   SavedDynamicForm,
+  ASSIGN_REPORT_MODE_OPTIONS,
+  AssignReportMode,
   buildDynamicFormPayload,
   createId,
+  normalizeAssignReportMode,
   sanitizeFrequencyRecurring,
 } from '../models/dynamic-form.models';
 
@@ -106,6 +109,8 @@ export class CreateFormComponent implements OnInit {
   onDocumentClick(event: MouseEvent): void {
     const target = event.target as HTMLElement;
     if (!target.closest('.multi-select-dropdown')) {
+      this.assignModeDropdownOpen.set(false);
+      this.reportModeDropdownOpen.set(false);
       this.assignUsersDropdownOpen.set(false);
       this.assignUsersSearch.set('');
       this.assignPositionsDropdownOpen.set(false);
@@ -144,6 +149,8 @@ export class CreateFormComponent implements OnInit {
   private flatpickrInstance: FlatpickrInstance | null = null;
 
   // ── Assign & Report Multi-Select State ────────────────────────
+  readonly assignModeDropdownOpen = signal(false);
+  readonly reportModeDropdownOpen = signal(false);
   readonly assignUsersDropdownOpen = signal(false);
   readonly assignUsersSearch = signal('');
   readonly assignPositionsDropdownOpen = signal(false);
@@ -217,12 +224,30 @@ export class CreateFormComponent implements OnInit {
   readonly meta = signal<FormMetaConfig>({
     assignJobPosition: [],
     assignUsers: [],
+    assignMode: 'individual',
     reportJobPosition: [],
     reportUsers: [],
+    reportMode: 'individual',
     frequencyJobPosition: [],
     frequencyDate: null,
     frequencyType: 'atOnce',
     frequencyRecurring: createDefaultFrequencyRecurring(),
+  });
+
+  readonly assignReportModeOptions = ASSIGN_REPORT_MODE_OPTIONS;
+  readonly assignModeLabel = computed(() => {
+    const current = this.meta().assignMode;
+    return (
+      this.assignReportModeOptions.find((option) => option.value === current)?.label ??
+      'Individual'
+    );
+  });
+  readonly reportModeLabel = computed(() => {
+    const current = this.meta().reportMode;
+    return (
+      this.assignReportModeOptions.find((option) => option.value === current)?.label ??
+      'Individual'
+    );
   });
 
   /** Split-view row editor: palette + selected-row drop canvas. */
@@ -777,8 +802,10 @@ export class CreateFormComponent implements OnInit {
       ...current,
       assignUsers: assign.users,
       assignJobPosition: assign.positions,
+      assignMode: normalizeAssignReportMode(schema.assign?.mode),
       reportUsers: report.users,
       reportJobPosition: report.positions,
+      reportMode: normalizeAssignReportMode(schema.report?.mode),
       frequencyJobPosition: (schema.frequency?.jobPosition ?? '')
         .split(', ')
         .map((name) => name.trim())
@@ -1787,6 +1814,32 @@ export class CreateFormComponent implements OnInit {
     this.meta.update((current) => ({ ...current, [key]: value }));
   }
 
+  toggleAssignModeDropdown(): void {
+    const wasOpen = this.assignModeDropdownOpen();
+    this.closeAllMultiSelectDropdowns();
+    if (!wasOpen) {
+      this.assignModeDropdownOpen.set(true);
+    }
+  }
+
+  selectAssignMode(value: AssignReportMode): void {
+    this.updateMeta('assignMode', normalizeAssignReportMode(value));
+    this.assignModeDropdownOpen.set(false);
+  }
+
+  toggleReportModeDropdown(): void {
+    const wasOpen = this.reportModeDropdownOpen();
+    this.closeAllMultiSelectDropdowns();
+    if (!wasOpen) {
+      this.reportModeDropdownOpen.set(true);
+    }
+  }
+
+  selectReportMode(value: AssignReportMode): void {
+    this.updateMeta('reportMode', normalizeAssignReportMode(value));
+    this.reportModeDropdownOpen.set(false);
+  }
+
   // ── Multi-Select Helpers ──────────────────────────────────────
 
   toggleMultiSelect(
@@ -1809,6 +1862,8 @@ export class CreateFormComponent implements OnInit {
   }
 
   private closeAllMultiSelectDropdowns(): void {
+    this.assignModeDropdownOpen.set(false);
+    this.reportModeDropdownOpen.set(false);
     this.assignUsersDropdownOpen.set(false);
     this.assignUsersSearch.set('');
     this.assignPositionsDropdownOpen.set(false);

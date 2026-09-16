@@ -37,28 +37,47 @@
     <h2 class="m-0 text-[20px] font-semibold font-ibm text-gray-900">Forms</h2>
 
     <div class="flex flex-wrap items-center gap-3 sm:justify-end">
-      <label class="sr-only" for="form-templates-status-filter">Template status</label>
-      <div class="relative inline-flex min-w-[9.5rem]">
-        <select
+      <div class="relative inline-flex min-w-[9.5rem] status-filter-dropdown">
+        <label class="sr-only" id="form-templates-status-filter-label">Template status</label>
+        <button
+          type="button"
           id="form-templates-status-filter"
-          class="w-full appearance-none rounded-lg border border-gray-200 bg-white py-2 pl-3.5 pr-9 text-sm font-medium text-gray-700 shadow-sm outline-none transition hover:border-[#ea580c]/50 focus:border-[#ea580c] focus:ring-2 focus:ring-[#ea580c]/20 font-ibm"
-          [ngModel]="statusFilter()"
-          (ngModelChange)="onStatusFilterChange($event)"
+          class="flex w-full min-h-[40px] items-center justify-between rounded-lg border border-[#E0E0E0] bg-white px-3.5 py-2 text-sm font-medium text-[#161616] shadow-sm outline-none transition hover:border-[#FF9015] focus:border-[#FF9015] focus:ring-2 focus:ring-[#FF9015]/20 font-ibm"
+          aria-labelledby="form-templates-status-filter-label"
+          [attr.aria-expanded]="statusDropdownOpen()"
+          (click)="$event.stopPropagation(); toggleStatusDropdown()"
         >
-          @for (filter of statusFilters; track filter.value) {
-            <option [ngValue]="filter.value">{{ filter.label }}</option>
-          }
-        </select>
-        <svg
-          class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          aria-hidden="true"
-        >
-          <path d="m6 9 6 6 6-6"></path>
-        </svg>
+          <span>{{ statusFilterLabel() }}</span>
+          <svg width="12" height="8" viewBox="0 0 12 8" fill="none" class="ml-2 shrink-0">
+            <path d="M1 1.5L6 6.5L11 1.5" stroke="#161616" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        @if (statusDropdownOpen()) {
+          <div
+            class="absolute right-0 top-full z-50 mt-1 min-w-full bg-white border border-[#E0E0E0] rounded-lg shadow-lg"
+            (click)="$event.stopPropagation()"
+          >
+            <ul class="max-h-48 overflow-y-auto py-1">
+              @for (filter of statusFilters; track filter.value) {
+                <li>
+                  <button
+                    type="button"
+                    class="w-full text-left px-4 py-2 text-sm font-ibm flex items-center gap-2 cursor-pointer"
+                    [class]="statusFilter() === filter.value ? 'bg-[#fff5eb] text-[#FF9015]' : 'hover:bg-[#FF9015] hover:text-white text-[#525252]'"
+                    (click)="onStatusFilterChange(filter.value)"
+                  >
+                    @if (statusFilter() === filter.value) {
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="text-[#FF9015] shrink-0">
+                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/>
+                      </svg>
+                    }
+                    {{ filter.label }}
+                  </button>
+                </li>
+              }
+            </ul>
+          </div>
+        }
       </div>
 
       @if (showCreateButton()) {
