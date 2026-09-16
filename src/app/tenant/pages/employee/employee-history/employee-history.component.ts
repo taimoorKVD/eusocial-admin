@@ -5,11 +5,8 @@ import { Router } from '@angular/router';
 import { finalize } from 'rxjs';
 import { environment } from '../../../../../environments/environment';
 import { SharedModule } from '../../../../shared/shared.module';
-import { EmployeeAssignmentsService } from '../../../../services/employee-assignments.service';
-import {
-  EmployeeAssignmentListItem,
-  EmployeeAssignmentStatus,
-} from '../../../../interfaces/employee-assignment';
+import { EmployeeHistoryService } from '../../../../services/employee-history.service';
+import { EmployeeHistorySubmissionListItem } from '../../../../interfaces/employee-history-submission';
 
 @Component({
   selector: 'app-employee-history',
@@ -18,11 +15,11 @@ import {
   templateUrl: './employee-history.component.html',
 })
 export class EmployeeHistoryComponent implements OnInit {
-  private readonly assignmentsService = inject(EmployeeAssignmentsService);
+  private readonly historyService = inject(EmployeeHistoryService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
-  readonly historyItems = signal<EmployeeAssignmentListItem[]>([]);
+  readonly historyItems = signal<EmployeeHistorySubmissionListItem[]>([]);
   readonly loading = signal(false);
   readonly errorMessage = signal('');
   readonly page = signal(1);
@@ -35,7 +32,6 @@ export class EmployeeHistoryComponent implements OnInit {
   );
 
   private readonly defaultLimit = environment.limit;
-  private readonly status: EmployeeAssignmentStatus = 'completed';
 
   ngOnInit(): void {
     this.loadHistory(this.page());
@@ -57,8 +53,9 @@ export class EmployeeHistoryComponent implements OnInit {
     this.loadHistory(this.page());
   }
 
-  openAssignment(item: EmployeeAssignmentListItem): void {
-    this.router.navigate(['/my-forms', item.id]);
+  /** Opens the dedicated read-only History submission detail — never My Forms. */
+  viewSubmission(item: EmployeeHistorySubmissionListItem): void {
+    this.router.navigate(['/history', item.id]);
   }
 
   statusLabel(status: string): string {
@@ -97,11 +94,10 @@ export class EmployeeHistoryComponent implements OnInit {
     this.loading.set(true);
     this.errorMessage.set('');
 
-    this.assignmentsService
-      .getMyWork({
+    this.historyService
+      .getSubmissions({
         page,
         limit: this.defaultLimit,
-        status: this.status,
       })
       .pipe(
         finalize(() => this.loading.set(false)),

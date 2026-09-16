@@ -8,6 +8,7 @@ import { UserDashboardComponent } from './pages/user-dashboard/user-dashboard.co
 import { EmployeeMyFormsComponent } from './pages/employee/employee-my-forms/employee-my-forms.component';
 import { EmployeeAssignmentComponent } from './pages/employee/employee-assignment/employee-assignment.component';
 import { EmployeeHistoryComponent } from './pages/employee/employee-history/employee-history.component';
+import { EmployeeHistoryDetailComponent } from './pages/employee/employee-history/employee-history-detail.component';
 import { SetupJobPositionComponent } from './pages/setup/Job-Positions/setup-job-position/setup-job-position.component';
 import { TenantLoginComponent } from './tenant-login/tenant-login.component';
 
@@ -272,6 +273,10 @@ const routes: Routes = [
           {
             path: 'history',
             component: EmployeeHistoryComponent,
+          },
+          {
+            path: 'history/:id',
+            component: EmployeeHistoryDetailComponent,
           },
         ],
       },
