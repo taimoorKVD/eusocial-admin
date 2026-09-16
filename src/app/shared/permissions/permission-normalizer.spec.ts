@@ -29,7 +29,7 @@ describe('permission-normalizer', () => {
           { id: 33, name: 'Create' },
           { id: 34, name: 'View' },
           { id: 35, name: 'Edit' },
-          { id: 37, name: 'Activate' },
+          { id: 37, name: 'Restore' },
           { id: 38, name: 'Archive' },
           { id: 40, name: 'Delete' },
         ],
@@ -55,12 +55,33 @@ describe('permission-normalizer', () => {
     expect(names).toContain('view-dc-template');
     expect(names).toContain('edit-dc-template');
     expect(names).toContain('activate-dc-template');
+    expect(names).toContain('restore-dc-template');
     expect(names).toContain('archive-dc-template');
     expect(names).toContain('delete-dc-template');
     expect(names).toContain('view-dc-assignment');
     expect(names).toContain('complete-dc-assignment');
     expect(names).toContain('review-dc-submission');
     expect(names).not.toContain('view-form');
+  });
+
+  it('maps Restore and Activate form-template actions to template restore/activate slugs', () => {
+    const fromRestore = flattenRolePermissions([
+      {
+        module: { name: 'Form Template' },
+        permissions: [{ id: 37, name: 'Restore' }],
+      },
+    ]).map((p) => p.name);
+    expect(fromRestore).toContain('activate-dc-template');
+    expect(fromRestore).toContain('restore-dc-template');
+
+    const fromActivate = flattenRolePermissions([
+      {
+        module: { name: 'Form Template' },
+        permissions: [{ id: 37, name: 'Activate' }],
+      },
+    ]).map((p) => p.name);
+    expect(fromActivate).toContain('activate-dc-template');
+    expect(fromActivate).toContain('restore-dc-template');
   });
 
   it('maps legacy Template / Form module names for backward compatibility', () => {

@@ -1,5 +1,5 @@
 <div class="p-6">
-  @if (loading() || deleting()) {
+  @if (loading() || deleting() || restoring()) {
     <app-eu-loader></app-eu-loader>
   }
 
@@ -23,12 +23,51 @@
     (closed)="closeBulkDeleteConfirmModal()"
   ></app-confirm-modal>
 
-  <app-top-header
-    [title]="'Forms'"
-    [buttonLabel]="'+ Create Form'"
-    [showButton]="canCreate"
-    (buttonClick)="goToCreate()"
-  />
+  <app-confirm-modal
+    [isOpen]="showRestoreConfirmModal()"
+    [title]="restoreConfirmTitle"
+    [description]="restoreConfirmDescription"
+    confirmText="Restore"
+    cancelText="Close"
+    (confirmed)="onConfirmRestoreForm()"
+    (closed)="closeRestoreConfirmModal()"
+  ></app-confirm-modal>
+
+  <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <h2 class="m-0 text-[20px] font-semibold font-ibm text-gray-900">Forms</h2>
+
+    <div class="flex flex-wrap items-center gap-3 sm:justify-end">
+      <label class="sr-only" for="form-templates-status-filter">Template status</label>
+      <div class="relative inline-flex min-w-[9.5rem]">
+        <select
+          id="form-templates-status-filter"
+          class="w-full appearance-none rounded-lg border border-gray-200 bg-white py-2 pl-3.5 pr-9 text-sm font-medium text-gray-700 shadow-sm outline-none transition hover:border-[#ea580c]/50 focus:border-[#ea580c] focus:ring-2 focus:ring-[#ea580c]/20 font-ibm"
+          [ngModel]="statusFilter()"
+          (ngModelChange)="onStatusFilterChange($event)"
+        >
+          @for (filter of statusFilters; track filter.value) {
+            <option [ngValue]="filter.value">{{ filter.label }}</option>
+          }
+        </select>
+        <svg
+          class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+        >
+          <path d="m6 9 6 6 6-6"></path>
+        </svg>
+      </div>
+
+      @if (showCreateButton()) {
+        <button type="button" class="btn btn--cancel" (click)="goToCreate()">
+          + Create Form
+        </button>
+      }
+    </div>
+  </div>
 
   @if (hasFilterFields()) {
     <app-global-filter
@@ -38,7 +77,7 @@
     </app-global-filter>
   }
 
-  @if (hasForms() && canDelete && selectedCount() > 0) {
+  @if (hasForms() && showDeleteActions() && selectedCount() > 0) {
     <div class="mt-5 flex items-center justify-between gap-3 rounded bg-white px-4 py-3 shadow">
       <span class="text-sm font-ibm text-gray-500">
         Selected: {{ selectedCount() }}
@@ -59,7 +98,7 @@
     <table class="w-full text-left text-sm font-ibm">
       <thead class="bg-gray-200 text-gray-700">
         <tr>
-          @if (canDelete) {
+          @if (showDeleteActions()) {
             <th class="px-4 py-3 w-10">
               <input
                 type="checkbox"
@@ -73,7 +112,7 @@
           }
           <th class="px-4 py-3">Form Name</th>
           <th class="px-4 py-3">Created At</th>
-          @if (canEdit || canDelete) {
+          @if (showRowActions()) {
             <th class="px-4 py-3 text-right">Actions</th>
           }
         </tr>
@@ -82,7 +121,7 @@
       <tbody>
         @for (form of forms(); track form.id) {
           <tr class="border-b hover:bg-gray-50" [class.bg-orange-50]="isSelected(form)">
-            @if (canDelete) {
+            @if (showDeleteActions()) {
               <td class="px-4 py-3">
                 <input
                   type="checkbox"
@@ -95,9 +134,22 @@
             }
             <td class="px-4 py-3">{{ form.formName }}</td>
             <td class="px-4 py-3">{{ form.createdAt | date: 'medium' }}</td>
-            @if (canEdit || canDelete) {
+            @if (showRowActions()) {
               <td class="px-4 py-3 text-right">
-                @if (canEdit) {
+                @if (isArchivedView() && canView) {
+                  <button
+                    type="button"
+                    class="inline-flex items-center justify-center rounded-md p-1.5 text-gray-600 transition-colors hover:bg-gray-100"
+                    aria-label="View form"
+                    (click)="goToView(form)"
+                  >
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                  </button>
+                }
+                @if (!isArchivedView() && canEdit) {
                   <button
                     type="button"
                     class="inline-flex items-center justify-center rounded-md p-1.5 text-[#ea580c] transition-colors hover:bg-orange-50"
@@ -110,7 +162,20 @@
                     </svg>
                   </button>
                 }
-                @if (canDelete) {
+                @if (isArchivedView() && canRestore) {
+                  <button
+                    type="button"
+                    class="inline-flex items-center justify-center rounded-md p-1.5 text-emerald-600 transition-colors hover:bg-emerald-50"
+                    aria-label="Restore form"
+                    (click)="restoreForm(form)"
+                  >
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                      <path d="M3 3v5h5"></path>
+                    </svg>
+                  </button>
+                }
+                @if (!isArchivedView() && canDelete) {
                   <button
                     type="button"
                     class="inline-flex items-center justify-center rounded-md p-1.5 text-red-500 transition-colors hover:bg-red-50"
@@ -133,10 +198,14 @@
 
     @if (!loading() && !hasForms()) {
       <div class="text-center py-10">
-        <p class="text-gray-400 text-sm font-ibm">No forms created yet</p>
-        <button type="button" class="create-link font-ibm" (click)="goToCreate()">
-          Create your first form
-        </button>
+        <p class="text-gray-400 text-sm font-ibm">
+          {{ isArchivedView() ? 'No archived forms found' : 'No forms created yet' }}
+        </p>
+        @if (!isArchivedView() && canCreate) {
+          <button type="button" class="create-link font-ibm" (click)="goToCreate()">
+            Create your first form
+          </button>
+        }
       </div>
     }
   </div>

@@ -202,7 +202,11 @@ function formTemplateNamesForAction(action: string): string[] {
     case 'delete':
       return [PERMISSIONS.DATA_COLLECTION.DELETE_TEMPLATE];
     case 'activate':
-      return [PERMISSIONS.DATA_COLLECTION.ACTIVATE_TEMPLATE];
+    case 'restore':
+      return [
+        PERMISSIONS.DATA_COLLECTION.ACTIVATE_TEMPLATE,
+        PERMISSIONS.DATA_COLLECTION.RESTORE_TEMPLATE,
+      ];
     case 'archive':
       return [PERMISSIONS.DATA_COLLECTION.ARCHIVE_TEMPLATE];
     default:
@@ -236,7 +240,11 @@ function formModuleNamesForAction(action: string): string[] {
     case 'publish':
       return [PERMISSIONS.FORM_BUILDER.PUBLISH];
     case 'activate':
-      return [PERMISSIONS.DATA_COLLECTION.ACTIVATE_TEMPLATE];
+    case 'restore':
+      return [
+        PERMISSIONS.DATA_COLLECTION.ACTIVATE_TEMPLATE,
+        PERMISSIONS.DATA_COLLECTION.RESTORE_TEMPLATE,
+      ];
     case 'archive':
       return [PERMISSIONS.DATA_COLLECTION.ARCHIVE_TEMPLATE];
     case 'submit':
@@ -265,7 +273,11 @@ function dataCollectionNamesForAction(action: string): string[] {
     case 'delete':
       return [PERMISSIONS.DATA_COLLECTION.DELETE_TEMPLATE];
     case 'activate':
-      return [PERMISSIONS.DATA_COLLECTION.ACTIVATE_TEMPLATE];
+    case 'restore':
+      return [
+        PERMISSIONS.DATA_COLLECTION.ACTIVATE_TEMPLATE,
+        PERMISSIONS.DATA_COLLECTION.RESTORE_TEMPLATE,
+      ];
     case 'archive':
       return [PERMISSIONS.DATA_COLLECTION.ARCHIVE_TEMPLATE];
     case 'submit':
@@ -356,6 +368,7 @@ function normalizeAction(raw: string): string {
     complete: 'complete',
     review: 'review',
     activate: 'activate',
+    restore: 'restore',
     archive: 'archive',
   };
   return aliases[action] || action;

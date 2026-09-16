@@ -175,6 +175,7 @@ export class TenantPermissionService {
         'edit-dc-template',
         'delete-dc-template',
         'activate-dc-template',
+        'restore-dc-template',
         'archive-dc-template',
       );
     }
