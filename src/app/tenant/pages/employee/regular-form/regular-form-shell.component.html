@@ -44,7 +44,8 @@
   <div class="regular-form-shell__body">
     <div class="regular-form-shell__content">
       <app-dynamic-form
-        [fields]="fields()"
+        [fields]="engineFields()"
+        [layoutSections]="layoutSections()"
         [enableLocationDependencies]="true"
         [typeformMode]="false"
       ></app-dynamic-form>

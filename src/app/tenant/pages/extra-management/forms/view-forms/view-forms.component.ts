@@ -1,4 +1,4 @@
-import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, HostListener, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -8,7 +8,10 @@ import { environment } from '../../../../../../environments/environment';
 import { SharedModule } from '../../../../../shared/shared.module';
 import { GlobalFilterField } from '../../../../../shared/global-filter/global-filter';
 import { pruneFiltersByAllowedKeys } from '../../../../../shared/dynamic-listing/dynamic-listing.helpers';
-import { TenantFormsService } from '../services/tenant-forms.service';
+import {
+  TenantFormStatusFilter,
+  TenantFormsService,
+} from '../services/tenant-forms.service';
 import { SavedDynamicForm } from '../models/dynamic-form.models';
 import { TenantPermissionService } from '../../../../../services/tenant-permission.service';
 import { PERMISSIONS } from '../../../../../constants/permissions';
@@ -16,6 +19,11 @@ import { PERMISSIONS } from '../../../../../constants/permissions';
 const FORM_FILTER_FIELDS: GlobalFilterField[] = [
   { key: 'name', label: 'Form Name', placeholder: 'Search by form name', type: 'text' },
 ];
+
+interface StatusFilterOption {
+  label: string;
+  value: TenantFormStatusFilter;
+}
 
 @Component({
   selector: 'app-view-forms',
@@ -25,6 +33,14 @@ const FORM_FILTER_FIELDS: GlobalFilterField[] = [
   styleUrl: './view-forms.component.scss',
 })
 export class ViewFormsComponent implements OnInit {
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.status-filter-dropdown')) {
+      this.statusDropdownOpen.set(false);
+    }
+  }
+
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly formsService = inject(TenantFormsService);
@@ -35,12 +51,25 @@ export class ViewFormsComponent implements OnInit {
   readonly canCreate = this.permissionService.hasPermissionName(
     PERMISSIONS.DATA_COLLECTION.CREATE_TEMPLATE,
   );
+  readonly canView = this.permissionService.hasPermissionName(
+    PERMISSIONS.DATA_COLLECTION.VIEW_TEMPLATE,
+  );
   readonly canEdit = this.permissionService.hasPermissionName(
     PERMISSIONS.DATA_COLLECTION.EDIT_TEMPLATE,
   );
   readonly canDelete = this.permissionService.hasPermissionName(
     PERMISSIONS.DATA_COLLECTION.DELETE_TEMPLATE,
   );
+  /** Permission id 37 — Restore (legacy Activate slug still accepted). */
+  readonly canRestore = this.permissionService.hasAnyPermission(
+    PERMISSIONS.DATA_COLLECTION.RESTORE_TEMPLATE,
+    PERMISSIONS.DATA_COLLECTION.ACTIVATE_TEMPLATE,
+  );
+
+  readonly statusFilters: StatusFilterOption[] = [
+    { label: 'Active', value: 'active' },
+    { label: 'Archived', value: 'archived' },
+  ];
 
   readonly forms = signal<SavedDynamicForm[]>([]);
   readonly loading = signal(false);
@@ -49,14 +78,38 @@ export class ViewFormsComponent implements OnInit {
   readonly lastPage = signal(1);
   readonly filterFields = signal<GlobalFilterField[]>([]);
   readonly hasFilterFields = computed(() => this.filterFields().length > 0);
+  /** Always sent to the listing API as `status`. */
+  readonly statusFilter = signal<TenantFormStatusFilter>('active');
+  readonly statusDropdownOpen = signal(false);
+  readonly isArchivedView = computed(() => this.statusFilter() === 'archived');
+  readonly statusFilterLabel = computed(
+    () =>
+      this.statusFilters.find((option) => option.value === this.statusFilter())?.label ??
+      'Active',
+  );
 
   readonly showPagination = computed(() => !this.loading() && this.forms().length > 0);
+
+  readonly showCreateButton = computed(() => this.canCreate && !this.isArchivedView());
+  readonly showDeleteActions = computed(() => this.canDelete && !this.isArchivedView());
+  readonly showRowActions = computed(() => {
+    if (this.isArchivedView()) {
+      return this.canView || this.canRestore;
+    }
+    return this.canEdit || this.canDelete;
+  });
 
   readonly deleting = signal(false);
   readonly showDeleteConfirmModal = signal(false);
   readonly deleteConfirmTitle = 'Delete Form';
   readonly deleteConfirmDescription =
     'Please confirm that you want to delete this form. All related information will be permanently removed.';
+
+  readonly restoring = signal(false);
+  readonly showRestoreConfirmModal = signal(false);
+  readonly restoreConfirmTitle = 'Restore Form';
+  readonly restoreConfirmDescription =
+    'Please confirm that you want to restore this form to the active list.';
 
   readonly selectedIds = signal<number[]>([]);
   readonly selectedCount = computed(() => this.selectedIds().length);
@@ -82,6 +135,7 @@ export class ViewFormsComponent implements OnInit {
 
   private readonly defaultLimit = environment.limit;
   private pendingDeleteId: number | null = null;
+  private pendingRestoreId: number | null = null;
   private filters: Record<string, unknown> = {};
 
   ngOnInit(): void {
@@ -93,11 +147,16 @@ export class ViewFormsComponent implements OnInit {
     this.loading.set(true);
 
     const allowedKeys = this.getAllowedFilterKeys();
-    const activeFilters = pruneFiltersByAllowedKeys(this.filters, allowedKeys);
+    const fieldFilters = pruneFiltersByAllowedKeys(this.filters, allowedKeys);
+    const requestFilters: Record<string, unknown> = {
+      ...fieldFilters,
+      status: this.statusFilter(),
+    };
 
-    const apiCall = Object.keys(activeFilters).length
-      ? this.formsService.searchForms(activeFilters, this.defaultLimit)
-      : this.formsService.getForms(page, this.defaultLimit);
+    const hasFieldFilters = Object.keys(fieldFilters).length > 0;
+    const apiCall = hasFieldFilters
+      ? this.formsService.searchForms(requestFilters, this.defaultLimit, page)
+      : this.formsService.getForms(page, this.defaultLimit, requestFilters);
 
     apiCall
       .pipe(
@@ -115,6 +174,22 @@ export class ViewFormsComponent implements OnInit {
           this.selectedIds.set([]);
         },
       });
+  }
+
+  onStatusFilterChange(value: TenantFormStatusFilter): void {
+    if (this.statusFilter() === value) {
+      this.statusDropdownOpen.set(false);
+      return;
+    }
+    this.statusFilter.set(value);
+    this.statusDropdownOpen.set(false);
+    this.selectedIds.set([]);
+    this.page.set(1);
+    this.loadForms(1);
+  }
+
+  toggleStatusDropdown(): void {
+    this.statusDropdownOpen.update((open) => !open);
   }
 
   prevPage(): void {
@@ -154,6 +229,13 @@ export class ViewFormsComponent implements OnInit {
     this.router.navigate(['/dynamic-forms', 'create']);
   }
 
+  goToView(form: SavedDynamicForm): void {
+    if (!form.id) {
+      return;
+    }
+    this.router.navigate(['edit', form.id], { relativeTo: this.route });
+  }
+
   goToEdit(form: SavedDynamicForm): void {
     if (!form.id) {
       return;
@@ -162,7 +244,7 @@ export class ViewFormsComponent implements OnInit {
   }
 
   deleteForm(form: SavedDynamicForm): void {
-    if (!form.id) {
+    if (!form.id || this.isArchivedView()) {
       return;
     }
 
@@ -189,7 +271,7 @@ export class ViewFormsComponent implements OnInit {
         next: () => {
           this.toastr.success('Form deleted successfully');
           this.selectedIds.set([]);
-          this.reloadAfterDelete(this.forms().length === 1);
+          this.reloadAfterMutation(this.forms().length === 1);
         },
         error: (err) => {
           this.toastr.error(err?.error?.message || 'Failed to delete form');
@@ -200,6 +282,47 @@ export class ViewFormsComponent implements OnInit {
   closeDeleteConfirmModal(): void {
     this.showDeleteConfirmModal.set(false);
     this.pendingDeleteId = null;
+  }
+
+  restoreForm(form: SavedDynamicForm): void {
+    if (!form.id || !this.canRestore) {
+      return;
+    }
+
+    this.pendingRestoreId = Number(form.id);
+    this.showRestoreConfirmModal.set(true);
+  }
+
+  onConfirmRestoreForm(): void {
+    const id = this.pendingRestoreId;
+    if (!id) {
+      return;
+    }
+
+    this.closeRestoreConfirmModal();
+    this.restoring.set(true);
+
+    this.formsService
+      .restoreTemplate(id)
+      .pipe(
+        finalize(() => this.restoring.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: () => {
+          this.toastr.success('Form restored successfully');
+          this.selectedIds.set([]);
+          this.reloadAfterMutation(this.forms().length === 1);
+        },
+        error: (err) => {
+          this.toastr.error(err?.error?.message || 'Failed to restore form');
+        },
+      });
+  }
+
+  closeRestoreConfirmModal(): void {
+    this.showRestoreConfirmModal.set(false);
+    this.pendingRestoreId = null;
   }
 
   toggleSelect(form: SavedDynamicForm): void {
@@ -238,7 +361,7 @@ export class ViewFormsComponent implements OnInit {
   }
 
   openBulkDeleteConfirm(): void {
-    if (!this.hasSelection()) {
+    if (!this.hasSelection() || this.isArchivedView()) {
       return;
     }
 
@@ -271,7 +394,7 @@ export class ViewFormsComponent implements OnInit {
         next: () => {
           this.toastr.success('Forms deleted successfully');
           this.selectedIds.set([]);
-          this.reloadAfterDelete(allVisibleSelected);
+          this.reloadAfterMutation(allVisibleSelected);
         },
         error: (err) => {
           this.toastr.error(err?.error?.message || 'Failed to delete forms');
@@ -279,7 +402,7 @@ export class ViewFormsComponent implements OnInit {
       });
   }
 
-  private reloadAfterDelete(pageEmpty: boolean): void {
+  private reloadAfterMutation(pageEmpty: boolean): void {
     if (pageEmpty && this.page() > 1) {
       this.loadForms(this.page() - 1);
     } else {

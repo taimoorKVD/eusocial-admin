@@ -6,7 +6,8 @@ import {
   getCheckboxValues,
   getListingImageSrcs,
 } from '../../../../shared/dynamic-listing/dynamic-listing.helpers';
-import { getSignatureDisplayUrl } from '../../../../shared/dynamic-form/signature-field.utils';
+import { getSignatureDisplayUrl, hasSignatureValue } from '../../../../shared/dynamic-form/signature-field.utils';
+import { filterAnswerImages } from '../../../form-builder/utils/image-field.utils';
 import { buildVisibleQuestionIds } from './typeform-question-navigator';
 
 export interface TypeformReviewImagePreview {
@@ -78,6 +79,60 @@ export function formatTypeformReviewValue(
   };
 
   return formatListingCellValue(record, field);
+}
+
+/**
+ * Voice Reply "Heard" panel text for the current field value.
+ * Display-only — does not change FormControl / submission shapes.
+ */
+export function formatHeardDisplayValue(
+  field: DynamicField,
+  value: unknown,
+): string {
+  if (value === null || value === undefined || value === '') {
+    return '';
+  }
+
+  if (field.type === 'image') {
+    return formatHeardImageValue(value);
+  }
+
+  if (field.type === 'signature') {
+    return hasSignatureValue(value) ? 'Signature captured' : '';
+  }
+
+  const formatted = formatTypeformReviewValue(field, { [field.name]: value });
+  if (!formatted.trim() || formatted === '—') {
+    return '';
+  }
+
+  // Guard against accidental object stringification from listing fallbacks.
+  if (formatted.includes('[object Object]')) {
+    return '';
+  }
+
+  return formatted;
+}
+
+function formatHeardImageValue(value: unknown): string {
+  const images = filterAnswerImages(value);
+  if (!images.length) {
+    return '';
+  }
+
+  const fileNames = images
+    .map((image) => String(image.fileName || '').trim())
+    .filter(Boolean);
+
+  if (images.length === 1) {
+    return fileNames[0] || 'Image uploaded';
+  }
+
+  if (fileNames.length === images.length && fileNames.length <= 3) {
+    return fileNames.join(', ');
+  }
+
+  return `${images.length} images uploaded`;
 }
 
 export function getTypeformReviewImagePreviews(

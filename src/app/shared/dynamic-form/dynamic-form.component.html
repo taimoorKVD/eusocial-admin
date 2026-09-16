@@ -6,14 +6,26 @@
   <div
     class="grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-6"
     [class.md:grid-cols-1]="typeformMode()"
+    [class.sm:grid-cols-2]="isSectionedLayout()"
+    [class.lg:grid-cols-3]="isSectionedLayout()"
+    [class.xl:grid-cols-4]="isSectionedLayout()"
   >
-    @for (field of sortedFields(); track field.id + ':' + field.name) {
-      @if (isFieldVisible(field) && shouldRenderField(field)) {
-      <div
-        [class.col-span-2]="typeformMode() || isFullWidthField(field)"
-        class="field-shell"
-      >
-        <div class="form-group">
+    @for (item of layoutItems(); track item.key) {
+      @if (item.kind === 'heading') {
+        <!-- Sections -> rows -> fields (Employee Portal Regular Form only). -->
+        <div class="rf-form-section-heading col-span-full">
+          <h2 class="rf-form-section__title">{{ item.name }}</h2>
+        </div>
+      } @else {
+        @let field = item.field;
+        @if (isFieldVisible(field) && shouldRenderField(field)) {
+        <div
+          [class.col-span-2]="typeformMode() || (!isSectionedLayout() && isFullWidthField(field))"
+          [class.col-span-full]="isSectionedLayout() && isFullWidthField(field)"
+          [class.rf-row-start]="isSectionedLayout() && item.rowStart"
+          class="field-shell"
+        >
+          <div class="form-group">
           @if (field.type !== 'image' && !typeformMode()) {
             <label class="field-label" [attr.for]="field.id">
               {{ field.label }}
@@ -768,7 +780,7 @@
                     [id]="field.id"
                     [accept]="getImageAcceptAttribute()"
                     [multiple]="isImageMultiple(field)"
-                    class="sr-only"
+                    class="image-file-input"
                     [disabled]="!canAddAnswerImages(field)"
                     (change)="onAnswerImagesSelected($event, field)"
                   />
@@ -852,8 +864,9 @@
           }
         </div>
       </div>
+        }
+        }
       }
-    }
   </div>
 </form>
 

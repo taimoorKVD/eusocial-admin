@@ -66,7 +66,10 @@ export const PERMISSIONS = {
     VIEW_TEMPLATE: 'view-dc-template',
     EDIT_TEMPLATE: 'edit-dc-template',
     DELETE_TEMPLATE: 'delete-dc-template',
+    /** Permission id 37 — API action "Restore" (legacy label "Activate"). */
     ACTIVATE_TEMPLATE: 'activate-dc-template',
+    /** Alias for id 37 when the API sends action name "Restore". */
+    RESTORE_TEMPLATE: 'restore-dc-template',
     ARCHIVE_TEMPLATE: 'archive-dc-template',
 
     VIEW_ASSIGNMENT: 'view-dc-assignment',

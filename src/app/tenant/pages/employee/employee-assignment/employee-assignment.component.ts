@@ -22,6 +22,7 @@ import {
   EmployeeAssignmentSectionView,
 } from '../../../../interfaces/employee-assignment';
 import { DynamicField, DynamicFormValue } from '../../../../interfaces/dynamic-field';
+import { FormField } from '../../../form-builder/models/form-field.model';
 import { mapAssignmentSectionsToBuilder } from '../utils/assignment-form.mapper';
 import { filterAnswerImages } from '../../../form-builder/utils/image-field.utils';
 import { normalizeSignatureValue } from '../../../../shared/dynamic-form/signature-field.utils';
@@ -414,10 +415,48 @@ export class EmployeeAssignmentComponent implements OnInit {
           map((fields) => ({
             ...section,
             fields: this.withAnswersAndReadonly(fields, answers, readonly),
+            rows: this.buildSectionRows(
+              section.builderRows,
+              fields,
+              answers,
+              readonly,
+            ),
           })),
         ),
       ),
     );
+  }
+
+  /**
+   * Regroups resolved dynamic fields back into the API's logical rows by id
+   * (fields hidden by conditional logic are dropped from their row naturally).
+   */
+  private buildSectionRows(
+    builderRows: FormField[][],
+    fields: DynamicField[],
+    answers: Record<string, unknown>,
+    readonly: boolean,
+  ): DynamicField[][] {
+    const byId = new Map<string, DynamicField>();
+    for (const field of fields || []) {
+      if (field.id) {
+        byId.set(field.id, field);
+      }
+    }
+
+    return (builderRows || [])
+      .map((row) =>
+        (row || [])
+          .map((builderField) => {
+            const resolved = byId.get(builderField.id);
+            if (!resolved) {
+              return null;
+            }
+            return this.withAnswersAndReadonly([resolved], answers, readonly)[0];
+          })
+          .filter((field): field is DynamicField => !!field),
+      )
+      .filter((row) => row.length > 0);
   }
 
   private withAnswersAndReadonly(

@@ -49,6 +49,11 @@ export interface EmployeeAssignmentSectionView {
   name: string;
   builderFields: FormField[];
   fields: DynamicField[];
+  /**
+   * Resolved fields regrouped by the API's logical rows (section.rows -> row.fields).
+   * Falls back to a single row of `fields` when no row structure is available.
+   */
+  rows?: DynamicField[][];
 }
 
 export interface EmployeeSubmissionPayload {

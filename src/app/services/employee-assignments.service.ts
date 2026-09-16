@@ -19,7 +19,8 @@ export class EmployeeAssignmentsService {
   getMyWork(options: {
     page?: number;
     limit?: number;
-    status?: EmployeeAssignmentStatus | '';
+    status?: EmployeeAssignmentStatus | 'today' | '';
+    date?: string | null;
   } = {}): Observable<EmployeeAssignmentPage> {
     const page = options.page ?? 1;
     const limit = options.limit ?? environment.limit;
@@ -30,6 +31,11 @@ export class EmployeeAssignmentsService {
 
     if (options.status) {
       params = params.set('status', options.status);
+    }
+
+    const date = options.date?.trim();
+    if (date) {
+      params = params.set('date', date);
     }
 
     return this.http.get<unknown>(`${this.apiUrl}/my-work`, { params }).pipe(

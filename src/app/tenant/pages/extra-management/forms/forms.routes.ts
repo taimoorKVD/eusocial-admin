@@ -21,6 +21,11 @@ export const DYNAMIC_FORMS_ROUTES: Routes = [
     path: 'edit/:id',
     component: CreateFormComponent,
     canActivate: [permissionGuard],
-    data: { permission: PERMISSIONS.DATA_COLLECTION.EDIT_TEMPLATE },
+    data: {
+      anyPermission: [
+        PERMISSIONS.DATA_COLLECTION.VIEW_TEMPLATE,
+        PERMISSIONS.DATA_COLLECTION.EDIT_TEMPLATE,
+      ],
+    },
   },
 ];

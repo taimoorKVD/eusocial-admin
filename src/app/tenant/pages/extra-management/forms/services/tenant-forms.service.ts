@@ -1,8 +1,11 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../../../../../environments/environment';
 import { SavedDynamicForm, createId } from '../models/dynamic-form.models';
+
+/** Template lifecycle statuses accepted by listing/search filters. */
+export type TenantFormStatusFilter = 'active' | 'archived';
 
 /** Raw item shape from GET /api/data-collection/templates. */
 export interface TenantFormsApiItem {
@@ -54,11 +57,19 @@ export class TenantFormsService {
 
   constructor(private http: HttpClient) {}
 
-  getForms(page: number = 1, limit?: number): Observable<TenantFormsPagedResult> {
+  getForms(
+    page: number = 1,
+    limit?: number,
+    filters: Record<string, unknown> = {},
+  ): Observable<TenantFormsPagedResult> {
+    let params = new HttpParams().set('page', String(page));
+    if (limit) {
+      params = params.set('limit', String(limit));
+    }
+    params = this.appendFilterParams(params, filters);
+
     return this.http
-      .get<TenantFormsApiResponse | TenantFormsApiItem[]>(
-        `${this.apiUrl}?page=${page}${limit ? `&limit=${limit}` : ''}`,
-      )
+      .get<TenantFormsApiResponse | TenantFormsApiItem[]>(this.apiUrl, { params })
       .pipe(
         map((response) => {
           const meta =
@@ -79,16 +90,18 @@ export class TenantFormsService {
   searchForms(
     filters: Record<string, unknown>,
     limit?: number,
+    page: number = 1,
   ): Observable<TenantFormsPagedResult> {
-    const params = new URLSearchParams({
-      ...(limit ? { limit: limit.toString() } : {}),
-      ...(filters as Record<string, string>),
-    });
+    let params = new HttpParams().set('page', String(page));
+    if (limit) {
+      params = params.set('limit', String(limit));
+    }
+    params = this.appendFilterParams(params, filters);
 
     return this.http
-      .get<TenantFormsApiResponse | TenantFormsApiItem[]>(
-        `${this.apiUrl}/search?${params.toString()}`,
-      )
+      .get<TenantFormsApiResponse | TenantFormsApiItem[]>(`${this.apiUrl}/search`, {
+        params,
+      })
       .pipe(
         map((response) => {
           const meta =
@@ -103,7 +116,7 @@ export class TenantFormsService {
           return {
             forms: this.normalizeResponse(response),
             total: Number(count ?? meta?.total ?? 0),
-            page: Number(meta?.page ?? 1),
+            page: Number(meta?.page ?? page),
             lastPage: Number(meta?.lastPage ?? 1),
           };
         }),
@@ -137,6 +150,29 @@ export class TenantFormsService {
     return this.http.delete<TenantFormsApiResponse>(`${this.apiUrl}/bulk`, {
       body: payload,
     });
+  }
+
+  /** Restore an archived template. */
+  restoreTemplate(id: number): Observable<TenantFormsApiResponse> {
+    return this.http.post<TenantFormsApiResponse>(`${this.apiUrl}/${id}/restore`, {});
+  }
+
+  private appendFilterParams(
+    params: HttpParams,
+    filters: Record<string, unknown>,
+  ): HttpParams {
+    let next = params;
+    for (const [key, value] of Object.entries(filters)) {
+      if (value == null) {
+        continue;
+      }
+      const text = String(value).trim();
+      if (!text) {
+        continue;
+      }
+      next = next.set(key, text);
+    }
+    return next;
   }
 
   private extractItem(response: TenantFormsApiResponse): TenantFormsApiItem {

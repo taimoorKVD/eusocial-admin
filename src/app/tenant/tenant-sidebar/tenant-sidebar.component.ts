@@ -121,9 +121,9 @@ export class TenantSidebarComponent {
       || this.permissions.hasPermissionName(PERMISSIONS.DATA_COLLECTION.COMPLETE_ASSIGNMENT);
   }
 
+  /** History page is always available in the employee portal (no History-specific permission). */
   canSeeHistory(): boolean {
-    return this.permissions.hasPermissionName(PERMISSIONS.DATA_COLLECTION.VIEW_SUBMISSION)
-      || this.permissions.hasPermissionName(PERMISSIONS.DATA_COLLECTION.REVIEW_SUBMISSION);
+    return true;
   }
 
   /** Admin-only setup entries (still gated by permissions for tenant_admin). */

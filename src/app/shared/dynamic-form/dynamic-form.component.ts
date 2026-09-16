@@ -129,6 +129,29 @@ import {
   VoiceApplyResult,
 } from '../voice/voice-field.adapter';
 
+export interface DynamicFormSectionLayout {
+  id: string;
+  name: string;
+  rows: DynamicField[][];
+}
+
+export interface DynamicFormSectionHeadingItem {
+  kind: 'heading';
+  id: string;
+  name: string;
+  key: string;
+}
+
+export interface DynamicFormFieldItem {
+  kind: 'field';
+  field: DynamicField;
+  /** True when this field starts a new logical API row. */
+  rowStart: boolean;
+  key: string;
+}
+
+export type DynamicFormLayoutItem = DynamicFormSectionHeadingItem | DynamicFormFieldItem;
+
 @Component({
   selector: 'app-dynamic-form',
   standalone: false,
@@ -156,7 +179,59 @@ export class DynamicFormComponent implements OnDestroy {
   /** When true, only the field matching `activeFieldId` is rendered (Typeform mode). */
   readonly typeformMode = input(false);
   readonly activeFieldId = input<string | null>(null);
+  /**
+   * Optional sections -> rows -> fields layout, used ONLY by the Employee
+   * Portal Regular Form. When empty (default) the classic flat grid renders
+   * exactly as before, so every other consumer is unaffected.
+   */
+  readonly layoutSections = input<DynamicFormSectionLayout[]>([]);
   readonly valueChange = output<DynamicFormValue>();
+
+  /**
+   * True when the sectioned Regular Form layout is active. When false the
+   * classic flat grid (the default for Tenant Admin and every other consumer)
+   * renders exactly as before.
+   */
+  readonly isSectionedLayout = computed(() => this.layoutSections().length > 0);
+
+  /**
+   * Single ordered stream of grid items: section headings interleaved with the
+   * fields from each section/row. Rendered directly inside the `[formGroup]`
+   * form so every `formControlName` stays within the existing FormGroup context.
+   * When not sectioned it is simply the flat field list (classic behavior).
+   */
+  readonly layoutItems = computed<DynamicFormLayoutItem[]>(() => {
+    const sections = this.layoutSections();
+    if (!sections.length) {
+      return this.sortedFields().map((field) => ({
+        kind: 'field' as const,
+        field,
+        rowStart: false,
+        key: `field:${field.id}:${field.name}`,
+      }));
+    }
+
+    const items: DynamicFormLayoutItem[] = [];
+    for (const section of sections) {
+      items.push({
+        kind: 'heading',
+        id: section.id,
+        name: section.name,
+        key: `heading:${section.id}`,
+      });
+      for (const row of section.rows) {
+        row.forEach((field, index) => {
+          items.push({
+            kind: 'field',
+            field,
+            rowStart: index === 0,
+            key: `field:${field.id}:${field.name}`,
+          });
+        });
+      }
+    }
+    return items;
+  });
 
   form!: FormGroup;
   readonly sortedFields = signal<DynamicField[]>([]);

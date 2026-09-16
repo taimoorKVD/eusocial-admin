@@ -534,10 +534,35 @@
 
   .image-reference-section,
   .image-answer-section {
+    position: relative;
     border: 1px solid #e2e8f0;
     border-radius: 0.9rem;
     background: #fff;
     padding: 0.85rem;
+  }
+
+  /**
+   * Visually hidden file input for the image field.
+   * Must stay position:absolute for a11y/hit-target patterns, but MUST be
+   * contained by .image-answer-section (position:relative) with an explicit
+   * top/left. Uncontained absolute <input type="file"> can inflate
+   * overflow:auto ancestors (double scrollbar / blank footer space) because
+   * file controls keep a large intrinsic size in Chromium.
+   */
+  .image-file-input {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+    opacity: 0;
   }
 
   .image-reference-section {

@@ -28,7 +28,7 @@
       class="mb-4 text-sm font-medium text-[#FF9015] hover:underline font-ibm"
       (click)="goBack()"
     >
-      ← Back to My Forms
+      ← Back to My Tasks
     </button>
   }
 
@@ -114,7 +114,7 @@
             class="inline-flex min-h-[3rem] w-full items-center justify-center rounded-xl bg-[#FF9015] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#e57f0f] font-ibm sm:w-auto sm:text-base"
             (click)="goBack()"
           >
-            Return to My Forms
+            Return to My Tasks
           </button>
         </div>
       </div>
@@ -149,10 +149,10 @@
       ></app-completed-form-view>
     } @else if (showActiveForm() && interactionMode(); as mode) {
       @if (mode === 'normal') {
-        <!-- Normal Form: traditional all-fields layout (direct submit, no Review). -->
+        <!-- Regular Form: dedicated Employee Portal component — full sections -> rows -> fields. -->
         <app-regular-form-shell
           class="block h-full min-h-0"
-          [fields]="mergedFields()"
+          [sections]="sections()"
           [formTitle]="formTitle()"
           [dueDateLabel]="current.dueDate ? (current.dueDate | date: 'mediumDate') : ''"
           [canFill]="canFill()"
