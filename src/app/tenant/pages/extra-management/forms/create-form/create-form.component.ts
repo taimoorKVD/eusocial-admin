@@ -586,7 +586,7 @@ export class CreateFormComponent implements OnInit {
 
   private loadJobPositions(): void {
     this.jobPositionService
-      .getJobPositions(1, 9999)
+      .getJobPositions(1)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (res: any) => {
@@ -614,7 +614,7 @@ export class CreateFormComponent implements OnInit {
           const nameFieldId = nameField?.id || null;
 
           this.userService
-            .getUsers(1, 9999)
+            .getUsers(1)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
               next: (res: any) => {
@@ -636,7 +636,7 @@ export class CreateFormComponent implements OnInit {
         },
         error: () => {
           this.userService
-            .getUsers(1, 9999)
+            .getUsers(1)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
               next: (res: any) => {
@@ -739,6 +739,8 @@ export class CreateFormComponent implements OnInit {
           : undefined,
       rangeMinDate: (field as any)?.rangeMinDate,
       rangeMaxDate: (field as any)?.rangeMaxDate,
+      minDate: type === 'date' ? (field as any)?.minDate : undefined,
+      maxDate: type === 'date' ? (field as any)?.maxDate : undefined,
       rangePlaceholderFrom: (field as any)?.rangePlaceholderFrom,
       rangePlaceholderTo: (field as any)?.rangePlaceholderTo,
       timeFormat:
@@ -1194,13 +1196,35 @@ export class CreateFormComponent implements OnInit {
     this.openFieldModal({ sectionId: section.id, rowId });
   }
 
-  openFieldModal(target: { sectionId: string; rowId: string }): void {
+  /**
+   * Open Form Builder on the field's row and select it in Customize mode
+   * (same path as clicking the field inside the builder canvas).
+   */
+  editSectionField(
+    section: CustomFormSection,
+    rowId: string,
+    field: FormFieldConfig,
+  ): void {
+    this.openFieldModal({ sectionId: section.id, rowId }, field.id);
+  }
+
+  openFieldModal(
+    target: { sectionId: string; rowId: string },
+    selectFieldId?: string,
+  ): void {
     this.pendingFieldTarget.set(target);
     this.initializeRowBuilderFields();
     this.builderSchema.set([]);
+    this.fieldBuilderOpen.set(true);
+
+    if (selectFieldId && this.rowBuilderFields().some((item) => item.id === selectFieldId)) {
+      this.selectedFieldId.set(selectFieldId);
+      this.builderActiveTab.set('settings');
+      return;
+    }
+
     this.selectedFieldId.set(null);
     this.builderActiveTab.set('fields');
-    this.fieldBuilderOpen.set(true);
   }
 
   closeFieldBuilder(): void {

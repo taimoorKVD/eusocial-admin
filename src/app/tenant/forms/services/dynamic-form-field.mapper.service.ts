@@ -158,6 +158,8 @@ export class DynamicFormFieldMapperService {
           : undefined,
       rangeMinDate: field.rangeMinDate,
       rangeMaxDate: field.rangeMaxDate,
+      minDate: type === 'date' ? field.minDate : undefined,
+      maxDate: type === 'date' ? field.maxDate : undefined,
       rangePlaceholderFrom: field.rangePlaceholderFrom,
       rangePlaceholderTo: field.rangePlaceholderTo,
       timeFormat:

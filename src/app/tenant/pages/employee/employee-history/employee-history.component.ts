@@ -90,6 +90,40 @@ export class EmployeeHistoryComponent implements OnInit {
     }
   }
 
+  modeLabel(mode: string | null | undefined): string {
+    const raw = String(mode ?? '')
+      .trim()
+      .toLowerCase();
+    if (raw === 'shared') {
+      return 'Shared';
+    }
+    if (raw === 'individual') {
+      return 'Individual';
+    }
+    if (!raw) {
+      return '—';
+    }
+    return raw.replace(/\b\w/g, (ch) => ch.toUpperCase());
+  }
+
+  modeClass(mode: string | null | undefined): string {
+    const raw = String(mode ?? '')
+      .trim()
+      .toLowerCase();
+    if (raw === 'shared') {
+      return 'bg-[#F0F5FF] text-[#2563EB] border border-[#D6E4FF]';
+    }
+    if (raw === 'individual') {
+      return 'bg-[#FAFAFA] text-[#525252] border border-[#E8E8E8]';
+    }
+    return 'bg-[#F5F5F5] text-[#6F6F6F] border border-[#E8E8E8]';
+  }
+
+  submittedByLabel(value: string | null | undefined): string {
+    const text = String(value ?? '').trim();
+    return text || '—';
+  }
+
   private loadHistory(page: number): void {
     this.loading.set(true);
     this.errorMessage.set('');

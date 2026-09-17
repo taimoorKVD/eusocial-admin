@@ -48,7 +48,6 @@ export class EmployeeMyFormsComponent implements OnInit {
     { label: 'In Progress', value: 'in_progress' },
     { label: 'Completed', value: 'completed' },
     { label: 'Overdue', value: 'overdue' },
-    { label: 'Cancelled', value: 'cancelled' },
   ];
 
   readonly assignments = signal<EmployeeAssignmentListItem[]>([]);
@@ -209,6 +208,48 @@ export class EmployeeMyFormsComponent implements OnInit {
       default:
         return 'bg-[#FFF4EA] text-[#FF9015]';
     }
+  }
+
+  /**
+   * Display label for a task's mode, read straight from the existing API value
+   * (`item.raw.mode`) — no recalculation, no new request.
+   */
+  modeLabel(mode: unknown): string {
+    const raw = this.readModeString(mode).toLowerCase();
+    if (raw === 'shared') {
+      return 'Shared';
+    }
+    if (raw === 'individual') {
+      return 'Individual';
+    }
+    return raw ? this.titleCase(raw) : '';
+  }
+
+  modeClass(mode: unknown): string {
+    const raw = this.readModeString(mode).toLowerCase();
+    if (raw === 'shared') {
+      return 'bg-[#F0F5FF] text-[#2563EB] border border-[#D6E4FF]';
+    }
+    return 'bg-[#FAFAFA] text-[#525252] border border-[#E8E8E8]';
+  }
+
+  modeInfo(mode: unknown): string {
+    const raw = this.readModeString(mode).toLowerCase();
+    if (raw === 'shared') {
+      return 'A shared task is a single form assigned to multiple users. Any one of the assigned users can complete and submit it, and it only needs to be submitted once.';
+    }
+    return 'An individual task is a task where each user has their own separate form to complete and submit.';
+  }
+
+  private readModeString(value: unknown): string {
+    if (value == null) {
+      return '';
+    }
+    return String(value).trim();
+  }
+
+  private titleCase(value: string): string {
+    return value.replace(/\b\w/g, (ch) => ch.toUpperCase());
   }
 
   private loadAssignments(page: number): void {

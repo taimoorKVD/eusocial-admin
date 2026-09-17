@@ -1184,6 +1184,32 @@ export class DynamicFormComponent implements OnDestroy {
     this.cdr.detectChanges();
   }
 
+  getDateFieldValue(field: DynamicField): string | null {
+    const raw = this.form?.get(field.name)?.value;
+    if (raw == null || raw === '') {
+      return null;
+    }
+    return String(raw);
+  }
+
+  onDateFieldChange(dateStr: string | null, field: DynamicField): void {
+    const control = this.form?.get(field.name);
+    if (!control || control.disabled) {
+      return;
+    }
+
+    const nextValue = dateStr || '';
+    if (control.value === nextValue) {
+      return;
+    }
+
+    control.setValue(nextValue);
+    control.markAsDirty();
+    control.markAsTouched();
+    this.emitNormalizedValue();
+    this.cdr.markForCheck();
+  }
+
   onRangeSideInput(event: Event, field: DynamicField, side: 'from' | 'to'): void {
     const control = this.form?.get(field.name);
     if (!control || control.disabled) {

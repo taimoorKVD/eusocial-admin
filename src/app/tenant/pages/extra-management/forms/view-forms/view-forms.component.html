@@ -130,6 +130,9 @@
             </th>
           }
           <th class="px-4 py-3">Form Name</th>
+          <th class="px-4 py-3">Frequency</th>
+          <th class="px-4 py-3">Assignee</th>
+          <th class="px-4 py-3">Reporting</th>
           <th class="px-4 py-3">Created At</th>
           @if (showRowActions()) {
             <th class="px-4 py-3 text-right">Actions</th>
@@ -151,8 +154,45 @@
                 />
               </td>
             }
-            <td class="px-4 py-3">{{ form.formName }}</td>
-            <td class="px-4 py-3">{{ form.createdAt | date: 'medium' }}</td>
+            <td class="px-4 py-3 align-top">
+              <span class="forms-listing__name font-ibm">{{ form.formName }}</span>
+            </td>
+            <td class="px-4 py-3 align-top">
+              <span class="forms-listing__freq font-ibm">{{ frequencyLabel(form) }}</span>
+            </td>
+            <td class="px-4 py-3 align-top">
+              @let assignee = assigneeSummary(form);
+              <div class="forms-listing__party">
+                @if (assignee.names.length) {
+                  <div class="forms-listing__chips">
+                    @for (name of assignee.names; track name) {
+                      <span class="forms-listing__chip forms-listing__chip--assign font-ibm">{{ name }}</span>
+                    }
+                  </div>
+                  <span class="forms-listing__mode font-ibm">{{ assignee.modeLabel }}</span>
+                } @else {
+                  <span class="forms-listing__empty font-ibm">—</span>
+                }
+              </div>
+            </td>
+            <td class="px-4 py-3 align-top">
+              @let reporting = reportingSummary(form);
+              <div class="forms-listing__party">
+                @if (reporting.names.length) {
+                  <div class="forms-listing__chips">
+                    @for (name of reporting.names; track name) {
+                      <span class="forms-listing__chip forms-listing__chip--report font-ibm">{{ name }}</span>
+                    }
+                  </div>
+                  <span class="forms-listing__mode font-ibm">{{ reporting.modeLabel }}</span>
+                } @else {
+                  <span class="forms-listing__empty font-ibm">—</span>
+                }
+              </div>
+            </td>
+            <td class="px-4 py-3 align-top whitespace-nowrap text-[#525252]">
+              {{ form.createdAt | date: 'medium' }}
+            </td>
             @if (showRowActions()) {
               <td class="px-4 py-3 text-right">
                 @if (isArchivedView() && canView) {

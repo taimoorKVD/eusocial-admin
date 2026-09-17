@@ -238,9 +238,15 @@
             @case ('date') {
               <input
                 class="dynamic-control"
-                type="date"
+                type="text"
+                appFlatpickr
                 [id]="field.id"
-                [formControlName]="field.name"
+                [placeholder]="field.placeholder || field.label || 'Select date'"
+                [fpValue]="getDateFieldValue(field)"
+                [fpMinDate]="field.minDate || null"
+                [fpMaxDate]="field.maxDate || null"
+                [fpDisabled]="isFieldDisabled(field)"
+                (fpChange)="onDateFieldChange($event, field)"
               />
             }
 

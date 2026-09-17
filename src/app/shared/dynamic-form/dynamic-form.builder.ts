@@ -16,6 +16,10 @@ import {
   rangeFieldValidator,
 } from './range-field.utils';
 import {
+  dateFieldValidator,
+  normalizeDateFieldValue,
+} from './date-field.utils';
+import {
   filterAnswerImages,
   imageFieldValidator,
 } from '../../tenant/form-builder/utils/image-field.utils';
@@ -61,7 +65,7 @@ export function serializeDynamicFieldsSchema(fields: DynamicField[]): string {
   return sortDynamicFields(fields)
     .map(
       (field) =>
-        `${field.id}:${field.name}:${field.type}:${Number(!!field.required)}:${field.selectionType || 'single'}:${Number(field.isShow !== false)}:${Number(!!field.isReadonly)}:${Number(allowsDecimalPoint(field))}:${getFieldCharacterLimit(field) ?? ''}:${field.type === 'range' ? normalizeRangeType(field.rangeType) : ''}:${field.type === 'image' ? `${Number(!!field.multiple)}:${field.minFiles ?? ''}:${field.maxFiles ?? ''}:${(field.referenceImages || []).length}` : ''}:${field.type === 'rating' ? normalizeMaxRating(field.maxRating) : ''}:${field.type === 'time' ? normalizeTimeFieldFormat(field.timeFormat) : ''}:${isMeasurementFieldType(field.type) ? `${normalizeMeasurementUnitMode(field.unitMode)}:${normalizeMeasurementUnitCode(field.type, field.unit) ?? getDefaultUnitCode(field.type)}:${field.minValue ?? 0}:${field.maxValue ?? ''}` : ''}:${JSON.stringify(field.condition ?? null)}`,
+        `${field.id}:${field.name}:${field.type}:${Number(!!field.required)}:${field.selectionType || 'single'}:${Number(field.isShow !== false)}:${Number(!!field.isReadonly)}:${Number(allowsDecimalPoint(field))}:${getFieldCharacterLimit(field) ?? ''}:${field.type === 'range' ? normalizeRangeType(field.rangeType) : ''}:${field.type === 'date' ? `${field.minDate ?? ''}:${field.maxDate ?? ''}` : ''}:${field.type === 'image' ? `${Number(!!field.multiple)}:${field.minFiles ?? ''}:${field.maxFiles ?? ''}:${(field.referenceImages || []).length}` : ''}:${field.type === 'rating' ? normalizeMaxRating(field.maxRating) : ''}:${field.type === 'time' ? normalizeTimeFieldFormat(field.timeFormat) : ''}:${isMeasurementFieldType(field.type) ? `${normalizeMeasurementUnitMode(field.unitMode)}:${normalizeMeasurementUnitCode(field.type, field.unit) ?? getDefaultUnitCode(field.type)}:${field.minValue ?? 0}:${field.maxValue ?? ''}` : ''}:${JSON.stringify(field.condition ?? null)}`,
     )
     .join('|');
 }
@@ -150,6 +154,8 @@ export function getInitialFieldValue(field: DynamicField): unknown {
       return normalizeSignatureValue(field.defaultValue ?? field.value);
     case 'time':
       return normalizeTimeFieldValue(field.defaultValue ?? field.value);
+    case 'date':
+      return normalizeDateFieldValue(field.defaultValue ?? field.value) ?? '';
     case 'price':
     case 'length':
     case 'mass':
@@ -192,6 +198,11 @@ export function getFieldValidators(
 
   if (field.type === 'time') {
     validators.push(timeFieldValidator(field, { required, visible }));
+    return validators;
+  }
+
+  if (field.type === 'date') {
+    validators.push(dateFieldValidator(field, { required, visible }));
     return validators;
   }
 

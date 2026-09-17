@@ -79,6 +79,10 @@ export interface FormFieldConfig {
   rangeMinDate?: string;
   /** Date range maximum bound (YYYY-MM-DD). */
   rangeMaxDate?: string;
+  /** Single Date field minimum bound (YYYY-MM-DD). */
+  minDate?: string;
+  /** Single Date field maximum bound (YYYY-MM-DD). */
+  maxDate?: string;
   /** Placeholder for the Range From / first input. */
   rangePlaceholderFrom?: string;
   /** Placeholder for the Range To / second input. */
@@ -279,6 +283,100 @@ export function resolveFrequencyDate(
     return `${year}-${pad(month)}-${pad(Math.min(day, nextDays))}`;
   }
   return candidate;
+}
+
+const FREQUENCY_WEEKDAY_NAME: Record<string, string> = {
+  monday: 'Monday',
+  tuesday: 'Tuesday',
+  wednesday: 'Wednesday',
+  thursday: 'Thursday',
+  friday: 'Friday',
+  saturday: 'Saturday',
+  sunday: 'Sunday',
+};
+
+const FREQUENCY_MONTH_NAME: Record<string, string> = {
+  january: 'January',
+  february: 'February',
+  march: 'March',
+  april: 'April',
+  may: 'May',
+  june: 'June',
+  july: 'July',
+  august: 'August',
+  september: 'September',
+  october: 'October',
+  november: 'November',
+  december: 'December',
+};
+
+const FREQUENCY_WEEK_ORDER_NAME: Record<string, string> = {
+  first: 'First',
+  second: 'Second',
+  third: 'Third',
+  fourth: 'Fourth',
+  last: 'Last',
+};
+
+/** Human-readable summary of the template frequency — mirrors the Frequency step rules. */
+export function formatFrequencySummary(
+  frequency: DynamicFormPayload['frequency'] | null | undefined,
+): string {
+  const freq = frequency ?? ({} as DynamicFormPayload['frequency']);
+  const type: FrequencyType = freq.type === 'recurring' ? 'recurring' : 'atOnce';
+
+  if (type === 'atOnce') {
+    if (freq.date) {
+      const parsed = new Date(freq.date);
+      const dateText = Number.isNaN(parsed.getTime())
+        ? freq.date
+        : new Intl.DateTimeFormat('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+          }).format(parsed);
+      return `At Once — ${dateText}`;
+    }
+    return 'At Once';
+  }
+
+  const recurring = sanitizeFrequencyRecurring(
+    freq.recurring ?? createDefaultFrequencyRecurring(),
+  );
+  const every = Number(recurring.every) || 1;
+
+  switch (recurring.interval) {
+    case 'day':
+      return every === 1 ? 'Daily' : `Every ${every} days`;
+    case 'week': {
+      const days = (recurring.daysOfWeek ?? [])
+        .map((day) => FREQUENCY_WEEKDAY_NAME[day] ?? day)
+        .filter(Boolean);
+      if (!days.length) {
+        return every === 1 ? 'Weekly' : `Every ${every} weeks`;
+      }
+      const dayText = days.join(', ');
+      return every === 1 ? `Every ${dayText}` : `Every ${every} weeks on ${dayText}`;
+    }
+    case 'month':
+      if (recurring.monthMode === 'onThe') {
+        const order = FREQUENCY_WEEK_ORDER_NAME[recurring.weekOrder] ?? recurring.weekOrder;
+        const month = FREQUENCY_MONTH_NAME[recurring.onTheMonth] ?? recurring.onTheMonth;
+        const when = `on the ${order} ${month}`;
+        return every === 1 ? `Monthly ${when}` : `Every ${every} months ${when}`;
+      }
+      {
+        const day = recurring.dayOfMonth === -1 ? 'last day' : `day ${recurring.dayOfMonth}`;
+        return every === 1 ? `Monthly on ${day}` : `Every ${every} months on ${day}`;
+      }
+    case 'year': {
+      const month = FREQUENCY_MONTH_NAME[recurring.yearMonth] ?? recurring.yearMonth;
+      const when = `on ${month} ${recurring.yearDay}`;
+      return every === 1 ? `Yearly ${when}` : `Every ${every} years ${when}`;
+    }
+    default:
+      return 'Recurring';
+  }
 }
 
 export interface FormMetaConfig {

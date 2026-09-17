@@ -195,6 +195,13 @@ export function sanitizeField(
     type === 'range' && rangeType === 'date'
       ? sanitizeDateBounds(field.rangeMinDate, field.rangeMaxDate)
       : {};
+  const singleDateBounds =
+    type === 'date'
+      ? sanitizeDateBounds(
+          field.minDate ?? field['min_date'],
+          field.maxDate ?? field['max_date'],
+        )
+      : {};
   const imageConfig =
     type === 'image' ? sanitizeImageFieldConfig(field) : null;
 
@@ -238,6 +245,8 @@ export function sanitizeField(
         : undefined,
     rangeMinDate: dateBounds.rangeMinDate,
     rangeMaxDate: dateBounds.rangeMaxDate,
+    minDate: singleDateBounds.rangeMinDate,
+    maxDate: singleDateBounds.rangeMaxDate,
     rangePlaceholderFrom:
       type === 'range'
         ? (typeof field.rangePlaceholderFrom === 'string'

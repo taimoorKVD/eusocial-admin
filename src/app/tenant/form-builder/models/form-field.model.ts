@@ -9,6 +9,7 @@ export type FieldType =
   | 'textarea'
   | 'checkbox'
   | 'radio'
+  | 'date'
   | 'image'
   | 'signature'
   | 'time'
@@ -99,6 +100,10 @@ export interface FormField {
   rangeMinDate?: string;
   /** Date range maximum bound (YYYY-MM-DD). */
   rangeMaxDate?: string;
+  /** Single Date field minimum bound (YYYY-MM-DD). */
+  minDate?: string;
+  /** Single Date field maximum bound (YYYY-MM-DD). */
+  maxDate?: string;
   /** Placeholder for the Range From / first input. */
   rangePlaceholderFrom?: string;
   /** Placeholder for the Range To / second input. */

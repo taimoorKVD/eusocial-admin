@@ -39,6 +39,8 @@
           <thead class="bg-[#F5F5F5] text-[#525252]">
             <tr>
               <th class="px-4 py-3 font-medium">Form</th>
+              <th class="px-4 py-3 font-medium">Mode</th>
+              <th class="px-4 py-3 font-medium">Submitted By</th>
               <th class="px-4 py-3 font-medium">Submitted</th>
               <th class="px-4 py-3 font-medium">Status</th>
               <th class="px-4 py-3 font-medium"><span class="sr-only">Actions</span></th>
@@ -47,18 +49,36 @@
           <tbody>
             @for (item of historyItems(); track item.id) {
               <tr class="border-t border-[#E8E8E8]">
-                <td class="px-4 py-3">
-                  <p class="m-0 font-medium text-[#161616]">{{ item.title }}</p>
+                <td class="px-4 py-3 align-top">
+                  <p class="m-0 max-w-[16rem] font-medium text-[#161616] break-words">
+                    {{ item.title }}
+                  </p>
                   @if (item.dueDate) {
                     <p class="mt-0.5 m-0 text-xs text-[#8D8D8D]">
                       Due {{ item.dueDate | date: 'mediumDate' }}
                     </p>
                   }
                 </td>
-                <td class="px-4 py-3 text-[#6F6F6F]">
+                <td class="px-4 py-3 align-top">
+                  <span
+                    class="inline-flex max-w-full truncate rounded-md px-2.5 py-1 text-xs font-medium font-ibm"
+                    [ngClass]="modeClass(item.mode)"
+                  >
+                    {{ modeLabel(item.mode) }}
+                  </span>
+                </td>
+                <td class="px-4 py-3 align-top">
+                  <span
+                    class="block max-w-[12rem] truncate text-[#525252]"
+                    [attr.title]="submittedByLabel(item.submittedBy)"
+                  >
+                    {{ submittedByLabel(item.submittedBy) }}
+                  </span>
+                </td>
+                <td class="px-4 py-3 align-top whitespace-nowrap text-[#6F6F6F]">
                   {{ (item.submittedAt || item.createdAt) | date: 'medium' }}
                 </td>
-                <td class="px-4 py-3">
+                <td class="px-4 py-3 align-top">
                   <span
                     class="rounded-md px-2.5 py-1 text-xs font-medium font-ibm"
                     [ngClass]="statusClass(item.status)"
@@ -66,7 +86,7 @@
                     {{ statusLabel(item.status) }}
                   </span>
                 </td>
-                <td class="px-4 py-3 text-right">
+                <td class="px-4 py-3 align-top text-right">
                   <button
                     type="button"
                     class="rounded-lg border border-[#FF9015] bg-white px-3 py-1.5 text-sm font-medium text-[#FF9015] transition-colors hover:bg-[#FFF4EA] font-ibm"
@@ -85,7 +105,7 @@
         @for (item of historyItems(); track item.id) {
           <div class="px-4 py-4">
             <div class="flex items-start justify-between gap-3">
-              <p class="m-0 text-sm font-semibold text-[#161616] font-ibm">
+              <p class="m-0 min-w-0 text-sm font-semibold text-[#161616] font-ibm break-words">
                 {{ item.title }}
               </p>
               <span
@@ -93,6 +113,17 @@
                 [ngClass]="statusClass(item.status)"
               >
                 {{ statusLabel(item.status) }}
+              </span>
+            </div>
+            <div class="mt-2 flex flex-wrap items-center gap-2">
+              <span
+                class="inline-flex rounded-md px-2.5 py-1 text-xs font-medium font-ibm"
+                [ngClass]="modeClass(item.mode)"
+              >
+                {{ modeLabel(item.mode) }}
+              </span>
+              <span class="text-xs text-[#6F6F6F] font-ibm">
+                {{ submittedByLabel(item.submittedBy) }}
               </span>
             </div>
             <p class="mt-1.5 m-0 text-xs text-[#8D8D8D] font-ibm">

@@ -38,7 +38,7 @@ const BUILDER_TYPES: Array<{ label: string; value: FormField['type'] | FieldType
   { label: 'Select Box', value: 'select' },
   { label: 'Checkbox', value: 'checkbox' },
   { label: 'Radio Button', value: 'radio' },
-  // { label: 'Date Picker', value: 'date' },
+  { label: 'Date', value: 'date' },
   { label: 'Image', value: 'image' },
   { label: 'File Upload', value: 'file' },
 ];
@@ -54,13 +54,13 @@ export interface MapBuilderFieldToConfigOptions {
 function toFormFieldType(type: string): FormField['type'] {
   switch (type) {
     case 'password':
-    case 'date':
     case 'file':
       return 'text';
     case 'image':
       return 'image';
     case 'signature':
     case 'time':
+    case 'date':
     case 'rating':
     case 'range':
     case 'price':
@@ -135,6 +135,8 @@ export function mapConfigFieldToBuilder(field: FormFieldConfig): FormField {
     rangeStep: field.rangeStep,
     rangeMinDate: field.rangeMinDate,
     rangeMaxDate: field.rangeMaxDate,
+    minDate: formFieldType === 'date' ? field.minDate : undefined,
+    maxDate: formFieldType === 'date' ? field.maxDate : undefined,
     rangePlaceholderFrom: field.rangePlaceholderFrom,
     rangePlaceholderTo: field.rangePlaceholderTo,
     timeFormat:
@@ -209,6 +211,8 @@ export function mapBuilderFieldToConfig(
         : undefined,
     rangeMinDate: field.rangeMinDate,
     rangeMaxDate: field.rangeMaxDate,
+    minDate: type === 'date' ? field.minDate : undefined,
+    maxDate: type === 'date' ? field.maxDate : undefined,
     rangePlaceholderFrom: field.rangePlaceholderFrom,
     rangePlaceholderTo: field.rangePlaceholderTo,
     timeFormat:

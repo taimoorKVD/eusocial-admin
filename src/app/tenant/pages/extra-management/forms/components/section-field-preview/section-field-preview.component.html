@@ -198,11 +198,14 @@
     @case ('date') {
       <input
         class="section-input font-ibm"
-        type="date"
-        [placeholder]="field.placeholder || field.label"
-        [value]="field.value || ''"
-        [attr.readonly]="isInteractionDisabled || null"
-        (input)="onInput($event)"
+        type="text"
+        appFlatpickr
+        [placeholder]="field.placeholder || field.label || 'Select date'"
+        [fpValue]="dateFieldValue"
+        [fpMinDate]="field.minDate || null"
+        [fpMaxDate]="field.maxDate || null"
+        [fpDisabled]="!!isInteractionDisabled"
+        (fpChange)="onDateFieldChange($event)"
       />
     }
     @case ('number') {
