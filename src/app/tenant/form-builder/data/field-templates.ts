@@ -89,6 +89,14 @@ export const FIELD_TEMPLATES: Omit<FormField, 'id'>[] = [
   },
 
   {
+    type: 'date',
+    label: 'Date',
+    placeholder: 'Select date',
+    required: false,
+    options: []
+  },
+
+  {
     type: 'rating',
     label: 'Rating',
     placeholder: '',

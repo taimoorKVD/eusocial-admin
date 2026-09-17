@@ -505,6 +505,21 @@ export class SectionFieldPreviewComponent {
     return normalizeRangeType(this.field.rangeType);
   }
 
+  get dateFieldValue(): string | null {
+    const raw = this.field?.value;
+    if (raw == null || raw === '') {
+      return null;
+    }
+    return String(raw);
+  }
+
+  onDateFieldChange(dateStr: string | null): void {
+    if (this.isInteractionDisabled) {
+      return;
+    }
+    this.valueChange.emit(dateStr || '');
+  }
+
   get rangePlaceholderFrom(): string {
     return getRangePlaceholderFrom(this.field);
   }

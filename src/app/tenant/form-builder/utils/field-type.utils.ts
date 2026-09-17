@@ -15,6 +15,9 @@ const FIELD_TYPE_MAP: Record<string, FieldType> = {
   time: 'time',
   // Legacy Form Builder type — migrate saved schemas to Time.
   'user-timestamp': 'time',
+  date: 'date',
+  'date-picker': 'date',
+  datepicker: 'date',
   rating: 'rating',
   range: 'range',
   price: 'price',

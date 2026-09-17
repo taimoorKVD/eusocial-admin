@@ -81,6 +81,10 @@ export interface DynamicField {
   rangeMaxDate?: string;
   rangePlaceholderFrom?: string;
   rangePlaceholderTo?: string;
+  /** Single Date field minimum bound (YYYY-MM-DD). */
+  minDate?: string;
+  /** Single Date field maximum bound (YYYY-MM-DD). */
+  maxDate?: string;
   timeFormat?: RangeTimeFormat;
   condition?: FieldCondition;
 

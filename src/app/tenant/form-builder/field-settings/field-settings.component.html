@@ -355,6 +355,35 @@
     </ng-container>
   </div>
 
+  <div *ngIf="isDateField" class="space-y-3">
+    <div>
+      <label class="mb-1.5 block text-xs font-medium text-slate-600">Minimum Date</label>
+      <input
+        type="text"
+        appFlatpickr
+        [fpValue]="field.minDate || null"
+        [fpMaxDate]="field.maxDate || null"
+        [fpDisabled]="!isFieldEditable"
+        (fpChange)="onDateMinDateChange($event || '')"
+        placeholder="Select minimum date"
+        class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+      />
+    </div>
+    <div>
+      <label class="mb-1.5 block text-xs font-medium text-slate-600">Maximum Date</label>
+      <input
+        type="text"
+        appFlatpickr
+        [fpValue]="field.maxDate || null"
+        [fpMinDate]="field.minDate || null"
+        [fpDisabled]="!isFieldEditable"
+        (fpChange)="onDateMaxDateChange($event || '')"
+        placeholder="Select maximum date"
+        class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+      />
+    </div>
+  </div>
+
   <div *ngIf="isTimeField" class="space-y-3">
     <div>
       <label class="mb-1.5 block text-xs font-medium text-slate-600">Time Format</label>

@@ -64,6 +64,18 @@ export function getDynamicFieldErrorMessage(
     return `${field.label} must be a valid time.`;
   }
 
+  if (control.errors['dateInvalid']) {
+    return `${field.label} must be a valid date.`;
+  }
+
+  if (control.errors['dateBelowMin']) {
+    return `${field.label} must be on or after ${control.errors['dateBelowMin'].min}.`;
+  }
+
+  if (control.errors['dateAboveMax']) {
+    return `${field.label} must be on or before ${control.errors['dateAboveMax'].max}.`;
+  }
+
   if (control.errors['measurementBelowMin']) {
     return `${field.label} must be at least ${control.errors['measurementBelowMin'].min}.`;
   }

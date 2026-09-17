@@ -739,6 +739,8 @@ export class CreateFormComponent implements OnInit {
           : undefined,
       rangeMinDate: (field as any)?.rangeMinDate,
       rangeMaxDate: (field as any)?.rangeMaxDate,
+      minDate: type === 'date' ? (field as any)?.minDate : undefined,
+      maxDate: type === 'date' ? (field as any)?.maxDate : undefined,
       rangePlaceholderFrom: (field as any)?.rangePlaceholderFrom,
       rangePlaceholderTo: (field as any)?.rangePlaceholderTo,
       timeFormat:

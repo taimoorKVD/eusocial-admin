@@ -69,6 +69,8 @@ export function buildFormSchemaPayload(fields: FormField[]) {
             : undefined,
         rangeMinDate: field.rangeMinDate,
         rangeMaxDate: field.rangeMaxDate,
+        minDate: field.type === 'date' ? field.minDate : undefined,
+        maxDate: field.type === 'date' ? field.maxDate : undefined,
         rangePlaceholderFrom: field.rangePlaceholderFrom,
         rangePlaceholderTo: field.rangePlaceholderTo,
         timeFormat:

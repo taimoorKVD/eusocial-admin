@@ -647,6 +647,10 @@ export class FieldSettingsComponent {
     return this._field?.type === 'range';
   }
 
+  get isDateField(): boolean {
+    return this._field?.type === 'date';
+  }
+
   get rangeTypeValue(): RangeFieldType {
     return normalizeRangeType(this._field?.rangeType);
   }
@@ -779,6 +783,34 @@ export class FieldSettingsComponent {
     }
     this._field.rangeMinDate = bounds.rangeMinDate;
     this._field.rangeMaxDate = bounds.rangeMaxDate;
+    this.onChange();
+  }
+
+  onDateMinDateChange(value: string): void {
+    if (!this._field || !this.isFieldEditable || !this.isDateField) {
+      return;
+    }
+
+    const bounds = sanitizeDateBounds(value || undefined, this._field.maxDate);
+    if (bounds.swapped) {
+      this.toastr.warning('Minimum date cannot be later than maximum date.');
+    }
+    this._field.minDate = bounds.rangeMinDate;
+    this._field.maxDate = bounds.rangeMaxDate;
+    this.onChange();
+  }
+
+  onDateMaxDateChange(value: string): void {
+    if (!this._field || !this.isFieldEditable || !this.isDateField) {
+      return;
+    }
+
+    const bounds = sanitizeDateBounds(this._field.minDate, value || undefined);
+    if (bounds.swapped) {
+      this.toastr.warning('Minimum date cannot be later than maximum date.');
+    }
+    this._field.minDate = bounds.rangeMinDate;
+    this._field.maxDate = bounds.rangeMaxDate;
     this.onChange();
   }
 
@@ -1484,6 +1516,8 @@ export class FieldSettingsComponent {
           : undefined,
       rangeMinDate: value.rangeMinDate,
       rangeMaxDate: value.rangeMaxDate,
+      minDate: value.type === 'date' ? value.minDate : undefined,
+      maxDate: value.type === 'date' ? value.maxDate : undefined,
       rangePlaceholderFrom:
         value.type === 'range'
           ? (typeof value.rangePlaceholderFrom === 'string'
