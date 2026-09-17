@@ -4,6 +4,10 @@ export interface EmployeeHistorySubmissionListItem {
   id: string;
   title: string;
   status: string;
+  /** Assign mode from listing API (`individual` | `shared`, etc.). */
+  mode: string | null;
+  /** Display name of who submitted, from listing API `submittedBy`. */
+  submittedBy: string | null;
   submittedAt: string | null;
   dueDate: string | null;
   createdAt: string | null;

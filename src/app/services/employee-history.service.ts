@@ -70,6 +70,8 @@ export class EmployeeHistoryService {
       id: this.readId(item),
       title: this.readTitle(item, assignment, template),
       status: this.normalizeStatus(item['status'] ?? assignment['status']),
+      mode: this.readMode(item, assignment, template),
+      submittedBy: this.readSubmittedBy(item),
       submittedAt: this.readSubmittedAt(item),
       dueDate: this.readDate(
         item['dueAt'] ??
@@ -197,6 +199,55 @@ export class EmployeeHistoryService {
         item['createdAt'] ??
         item['created_at'],
     );
+  }
+
+  private readMode(
+    item: Record<string, unknown>,
+    assignment: Record<string, unknown>,
+    template: Record<string, unknown>,
+  ): string | null {
+    const schema = this.asRecord(template['schema']);
+    const assign = this.asRecord(schema['assign']);
+    const candidates = [
+      item['mode'],
+      assignment['mode'],
+      template['mode'],
+      assign['mode'],
+    ];
+
+    for (const candidate of candidates) {
+      const value = this.readString(candidate);
+      if (value) {
+        return value;
+      }
+    }
+
+    return null;
+  }
+
+  private readSubmittedBy(item: Record<string, unknown>): string | null {
+    const direct =
+      item['submittedBy'] ??
+      item['submitted_by'] ??
+      item['submittedByName'] ??
+      item['submitted_by_name'];
+
+    if (typeof direct === 'string' || typeof direct === 'number') {
+      const value = this.readString(direct);
+      return value || null;
+    }
+
+    if (this.isObject(direct)) {
+      const nested = this.readString(
+        direct['name'] ??
+          direct['fullName'] ??
+          direct['full_name'] ??
+          direct['email'],
+      );
+      return nested || null;
+    }
+
+    return null;
   }
 
   private readDate(value: unknown): string | null {
