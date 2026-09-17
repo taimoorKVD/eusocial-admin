@@ -586,7 +586,7 @@ export class CreateFormComponent implements OnInit {
 
   private loadJobPositions(): void {
     this.jobPositionService
-      .getJobPositions(1, 9999)
+      .getJobPositions(1)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (res: any) => {
@@ -614,7 +614,7 @@ export class CreateFormComponent implements OnInit {
           const nameFieldId = nameField?.id || null;
 
           this.userService
-            .getUsers(1, 9999)
+            .getUsers(1)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
               next: (res: any) => {
@@ -636,7 +636,7 @@ export class CreateFormComponent implements OnInit {
         },
         error: () => {
           this.userService
-            .getUsers(1, 9999)
+            .getUsers(1)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
               next: (res: any) => {

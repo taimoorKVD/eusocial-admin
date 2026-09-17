@@ -160,8 +160,9 @@ export class ViewFormsComponent implements OnInit {
   }
 
   private loadJobPositions(): void {
+    // Omit limit so the full job-position set is available for Assign/Report id → name mapping.
     this.jobPositionService
-      .getJobPositions(1, 9999)
+      .getJobPositions(1)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (res: any) => {
@@ -192,8 +193,9 @@ export class ViewFormsComponent implements OnInit {
   }
 
   private fetchUsers(nameFieldId: string | null): void {
+    // Omit limit so the full user set is available for Assign/Report id → name mapping.
     this.userService
-      .getUsers(1, 9999)
+      .getUsers(1)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (res: any) => {
@@ -218,35 +220,34 @@ export class ViewFormsComponent implements OnInit {
     if (!ids || !ids.length) return [];
     return ids
       .map((id) => options.find((option) => Number(option.id) === id)?.name)
-      .filter((name): name is string => !!name);
+      .filter((name): name is string => !!name && !!name.trim());
   }
 
-  private formatAssigneeText(
+  private partySummary(
     users: string[],
     positions: string[],
     mode?: string,
-  ): string {
-    const names = [...users, ...positions];
-    if (!names.length) return '—';
+  ): { names: string[]; modeLabel: string } {
+    const names = [...users, ...positions].map((name) => name.trim()).filter(Boolean);
     const normalized = normalizeAssignReportMode(mode);
     const modeLabel =
       ASSIGN_REPORT_MODE_OPTIONS.find((option) => option.value === normalized)?.label ??
       'Individual';
-    return `${names.join(', ')} (${modeLabel})`;
+    return { names, modeLabel };
   }
 
-  assigneeLabel(form: SavedDynamicForm): string {
+  assigneeSummary(form: SavedDynamicForm): { names: string[]; modeLabel: string } {
     const payload = form.payload;
     const users = this.resolveIdNames(payload?.assign?.users, this.userOptions());
     const positions = this.resolveIdNames(payload?.assign?.jobPosition, this.jobPositionOptions());
-    return this.formatAssigneeText(users, positions, payload?.assign?.mode);
+    return this.partySummary(users, positions, payload?.assign?.mode);
   }
 
-  reportingLabel(form: SavedDynamicForm): string {
+  reportingSummary(form: SavedDynamicForm): { names: string[]; modeLabel: string } {
     const payload = form.payload;
     const users = this.resolveIdNames(payload?.report?.users, this.userOptions());
     const positions = this.resolveIdNames(payload?.report?.jobPosition, this.jobPositionOptions());
-    return this.formatAssigneeText(users, positions, payload?.report?.mode);
+    return this.partySummary(users, positions, payload?.report?.mode);
   }
 
   frequencyLabel(form: SavedDynamicForm): string {
