@@ -48,7 +48,6 @@ export class EmployeeMyFormsComponent implements OnInit {
     { label: 'In Progress', value: 'in_progress' },
     { label: 'Completed', value: 'completed' },
     { label: 'Overdue', value: 'overdue' },
-    { label: 'Cancelled', value: 'cancelled' },
   ];
 
   readonly assignments = signal<EmployeeAssignmentListItem[]>([]);
