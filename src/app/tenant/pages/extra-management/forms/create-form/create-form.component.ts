@@ -1194,13 +1194,35 @@ export class CreateFormComponent implements OnInit {
     this.openFieldModal({ sectionId: section.id, rowId });
   }
 
-  openFieldModal(target: { sectionId: string; rowId: string }): void {
+  /**
+   * Open Form Builder on the field's row and select it in Customize mode
+   * (same path as clicking the field inside the builder canvas).
+   */
+  editSectionField(
+    section: CustomFormSection,
+    rowId: string,
+    field: FormFieldConfig,
+  ): void {
+    this.openFieldModal({ sectionId: section.id, rowId }, field.id);
+  }
+
+  openFieldModal(
+    target: { sectionId: string; rowId: string },
+    selectFieldId?: string,
+  ): void {
     this.pendingFieldTarget.set(target);
     this.initializeRowBuilderFields();
     this.builderSchema.set([]);
+    this.fieldBuilderOpen.set(true);
+
+    if (selectFieldId && this.rowBuilderFields().some((item) => item.id === selectFieldId)) {
+      this.selectedFieldId.set(selectFieldId);
+      this.builderActiveTab.set('settings');
+      return;
+    }
+
     this.selectedFieldId.set(null);
     this.builderActiveTab.set('fields');
-    this.fieldBuilderOpen.set(true);
   }
 
   closeFieldBuilder(): void {
