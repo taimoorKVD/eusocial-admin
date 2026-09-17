@@ -130,6 +130,9 @@
             </th>
           }
           <th class="px-4 py-3">Form Name</th>
+          <th class="px-4 py-3">Frequency</th>
+          <th class="px-4 py-3">Assignee</th>
+          <th class="px-4 py-3">Reporting</th>
           <th class="px-4 py-3">Created At</th>
           @if (showRowActions()) {
             <th class="px-4 py-3 text-right">Actions</th>
@@ -152,6 +155,9 @@
               </td>
             }
             <td class="px-4 py-3">{{ form.formName }}</td>
+            <td class="px-4 py-3">{{ frequencyLabel(form) }}</td>
+            <td class="px-4 py-3">{{ assigneeLabel(form) }}</td>
+            <td class="px-4 py-3">{{ reportingLabel(form) }}</td>
             <td class="px-4 py-3">{{ form.createdAt | date: 'medium' }}</td>
             @if (showRowActions()) {
               <td class="px-4 py-3 text-right">

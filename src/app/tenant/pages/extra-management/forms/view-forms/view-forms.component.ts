@@ -12,8 +12,16 @@ import {
   TenantFormStatusFilter,
   TenantFormsService,
 } from '../services/tenant-forms.service';
-import { SavedDynamicForm } from '../models/dynamic-form.models';
+import {
+  ASSIGN_REPORT_MODE_OPTIONS,
+  SavedDynamicForm,
+  formatFrequencySummary,
+  normalizeAssignReportMode,
+} from '../models/dynamic-form.models';
 import { TenantPermissionService } from '../../../../../services/tenant-permission.service';
+import { TenantUserService } from '../../../../../services/tenant-user.service';
+import { TenantJobPositionService } from '../../../../../services/tenant-job-position.service';
+import { FormStorageService } from '../../../../forms/services/form-storage.service';
 import { PERMISSIONS } from '../../../../../constants/permissions';
 
 const FORM_FILTER_FIELDS: GlobalFilterField[] = [
@@ -47,6 +55,9 @@ export class ViewFormsComponent implements OnInit {
   private readonly toastr = inject(ToastrService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly permissionService = inject(TenantPermissionService);
+  private readonly userService = inject(TenantUserService);
+  private readonly jobPositionService = inject(TenantJobPositionService);
+  private readonly formStorageService = inject(FormStorageService);
 
   readonly canCreate = this.permissionService.hasPermissionName(
     PERMISSIONS.DATA_COLLECTION.CREATE_TEMPLATE,
@@ -72,6 +83,9 @@ export class ViewFormsComponent implements OnInit {
   ];
 
   readonly forms = signal<SavedDynamicForm[]>([]);
+  /** Users and Job Positions used to resolve assign/report ids to names (same source as Create/Edit). */
+  readonly userOptions = signal<{ id: string; name: string }[]>([]);
+  readonly jobPositionOptions = signal<{ id: string; name: string }[]>([]);
   readonly loading = signal(false);
   readonly hasForms = computed(() => this.forms().length > 0);
   readonly page = signal(1);
@@ -140,7 +154,103 @@ export class ViewFormsComponent implements OnInit {
 
   ngOnInit(): void {
     this.filterFields.set(FORM_FILTER_FIELDS);
+    this.loadJobPositions();
+    this.loadUsers();
     this.loadForms(this.page());
+  }
+
+  private loadJobPositions(): void {
+    this.jobPositionService
+      .getJobPositions(1, 9999)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res: any) => {
+          const data = res?.data || res;
+          if (Array.isArray(data)) {
+            this.jobPositionOptions.set(
+              data.map((jp: any) => ({ id: String(jp.id), name: jp.name })),
+            );
+          }
+        },
+      });
+  }
+
+  private loadUsers(): void {
+    this.formStorageService
+      .loadForm('users')
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (schema) => {
+          const fields = schema?.fields || [];
+          const nameField =
+            fields.find((f: any) => f.name === 'name') ||
+            fields.find((f: any) => (f.label || '').toLowerCase() === 'name');
+          this.fetchUsers(nameField?.id || null);
+        },
+        error: () => this.fetchUsers(null),
+      });
+  }
+
+  private fetchUsers(nameFieldId: string | null): void {
+    this.userService
+      .getUsers(1, 9999)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res: any) => {
+          const data = res?.data || res;
+          if (Array.isArray(data)) {
+            this.userOptions.set(
+              data.map((u: any) => ({
+                id: String(u.id),
+                name: nameFieldId ? String(u[nameFieldId] ?? '') : '',
+              })),
+            );
+          }
+        },
+      });
+  }
+
+  /** Resolve ids to names using the same user/job-position options as Create/Edit. */
+  private resolveIdNames(
+    ids: number[] | null | undefined,
+    options: { id: string; name: string }[],
+  ): string[] {
+    if (!ids || !ids.length) return [];
+    return ids
+      .map((id) => options.find((option) => Number(option.id) === id)?.name)
+      .filter((name): name is string => !!name);
+  }
+
+  private formatAssigneeText(
+    users: string[],
+    positions: string[],
+    mode?: string,
+  ): string {
+    const names = [...users, ...positions];
+    if (!names.length) return '—';
+    const normalized = normalizeAssignReportMode(mode);
+    const modeLabel =
+      ASSIGN_REPORT_MODE_OPTIONS.find((option) => option.value === normalized)?.label ??
+      'Individual';
+    return `${names.join(', ')} (${modeLabel})`;
+  }
+
+  assigneeLabel(form: SavedDynamicForm): string {
+    const payload = form.payload;
+    const users = this.resolveIdNames(payload?.assign?.users, this.userOptions());
+    const positions = this.resolveIdNames(payload?.assign?.jobPosition, this.jobPositionOptions());
+    return this.formatAssigneeText(users, positions, payload?.assign?.mode);
+  }
+
+  reportingLabel(form: SavedDynamicForm): string {
+    const payload = form.payload;
+    const users = this.resolveIdNames(payload?.report?.users, this.userOptions());
+    const positions = this.resolveIdNames(payload?.report?.jobPosition, this.jobPositionOptions());
+    return this.formatAssigneeText(users, positions, payload?.report?.mode);
+  }
+
+  frequencyLabel(form: SavedDynamicForm): string {
+    return formatFrequencySummary(form.payload?.frequency);
   }
 
   private loadForms(page: number): void {
