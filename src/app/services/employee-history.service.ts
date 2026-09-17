@@ -226,28 +226,11 @@ export class EmployeeHistoryService {
   }
 
   private readSubmittedBy(item: Record<string, unknown>): string | null {
-    const direct =
-      item['submittedBy'] ??
-      item['submitted_by'] ??
-      item['submittedByName'] ??
-      item['submitted_by_name'];
-
-    if (typeof direct === 'string' || typeof direct === 'number') {
-      const value = this.readString(direct);
-      return value || null;
-    }
-
-    if (this.isObject(direct)) {
-      const nested = this.readString(
-        direct['name'] ??
-          direct['fullName'] ??
-          direct['full_name'] ??
-          direct['email'],
-      );
-      return nested || null;
-    }
-
-    return null;
+    const completion = this.asRecord(item['completion']);
+    const value = this.readString(
+      completion['completedByName'] ?? completion['completed_by_name'],
+    );
+    return value || null;
   }
 
   private readDate(value: unknown): string | null {

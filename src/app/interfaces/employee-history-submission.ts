@@ -6,7 +6,7 @@ export interface EmployeeHistorySubmissionListItem {
   status: string;
   /** Assign mode from listing API (`individual` | `shared`, etc.). */
   mode: string | null;
-  /** Display name of who submitted, from listing API `submittedBy`. */
+  /** Display name of who submitted, from listing API `completion.completedByName`. */
   submittedBy: string | null;
   submittedAt: string | null;
   dueDate: string | null;
