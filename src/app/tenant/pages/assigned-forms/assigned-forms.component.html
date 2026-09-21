@@ -418,43 +418,29 @@
       <table class="w-full min-w-[48rem] table-fixed border-collapse text-left text-sm">
         <thead class="bg-[#F3F4F6] text-[#374151]">
           <tr>
-            <th class="w-10 px-4 py-3">
-              <input
-                type="checkbox"
-                class="h-4 w-4 rounded border-gray-300 text-[#ea580c] focus:ring-[#ea580c]"
-                aria-label="Select all"
-              />
-            </th>
-            <th class="w-[30%] px-4 py-3 font-semibold">Form Name</th>
-            <th class="w-[22%] px-4 py-3 font-semibold">Assigned To</th>
+            <th class="w-[32%] px-4 py-3 font-semibold">Form Name</th>
+            <th class="w-[24%] px-4 py-3 font-semibold">Assigned To</th>
             <th class="w-[16%] px-4 py-3 font-semibold">Due Date</th>
             <th class="w-[16%] px-4 py-3 font-semibold">Status</th>
-            <th class="w-[10%] px-4 py-3 text-right font-semibold">Actions</th>
+            <th class="w-[12%] px-4 py-3 text-right font-semibold">Actions</th>
           </tr>
         </thead>
         <tbody>
           @if (loading()) {
             <tr>
-              <td colspan="6" class="px-4 py-10 text-center text-sm text-[#6F6F6F]">
+              <td colspan="5" class="px-4 py-10 text-center text-sm text-[#6F6F6F]">
                 Loading assigned forms…
               </td>
             </tr>
           } @else if (rows().length === 0) {
             <tr>
-              <td colspan="6" class="px-4 py-10 text-center text-sm text-[#6F6F6F]">
+              <td colspan="5" class="px-4 py-10 text-center text-sm text-[#6F6F6F]">
                 No assigned forms found.
               </td>
             </tr>
           } @else {
             @for (row of rows(); track row.id) {
               <tr class="border-t border-[#ECECEC] transition hover:bg-[#FAFAFA]">
-                <td class="px-4 py-3 align-middle">
-                  <input
-                    type="checkbox"
-                    class="h-4 w-4 rounded border-gray-300 text-[#ea580c] focus:ring-[#ea580c]"
-                    [attr.aria-label]="'Select ' + row.formName"
-                  />
-                </td>
                 <td class="px-4 py-3 align-middle">
                   <span class="block truncate font-medium text-[#161616]" [attr.title]="row.formName">
                     {{ row.formName }}
@@ -475,7 +461,7 @@
                   </span>
                 </td>
                 <td class="px-4 py-3 align-middle text-right">
-                  <div class="inline-flex flex-nowrap items-center justify-end gap-0.5">
+                  @if (row.status === 'completed') {
                     <button
                       type="button"
                       class="inline-flex items-center justify-center rounded-md p-1.5 text-[#ea580c] transition hover:bg-orange-50"
@@ -487,18 +473,7 @@
                         <circle cx="12" cy="12" r="3"></circle>
                       </svg>
                     </button>
-                    <button
-                      type="button"
-                      class="inline-flex items-center justify-center rounded-md p-1.5 text-red-500 transition hover:bg-red-50"
-                      aria-label="Delete assignment"
-                    >
-                      <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                        <path d="M3 6h18"></path>
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
-                        <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                      </svg>
-                    </button>
-                  </div>
+                  }
                 </td>
               </tr>
             }
