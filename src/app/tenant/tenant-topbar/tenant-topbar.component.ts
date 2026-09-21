@@ -16,6 +16,7 @@ export class TenantTopbarComponent implements OnInit, OnDestroy {
   @Output() toggleSidebar = new EventEmitter<void>();
   dropdownOpen = false;
   userName: string = '';
+  roleName: string = '';
   avatarUrl: string | null = null;
 
   private readonly tenantAuth = inject(TenantAuthService);
@@ -71,6 +72,19 @@ export class TenantTopbarComponent implements OnInit, OnDestroy {
       slug ||
       'Tenant User';
 
+    this.roleName = this.resolveRoleName(profile);
     this.avatarUrl = profile?.avatarUrl || null;
+  }
+
+  /** Role name from the authenticated user payload only — no hardcoded labels. */
+  private resolveRoleName(profile: ReturnType<TenantProfileService['getProfile']>): string {
+    const role = profile?.role;
+    if (typeof role === 'string' && role.trim()) {
+      return role.trim();
+    }
+    if (role && typeof role === 'object' && role.name) {
+      return String(role.name).trim();
+    }
+    return '';
   }
 }

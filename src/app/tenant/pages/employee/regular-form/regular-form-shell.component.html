@@ -9,13 +9,33 @@
           Back
         </button>
 
-        @if (formTitle()) {
-          <h1 class="regular-form-shell__title">{{ formTitle() }}</h1>
-        }
+        <div class="regular-form-shell__task-context">
+          <span class="regular-form-shell__eyebrow">Assigned task</span>
 
-        @if (dueDateLabel()) {
-          <p class="regular-form-shell__due">Due: {{ dueDateLabel() }}</p>
-        }
+          @if (formTitle()) {
+            <h1 class="regular-form-shell__title">{{ formTitle() }}</h1>
+          }
+
+          <div class="regular-form-shell__meta">
+            @if (dueDateLabel()) {
+              <span class="regular-form-shell__meta-item regular-form-shell__meta-item--due">
+                <svg class="regular-form-shell__meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3M4 11h16M5 5h14a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V6a1 1 0 011-1z" />
+                </svg>
+                Due {{ dueDateLabel() }}
+              </span>
+            }
+
+            @if (sections().length) {
+              <span class="regular-form-shell__meta-item">
+                <svg class="regular-form-shell__meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                {{ sections().length }} {{ sections().length === 1 ? 'section' : 'sections' }}
+              </span>
+            }
+          </div>
+        </div>
       </div>
 
       <div class="regular-form-shell__mode" role="group" aria-label="Form fill mode">
@@ -43,29 +63,41 @@
 
   <div class="regular-form-shell__body">
     <div class="regular-form-shell__content">
-      <app-dynamic-form
-        [fields]="engineFields()"
-        [layoutSections]="layoutSections()"
-        [enableLocationDependencies]="true"
-        [typeformMode]="false"
-      ></app-dynamic-form>
-
-      @if (canFill()) {
-        <div class="regular-form-shell__actions">
-          <button
-            type="button"
-            class="regular-form-shell__submit"
-            [disabled]="submitting()"
-            (click)="submit()"
-          >
-            @if (submitting()) {
-              Submitting…
-            } @else {
-              Submit Form
-            }
-          </button>
+      <div class="regular-form-shell__panel">
+        <div class="regular-form-shell__panel-intro">
+          <p class="regular-form-shell__panel-title">Complete the form</p>
+          <p class="regular-form-shell__panel-copy">
+            Fill in each field below. Required fields are marked with an asterisk.
+          </p>
         </div>
-      }
+
+        <app-dynamic-form
+          [fields]="engineFields()"
+          [layoutSections]="layoutSections()"
+          [enableLocationDependencies]="true"
+          [typeformMode]="false"
+        ></app-dynamic-form>
+
+        @if (canFill()) {
+          <div class="regular-form-shell__actions">
+            <p class="regular-form-shell__actions-hint">
+              Review your answers, then submit to complete this task.
+            </p>
+            <button
+              type="button"
+              class="regular-form-shell__submit"
+              [disabled]="submitting()"
+              (click)="submit()"
+            >
+              @if (submitting()) {
+                Submitting…
+              } @else {
+                Submit Form
+              }
+            </button>
+          </div>
+        }
+      </div>
     </div>
   </div>
 </div>
