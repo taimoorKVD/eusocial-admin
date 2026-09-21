@@ -12,6 +12,7 @@ import { DynamicListingComponent } from './dynamic-listing/dynamic-listing.compo
 import { DropdownPanelDirective } from './directives/dropdown-panel/dropdown-panel.directive';
 import { FlatpickrDirective } from './directives/flatpickr/flatpickr.directive';
 import { HasPermissionDirective } from './directives/has-permission.directive';
+import { PageSizeSelectComponent } from './dynamic-listing/page-size-select.component';
 
 @NgModule({
   declarations: [
@@ -30,6 +31,7 @@ import { HasPermissionDirective } from './directives/has-permission.directive';
     ReactiveFormsModule,
     FlatpickrDirective,
     HasPermissionDirective,
+    PageSizeSelectComponent,
   ],
   exports: [
     GlobalFilterComponent,
@@ -42,6 +44,7 @@ import { HasPermissionDirective } from './directives/has-permission.directive';
     DropdownPanelDirective,
     FlatpickrDirective,
     HasPermissionDirective,
+    PageSizeSelectComponent,
   ],
 })
 export class SharedModule {}

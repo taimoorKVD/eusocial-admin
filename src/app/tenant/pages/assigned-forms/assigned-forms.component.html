@@ -519,6 +519,13 @@
           }
         </p>
 
+        <app-page-size-select
+          [total]="total()"
+          [value]="pageSizeValue()"
+          [disabled]="loading()"
+          (valueChange)="onPageSizeChange($event)"
+        ></app-page-size-select>
+
         <label
           class="inline-flex items-center gap-2 text-sm font-medium text-[#525252]"
           for="assigned-forms-go-to-page"

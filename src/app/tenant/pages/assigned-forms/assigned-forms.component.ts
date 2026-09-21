@@ -15,6 +15,7 @@ import { Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs';
 import { FlatpickrDirective } from '../../../shared/directives/flatpickr/flatpickr.directive';
+import { PageSizeSelectComponent } from '../../../shared/dynamic-listing/page-size-select.component';
 import { TenantUserService } from '../../../services/tenant-user.service';
 import { TenantJobPositionService } from '../../../services/tenant-job-position.service';
 import { FormStorageService } from '../../forms/services/form-storage.service';
@@ -59,7 +60,7 @@ type FilterDropdownKey = 'status' | 'assignedTo' | 'jobPosition';
 @Component({
   selector: 'app-assigned-forms',
   standalone: true,
-  imports: [CommonModule, FormsModule, FlatpickrDirective],
+  imports: [CommonModule, FormsModule, FlatpickrDirective, PageSizeSelectComponent],
   templateUrl: './assigned-forms.component.html',
   styleUrl: './assigned-forms.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -71,7 +72,7 @@ export class AssignedFormsComponent implements OnInit {
   private readonly formStorageService = inject(FormStorageService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly pageLimit = environment.limit;
+  private readonly pageLimitDefault = environment.limit || 15;
 
   readonly statusOptions: StatusOption[] = [
     { label: 'Pending', value: 'pending' },
@@ -113,7 +114,8 @@ export class AssignedFormsComponent implements OnInit {
   readonly page = signal(1);
   readonly lastPage = signal(1);
   readonly total = signal(0);
-  readonly limit = signal(this.pageLimit);
+  readonly limit = signal(this.pageLimitDefault);
+  readonly pageSizeValue = computed(() => this.limit());
   /** Bound value for the Go to page input (string keeps empty/invalid entry usable). */
   readonly goToPageInput = signal('1');
 
@@ -402,6 +404,16 @@ export class AssignedFormsComponent implements OnInit {
     this.goToPage(this.page() + 1);
   }
 
+  onPageSizeChange(size: number): void {
+    if (!size || size === this.limit()) {
+      return;
+    }
+    this.limit.set(size);
+    this.page.set(1);
+    this.goToPageInput.set('1');
+    this.loadAssignedForms();
+  }
+
   viewAssignment(row: AssignedFormListItem): void {
     if (!row.id) {
       return;
@@ -481,7 +493,7 @@ export class AssignedFormsComponent implements OnInit {
     this.assignedFormsService
       .getAssignedForms({
         page: this.page(),
-        limit: this.pageLimit,
+        limit: this.limit(),
         search: this.searchQuery(),
         status: this.selectedStatuses(),
         userId: this.selectedUserIds(),
@@ -500,7 +512,7 @@ export class AssignedFormsComponent implements OnInit {
           this.page.set(result.meta.page || this.page());
           this.lastPage.set(Math.max(1, result.meta.lastPage || 1));
           this.total.set(result.meta.total);
-          this.limit.set(result.meta.limit || this.pageLimit);
+          this.limit.set(result.meta.limit || this.limit());
           this.goToPageInput.set(String(this.page()));
         },
         error: (err) => {

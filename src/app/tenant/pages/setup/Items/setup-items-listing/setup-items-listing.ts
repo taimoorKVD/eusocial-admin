@@ -86,10 +86,12 @@ export class SetupItemsListing {
     return `Delete ${count} selected item${count === 1 ? '' : 's'}? This action cannot be undone.`;
   });
 
-  private readonly defaultLimit = environment.limit;
+  private readonly pageSize = signal(environment.limit || 15);
   private pendingDeleteId: number | null = null;
   private filters: Record<string, unknown> = {};
   private lastVisibleColumnIds: string[] = [];
+
+  readonly pageSizeValue = computed(() => this.pageSize());
 
   ngOnInit(): void {
     this.loadFormFields();
@@ -218,6 +220,16 @@ export class SetupItemsListing {
     }
   }
 
+  onPageSizeChange(size: number): void {
+    if (!size || size === this.pageSize()) {
+      return;
+    }
+    this.pageSize.set(size);
+    this.page.set(1);
+    this.bulkSelection.clear();
+    this.loadItems(1);
+  }
+
   onFilterSearch(filters: Record<string, unknown>): void {
     const allowedKeys = this.getAllowedFilterKeys();
     this.filters = pruneFiltersByAllowedKeys(filters, allowedKeys);
@@ -313,9 +325,9 @@ export class SetupItemsListing {
     const apiCall = Object.keys(activeFilters).length
       ? this.itemService.searchItems(
           this.mapFiltersToFieldIds(activeFilters),
-          this.defaultLimit,
+          this.pageSize(),
         )
-      : this.itemService.getItems(page, this.defaultLimit);
+      : this.itemService.getItems(page, this.pageSize());
 
     apiCall
       .pipe(
