@@ -16,6 +16,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs';
 import { FlatpickrDirective } from '../../../shared/directives/flatpickr/flatpickr.directive';
 import { TenantUserService } from '../../../services/tenant-user.service';
+import { TenantJobPositionService } from '../../../services/tenant-job-position.service';
 import { FormStorageService } from '../../forms/services/form-storage.service';
 import {
   AssignedFormApiStatus,
@@ -43,12 +44,17 @@ interface AssignedUserOption {
   name: string;
 }
 
+interface JobPositionOption {
+  id: string;
+  name: string;
+}
+
 interface StatusOption {
   label: AssignedFormStatusLabel;
   value: AssignedFormApiStatus;
 }
 
-type FilterDropdownKey = 'status' | 'assignedTo';
+type FilterDropdownKey = 'status' | 'assignedTo' | 'jobPosition';
 
 @Component({
   selector: 'app-assigned-forms',
@@ -61,6 +67,7 @@ type FilterDropdownKey = 'status' | 'assignedTo';
 export class AssignedFormsComponent implements OnInit {
   private readonly assignedFormsService = inject(AssignedFormsService);
   private readonly userService = inject(TenantUserService);
+  private readonly jobPositionService = inject(TenantJobPositionService);
   private readonly formStorageService = inject(FormStorageService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
@@ -76,16 +83,21 @@ export class AssignedFormsComponent implements OnInit {
   readonly searchQuery = signal('');
   readonly selectedStatuses = signal<AssignedFormApiStatus[]>([]);
   readonly selectedUserIds = signal<string[]>([]);
+  readonly selectedJobPositionIds = signal<string[]>([]);
   readonly dueFromFilter = signal<string | null>(null);
   readonly dueToFilter = signal<string | null>(null);
 
   readonly userOptions = signal<AssignedUserOption[]>([]);
   readonly usersLoading = signal(false);
+  readonly jobPositionOptions = signal<JobPositionOption[]>([]);
+  readonly jobPositionsLoading = signal(false);
   readonly statusSearch = signal('');
   readonly assignedToSearch = signal('');
+  readonly jobPositionSearch = signal('');
 
   readonly statusDropdownOpen = signal(false);
   readonly assignedToDropdownOpen = signal(false);
+  readonly jobPositionDropdownOpen = signal(false);
 
   readonly loading = signal(false);
   readonly errorMessage = signal('');
@@ -102,6 +114,8 @@ export class AssignedFormsComponent implements OnInit {
   readonly lastPage = signal(1);
   readonly total = signal(0);
   readonly limit = signal(this.pageLimit);
+  /** Bound value for the Go to page input (string keeps empty/invalid entry usable). */
+  readonly goToPageInput = signal('1');
 
   readonly summaryCards = computed<AssignedFormsSummaryCard[]>(() => {
     const current = this.stats();
@@ -169,6 +183,26 @@ export class AssignedFormsComponent implements OnInit {
     return this.userOptions().filter((user) => selected.has(user.id));
   });
 
+  readonly filteredJobPositionOptions = computed(() => {
+    const q = this.jobPositionSearch().trim().toLowerCase();
+    const selected = new Set(this.selectedJobPositionIds());
+    const options = this.jobPositionOptions().map((position) => ({
+      ...position,
+      selected: selected.has(position.id),
+    }));
+
+    if (!q) {
+      return options;
+    }
+
+    return options.filter((position) => position.name.toLowerCase().includes(q));
+  });
+
+  readonly selectedJobPositions = computed(() => {
+    const selected = new Set(this.selectedJobPositionIds());
+    return this.jobPositionOptions().filter((position) => selected.has(position.id));
+  });
+
   readonly pageNumbers = computed(() => {
     const current = this.page();
     const last = this.lastPage();
@@ -201,6 +235,7 @@ export class AssignedFormsComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadUsers();
+    this.loadJobPositions();
     this.loadAssignedForms();
   }
 
@@ -228,20 +263,30 @@ export class AssignedFormsComponent implements OnInit {
   toggleFilterDropdown(key: FilterDropdownKey, event: Event): void {
     event.stopPropagation();
 
-    if (key === 'status') {
-      const wasOpen = this.statusDropdownOpen();
-      this.closeFilterDropdowns();
-      if (!wasOpen) {
-        this.statusDropdownOpen.set(true);
-      }
+    const wasOpen =
+      key === 'status'
+        ? this.statusDropdownOpen()
+        : key === 'assignedTo'
+          ? this.assignedToDropdownOpen()
+          : this.jobPositionDropdownOpen();
+
+    this.closeFilterDropdowns();
+
+    if (wasOpen) {
       return;
     }
 
-    const wasOpen = this.assignedToDropdownOpen();
-    this.closeFilterDropdowns();
-    if (!wasOpen) {
-      this.assignedToDropdownOpen.set(true);
+    if (key === 'status') {
+      this.statusDropdownOpen.set(true);
+      return;
     }
+
+    if (key === 'assignedTo') {
+      this.assignedToDropdownOpen.set(true);
+      return;
+    }
+
+    this.jobPositionDropdownOpen.set(true);
   }
 
   onMultiSelectSearch(
@@ -283,14 +328,33 @@ export class AssignedFormsComponent implements OnInit {
     this.selectedUserIds.update((ids) => ids.filter((id) => id !== userId));
   }
 
+  toggleJobPosition(positionId: string, event: Event): void {
+    event.stopPropagation();
+    const current = this.selectedJobPositionIds();
+    this.selectedJobPositionIds.set(
+      current.includes(positionId)
+        ? current.filter((id) => id !== positionId)
+        : [...current, positionId],
+    );
+  }
+
+  removeJobPosition(positionId: string, event: Event): void {
+    event.stopPropagation();
+    this.selectedJobPositionIds.update((ids) =>
+      ids.filter((id) => id !== positionId),
+    );
+  }
+
   clearFilters(): void {
     this.searchQuery.set('');
     this.selectedStatuses.set([]);
     this.selectedUserIds.set([]);
+    this.selectedJobPositionIds.set([]);
     this.dueFromFilter.set(null);
     this.dueToFilter.set(null);
     this.closeFilterDropdowns();
     this.page.set(1);
+    this.goToPageInput.set('1');
     this.loadAssignedForms();
   }
 
@@ -302,10 +366,32 @@ export class AssignedFormsComponent implements OnInit {
 
   goToPage(page: number): void {
     if (page < 1 || page > this.lastPage() || page === this.page()) {
+      this.goToPageInput.set(String(this.page()));
       return;
     }
     this.page.set(page);
+    this.goToPageInput.set(String(page));
     this.loadAssignedForms();
+  }
+
+  onGoToPageInput(value: string | number | null): void {
+    this.goToPageInput.set(value == null ? '' : String(value));
+  }
+
+  submitGoToPage(): void {
+    const raw = this.goToPageInput().trim();
+    if (!raw) {
+      this.goToPageInput.set(String(this.page()));
+      return;
+    }
+
+    const page = Number(raw);
+    if (!Number.isInteger(page) || page < 1 || page > this.lastPage()) {
+      this.goToPageInput.set(String(this.page()));
+      return;
+    }
+
+    this.goToPage(page);
   }
 
   prevPage(): void {
@@ -382,8 +468,10 @@ export class AssignedFormsComponent implements OnInit {
   private closeFilterDropdowns(): void {
     this.statusDropdownOpen.set(false);
     this.assignedToDropdownOpen.set(false);
+    this.jobPositionDropdownOpen.set(false);
     this.statusSearch.set('');
     this.assignedToSearch.set('');
+    this.jobPositionSearch.set('');
   }
 
   private loadAssignedForms(): void {
@@ -397,6 +485,7 @@ export class AssignedFormsComponent implements OnInit {
         search: this.searchQuery(),
         status: this.selectedStatuses(),
         userId: this.selectedUserIds(),
+        jobPositionId: this.selectedJobPositionIds(),
         dueFrom: this.dueFromFilter(),
         dueTo: this.dueToFilter(),
       })
@@ -412,6 +501,7 @@ export class AssignedFormsComponent implements OnInit {
           this.lastPage.set(Math.max(1, result.meta.lastPage || 1));
           this.total.set(result.meta.total);
           this.limit.set(result.meta.limit || this.pageLimit);
+          this.goToPageInput.set(String(this.page()));
         },
         error: (err) => {
           this.rows.set([]);
@@ -424,6 +514,7 @@ export class AssignedFormsComponent implements OnInit {
           });
           this.total.set(0);
           this.lastPage.set(1);
+          this.goToPageInput.set('1');
           this.errorMessage.set(
             err?.error?.message ||
               'Unable to load assigned forms. Please try again.',
@@ -451,6 +542,35 @@ export class AssignedFormsComponent implements OnInit {
           this.fetchUsers((nameField as { id?: string } | undefined)?.id || null);
         },
         error: () => this.fetchUsers(null),
+      });
+  }
+
+  /** Same job-position lookup pattern as Form Template Assign. */
+  private loadJobPositions(): void {
+    this.jobPositionsLoading.set(true);
+
+    this.jobPositionService
+      .getJobPositions(1)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res: { data?: unknown[] } | unknown[]) => {
+          const data = Array.isArray(res) ? res : res?.data;
+          if (Array.isArray(data)) {
+            this.jobPositionOptions.set(
+              data.map((jp: Record<string, unknown>) => ({
+                id: String(jp['id'] ?? ''),
+                name: String(jp['name'] ?? ''),
+              })),
+            );
+          } else {
+            this.jobPositionOptions.set([]);
+          }
+          this.jobPositionsLoading.set(false);
+        },
+        error: () => {
+          this.jobPositionOptions.set([]);
+          this.jobPositionsLoading.set(false);
+        },
       });
   }
 

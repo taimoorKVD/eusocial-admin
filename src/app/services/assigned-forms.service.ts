@@ -50,6 +50,8 @@ export interface AssignedFormsQuery {
   search?: string;
   status?: string[];
   userId?: string[];
+  /** Same repeated-param convention as `userId`. */
+  jobPositionId?: string[];
   dueFrom?: string | null;
   dueTo?: string | null;
 }
@@ -98,6 +100,13 @@ export class AssignedFormsService {
       const value = String(userId).trim();
       if (value) {
         params = params.append('userId', value);
+      }
+    }
+
+    for (const jobPositionId of query.jobPositionId ?? []) {
+      const value = String(jobPositionId).trim();
+      if (value) {
+        params = params.append('jobPositionId', value);
       }
     }
 
