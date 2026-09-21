@@ -242,6 +242,14 @@ const routes: Routes = [
             loadChildren: () =>
               import('./forms/forms-module').then((m) => m.FormsModule),
           },
+
+          {
+            path: 'assigned-forms',
+            loadComponent: () =>
+              import('./pages/assigned-forms/assigned-forms.component').then(
+                (m) => m.AssignedFormsComponent,
+              ),
+          },
         ],
       },
 

@@ -251,6 +251,20 @@
     </a>
     }
 
+    @if (!isEmployee) {
+    <a [routerLink]="['/assigned-forms']"
+      routerLinkActive="tenant-sidebar__link--active"
+      class="tenant-sidebar__link font-ibm">
+      <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+        xmlns="http://www.w3.org/2000/svg">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v0a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2v0Z" />
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6M9 16h4" />
+      </svg>
+      Assigned Forms
+    </a>
+    }
+
     <!-- Admin-only hidden Form Builder toggle (unchanged) -->
     @if (!isEmployee) {
     <div>
