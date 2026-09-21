@@ -113,12 +113,13 @@
     </div>
   }
 
-  <div class="bg-white rounded shadow overflow-hidden mt-5">
-    <table class="w-full text-left text-sm font-ibm">
+  <div class="forms-listing__shell bg-white rounded shadow mt-5">
+    <div class="forms-listing__scroll">
+    <table class="forms-listing__table w-full text-left text-sm font-ibm">
       <thead class="bg-gray-200 text-gray-700">
         <tr>
           @if (showDeleteActions()) {
-            <th class="px-4 py-3 w-10">
+            <th class="forms-listing__col forms-listing__col--check px-4 py-3">
               <input
                 type="checkbox"
                 class="h-4 w-4 rounded border-gray-300 text-[#ea580c] focus:ring-[#ea580c]"
@@ -129,13 +130,13 @@
               />
             </th>
           }
-          <th class="px-4 py-3">Form Name</th>
-          <th class="px-4 py-3">Frequency</th>
-          <th class="px-4 py-3">Assignee</th>
-          <th class="px-4 py-3">Reporting</th>
-          <th class="px-4 py-3">Created At</th>
+          <th class="forms-listing__col forms-listing__col--name px-4 py-3">Form Name</th>
+          <th class="forms-listing__col forms-listing__col--freq px-4 py-3">Frequency</th>
+          <th class="forms-listing__col forms-listing__col--party px-4 py-3">Assignee</th>
+          <th class="forms-listing__col forms-listing__col--party px-4 py-3">Reporting</th>
+          <th class="forms-listing__col forms-listing__col--created px-4 py-3">Created At</th>
           @if (showRowActions()) {
-            <th class="px-4 py-3 text-right">Actions</th>
+            <th class="forms-listing__col forms-listing__col--actions px-4 py-3 text-right">Actions</th>
           }
         </tr>
       </thead>
@@ -144,7 +145,7 @@
         @for (form of forms(); track form.id) {
           <tr class="border-b hover:bg-gray-50" [class.bg-orange-50]="isSelected(form)">
             @if (showDeleteActions()) {
-              <td class="px-4 py-3">
+              <td class="forms-listing__cell forms-listing__cell--check px-4 py-3">
                 <input
                   type="checkbox"
                   class="h-4 w-4 rounded border-gray-300 text-[#ea580c] focus:ring-[#ea580c]"
@@ -154,19 +155,19 @@
                 />
               </td>
             }
-            <td class="px-4 py-3 align-top">
-              <span class="forms-listing__name font-ibm">{{ form.formName }}</span>
+            <td class="forms-listing__cell forms-listing__cell--name px-4 py-3 align-top">
+              <span class="forms-listing__name font-ibm" [attr.title]="form.formName">{{ form.formName }}</span>
             </td>
-            <td class="px-4 py-3 align-top">
-              <span class="forms-listing__freq font-ibm">{{ frequencyLabel(form) }}</span>
+            <td class="forms-listing__cell forms-listing__cell--freq px-4 py-3 align-top">
+              <span class="forms-listing__freq font-ibm" [attr.title]="frequencyLabel(form)">{{ frequencyLabel(form) }}</span>
             </td>
-            <td class="px-4 py-3 align-top">
+            <td class="forms-listing__cell forms-listing__cell--party px-4 py-3 align-top">
               @let assignee = assigneeSummary(form);
               <div class="forms-listing__party">
                 @if (assignee.names.length) {
                   <div class="forms-listing__chips">
                     @for (name of assignee.names; track name) {
-                      <span class="forms-listing__chip forms-listing__chip--assign font-ibm">{{ name }}</span>
+                      <span class="forms-listing__chip forms-listing__chip--assign font-ibm" [attr.title]="name">{{ name }}</span>
                     }
                   </div>
                   <span class="forms-listing__mode font-ibm">{{ assignee.modeLabel }}</span>
@@ -175,13 +176,13 @@
                 }
               </div>
             </td>
-            <td class="px-4 py-3 align-top">
+            <td class="forms-listing__cell forms-listing__cell--party px-4 py-3 align-top">
               @let reporting = reportingSummary(form);
               <div class="forms-listing__party">
                 @if (reporting.names.length) {
                   <div class="forms-listing__chips">
                     @for (name of reporting.names; track name) {
-                      <span class="forms-listing__chip forms-listing__chip--report font-ibm">{{ name }}</span>
+                      <span class="forms-listing__chip forms-listing__chip--report font-ibm" [attr.title]="name">{{ name }}</span>
                     }
                   </div>
                   <span class="forms-listing__mode font-ibm">{{ reporting.modeLabel }}</span>
@@ -190,11 +191,12 @@
                 }
               </div>
             </td>
-            <td class="px-4 py-3 align-top whitespace-nowrap text-[#525252]">
+            <td class="forms-listing__cell forms-listing__cell--created px-4 py-3 align-top text-[#525252]">
               {{ form.createdAt | date: 'medium' }}
             </td>
             @if (showRowActions()) {
-              <td class="px-4 py-3 text-right">
+              <td class="forms-listing__cell forms-listing__cell--actions px-4 py-3 text-right">
+                <div class="forms-listing__actions">
                 @if (isArchivedView() && canView) {
                   <button
                     type="button"
@@ -248,12 +250,14 @@
                     </svg>
                   </button>
                 }
+                </div>
               </td>
             }
           </tr>
         }
       </tbody>
     </table>
+    </div>
 
     @if (!loading() && !hasForms()) {
       <div class="text-center py-10">
