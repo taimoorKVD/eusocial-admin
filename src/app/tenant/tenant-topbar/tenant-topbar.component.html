@@ -45,8 +45,8 @@
 
       <div class="tenant-topbar__user-meta">
         <span class="tenant-topbar__username">{{ userName }}</span>
-        @if (roleName) {
-          <span class="tenant-topbar__role" [attr.title]="roleName">{{ roleName }}</span>
+        @if (jobPositionLabel) {
+          <span class="tenant-topbar__role" [attr.title]="jobPositionLabel">{{ jobPositionLabel }}</span>
         }
       </div>
 

@@ -54,6 +54,8 @@ export class SetupItemComponent {
   private readonly dynamicForm = viewChild(DynamicFormComponent);
 
   readonly loading = signal(false);
+  /** True while create/update item API is in flight. */
+  readonly submitting = signal(false);
   readonly formFields = signal<DynamicField[]>([]);
   readonly itemId = signal('');
   readonly latestFormValue = signal<DynamicFormValue>({});
@@ -111,6 +113,10 @@ export class SetupItemComponent {
   }
 
   onFormSubmit(): void {
+    if (this.submitting()) {
+      return;
+    }
+
     const form = this.dynamicForm();
     if (!form) {
       return;
@@ -124,33 +130,27 @@ export class SetupItemComponent {
     const formValues = this.mapFormValuesToFieldIds(form.value);
     const id = this.itemId();
 
-    if (id) {
-      this.itemService
-        .updateItem(Number(id), formValues)
-        .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe({
-          next: () => {
-            this.toastr.success('Item updated successfully');
-            this.router.navigate(['/items']);
-          },
-          error: (err) => {
-            this.toastr.error(err?.error?.message || 'Failed to update item');
-          },
-        });
-      return;
-    }
+    this.submitting.set(true);
 
-    this.itemService
-      .createItem(formValues)
-      .pipe(takeUntilDestroyed(this.destroyRef))
+    const request$ = id
+      ? this.itemService.updateItem(Number(id), formValues)
+      : this.itemService.createItem(formValues);
+
+    request$
+      .pipe(
+        finalize(() => this.submitting.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
       .subscribe({
         next: () => {
-          this.toastr.success('Item created successfully');
+          this.toastr.success(id ? 'Item updated successfully' : 'Item created successfully');
           this.router.navigate(['/items']);
         },
         error: (err) => {
-          console.error('Create item error:', err);
-          this.toastr.error(err?.error?.message || 'Failed to create item');
+          if (!id) {
+            console.error('Create item error:', err);
+          }
+          this.toastr.error(err?.error?.message || (id ? 'Failed to update item' : 'Failed to create item'));
         },
       });
   }

@@ -213,6 +213,8 @@ export class CreateFormComponent implements OnInit {
   readonly formId = signal<string>('');
   readonly isEditing = computed(() => !!this.formId());
   readonly loading = signal(false);
+  /** True while create/update form template API is in flight. */
+  readonly submitting = signal(false);
   private loadedSchema: DynamicFormPayload | null = null;
 
   readonly sectionDialogOpen = signal(false);
@@ -1965,37 +1967,38 @@ export class CreateFormComponent implements OnInit {
   }
 
   save(): void {
+    if (this.submitting()) {
+      return;
+    }
+
     if (!this.canSave()) return;
 
     const payload = this.buildPayload();
     const id = this.formId();
 
-    if (id) {
-      this.formsService
-        .updateTemplate(Number(id), { name: this.formName(), schema: payload })
-        .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe({
-          next: () => {
-            this.toastr.success('Form updated successfully');
-            this.router.navigate(['/dynamic-forms']);
-          },
-          error: (err) => {
-            this.toastr.error(err?.error?.message || 'Failed to update form');
-          },
-        });
-      return;
-    }
+    this.submitting.set(true);
 
-    this.formsService
-      .createForm({ name: this.formName(), schema: payload })
-      .pipe(takeUntilDestroyed(this.destroyRef))
+    const request$ = id
+      ? this.formsService.updateTemplate(Number(id), {
+          name: this.formName(),
+          schema: payload,
+        })
+      : this.formsService.createForm({ name: this.formName(), schema: payload });
+
+    request$
+      .pipe(
+        finalize(() => this.submitting.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
       .subscribe({
         next: () => {
-          this.toastr.success('Form created successfully');
+          this.toastr.success(id ? 'Form updated successfully' : 'Form created successfully');
           this.router.navigate(['/dynamic-forms']);
         },
         error: (err) => {
-          this.toastr.error(err?.error?.message || 'Failed to create form');
+          this.toastr.error(
+            err?.error?.message || (id ? 'Failed to update form' : 'Failed to create form'),
+          );
         },
       });
   }
