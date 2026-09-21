@@ -16,7 +16,8 @@ export class TenantTopbarComponent implements OnInit, OnDestroy {
   @Output() toggleSidebar = new EventEmitter<void>();
   dropdownOpen = false;
   userName: string = '';
-  roleName: string = '';
+  /** Job position name from session user; falls back to "Admin". */
+  jobPositionLabel: string = '';
   avatarUrl: string | null = null;
 
   private readonly tenantAuth = inject(TenantAuthService);
@@ -72,19 +73,32 @@ export class TenantTopbarComponent implements OnInit, OnDestroy {
       slug ||
       'Tenant User';
 
-    this.roleName = this.resolveRoleName(profile);
+    this.jobPositionLabel = this.resolveJobPositionLabel(
+      profile ?? this.tenantSession.getUser(),
+    );
     this.avatarUrl = profile?.avatarUrl || null;
   }
 
-  /** Role name from the authenticated user payload only — no hardcoded labels. */
-  private resolveRoleName(profile: ReturnType<TenantProfileService['getProfile']>): string {
-    const role = profile?.role;
-    if (typeof role === 'string' && role.trim()) {
-      return role.trim();
+  /** Prefer job_position.name from the authenticated user; otherwise "Admin". */
+  private resolveJobPositionLabel(user: unknown): string {
+    if (!user || typeof user !== 'object') {
+      return 'Admin';
     }
-    if (role && typeof role === 'object' && role.name) {
-      return String(role.name).trim();
+
+    const record = user as Record<string, unknown>;
+    const jobPosition = record['job_position'] ?? record['jobPosition'];
+
+    if (jobPosition && typeof jobPosition === 'object') {
+      const name = (jobPosition as { name?: unknown }).name;
+      if (typeof name === 'string' && name.trim()) {
+        return name.trim();
+      }
     }
-    return '';
+
+    if (typeof jobPosition === 'string' && jobPosition.trim()) {
+      return jobPosition.trim();
+    }
+
+    return 'Admin';
   }
 }
