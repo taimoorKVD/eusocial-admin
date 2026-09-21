@@ -1,3 +1,44 @@
 :host {
   display: block;
 }
+
+.assigned-forms-due-date {
+  min-width: 0;
+}
+
+:host ::ng-deep {
+  .assigned-forms-due-date .flatpickr-input,
+  .assigned-forms-due-date .flatpickr-input.form-control,
+  .assigned-forms-due-date input.flatpickr-input,
+  .assigned-forms-due-date .assigned-forms-due-date__input {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid #e0e0e0;
+    border-radius: 0.5rem;
+    background: #fff;
+    padding: 0.625rem 0.75rem 0.625rem 2.25rem;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 0.875rem;
+    color: #161616;
+    cursor: pointer;
+  }
+
+  .assigned-forms-due-date .flatpickr-input:focus,
+  .assigned-forms-due-date input.flatpickr-input:focus {
+    border-color: #ff9015;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(255, 144, 21, 0.2);
+  }
+
+  .flatpickr-day.selected,
+  .flatpickr-day.startRange,
+  .flatpickr-day.endRange {
+    background: #ff9015 !important;
+    border-color: #ff9015 !important;
+  }
+
+  .flatpickr-day:hover {
+    background: #fff5eb;
+    border-color: #fff5eb;
+  }
+}
