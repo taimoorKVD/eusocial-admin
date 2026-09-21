@@ -38,6 +38,11 @@ export class FlatpickrDirective implements AfterViewInit, OnChanges, OnDestroy {
    * attached while the page scrolls. Default false preserves existing callers.
    */
   @Input() fpStatic = false;
+  /**
+   * Flatpickr position hint (e.g. `auto`, `above`, `auto right`).
+   * Useful for edge-aligned inputs that would otherwise overflow the viewport.
+   */
+  @Input() fpPosition: string | null | undefined = null;
   @Output() fpChange = new EventEmitter<string | null>();
 
   ngAfterViewInit(): void {
@@ -84,7 +89,8 @@ export class FlatpickrDirective implements AfterViewInit, OnChanges, OnDestroy {
 
     if (
       (changes['fpAltFormat'] && !changes['fpAltFormat'].firstChange) ||
-      (changes['fpStatic'] && !changes['fpStatic'].firstChange)
+      (changes['fpStatic'] && !changes['fpStatic'].firstChange) ||
+      (changes['fpPosition'] && !changes['fpPosition'].firstChange)
     ) {
       this.initPicker();
     }
@@ -107,6 +113,7 @@ export class FlatpickrDirective implements AfterViewInit, OnChanges, OnDestroy {
       altInputClass: host.className || undefined,
       allowInput: this.fpAllowInput,
       static: this.fpStatic === true,
+      position: (this.fpPosition || 'auto') as any,
       minDate: this.fpMinDate || undefined,
       maxDate: this.fpMaxDate || undefined,
       defaultDate: this.fpValue || undefined,

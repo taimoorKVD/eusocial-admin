@@ -41,9 +41,27 @@
     z-index: 60;
   }
 
+  /*
+   * Due To sits on the far right — pin the calendar to the input's right edge
+   * and prefer opening upward so it stays inside the viewport without
+   * introducing page scrollbars.
+   */
+  .assigned-forms-due-date--to .flatpickr-calendar.static {
+    left: auto;
+    right: 0;
+    top: auto;
+    bottom: calc(100% + 0.25rem);
+  }
+
+  .assigned-forms-due-date--to .flatpickr-calendar.static.arrowTop,
+  .assigned-forms-due-date--to .flatpickr-calendar.static.arrowBottom {
+    margin-top: 0;
+  }
+
   .assigned-forms-due-date .flatpickr-wrapper {
     display: block;
     width: 100%;
+    position: relative;
   }
 
   .flatpickr-day.selected,

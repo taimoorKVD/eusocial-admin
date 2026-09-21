@@ -301,9 +301,14 @@ export class AssignedFormsService {
     item: Record<string, unknown>,
     user: Record<string, unknown>,
   ): string {
+    const fromAssignedTo = this.readAssigneeNames(
+      item['assignedTo'] ?? item['assigned_to'],
+    );
+    if (fromAssignedTo) {
+      return fromAssignedTo;
+    }
+
     const candidates = [
-      item['assignedTo'],
-      item['assigned_to'],
       item['assigneeName'],
       item['assignee_name'],
       user['name'],
@@ -319,27 +324,42 @@ export class AssignedFormsService {
       }
     }
 
-    const users = item['users'] ?? item['assignees'];
-    if (Array.isArray(users) && users.length) {
-      const names = users
-        .map((entry) => {
-          if (typeof entry === 'string' || typeof entry === 'number') {
-            return String(entry);
-          }
-          const record = this.asRecord(entry);
-          return (
-            this.readString(record['name']) ||
-            [record['first_name'], record['last_name']].filter(Boolean).join(' ') ||
-            this.readString(record['email'])
-          );
-        })
-        .filter(Boolean);
-      if (names.length) {
-        return names.join(', ');
-      }
+    const fromUsers = this.readAssigneeNames(item['users'] ?? item['assignees']);
+    if (fromUsers) {
+      return fromUsers;
     }
 
     return '—';
+  }
+
+  /** Resolve assignee display names from string/object/array payloads. */
+  private readAssigneeNames(value: unknown): string {
+    if (value == null) {
+      return '';
+    }
+
+    if (typeof value === 'string' || typeof value === 'number') {
+      return String(value).trim();
+    }
+
+    if (Array.isArray(value)) {
+      const names = value
+        .map((entry) => this.readAssigneeNames(entry))
+        .filter(Boolean);
+      return names.join(', ');
+    }
+
+    if (this.isObject(value)) {
+      const record = this.asRecord(value);
+      return (
+        this.readString(record['name']) ||
+        [record['first_name'], record['last_name']].filter(Boolean).join(' ').trim() ||
+        [record['firstName'], record['lastName']].filter(Boolean).join(' ').trim() ||
+        this.readString(record['email'])
+      );
+    }
+
+    return '';
   }
 
   private readAssignedUserIds(

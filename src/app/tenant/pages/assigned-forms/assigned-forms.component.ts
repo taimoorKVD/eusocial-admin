@@ -35,7 +35,7 @@ export interface AssignedFormsSummaryCard {
   key: string;
   label: string;
   value: number;
-  iconTone: 'blue' | 'green' | 'amber' | 'red';
+  iconTone: 'blue' | 'green' | 'amber' | 'red' | 'gray';
 }
 
 interface AssignedUserOption {
@@ -129,6 +129,12 @@ export class AssignedFormsComponent implements OnInit {
         label: 'Overdue',
         value: current.overdue,
         iconTone: 'red',
+      },
+      {
+        key: 'pending',
+        label: 'Pending',
+        value: current.notStarted,
+        iconTone: 'gray',
       },
     ];
   });
@@ -368,6 +374,8 @@ export class AssignedFormsComponent implements OnInit {
         return 'bg-[#FEF3C7] text-[#D97706]';
       case 'red':
         return 'bg-[#FEE2E2] text-[#DC2626]';
+      case 'gray':
+        return 'bg-[#E5E7EB] text-[#4B5563]';
     }
   }
 
