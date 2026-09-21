@@ -76,6 +76,18 @@ export class TenantProfileComponent implements OnInit {
     return this.profileService.getRoleLabel(this.profile());
   }
 
+  /**
+   * Job position for Employee (tenant_user) profiles only.
+   * Empty when not an employee or when job_position is missing.
+   */
+  get jobPositionName(): string {
+    if (!this.session.isEmployee()) {
+      return '';
+    }
+
+    return this.resolveJobPositionName(this.profile() ?? this.session.getUser());
+  }
+
   get avatarSrc(): string | null {
     return this.profile()?.avatarUrl || null;
   }
@@ -205,5 +217,28 @@ export class TenantProfileComponent implements OnInit {
     // Allow common phone formats: digits, spaces, +, -, (), .
     const valid = /^[+]?[\d\s().-]{7,20}$/.test(value);
     return valid ? null : { phone: true };
+  }
+
+  /** Same job_position.name source as the Employee Portal topbar. */
+  private resolveJobPositionName(user: unknown): string {
+    if (!user || typeof user !== 'object') {
+      return '';
+    }
+
+    const record = user as Record<string, unknown>;
+    const jobPosition = record['job_position'] ?? record['jobPosition'];
+
+    if (jobPosition && typeof jobPosition === 'object') {
+      const name = (jobPosition as { name?: unknown }).name;
+      if (typeof name === 'string' && name.trim()) {
+        return name.trim();
+      }
+    }
+
+    if (typeof jobPosition === 'string' && jobPosition.trim()) {
+      return jobPosition.trim();
+    }
+
+    return '';
   }
 }

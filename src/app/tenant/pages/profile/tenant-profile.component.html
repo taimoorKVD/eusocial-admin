@@ -167,6 +167,11 @@
             class="w-full border border-[#C6C6C6] px-3 py-2.5 text-sm text-[#161616] outline-none disabled:bg-[#F4F4F4] font-ibm"
             readonly
           />
+          @if (jobPositionName) {
+            <p class="m-0 mt-1.5 text-sm text-[#525252] font-ibm">
+              <span class="font-medium">Job Position:</span> {{ jobPositionName }}
+            </p>
+          }
         </div>
       </div>
 <!--
