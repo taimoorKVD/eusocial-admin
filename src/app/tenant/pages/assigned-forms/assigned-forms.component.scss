@@ -4,6 +4,7 @@
 
 .assigned-forms-due-date {
   min-width: 0;
+  position: relative;
 }
 
 :host ::ng-deep {
@@ -28,6 +29,21 @@
     border-color: #ff9015;
     outline: none;
     box-shadow: 0 0 0 2px rgba(255, 144, 21, 0.2);
+  }
+
+  /* Keep static calendar popup attached to the input while the page scrolls. */
+  .assigned-forms-due-date .flatpickr-calendar.static {
+    position: absolute;
+    top: calc(100% + 0.25rem);
+    left: 0;
+    right: auto;
+    margin: 0;
+    z-index: 60;
+  }
+
+  .assigned-forms-due-date .flatpickr-wrapper {
+    display: block;
+    width: 100%;
   }
 
   .flatpickr-day.selected,

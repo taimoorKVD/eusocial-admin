@@ -250,6 +250,13 @@ const routes: Routes = [
                 (m) => m.AssignedFormsComponent,
               ),
           },
+          {
+            path: 'assigned-forms/:id',
+            loadComponent: () =>
+              import('./pages/assigned-forms/assigned-form-view.component').then(
+                (m) => m.AssignedFormViewComponent,
+              ),
+          },
         ],
       },
 

@@ -11,7 +11,7 @@
 
   <!-- Summary cards -->
   <div class="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-    @for (card of summaryCards; track card.key) {
+    @for (card of summaryCards(); track card.key) {
       <div
         class="flex items-center gap-3 rounded-xl border border-[#E8E8E8] bg-white p-4 shadow-sm"
       >
@@ -63,10 +63,10 @@
       <svg class="h-4 w-4 text-[#FF9015]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
         <path stroke-linecap="round" stroke-linejoin="round" d="M3 5h18M6 12h12M10 19h4" />
       </svg>
-      <span>Filters (4 fields)</span>
+      <span>Filters</span>
     </div>
 
-    <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+    <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
       <!-- Search -->
       <div>
         <label class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-[#8D8D8D]" for="assigned-forms-search">
@@ -94,8 +94,8 @@
         </div>
       </div>
 
-      <!-- Status (custom dropdown) -->
-      <div class="relative assigned-forms-filter-dropdown">
+      <!-- Status (searchable multi-select) -->
+      <div class="relative multi-select-dropdown">
         <label class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-[#8D8D8D]" id="assigned-forms-status-label">
           Status
         </label>
@@ -106,7 +106,21 @@
           [attr.aria-expanded]="statusDropdownOpen()"
           (click)="toggleFilterDropdown('status', $event)"
         >
-          <span class="truncate">{{ statusFilterLabel() }}</span>
+          <div class="flex min-w-0 flex-1 flex-wrap gap-1">
+            @if (selectedStatuses().length === 0) {
+              <span class="text-[#A0A0A0]">Search statuses...</span>
+            }
+            @for (status of selectedStatuses(); track status) {
+              <span class="inline-flex items-center gap-1 rounded border border-[#ffd9b3] bg-[#fff5eb] px-1.5 py-0.5 text-xs font-medium text-[#FF9015]">
+                {{ statusLabel(status) }}
+                <button
+                  type="button"
+                  class="ml-0.5 leading-none font-semibold text-[#FF9015] hover:text-[#e07800]"
+                  (click)="removeStatus(status, $event)"
+                >×</button>
+              </span>
+            }
+          </div>
           <svg width="12" height="8" viewBox="0 0 12 8" fill="none" class="ml-2 shrink-0" aria-hidden="true">
             <path d="M1 1.5L6 6.5L11 1.5" stroke="#161616" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
@@ -116,16 +130,26 @@
             class="absolute left-0 top-full z-50 mt-1 w-full min-w-full rounded-lg border border-[#E0E0E0] bg-white shadow-lg"
             (click)="$event.stopPropagation()"
           >
+            <div class="border-b border-[#E0E0E0] p-2">
+              <input
+                type="text"
+                class="w-full rounded-md border border-[#E0E0E0] px-3 py-2 text-sm outline-none focus:border-[#FF9015]"
+                placeholder="Search statuses..."
+                [value]="statusSearch()"
+                (input)="onMultiSelectSearch($event, statusSearch)"
+                (click)="$event.stopPropagation()"
+              />
+            </div>
             <ul class="max-h-48 overflow-y-auto py-1">
-              @for (option of statusOptions; track option.value) {
+              @for (option of filteredStatusOptions(); track option.value) {
                 <li>
                   <button
                     type="button"
                     class="flex w-full cursor-pointer items-center gap-2 px-4 py-2 text-left text-sm"
-                    [class]="statusFilter() === option.value ? 'bg-[#fff5eb] text-[#FF9015]' : 'text-[#525252] hover:bg-[#FF9015] hover:text-white'"
-                    (click)="selectStatus(option.value, $event)"
+                    [class]="selectedStatuses().includes(option.value) ? 'bg-[#fff5eb] text-[#FF9015]' : 'text-[#525252] hover:bg-[#FF9015] hover:text-white'"
+                    (click)="toggleStatus(option.value, $event)"
                   >
-                    @if (statusFilter() === option.value) {
+                    @if (selectedStatuses().includes(option.value)) {
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="shrink-0 text-[#FF9015]">
                         <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/>
                       </svg>
@@ -133,14 +157,16 @@
                     {{ option.label }}
                   </button>
                 </li>
+              } @empty {
+                <li class="px-4 py-2 text-sm text-[#8D8D8D]">No statuses found</li>
               }
             </ul>
           </div>
         }
       </div>
 
-      <!-- Assigned To (custom dropdown) -->
-      <div class="relative assigned-forms-filter-dropdown">
+      <!-- Assigned To (searchable multi-select) -->
+      <div class="relative multi-select-dropdown">
         <label class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-[#8D8D8D]" id="assigned-forms-user-label">
           Assigned To
         </label>
@@ -151,9 +177,23 @@
           [attr.aria-expanded]="assignedToDropdownOpen()"
           (click)="toggleFilterDropdown('assignedTo', $event)"
         >
-          <span class="truncate">
-            {{ usersLoading() ? 'Loading users…' : assignedToFilterLabel() }}
-          </span>
+          <div class="flex min-w-0 flex-1 flex-wrap gap-1">
+            @if (usersLoading()) {
+              <span class="text-[#A0A0A0]">Loading users…</span>
+            } @else if (selectedUsers().length === 0) {
+              <span class="text-[#A0A0A0]">Search users...</span>
+            }
+            @for (user of selectedUsers(); track user.id) {
+              <span class="inline-flex items-center gap-1 rounded border border-[#ffd9b3] bg-[#fff5eb] px-1.5 py-0.5 text-xs font-medium text-[#FF9015]">
+                {{ user.name || ('User ' + user.id) }}
+                <button
+                  type="button"
+                  class="ml-0.5 leading-none font-semibold text-[#FF9015] hover:text-[#e07800]"
+                  (click)="removeAssignedUser(user.id, $event)"
+                >×</button>
+              </span>
+            }
+          </div>
           <svg width="12" height="8" viewBox="0 0 12 8" fill="none" class="ml-2 shrink-0" aria-hidden="true">
             <path d="M1 1.5L6 6.5L11 1.5" stroke="#161616" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
@@ -163,31 +203,26 @@
             class="absolute left-0 top-full z-50 mt-1 w-full min-w-full rounded-lg border border-[#E0E0E0] bg-white shadow-lg"
             (click)="$event.stopPropagation()"
           >
+            <div class="border-b border-[#E0E0E0] p-2">
+              <input
+                type="text"
+                class="w-full rounded-md border border-[#E0E0E0] px-3 py-2 text-sm outline-none focus:border-[#FF9015]"
+                placeholder="Search users..."
+                [value]="assignedToSearch()"
+                (input)="onMultiSelectSearch($event, assignedToSearch)"
+                (click)="$event.stopPropagation()"
+              />
+            </div>
             <ul class="max-h-48 overflow-y-auto py-1">
-              <li>
-                <button
-                  type="button"
-                  class="flex w-full cursor-pointer items-center gap-2 px-4 py-2 text-left text-sm"
-                  [class]="!assignedToFilter() ? 'bg-[#fff5eb] text-[#FF9015]' : 'text-[#525252] hover:bg-[#FF9015] hover:text-white'"
-                  (click)="selectAssignedTo('', $event)"
-                >
-                  @if (!assignedToFilter()) {
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="shrink-0 text-[#FF9015]">
-                      <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/>
-                    </svg>
-                  }
-                  All Users
-                </button>
-              </li>
-              @for (user of userOptions(); track user.id) {
+              @for (user of filteredUserOptions(); track user.id) {
                 <li>
                   <button
                     type="button"
                     class="flex w-full cursor-pointer items-center gap-2 px-4 py-2 text-left text-sm"
-                    [class]="assignedToFilter() === user.id ? 'bg-[#fff5eb] text-[#FF9015]' : 'text-[#525252] hover:bg-[#FF9015] hover:text-white'"
-                    (click)="selectAssignedTo(user.id, $event)"
+                    [class]="user.selected ? 'bg-[#fff5eb] text-[#FF9015]' : 'text-[#525252] hover:bg-[#FF9015] hover:text-white'"
+                    (click)="toggleAssignedUser(user.id, $event)"
                   >
-                    @if (assignedToFilter() === user.id) {
+                    @if (user.selected) {
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="shrink-0 text-[#FF9015]">
                         <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/>
                       </svg>
@@ -195,19 +230,20 @@
                     <span class="truncate">{{ user.name || ('User ' + user.id) }}</span>
                   </button>
                 </li>
-              }
-              @if (!usersLoading() && userOptions().length === 0) {
-                <li class="px-4 py-2 text-sm text-[#8D8D8D]">No users found</li>
+              } @empty {
+                <li class="px-4 py-2 text-sm text-[#8D8D8D]">
+                  {{ usersLoading() ? 'Loading users…' : 'No users found' }}
+                </li>
               }
             </ul>
           </div>
         }
       </div>
 
-      <!-- Due Date (existing Flatpickr directive) -->
+      <!-- Due From -->
       <div class="assigned-forms-due-date">
-        <label class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-[#8D8D8D]" for="assigned-forms-due-date">
-          Due Date
+        <label class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-[#8D8D8D]" for="assigned-forms-due-from">
+          Due From
         </label>
         <div class="relative">
           <svg
@@ -221,14 +257,47 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M8 3v3M16 3v3M4 9h16M6 5h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z" />
           </svg>
           <input
-            id="assigned-forms-due-date"
+            id="assigned-forms-due-from"
             type="text"
             class="assigned-forms-due-date__input w-full rounded-lg border border-[#E0E0E0] bg-white py-2.5 pl-9 pr-3 text-sm text-[#161616] outline-none transition placeholder:text-[#A8A8A8] focus:border-[#FF9015] focus:ring-2 focus:ring-[#FF9015]/20"
-            placeholder="Select due date"
+            placeholder="Select start date"
             readonly
             appFlatpickr
-            [fpValue]="dueDateFilter()"
-            (fpChange)="onDueDateChange($event)"
+            [fpStatic]="true"
+            [fpValue]="dueFromFilter()"
+            [fpMaxDate]="dueToFilter()"
+            (fpChange)="onDueFromChange($event)"
+          />
+        </div>
+      </div>
+
+      <!-- Due To -->
+      <div class="assigned-forms-due-date">
+        <label class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-[#8D8D8D]" for="assigned-forms-due-to">
+          Due To
+        </label>
+        <div class="relative">
+          <svg
+            class="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-[#8D8D8D]"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            aria-hidden="true"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 3v3M16 3v3M4 9h16M6 5h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z" />
+          </svg>
+          <input
+            id="assigned-forms-due-to"
+            type="text"
+            class="assigned-forms-due-date__input w-full rounded-lg border border-[#E0E0E0] bg-white py-2.5 pl-9 pr-3 text-sm text-[#161616] outline-none transition placeholder:text-[#A8A8A8] focus:border-[#FF9015] focus:ring-2 focus:ring-[#FF9015]/20"
+            placeholder="Select end date"
+            readonly
+            appFlatpickr
+            [fpStatic]="true"
+            [fpValue]="dueToFilter()"
+            [fpMinDate]="dueFromFilter()"
+            (fpChange)="onDueToChange($event)"
           />
         </div>
       </div>
@@ -255,6 +324,12 @@
     </div>
   </div>
 
+  @if (errorMessage()) {
+    <div class="mb-4 rounded-xl border border-[#FECACA] bg-[#FEF2F2] px-4 py-3 text-sm text-[#B42318]">
+      {{ errorMessage() }}
+    </div>
+  }
+
   <!-- Listing table -->
   <div class="overflow-hidden rounded-xl border border-[#E8E8E8] bg-white shadow-sm">
     <div class="overflow-x-auto">
@@ -276,60 +351,75 @@
           </tr>
         </thead>
         <tbody>
-          @for (row of rows; track row.id) {
-            <tr class="border-t border-[#ECECEC] transition hover:bg-[#FAFAFA]">
-              <td class="px-4 py-3 align-middle">
-                <input
-                  type="checkbox"
-                  class="h-4 w-4 rounded border-gray-300 text-[#ea580c] focus:ring-[#ea580c]"
-                  [attr.aria-label]="'Select ' + row.formName"
-                />
-              </td>
-              <td class="px-4 py-3 align-middle">
-                <span class="block truncate font-medium text-[#161616]" [attr.title]="row.formName">
-                  {{ row.formName }}
-                </span>
-              </td>
-              <td class="px-4 py-3 align-middle text-[#525252]">
-                <span class="block truncate" [attr.title]="row.assignedTo">{{ row.assignedTo }}</span>
-              </td>
-              <td class="whitespace-nowrap px-4 py-3 align-middle text-[#525252]">
-                {{ row.dueDate }}
-              </td>
-              <td class="px-4 py-3 align-middle">
-                <span
-                  class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold"
-                  [ngClass]="statusClass(row.status)"
-                >
-                  {{ row.status }}
-                </span>
-              </td>
-              <td class="px-4 py-3 align-middle text-right">
-                <div class="inline-flex flex-nowrap items-center justify-end gap-0.5">
-                  <button
-                    type="button"
-                    class="inline-flex items-center justify-center rounded-md p-1.5 text-[#ea580c] transition hover:bg-orange-50"
-                    aria-label="View assignment"
-                  >
-                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"></path>
-                      <circle cx="12" cy="12" r="3"></circle>
-                    </svg>
-                  </button>
-                  <button
-                    type="button"
-                    class="inline-flex items-center justify-center rounded-md p-1.5 text-red-500 transition hover:bg-red-50"
-                    aria-label="Delete assignment"
-                  >
-                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                      <path d="M3 6h18"></path>
-                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
-                      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                    </svg>
-                  </button>
-                </div>
+          @if (loading()) {
+            <tr>
+              <td colspan="6" class="px-4 py-10 text-center text-sm text-[#6F6F6F]">
+                Loading assigned forms…
               </td>
             </tr>
+          } @else if (rows().length === 0) {
+            <tr>
+              <td colspan="6" class="px-4 py-10 text-center text-sm text-[#6F6F6F]">
+                No assigned forms found.
+              </td>
+            </tr>
+          } @else {
+            @for (row of rows(); track row.id) {
+              <tr class="border-t border-[#ECECEC] transition hover:bg-[#FAFAFA]">
+                <td class="px-4 py-3 align-middle">
+                  <input
+                    type="checkbox"
+                    class="h-4 w-4 rounded border-gray-300 text-[#ea580c] focus:ring-[#ea580c]"
+                    [attr.aria-label]="'Select ' + row.formName"
+                  />
+                </td>
+                <td class="px-4 py-3 align-middle">
+                  <span class="block truncate font-medium text-[#161616]" [attr.title]="row.formName">
+                    {{ row.formName }}
+                  </span>
+                </td>
+                <td class="px-4 py-3 align-middle text-[#525252]">
+                  <span class="block truncate" [attr.title]="row.assignedTo">{{ row.assignedTo }}</span>
+                </td>
+                <td class="whitespace-nowrap px-4 py-3 align-middle text-[#525252]">
+                  {{ formatDueDate(row.dueDate) }}
+                </td>
+                <td class="px-4 py-3 align-middle">
+                  <span
+                    class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold"
+                    [ngClass]="statusClass(row.status)"
+                  >
+                    {{ statusLabel(row.status) }}
+                  </span>
+                </td>
+                <td class="px-4 py-3 align-middle text-right">
+                  <div class="inline-flex flex-nowrap items-center justify-end gap-0.5">
+                    <button
+                      type="button"
+                      class="inline-flex items-center justify-center rounded-md p-1.5 text-[#ea580c] transition hover:bg-orange-50"
+                      aria-label="View assignment"
+                      (click)="viewAssignment(row)"
+                    >
+                      <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      class="inline-flex items-center justify-center rounded-md p-1.5 text-red-500 transition hover:bg-red-50"
+                      aria-label="Delete assignment"
+                    >
+                      <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path d="M3 6h18"></path>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
+                        <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                      </svg>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
           }
         </tbody>
       </table>
@@ -339,35 +429,44 @@
       class="flex flex-col gap-3 border-t border-[#E8E8E8] px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
     >
       <p class="m-0 text-sm text-[#6F6F6F]">
-        Showing 1 to {{ rows.length }} of 24 results
+        @if (total() === 0) {
+          Showing 0 results
+        } @else {
+          Showing {{ showingFrom() }} to {{ showingTo() }} of {{ total() }} results
+        }
       </p>
 
       <div class="flex flex-wrap items-center gap-1.5">
         <button
           type="button"
           class="rounded-lg border border-[#E0E0E0] bg-white px-3 py-1.5 text-sm font-medium text-[#525252] transition hover:bg-[#F4F4F4] disabled:cursor-not-allowed disabled:opacity-40"
-          disabled
+          [disabled]="page() <= 1 || loading()"
+          (click)="prevPage()"
         >
           ← Prev
         </button>
 
-        @for (page of pageNumbers; track page) {
+        @for (pageNum of pageNumbers(); track pageNum) {
           <button
             type="button"
             class="min-w-[2rem] rounded-lg px-2.5 py-1.5 text-sm font-medium transition"
             [ngClass]="
-              page === currentPage
+              pageNum === page()
                 ? 'bg-[#FF9015] text-white'
                 : 'border border-[#E0E0E0] bg-white text-[#525252] hover:bg-[#F4F4F4]'
             "
+            [disabled]="loading()"
+            (click)="goToPage(pageNum)"
           >
-            {{ page }}
+            {{ pageNum }}
           </button>
         }
 
         <button
           type="button"
-          class="rounded-lg border border-[#E0E0E0] bg-white px-3 py-1.5 text-sm font-medium text-[#525252] transition hover:bg-[#F4F4F4]"
+          class="rounded-lg border border-[#E0E0E0] bg-white px-3 py-1.5 text-sm font-medium text-[#525252] transition hover:bg-[#F4F4F4] disabled:cursor-not-allowed disabled:opacity-40"
+          [disabled]="page() >= lastPage() || loading()"
+          (click)="nextPage()"
         >
           Next →
         </button>

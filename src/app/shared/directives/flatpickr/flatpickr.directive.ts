@@ -33,6 +33,11 @@ export class FlatpickrDirective implements AfterViewInit, OnChanges, OnDestroy {
   @Input() fpDisabled = false;
   @Input() fpAllowInput = false;
   @Input() fpAltFormat = 'F j, Y';
+  /**
+   * When true, calendar stays in-flow next to the input so it remains
+   * attached while the page scrolls. Default false preserves existing callers.
+   */
+  @Input() fpStatic = false;
   @Output() fpChange = new EventEmitter<string | null>();
 
   ngAfterViewInit(): void {
@@ -77,7 +82,10 @@ export class FlatpickrDirective implements AfterViewInit, OnChanges, OnDestroy {
       this.applyDisabledState();
     }
 
-    if (changes['fpAltFormat'] && !changes['fpAltFormat'].firstChange) {
+    if (
+      (changes['fpAltFormat'] && !changes['fpAltFormat'].firstChange) ||
+      (changes['fpStatic'] && !changes['fpStatic'].firstChange)
+    ) {
       this.initPicker();
     }
   }
@@ -98,6 +106,7 @@ export class FlatpickrDirective implements AfterViewInit, OnChanges, OnDestroy {
       altFormat: this.fpAltFormat,
       altInputClass: host.className || undefined,
       allowInput: this.fpAllowInput,
+      static: this.fpStatic === true,
       minDate: this.fpMinDate || undefined,
       maxDate: this.fpMaxDate || undefined,
       defaultDate: this.fpValue || undefined,
