@@ -52,6 +52,8 @@ export class SetupVendorComponent {
   private readonly dynamicForm = viewChild(DynamicFormComponent);
 
   readonly loading = signal(false);
+  /** True while create/update vendor API is in flight. */
+  readonly submitting = signal(false);
   readonly formFields = signal<DynamicField[]>([]);
   readonly vendorId = signal('');
   readonly latestFormValue = signal<DynamicFormValue>({});
@@ -109,6 +111,10 @@ export class SetupVendorComponent {
   }
 
   onFormSubmit(): void {
+    if (this.submitting()) {
+      return;
+    }
+
     const form = this.dynamicForm();
     if (!form) {
       return;
@@ -122,32 +128,28 @@ export class SetupVendorComponent {
     const formValues = this.mapFormValuesToFieldIds(form.value);
     const id = this.vendorId();
 
-    if (id) {
-      this.vendorService
-        .updateVendor(Number(id), formValues)
-        .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe({
-          next: () => {
-            this.toastr.success('Vendor updated successfully');
-            this.router.navigate(['/vendors']);
-          },
-          error: (err) => {
-            this.toastr.error(err?.error?.message || 'Failed to update vendor');
-          },
-        });
-      return;
-    }
+    this.submitting.set(true);
 
-    this.vendorService
-      .createVendor(formValues)
-      .pipe(takeUntilDestroyed(this.destroyRef))
+    const request$ = id
+      ? this.vendorService.updateVendor(Number(id), formValues)
+      : this.vendorService.createVendor(formValues);
+
+    request$
+      .pipe(
+        finalize(() => this.submitting.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
       .subscribe({
         next: () => {
-          this.toastr.success('Vendor created successfully');
+          this.toastr.success(
+            id ? 'Vendor updated successfully' : 'Vendor created successfully',
+          );
           this.router.navigate(['/vendors']);
         },
         error: (err) => {
-          this.toastr.error(err?.error?.message || 'Failed to create vendor');
+          this.toastr.error(
+            err?.error?.message || (id ? 'Failed to update vendor' : 'Failed to create vendor'),
+          );
         },
       });
   }
