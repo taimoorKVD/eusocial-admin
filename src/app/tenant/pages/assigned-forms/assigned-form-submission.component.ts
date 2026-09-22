@@ -12,8 +12,8 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { catchError, finalize, forkJoin, map, of, switchMap } from 'rxjs';
 import { SharedModule } from '../../../shared/shared.module';
 import {
-  AssignedFormDetail,
   AssignedFormsService,
+  OccurrenceSubmissionDetail,
 } from '../../../services/assigned-forms.service';
 import { DynamicFormFieldMapperService } from '../../forms/services/dynamic-form-field.mapper.service';
 import { EmployeeAssignmentSectionView } from '../../../interfaces/employee-assignment';
@@ -22,16 +22,16 @@ import { mapAssignmentSectionsToBuilder } from '../employee/utils/assignment-for
 import { CompletedFormViewComponent } from '../employee/typeform-fill/completed-form-view.component';
 
 /**
- * Tenant Admin read-only view for a completed/assigned form submission.
+ * Tenant Admin read-only view for a completed occurrence submission.
  */
 @Component({
-  selector: 'app-assigned-form-view',
+  selector: 'app-assigned-form-submission',
   standalone: true,
   imports: [CommonModule, SharedModule, CompletedFormViewComponent],
   templateUrl: './assigned-form-view.component.html',
   styleUrl: './assigned-form-view.component.scss',
 })
-export class AssignedFormViewComponent implements OnInit {
+export class AssignedFormSubmissionComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly assignedFormsService = inject(AssignedFormsService);
@@ -40,31 +40,22 @@ export class AssignedFormViewComponent implements OnInit {
 
   readonly loading = signal(true);
   readonly errorMessage = signal('');
-  readonly detail = signal<AssignedFormDetail | null>(null);
+  readonly detail = signal<OccurrenceSubmissionDetail | null>(null);
   readonly sections = signal<EmployeeAssignmentSectionView[]>([]);
+  readonly assignmentId = signal('');
 
-  readonly formTitle = computed(() => this.detail()?.formName || 'Assigned Form');
+  readonly formTitle = computed(() => this.detail()?.formName || 'Completed Form');
   readonly answers = computed(() => this.detail()?.answers ?? {});
   readonly submittedAt = computed(() => this.detail()?.submittedAt ?? null);
-  readonly assignedTo = computed(() => this.detail()?.assignedTo || '—');
   readonly dueDate = computed(() => this.detail()?.dueDate ?? null);
-  readonly mode = computed(() => this.detail()?.mode ?? null);
 
-  readonly statusLabel = computed(() => {
-    switch (this.detail()?.status) {
-      case 'completed':
-        return 'Completed';
-      case 'in_progress':
-        return 'In Progress';
-      case 'overdue':
-        return 'Overdue';
-      default:
-        return 'Pending';
-    }
-  });
+  readonly statusLabel = computed(
+    () => this.detail()?.statusLabel || 'Completed',
+  );
 
   readonly statusClass = computed(() => {
-    switch (this.detail()?.status) {
+    const key = this.statusLabel().trim().toLowerCase().replace(/[\s-]+/g, '_');
+    switch (key) {
       case 'completed':
         return 'bg-[#ECFDF3] text-[#067647]';
       case 'in_progress':
@@ -87,33 +78,38 @@ export class AssignedFormViewComponent implements OnInit {
     this.route.paramMap
       .pipe(
         switchMap((params) => {
-          const id = params.get('id');
-          if (!id) {
+          const assignmentId = params.get('assignmentId') || params.get('id');
+          const occurrenceId = params.get('occurrenceId');
+
+          if (!assignmentId || !occurrenceId) {
             this.loading.set(false);
-            this.errorMessage.set('Assignment id is missing.');
+            this.errorMessage.set('Submission id is missing.');
             return of(null);
           }
 
+          this.assignmentId.set(assignmentId);
           this.loading.set(true);
           this.errorMessage.set('');
           this.detail.set(null);
           this.sections.set([]);
 
-          return this.assignedFormsService.getAssignedForm(id).pipe(
-            switchMap((detail) =>
-              this.hydrateSections(detail).pipe(
-                map((sections) => ({ detail, sections })),
+          return this.assignedFormsService
+            .getOccurrenceSubmission(assignmentId, occurrenceId)
+            .pipe(
+              switchMap((detail) =>
+                this.hydrateSections(detail).pipe(
+                  map((sections) => ({ detail, sections })),
+                ),
               ),
-            ),
-            catchError((err) => {
-              this.errorMessage.set(
-                err?.error?.message ||
-                  'Unable to load this assigned form. Please try again.',
-              );
-              return of(null);
-            }),
-            finalize(() => this.loading.set(false)),
-          );
+              catchError((err) => {
+                this.errorMessage.set(
+                  err?.error?.message ||
+                    'Unable to load this submission. Please try again.',
+                );
+                return of(null);
+              }),
+              finalize(() => this.loading.set(false)),
+            );
         }),
         takeUntilDestroyed(this.destroyRef),
       )
@@ -127,12 +123,20 @@ export class AssignedFormViewComponent implements OnInit {
   }
 
   goBack(): void {
+    const assignmentId = this.assignmentId();
+    if (assignmentId) {
+      this.router.navigate(['/assigned-forms', assignmentId]);
+      return;
+    }
     this.router.navigate(['/assigned-forms']);
   }
 
   retry(): void {
-    const id = this.route.snapshot.paramMap.get('id');
-    if (!id) {
+    const assignmentId =
+      this.route.snapshot.paramMap.get('assignmentId') ||
+      this.route.snapshot.paramMap.get('id');
+    const occurrenceId = this.route.snapshot.paramMap.get('occurrenceId');
+    if (!assignmentId || !occurrenceId) {
       return;
     }
 
@@ -140,7 +144,7 @@ export class AssignedFormViewComponent implements OnInit {
     this.errorMessage.set('');
 
     this.assignedFormsService
-      .getAssignedForm(id)
+      .getOccurrenceSubmission(assignmentId, occurrenceId)
       .pipe(
         switchMap((detail) =>
           this.hydrateSections(detail).pipe(
@@ -160,7 +164,7 @@ export class AssignedFormViewComponent implements OnInit {
           this.sections.set([]);
           this.errorMessage.set(
             err?.error?.message ||
-              'Unable to load this assigned form. Please try again.',
+              'Unable to load this submission. Please try again.',
           );
         },
       });
@@ -181,7 +185,7 @@ export class AssignedFormViewComponent implements OnInit {
     });
   }
 
-  private hydrateSections(detail: AssignedFormDetail) {
+  private hydrateSections(detail: OccurrenceSubmissionDetail) {
     const answers = detail.answers ?? {};
     const mapped = mapAssignmentSectionsToBuilder(
       detail.sections,

@@ -22,8 +22,8 @@ import { FormStorageService } from '../../forms/services/form-storage.service';
 import {
   AssignedFormApiStatus,
   AssignedFormListItem,
+  AssignedFormsAssignmentStats,
   AssignedFormsService,
-  AssignedFormsStats,
 } from '../../../services/assigned-forms.service';
 import { environment } from '../../../../environments/environment';
 
@@ -31,7 +31,8 @@ export type AssignedFormStatusLabel =
   | 'Pending'
   | 'In Progress'
   | 'Completed'
-  | 'Overdue';
+  | 'Overdue'
+  | 'Upcoming';
 
 export interface AssignedFormsSummaryCard {
   key: string;
@@ -103,12 +104,11 @@ export class AssignedFormsComponent implements OnInit {
   readonly loading = signal(false);
   readonly errorMessage = signal('');
   readonly rows = signal<AssignedFormListItem[]>([]);
-  readonly stats = signal<AssignedFormsStats>({
+  readonly assignmentStats = signal<AssignedFormsAssignmentStats>({
     totalAssigned: 0,
-    completed: 0,
+    withOverdue: 0,
     inProgress: 0,
-    overdue: 0,
-    notStarted: 0,
+    fullyCompleted: 0,
   });
 
   readonly page = signal(1);
@@ -120,7 +120,7 @@ export class AssignedFormsComponent implements OnInit {
   readonly goToPageInput = signal('1');
 
   readonly summaryCards = computed<AssignedFormsSummaryCard[]>(() => {
-    const current = this.stats();
+    const current = this.assignmentStats();
     return [
       {
         key: 'total',
@@ -129,10 +129,10 @@ export class AssignedFormsComponent implements OnInit {
         iconTone: 'blue',
       },
       {
-        key: 'completed',
-        label: 'Completed',
-        value: current.completed,
-        iconTone: 'green',
+        key: 'with-overdue',
+        label: 'With Overdue',
+        value: current.withOverdue,
+        iconTone: 'red',
       },
       {
         key: 'in-progress',
@@ -141,16 +141,10 @@ export class AssignedFormsComponent implements OnInit {
         iconTone: 'amber',
       },
       {
-        key: 'overdue',
-        label: 'Overdue',
-        value: current.overdue,
-        iconTone: 'red',
-      },
-      {
-        key: 'pending',
-        label: 'Pending',
-        value: current.notStarted,
-        iconTone: 'gray',
+        key: 'fully-completed',
+        label: 'Fully Completed',
+        value: current.fullyCompleted,
+        iconTone: 'green',
       },
     ];
   });
@@ -434,32 +428,21 @@ export class AssignedFormsComponent implements OnInit {
     }
   }
 
-  statusClass(status: AssignedFormApiStatus): string {
-    switch (status) {
+  statusBadgeClass(statusLabel: string): string {
+    const key = statusLabel.trim().toLowerCase().replace(/[\s-]+/g, '_');
+    switch (key) {
       case 'completed':
+      case 'fully_completed':
         return 'bg-[#16A34A] text-white';
       case 'in_progress':
         return 'bg-[#F59E0B] text-white';
       case 'overdue':
         return 'bg-[#DC2626] text-white';
+      case 'upcoming':
+        return 'bg-[#DBEAFE] text-[#1D4ED8]';
       default:
         return 'bg-[#E5E7EB] text-[#4B5563]';
     }
-  }
-
-  formatDueDate(value: string | null): string {
-    if (!value) {
-      return '—';
-    }
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-      return value;
-    }
-    return date.toLocaleDateString(undefined, {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
   }
 
   cardToneClass(tone: AssignedFormsSummaryCard['iconTone']): string {
@@ -508,7 +491,7 @@ export class AssignedFormsComponent implements OnInit {
       .subscribe({
         next: (result) => {
           this.rows.set(result.items);
-          this.stats.set(result.stats);
+          this.assignmentStats.set(result.assignmentStats);
           this.page.set(result.meta.page || this.page());
           this.lastPage.set(Math.max(1, result.meta.lastPage || 1));
           this.total.set(result.meta.total);
@@ -517,12 +500,11 @@ export class AssignedFormsComponent implements OnInit {
         },
         error: (err) => {
           this.rows.set([]);
-          this.stats.set({
+          this.assignmentStats.set({
             totalAssigned: 0,
-            completed: 0,
+            withOverdue: 0,
             inProgress: 0,
-            overdue: 0,
-            notStarted: 0,
+            fullyCompleted: 0,
           });
           this.total.set(0);
           this.lastPage.set(1);

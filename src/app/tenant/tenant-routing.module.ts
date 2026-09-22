@@ -253,8 +253,15 @@ const routes: Routes = [
           {
             path: 'assigned-forms/:id',
             loadComponent: () =>
-              import('./pages/assigned-forms/assigned-form-view.component').then(
-                (m) => m.AssignedFormViewComponent,
+              import('./pages/assigned-forms/assigned-form-details.component').then(
+                (m) => m.AssignedFormDetailsComponent,
+              ),
+          },
+          {
+            path: 'assigned-forms/:assignmentId/occurrences/:occurrenceId',
+            loadComponent: () =>
+              import('./pages/assigned-forms/assigned-form-submission.component').then(
+                (m) => m.AssignedFormSubmissionComponent,
               ),
           },
         ],
