@@ -69,7 +69,7 @@ export class LocationListingComponent {
       placeholder: 'Search by Postal Code...',
     },
   ];
-  private defaultLimit = environment.limit;
+  pageSize = environment.limit || 15;
 
   bulkSelection = new BulkSelectionState();
   showBulkDeleteConfirmModal = false;
@@ -99,8 +99,8 @@ export class LocationListingComponent {
     );
 
     const apiCall = Object.keys(activeFilters).length
-      ? this.locationService.searchLocations(activeFilters, this.defaultLimit)
-      : this.locationService.getLocations(page, this.defaultLimit);
+      ? this.locationService.searchLocations(activeFilters, this.pageSize)
+      : this.locationService.getLocations(page, this.pageSize);
 
     apiCall.subscribe({
       next: (res) => {
@@ -263,6 +263,16 @@ export class LocationListingComponent {
       this.bulkSelection.clear();
       this.getLocations(this.page + 1);
     }
+  }
+
+  onPageSizeChange(size: number): void {
+    if (!size || size === this.pageSize) {
+      return;
+    }
+    this.pageSize = size;
+    this.page = 1;
+    this.bulkSelection.clear();
+    this.getLocations(1);
   }
 
   onFilterSearch(filters: any): void {

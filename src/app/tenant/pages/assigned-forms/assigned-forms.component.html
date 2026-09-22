@@ -1,0 +1,563 @@
+<div class="p-4 md:p-6 font-ibm">
+  <!-- Header -->
+  <div class="mb-5">
+    <h1 class="m-0 text-[22px] font-semibold leading-tight text-[#161616] md:text-[24px]">
+      Assigned Forms
+    </h1>
+    <p class="m-0 mt-1 text-sm text-[#6F6F6F]">
+      Track and manage forms assigned to your team members.
+    </p>
+  </div>
+
+  <!-- Summary cards -->
+  <div class="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+    @for (card of summaryCards(); track card.key) {
+      <div
+        class="flex items-center gap-3 rounded-xl border border-[#E8E8E8] bg-white p-4 shadow-sm"
+      >
+        <div
+          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
+          [ngClass]="cardToneClass(card.iconTone)"
+          aria-hidden="true"
+        >
+          @switch (card.key) {
+            @case ('total') {
+              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2Z" />
+              </svg>
+            }
+            @case ('completed') {
+              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+              </svg>
+            }
+            @case ('in-progress') {
+              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+              </svg>
+            }
+            @case ('overdue') {
+              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0 3.75h.008M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+              </svg>
+            }
+            @case ('pending') {
+              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+              </svg>
+            }
+          }
+        </div>
+
+        <div class="min-w-0 flex-1">
+          <p class="m-0 text-2xl font-semibold leading-none text-[#161616]">{{ card.value }}</p>
+          <p class="m-0 mt-1.5 text-sm text-[#6F6F6F]">{{ card.label }}</p>
+        </div>
+
+        <svg class="h-4 w-4 shrink-0 text-[#A8A8A8]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="m9 5 7 7-7 7" />
+        </svg>
+      </div>
+    }
+  </div>
+
+  <!-- Filters -->
+  <div class="mb-5 rounded-xl border border-[#E8E8E8] bg-white p-4 shadow-sm">
+    <div class="mb-3 flex items-center gap-2 text-sm font-medium text-[#525252]">
+      <svg class="h-4 w-4 text-[#FF9015]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M3 5h18M6 12h12M10 19h4" />
+      </svg>
+      <span>Filters</span>
+    </div>
+
+    <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+      <!-- Search -->
+      <div>
+        <label class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-[#8D8D8D]" for="assigned-forms-search">
+          Search
+        </label>
+        <div class="relative">
+          <svg
+            class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8D8D8D]"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.3-4.3M11 18a7 7 0 1 1 0-14 7 7 0 0 1 0 14Z" />
+          </svg>
+          <input
+            id="assigned-forms-search"
+            type="text"
+            class="w-full rounded-lg border border-[#E0E0E0] bg-white py-2.5 pl-9 pr-3 text-sm text-[#161616] outline-none transition placeholder:text-[#A8A8A8] focus:border-[#FF9015] focus:ring-2 focus:ring-[#FF9015]/20"
+            placeholder="Search by form name or assignee"
+            [ngModel]="searchQuery()"
+            (ngModelChange)="onSearchInput($event)"
+          />
+        </div>
+      </div>
+
+      <!-- Status (searchable multi-select) -->
+      <div class="relative multi-select-dropdown">
+        <label class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-[#8D8D8D]" id="assigned-forms-status-label">
+          Status
+        </label>
+        <button
+          type="button"
+          class="flex w-full min-h-[42px] items-center justify-between rounded-lg border border-[#E0E0E0] bg-white px-3.5 py-2 text-sm font-medium text-[#161616] shadow-sm outline-none transition hover:border-[#FF9015] focus:border-[#FF9015] focus:ring-2 focus:ring-[#FF9015]/20"
+          aria-labelledby="assigned-forms-status-label"
+          [attr.aria-expanded]="statusDropdownOpen()"
+          (click)="toggleFilterDropdown('status', $event)"
+        >
+          <div class="flex min-w-0 flex-1 flex-wrap gap-1">
+            @if (selectedStatuses().length === 0) {
+              <span class="text-[#A0A0A0]">Search statuses...</span>
+            }
+            @for (status of selectedStatuses(); track status) {
+              <span class="inline-flex items-center gap-1 rounded border border-[#ffd9b3] bg-[#fff5eb] px-1.5 py-0.5 text-xs font-medium text-[#FF9015]">
+                {{ statusLabel(status) }}
+                <button
+                  type="button"
+                  class="ml-0.5 leading-none font-semibold text-[#FF9015] hover:text-[#e07800]"
+                  (click)="removeStatus(status, $event)"
+                >×</button>
+              </span>
+            }
+          </div>
+          <svg width="12" height="8" viewBox="0 0 12 8" fill="none" class="ml-2 shrink-0" aria-hidden="true">
+            <path d="M1 1.5L6 6.5L11 1.5" stroke="#161616" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        @if (statusDropdownOpen()) {
+          <div
+            class="absolute left-0 top-full z-50 mt-1 w-full min-w-full rounded-lg border border-[#E0E0E0] bg-white shadow-lg"
+            (click)="$event.stopPropagation()"
+          >
+            <div class="border-b border-[#E0E0E0] p-2">
+              <input
+                type="text"
+                class="w-full rounded-md border border-[#E0E0E0] px-3 py-2 text-sm outline-none focus:border-[#FF9015]"
+                placeholder="Search statuses..."
+                [value]="statusSearch()"
+                (input)="onMultiSelectSearch($event, statusSearch)"
+                (click)="$event.stopPropagation()"
+              />
+            </div>
+            <ul class="max-h-48 overflow-y-auto py-1">
+              @for (option of filteredStatusOptions(); track option.value) {
+                <li>
+                  <button
+                    type="button"
+                    class="flex w-full cursor-pointer items-center gap-2 px-4 py-2 text-left text-sm"
+                    [class]="selectedStatuses().includes(option.value) ? 'bg-[#fff5eb] text-[#FF9015]' : 'text-[#525252] hover:bg-[#FF9015] hover:text-white'"
+                    (click)="toggleStatus(option.value, $event)"
+                  >
+                    @if (selectedStatuses().includes(option.value)) {
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="shrink-0 text-[#FF9015]">
+                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/>
+                      </svg>
+                    }
+                    {{ option.label }}
+                  </button>
+                </li>
+              } @empty {
+                <li class="px-4 py-2 text-sm text-[#8D8D8D]">No statuses found</li>
+              }
+            </ul>
+          </div>
+        }
+      </div>
+
+      <!-- Assigned To Users (searchable multi-select) -->
+      <div class="relative multi-select-dropdown">
+        <label class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-[#8D8D8D]" id="assigned-forms-user-label">
+          Assigned To Users
+        </label>
+        <button
+          type="button"
+          class="flex w-full min-h-[42px] items-center justify-between rounded-lg border border-[#E0E0E0] bg-white px-3.5 py-2 text-sm font-medium text-[#161616] shadow-sm outline-none transition hover:border-[#FF9015] focus:border-[#FF9015] focus:ring-2 focus:ring-[#FF9015]/20"
+          aria-labelledby="assigned-forms-user-label"
+          [attr.aria-expanded]="assignedToDropdownOpen()"
+          (click)="toggleFilterDropdown('assignedTo', $event)"
+        >
+          <div class="flex min-w-0 flex-1 flex-wrap gap-1">
+            @if (usersLoading()) {
+              <span class="text-[#A0A0A0]">Loading users…</span>
+            } @else if (selectedUsers().length === 0) {
+              <span class="text-[#A0A0A0]">Search users...</span>
+            }
+            @for (user of selectedUsers(); track user.id) {
+              <span class="inline-flex items-center gap-1 rounded border border-[#ffd9b3] bg-[#fff5eb] px-1.5 py-0.5 text-xs font-medium text-[#FF9015]">
+                {{ user.name || ('User ' + user.id) }}
+                <button
+                  type="button"
+                  class="ml-0.5 leading-none font-semibold text-[#FF9015] hover:text-[#e07800]"
+                  (click)="removeAssignedUser(user.id, $event)"
+                >×</button>
+              </span>
+            }
+          </div>
+          <svg width="12" height="8" viewBox="0 0 12 8" fill="none" class="ml-2 shrink-0" aria-hidden="true">
+            <path d="M1 1.5L6 6.5L11 1.5" stroke="#161616" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        @if (assignedToDropdownOpen()) {
+          <div
+            class="absolute left-0 top-full z-50 mt-1 w-full min-w-full rounded-lg border border-[#E0E0E0] bg-white shadow-lg"
+            (click)="$event.stopPropagation()"
+          >
+            <div class="border-b border-[#E0E0E0] p-2">
+              <input
+                type="text"
+                class="w-full rounded-md border border-[#E0E0E0] px-3 py-2 text-sm outline-none focus:border-[#FF9015]"
+                placeholder="Search users..."
+                [value]="assignedToSearch()"
+                (input)="onMultiSelectSearch($event, assignedToSearch)"
+                (click)="$event.stopPropagation()"
+              />
+            </div>
+            <ul class="max-h-48 overflow-y-auto py-1">
+              @for (user of filteredUserOptions(); track user.id) {
+                <li>
+                  <button
+                    type="button"
+                    class="flex w-full cursor-pointer items-center gap-2 px-4 py-2 text-left text-sm"
+                    [class]="user.selected ? 'bg-[#fff5eb] text-[#FF9015]' : 'text-[#525252] hover:bg-[#FF9015] hover:text-white'"
+                    (click)="toggleAssignedUser(user.id, $event)"
+                  >
+                    @if (user.selected) {
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="shrink-0 text-[#FF9015]">
+                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/>
+                      </svg>
+                    }
+                    <span class="truncate">{{ user.name || ('User ' + user.id) }}</span>
+                  </button>
+                </li>
+              } @empty {
+                <li class="px-4 py-2 text-sm text-[#8D8D8D]">
+                  {{ usersLoading() ? 'Loading users…' : 'No users found' }}
+                </li>
+              }
+            </ul>
+          </div>
+        }
+      </div>
+
+      <!-- Assigned To Job Position (searchable multi-select) -->
+      <div class="relative multi-select-dropdown">
+        <label class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-[#8D8D8D]" id="assigned-forms-job-position-label">
+          Assigned To Job Position
+        </label>
+        <button
+          type="button"
+          class="flex w-full min-h-[42px] items-center justify-between rounded-lg border border-[#E0E0E0] bg-white px-3.5 py-2 text-sm font-medium text-[#161616] shadow-sm outline-none transition hover:border-[#FF9015] focus:border-[#FF9015] focus:ring-2 focus:ring-[#FF9015]/20"
+          aria-labelledby="assigned-forms-job-position-label"
+          [attr.aria-expanded]="jobPositionDropdownOpen()"
+          (click)="toggleFilterDropdown('jobPosition', $event)"
+        >
+          <div class="flex min-w-0 flex-1 flex-wrap gap-1">
+            @if (jobPositionsLoading()) {
+              <span class="text-[#A0A0A0]">Loading job positions…</span>
+            } @else if (selectedJobPositions().length === 0) {
+              <span class="text-[#A0A0A0]">Search job positions...</span>
+            }
+            @for (position of selectedJobPositions(); track position.id) {
+              <span class="inline-flex items-center gap-1 rounded border border-[#ffd9b3] bg-[#fff5eb] px-1.5 py-0.5 text-xs font-medium text-[#FF9015]">
+                {{ position.name || ('Position ' + position.id) }}
+                <button
+                  type="button"
+                  class="ml-0.5 leading-none font-semibold text-[#FF9015] hover:text-[#e07800]"
+                  (click)="removeJobPosition(position.id, $event)"
+                >×</button>
+              </span>
+            }
+          </div>
+          <svg width="12" height="8" viewBox="0 0 12 8" fill="none" class="ml-2 shrink-0" aria-hidden="true">
+            <path d="M1 1.5L6 6.5L11 1.5" stroke="#161616" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        @if (jobPositionDropdownOpen()) {
+          <div
+            class="absolute left-0 top-full z-50 mt-1 w-full min-w-full rounded-lg border border-[#E0E0E0] bg-white shadow-lg"
+            (click)="$event.stopPropagation()"
+          >
+            <div class="border-b border-[#E0E0E0] p-2">
+              <input
+                type="text"
+                class="w-full rounded-md border border-[#E0E0E0] px-3 py-2 text-sm outline-none focus:border-[#FF9015]"
+                placeholder="Search job positions..."
+                [value]="jobPositionSearch()"
+                (input)="onMultiSelectSearch($event, jobPositionSearch)"
+                (click)="$event.stopPropagation()"
+              />
+            </div>
+            <ul class="max-h-48 overflow-y-auto py-1">
+              @for (position of filteredJobPositionOptions(); track position.id) {
+                <li>
+                  <button
+                    type="button"
+                    class="flex w-full cursor-pointer items-center gap-2 px-4 py-2 text-left text-sm"
+                    [class]="position.selected ? 'bg-[#fff5eb] text-[#FF9015]' : 'text-[#525252] hover:bg-[#FF9015] hover:text-white'"
+                    (click)="toggleJobPosition(position.id, $event)"
+                  >
+                    @if (position.selected) {
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="shrink-0 text-[#FF9015]">
+                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/>
+                      </svg>
+                    }
+                    <span class="truncate">{{ position.name || ('Position ' + position.id) }}</span>
+                  </button>
+                </li>
+              } @empty {
+                <li class="px-4 py-2 text-sm text-[#8D8D8D]">
+                  {{ jobPositionsLoading() ? 'Loading job positions…' : 'No job positions found' }}
+                </li>
+              }
+            </ul>
+          </div>
+        }
+      </div>
+
+      <!-- Due From -->
+      <div class="assigned-forms-due-date">
+        <label class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-[#8D8D8D]" for="assigned-forms-due-from">
+          Due From
+        </label>
+        <div class="relative">
+          <svg
+            class="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-[#8D8D8D]"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            aria-hidden="true"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 3v3M16 3v3M4 9h16M6 5h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z" />
+          </svg>
+          <input
+            id="assigned-forms-due-from"
+            type="text"
+            class="assigned-forms-due-date__input w-full rounded-lg border border-[#E0E0E0] bg-white py-2.5 pl-9 pr-3 text-sm text-[#161616] outline-none transition placeholder:text-[#A8A8A8] focus:border-[#FF9015] focus:ring-2 focus:ring-[#FF9015]/20"
+            placeholder="Select start date"
+            readonly
+            appFlatpickr
+            [fpStatic]="true"
+            [fpValue]="dueFromFilter()"
+            [fpMaxDate]="dueToFilter()"
+            (fpChange)="onDueFromChange($event)"
+          />
+        </div>
+      </div>
+
+      <!-- Due To -->
+      <div class="assigned-forms-due-date assigned-forms-due-date--to">
+        <label class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-[#8D8D8D]" for="assigned-forms-due-to">
+          Due To
+        </label>
+        <div class="relative">
+          <svg
+            class="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-[#8D8D8D]"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            aria-hidden="true"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 3v3M16 3v3M4 9h16M6 5h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z" />
+          </svg>
+          <input
+            id="assigned-forms-due-to"
+            type="text"
+            class="assigned-forms-due-date__input w-full rounded-lg border border-[#E0E0E0] bg-white py-2.5 pl-9 pr-3 text-sm text-[#161616] outline-none transition placeholder:text-[#A8A8A8] focus:border-[#FF9015] focus:ring-2 focus:ring-[#FF9015]/20"
+            placeholder="Select end date"
+            readonly
+            appFlatpickr
+            [fpStatic]="true"
+            [fpPosition]="'auto right'"
+            [fpValue]="dueToFilter()"
+            [fpMinDate]="dueFromFilter()"
+            (fpChange)="onDueToChange($event)"
+          />
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-4 flex flex-wrap items-center justify-end gap-2">
+      <button
+        type="button"
+        class="rounded-lg border border-[#C6C6C6] bg-white px-4 py-2 text-sm font-medium text-[#525252] transition hover:bg-[#F4F4F4]"
+        (click)="clearFilters()"
+      >
+        Clear
+      </button>
+      <button
+        type="button"
+        class="inline-flex items-center gap-2 rounded-lg border border-[#FF9015] bg-[#FF9015] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#e57f0f]"
+        (click)="onSearchClick()"
+      >
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.3-4.3M11 18a7 7 0 1 1 0-14 7 7 0 0 1 0 14Z" />
+        </svg>
+        Search
+      </button>
+    </div>
+  </div>
+
+  @if (errorMessage()) {
+    <div class="mb-4 rounded-xl border border-[#FECACA] bg-[#FEF2F2] px-4 py-3 text-sm text-[#B42318]">
+      {{ errorMessage() }}
+    </div>
+  }
+
+  <!-- Listing table -->
+  <div class="overflow-hidden rounded-xl border border-[#E8E8E8] bg-white shadow-sm">
+    <div class="overflow-x-auto">
+      <table class="w-full min-w-[48rem] table-fixed border-collapse text-left text-sm">
+        <thead class="bg-[#F3F4F6] text-[#374151]">
+          <tr>
+            <th class="w-[32%] px-4 py-3 font-semibold">Form Name</th>
+            <th class="w-[24%] px-4 py-3 font-semibold">Assigned To</th>
+            <th class="w-[16%] px-4 py-3 font-semibold">Due Date</th>
+            <th class="w-[16%] px-4 py-3 font-semibold">Status</th>
+            <th class="w-[12%] px-4 py-3 text-right font-semibold">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (loading()) {
+            <tr>
+              <td colspan="5" class="px-4 py-10 text-center text-sm text-[#6F6F6F]">
+                Loading assigned forms…
+              </td>
+            </tr>
+          } @else if (rows().length === 0) {
+            <tr>
+              <td colspan="5" class="px-4 py-10 text-center text-sm text-[#6F6F6F]">
+                No assigned forms found.
+              </td>
+            </tr>
+          } @else {
+            @for (row of rows(); track row.id) {
+              <tr class="border-t border-[#ECECEC] transition hover:bg-[#FAFAFA]">
+                <td class="px-4 py-3 align-middle">
+                  <span class="block truncate font-medium text-[#161616]" [attr.title]="row.formName">
+                    {{ row.formName }}
+                  </span>
+                </td>
+                <td class="px-4 py-3 align-middle text-[#525252]">
+                  <span class="block truncate" [attr.title]="row.assignedTo">{{ row.assignedTo }}</span>
+                </td>
+                <td class="whitespace-nowrap px-4 py-3 align-middle text-[#525252]">
+                  {{ formatDueDate(row.dueDate) }}
+                </td>
+                <td class="px-4 py-3 align-middle">
+                  <span
+                    class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold"
+                    [ngClass]="statusClass(row.status)"
+                  >
+                    {{ statusLabel(row.status) }}
+                  </span>
+                </td>
+                <td class="px-4 py-3 align-middle text-right">
+                  @if (row.status === 'completed') {
+                    <button
+                      type="button"
+                      class="inline-flex items-center justify-center rounded-md p-1.5 text-[#ea580c] transition hover:bg-orange-50"
+                      aria-label="View assignment"
+                      (click)="viewAssignment(row)"
+                    >
+                      <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                      </svg>
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div
+      class="flex flex-col gap-3 border-t border-[#E8E8E8] px-4 py-3 lg:flex-row lg:items-center lg:justify-between"
+    >
+      <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
+        <p class="m-0 text-sm text-[#6F6F6F]">
+          @if (total() === 0) {
+            Showing 0 results
+          } @else {
+            Showing {{ showingFrom() }} to {{ showingTo() }} of {{ total() }} results
+          }
+        </p>
+
+        <app-page-size-select
+          [total]="total()"
+          [value]="pageSizeValue()"
+          [disabled]="loading()"
+          (valueChange)="onPageSizeChange($event)"
+        ></app-page-size-select>
+
+        <label
+          class="inline-flex items-center gap-2 text-sm font-medium text-[#525252]"
+          for="assigned-forms-go-to-page"
+        >
+          <span class="whitespace-nowrap">Go to page</span>
+          <input
+            id="assigned-forms-go-to-page"
+            type="number"
+            inputmode="numeric"
+            min="1"
+            [attr.max]="lastPage()"
+            class="w-16 rounded-lg border border-[#E0E0E0] bg-white px-2 py-1.5 text-center text-sm text-[#161616] outline-none transition focus:border-[#FF9015] focus:ring-2 focus:ring-[#FF9015]/20 disabled:cursor-not-allowed disabled:opacity-40"
+            [ngModel]="goToPageInput()"
+            (ngModelChange)="onGoToPageInput($event)"
+            (keydown.enter)="submitGoToPage()"
+            (blur)="submitGoToPage()"
+            [disabled]="loading() || lastPage() <= 1"
+            aria-label="Go to page"
+          />
+        </label>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-1.5">
+        <button
+          type="button"
+          class="rounded-lg border border-[#E0E0E0] bg-white px-3 py-1.5 text-sm font-medium text-[#525252] transition hover:bg-[#F4F4F4] disabled:cursor-not-allowed disabled:opacity-40"
+          [disabled]="page() <= 1 || loading()"
+          (click)="prevPage()"
+        >
+          ← Prev
+        </button>
+
+        @for (pageNum of pageNumbers(); track pageNum) {
+          <button
+            type="button"
+            class="min-w-[2rem] rounded-lg px-2.5 py-1.5 text-sm font-medium transition"
+            [ngClass]="
+              pageNum === page()
+                ? 'bg-[#FF9015] text-white'
+                : 'border border-[#E0E0E0] bg-white text-[#525252] hover:bg-[#F4F4F4]'
+            "
+            [disabled]="loading()"
+            (click)="goToPage(pageNum)"
+          >
+            {{ pageNum }}
+          </button>
+        }
+
+        <button
+          type="button"
+          class="rounded-lg border border-[#E0E0E0] bg-white px-3 py-1.5 text-sm font-medium text-[#525252] transition hover:bg-[#F4F4F4] disabled:cursor-not-allowed disabled:opacity-40"
+          [disabled]="page() >= lastPage() || loading()"
+          (click)="nextPage()"
+        >
+          Next →
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -90,6 +90,9 @@ export class ViewFormsComponent implements OnInit {
   readonly hasForms = computed(() => this.forms().length > 0);
   readonly page = signal(1);
   readonly lastPage = signal(1);
+  readonly total = signal(0);
+  readonly pageSize = signal(environment.limit || 15);
+  readonly pageSizeValue = computed(() => this.pageSize());
   readonly filterFields = signal<GlobalFilterField[]>([]);
   readonly hasFilterFields = computed(() => this.filterFields().length > 0);
   /** Always sent to the listing API as `status`. */
@@ -147,7 +150,6 @@ export class ViewFormsComponent implements OnInit {
     return count > 0 && count < visible.length;
   });
 
-  private readonly defaultLimit = environment.limit;
   private pendingDeleteId: number | null = null;
   private pendingRestoreId: number | null = null;
   private filters: Record<string, unknown> = {};
@@ -266,8 +268,8 @@ export class ViewFormsComponent implements OnInit {
 
     const hasFieldFilters = Object.keys(fieldFilters).length > 0;
     const apiCall = hasFieldFilters
-      ? this.formsService.searchForms(requestFilters, this.defaultLimit, page)
-      : this.formsService.getForms(page, this.defaultLimit, requestFilters);
+      ? this.formsService.searchForms(requestFilters, this.pageSize(), page)
+      : this.formsService.getForms(page, this.pageSize(), requestFilters);
 
     apiCall
       .pipe(
@@ -279,9 +281,11 @@ export class ViewFormsComponent implements OnInit {
           this.forms.set(res.forms);
           this.page.set(res.page);
           this.lastPage.set(res.lastPage);
+          this.total.set(res.total);
         },
         error: () => {
           this.forms.set([]);
+          this.total.set(0);
           this.selectedIds.set([]);
         },
       });
@@ -315,6 +319,16 @@ export class ViewFormsComponent implements OnInit {
       this.selectedIds.set([]);
       this.loadForms(this.page() + 1);
     }
+  }
+
+  onPageSizeChange(size: number): void {
+    if (!size || size === this.pageSize()) {
+      return;
+    }
+    this.pageSize.set(size);
+    this.page.set(1);
+    this.selectedIds.set([]);
+    this.loadForms(1);
   }
 
   onFilterSearch(filters: Record<string, unknown>): void {
