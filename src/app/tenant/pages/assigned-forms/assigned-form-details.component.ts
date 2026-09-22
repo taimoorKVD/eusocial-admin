@@ -176,12 +176,15 @@ export class AssignedFormDetailsComponent implements OnInit {
     }
 
     if (occurrence.action === 'view') {
-      this.router.navigate([
-        '/assigned-forms',
-        assignmentId,
-        'occurrences',
-        occurrence.id,
-      ]);
+      this.router.navigate(
+        ['/assigned-forms', assignmentId, 'occurrences', occurrence.id],
+        {
+          state: {
+            occurrence,
+            formName: this.summary()?.formName ?? '',
+          },
+        },
+      );
     }
   }
 

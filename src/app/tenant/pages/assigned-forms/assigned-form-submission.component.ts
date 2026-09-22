@@ -9,9 +9,10 @@ import {
 import { CommonModule } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
-import { catchError, finalize, forkJoin, map, of, switchMap } from 'rxjs';
+import { finalize, forkJoin, map, of } from 'rxjs';
 import { SharedModule } from '../../../shared/shared.module';
 import {
+  AssignmentOccurrenceItem,
   AssignedFormsService,
   OccurrenceSubmissionDetail,
 } from '../../../services/assigned-forms.service';
@@ -21,8 +22,14 @@ import { DynamicField } from '../../../interfaces/dynamic-field';
 import { mapAssignmentSectionsToBuilder } from '../employee/utils/assignment-form.mapper';
 import { CompletedFormViewComponent } from '../employee/typeform-fill/completed-form-view.component';
 
+interface OccurrenceViewNavState {
+  occurrence?: AssignmentOccurrenceItem;
+  formName?: string;
+}
+
 /**
  * Tenant Admin read-only view for a completed occurrence submission.
+ * Uses submission data already loaded from Assignment Details — no extra API call.
  */
 @Component({
   selector: 'app-assigned-form-submission',
@@ -37,6 +44,9 @@ export class AssignedFormSubmissionComponent implements OnInit {
   private readonly assignedFormsService = inject(AssignedFormsService);
   private readonly fieldMapper = inject(DynamicFormFieldMapperService);
   private readonly destroyRef = inject(DestroyRef);
+
+  /** Captured in constructor — getCurrentNavigation() is only available then. */
+  private readonly navState: OccurrenceViewNavState | null;
 
   readonly loading = signal(true);
   readonly errorMessage = signal('');
@@ -74,51 +84,65 @@ export class AssignedFormSubmissionComponent implements OnInit {
         Object.keys(this.answers()).length > 0),
   );
 
+  constructor() {
+    const nav = this.router.getCurrentNavigation();
+    this.navState =
+      (nav?.extras?.state as OccurrenceViewNavState | undefined) ??
+      (typeof history !== 'undefined'
+        ? (history.state as OccurrenceViewNavState | null)
+        : null);
+  }
+
   ngOnInit(): void {
-    this.route.paramMap
+    const assignmentId =
+      this.route.snapshot.paramMap.get('assignmentId') ||
+      this.route.snapshot.paramMap.get('id') ||
+      '';
+    this.assignmentId.set(assignmentId);
+
+    const occurrence = this.navState?.occurrence;
+    const formNameFallback = this.navState?.formName || '';
+
+    if (!occurrence) {
+      this.loading.set(false);
+      this.errorMessage.set(
+        'Submission data is unavailable. Go back to Assignment Details and open View again.',
+      );
+      return;
+    }
+
+    const detail = this.assignedFormsService.toOccurrenceSubmission(
+      occurrence,
+      formNameFallback,
+    );
+
+    if (!detail) {
+      this.loading.set(false);
+      this.errorMessage.set(
+        'No submission is available for this occurrence.',
+      );
+      return;
+    }
+
+    this.loading.set(true);
+    this.errorMessage.set('');
+    this.hydrateSections(detail)
       .pipe(
-        switchMap((params) => {
-          const assignmentId = params.get('assignmentId') || params.get('id');
-          const occurrenceId = params.get('occurrenceId');
-
-          if (!assignmentId || !occurrenceId) {
-            this.loading.set(false);
-            this.errorMessage.set('Submission id is missing.');
-            return of(null);
-          }
-
-          this.assignmentId.set(assignmentId);
-          this.loading.set(true);
-          this.errorMessage.set('');
-          this.detail.set(null);
-          this.sections.set([]);
-
-          return this.assignedFormsService
-            .getOccurrenceSubmission(assignmentId, occurrenceId)
-            .pipe(
-              switchMap((detail) =>
-                this.hydrateSections(detail).pipe(
-                  map((sections) => ({ detail, sections })),
-                ),
-              ),
-              catchError((err) => {
-                this.errorMessage.set(
-                  err?.error?.message ||
-                    'Unable to load this submission. Please try again.',
-                );
-                return of(null);
-              }),
-              finalize(() => this.loading.set(false)),
-            );
-        }),
+        finalize(() => this.loading.set(false)),
         takeUntilDestroyed(this.destroyRef),
       )
-      .subscribe((result) => {
-        if (!result) {
-          return;
-        }
-        this.detail.set(result.detail);
-        this.sections.set(result.sections);
+      .subscribe({
+        next: (sections) => {
+          this.detail.set(detail);
+          this.sections.set(sections);
+        },
+        error: () => {
+          this.detail.set(detail);
+          this.sections.set([]);
+          this.errorMessage.set(
+            'Unable to prepare this submission for display. Please try again.',
+          );
+        },
       });
   }
 
@@ -132,42 +156,7 @@ export class AssignedFormSubmissionComponent implements OnInit {
   }
 
   retry(): void {
-    const assignmentId =
-      this.route.snapshot.paramMap.get('assignmentId') ||
-      this.route.snapshot.paramMap.get('id');
-    const occurrenceId = this.route.snapshot.paramMap.get('occurrenceId');
-    if (!assignmentId || !occurrenceId) {
-      return;
-    }
-
-    this.loading.set(true);
-    this.errorMessage.set('');
-
-    this.assignedFormsService
-      .getOccurrenceSubmission(assignmentId, occurrenceId)
-      .pipe(
-        switchMap((detail) =>
-          this.hydrateSections(detail).pipe(
-            map((sections) => ({ detail, sections })),
-          ),
-        ),
-        finalize(() => this.loading.set(false)),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe({
-        next: (result) => {
-          this.detail.set(result.detail);
-          this.sections.set(result.sections);
-        },
-        error: (err) => {
-          this.detail.set(null);
-          this.sections.set([]);
-          this.errorMessage.set(
-            err?.error?.message ||
-              'Unable to load this submission. Please try again.',
-          );
-        },
-      });
+    this.goBack();
   }
 
   formatDueDate(value: string | null): string {

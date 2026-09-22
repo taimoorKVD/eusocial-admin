@@ -85,11 +85,26 @@ export interface AssignmentSummary {
 
 export type OccurrenceAction = 'view' | 'continue' | '';
 
+/** Read-only completed occurrence submission. */
+export interface OccurrenceSubmissionDetail {
+  id: string;
+  formName: string;
+  dueDate: string | null;
+  statusLabel: string;
+  submittedAt: string | null;
+  schema: Record<string, unknown>;
+  sections: FormSection[];
+  answers: Record<string, unknown>;
+  raw: Record<string, unknown>;
+}
+
 export interface AssignmentOccurrenceItem {
   id: string;
   dueDate: string | null;
   statusLabel: string;
   action: OccurrenceAction;
+  /** Embedded completed submission from View Details API (when present). */
+  submission: OccurrenceSubmissionDetail | null;
   raw: Record<string, unknown>;
 }
 
@@ -112,19 +127,6 @@ export interface AssignmentDetailQuery {
   page?: number;
   limit?: number;
   month?: string | null;
-}
-
-/** Read-only completed occurrence submission. */
-export interface OccurrenceSubmissionDetail {
-  id: string;
-  formName: string;
-  dueDate: string | null;
-  statusLabel: string;
-  submittedAt: string | null;
-  schema: Record<string, unknown>;
-  sections: FormSection[];
-  answers: Record<string, unknown>;
-  raw: Record<string, unknown>;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -203,23 +205,41 @@ export class AssignedFormsService {
       .pipe(map((response) => this.normalizeAssignmentDetail(response, assignmentId)));
   }
 
-  /** Completed occurrence submission (read-only). */
-  getOccurrenceSubmission(
-    assignmentId: string,
-    occurrenceId: string,
-  ): Observable<OccurrenceSubmissionDetail> {
-    return this.http
-      .get<unknown>(
-        `${this.apiUrl}/assigned-forms/${assignmentId}/occurrences/${occurrenceId}`,
-      )
-      .pipe(
-        map((response) =>
-          this.normalizeOccurrenceSubmission(
-            this.unwrapRecord(response),
-            occurrenceId,
-          ),
-        ),
-      );
+  /**
+   * Build a read-only submission view model from an occurrence already loaded
+   * via GET /assigned-forms/:assignmentId (no extra HTTP call).
+   */
+  toOccurrenceSubmission(
+    occurrence: AssignmentOccurrenceItem,
+    formNameFallback?: string,
+  ): OccurrenceSubmissionDetail | null {
+    if (occurrence.submission) {
+      return {
+        ...occurrence.submission,
+        formName:
+          occurrence.submission.formName ||
+          formNameFallback ||
+          occurrence.submission.formName,
+        dueDate: occurrence.submission.dueDate ?? occurrence.dueDate,
+        statusLabel: occurrence.submission.statusLabel || occurrence.statusLabel,
+      };
+    }
+
+    const submissionRaw = this.asRecord(occurrence.raw['submission']);
+    if (!Object.keys(submissionRaw).length) {
+      return null;
+    }
+
+    return this.normalizeOccurrenceSubmission(
+      {
+        ...occurrence.raw,
+        submission: submissionRaw,
+        dueDate: occurrence.dueDate,
+        statusLabel: occurrence.statusLabel,
+        formName: formNameFallback,
+      },
+      occurrence.id,
+    );
   }
 
   private normalizePage(
@@ -379,13 +399,32 @@ export class AssignedFormsService {
       action = 'continue';
     }
 
+    const id = this.readId(item);
+    const dueDate = this.readDate(item);
+    const statusLabel =
+      this.readString(item['statusLabel'] ?? item['status_label']) ||
+      this.formatStatusLabel(item['status']);
+
+    const submissionRaw = this.asRecord(item['submission']);
+    const submission =
+      Object.keys(submissionRaw).length > 0
+        ? this.normalizeOccurrenceSubmission(
+            {
+              ...item,
+              submission: submissionRaw,
+              dueDate,
+              statusLabel,
+            },
+            id,
+          )
+        : null;
+
     return {
-      id: this.readId(item),
-      dueDate: this.readDate(item),
-      statusLabel:
-        this.readString(item['statusLabel'] ?? item['status_label']) ||
-        this.formatStatusLabel(item['status']),
+      id,
+      dueDate,
+      statusLabel,
       action,
+      submission,
       raw: item,
     };
   }
