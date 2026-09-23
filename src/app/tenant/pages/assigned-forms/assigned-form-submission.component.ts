@@ -36,7 +36,7 @@ interface OccurrenceViewNavState {
   standalone: true,
   imports: [CommonModule, SharedModule, CompletedFormViewComponent],
   templateUrl: './assigned-form-view.component.html',
-  styleUrl: './assigned-form-view.component.scss',
+  host: { class: 'block' },
 })
 export class AssignedFormSubmissionComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);

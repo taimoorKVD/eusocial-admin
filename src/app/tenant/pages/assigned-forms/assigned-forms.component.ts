@@ -31,14 +31,13 @@ export type AssignedFormStatusLabel =
   | 'Pending'
   | 'In Progress'
   | 'Completed'
-  | 'Overdue'
-  | 'Upcoming';
+  | 'Overdue';
 
 export interface AssignedFormsSummaryCard {
   key: string;
   label: string;
   value: number;
-  iconTone: 'blue' | 'green' | 'amber' | 'red' | 'gray';
+  iconTone: 'blue' | 'green' | 'amber' | 'red';
 }
 
 interface AssignedUserOption {
@@ -64,6 +63,7 @@ type FilterDropdownKey = 'status' | 'assignedTo' | 'jobPosition';
   imports: [CommonModule, FormsModule, FlatpickrDirective, PageSizeSelectComponent],
   templateUrl: './assigned-forms.component.html',
   styleUrl: './assigned-forms.component.scss',
+  host: { class: 'block' },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AssignedFormsComponent implements OnInit {
@@ -115,7 +115,6 @@ export class AssignedFormsComponent implements OnInit {
   readonly lastPage = signal(1);
   readonly total = signal(0);
   readonly limit = signal(this.pageLimitDefault);
-  readonly pageSizeValue = computed(() => this.limit());
   /** Bound value for the Go to page input (string keeps empty/invalid entry usable). */
   readonly goToPageInput = signal('1');
 
@@ -455,8 +454,6 @@ export class AssignedFormsComponent implements OnInit {
         return 'bg-[#FEF3C7] text-[#D97706]';
       case 'red':
         return 'bg-[#FEE2E2] text-[#DC2626]';
-      case 'gray':
-        return 'bg-[#E5E7EB] text-[#4B5563]';
     }
   }
 

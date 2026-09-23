@@ -1,4 +1,4 @@
-<div class="assigned-form-details p-4 md:p-6 font-ibm">
+<div class="min-h-[calc(100vh-4rem)] bg-[#fafafa] p-4 md:p-6 font-ibm">
   @if (loading()) {
     <app-eu-loader></app-eu-loader>
   }
@@ -101,7 +101,7 @@
         </div>
 
         <div class="flex flex-wrap items-end gap-2">
-          <div class="assigned-form-details-date">
+          <div class="assigned-form-details-date relative min-w-0">
             <label
               class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-[#8D8D8D]"
               for="occurrence-date"
@@ -214,7 +214,7 @@
           </p>
           <app-page-size-select
             [total]="total()"
-            [value]="pageSizeValue()"
+            [value]="limit()"
             [disabled]="occurrencesLoading()"
             (valueChange)="onPageSizeChange($event)"
           ></app-page-size-select>

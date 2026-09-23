@@ -316,7 +316,7 @@
       </div>
 
       <!-- Due From -->
-      <div class="assigned-forms-due-date">
+      <div class="assigned-forms-due-date relative min-w-0">
         <label class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-[#8D8D8D]" for="assigned-forms-due-from">
           Due From
         </label>
@@ -347,7 +347,7 @@
       </div>
 
       <!-- Due To -->
-      <div class="assigned-forms-due-date assigned-forms-due-date--to">
+      <div class="assigned-forms-due-date assigned-forms-due-date--to relative min-w-0">
         <label class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-[#8D8D8D]" for="assigned-forms-due-to">
           Due To
         </label>
@@ -502,7 +502,7 @@
 
         <app-page-size-select
           [total]="total()"
-          [value]="pageSizeValue()"
+          [value]="limit()"
           [disabled]="loading()"
           (valueChange)="onPageSizeChange($event)"
         ></app-page-size-select>

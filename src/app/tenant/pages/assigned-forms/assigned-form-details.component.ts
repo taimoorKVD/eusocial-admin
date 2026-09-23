@@ -8,13 +8,11 @@ import {
   signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { catchError, finalize, of, switchMap } from 'rxjs';
 import { SharedModule } from '../../../shared/shared.module';
 import { PageSizeSelectComponent } from '../../../shared/dynamic-listing/page-size-select.component';
-import { FlatpickrDirective } from '../../../shared/directives/flatpickr/flatpickr.directive';
 import {
   AssignmentDetailPage,
   AssignmentOccurrenceItem,
@@ -39,15 +37,10 @@ interface ProgressCard {
 @Component({
   selector: 'app-assigned-form-details',
   standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    SharedModule,
-    PageSizeSelectComponent,
-    FlatpickrDirective,
-  ],
+  imports: [CommonModule, SharedModule, PageSizeSelectComponent],
   templateUrl: './assigned-form-details.component.html',
   styleUrl: './assigned-form-details.component.scss',
+  host: { class: 'block' },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AssignedFormDetailsComponent implements OnInit {
@@ -71,7 +64,6 @@ export class AssignedFormDetailsComponent implements OnInit {
 
   readonly summary = computed(() => this.detail()?.summary ?? null);
   readonly occurrences = computed(() => this.detail()?.occurrences ?? []);
-  readonly pageSizeValue = computed(() => this.limit());
 
   readonly progressCards = computed((): ProgressCard[] => {
     const progress = this.summary()?.progress;

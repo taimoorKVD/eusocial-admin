@@ -19,15 +19,6 @@ export interface AssignedFormsAssignmentStats {
   fullyCompleted: number;
 }
 
-/** Occurrence-level rollup from `stats` (kept available, not used for main cards). */
-export interface AssignedFormsOccurrenceStats {
-  totalAssigned: number;
-  completed: number;
-  inProgress: number;
-  overdue: number;
-  notStarted: number;
-}
-
 export interface AssignedFormsMeta {
   total: number;
   page: number;
@@ -57,7 +48,6 @@ export interface AssignedFormListItem {
 
 export interface AssignedFormsPage {
   assignmentStats: AssignedFormsAssignmentStats;
-  occurrenceStats: AssignedFormsOccurrenceStats;
   meta: AssignedFormsMeta;
   items: AssignedFormListItem[];
 }
@@ -224,9 +214,7 @@ export class AssignedFormsService {
       return {
         ...occurrence.submission,
         formName:
-          occurrence.submission.formName ||
-          formNameFallback ||
-          occurrence.submission.formName,
+          occurrence.submission.formName || formNameFallback || 'Completed Form',
         dueDate: occurrence.submission.dueDate ?? occurrence.dueDate,
         statusLabel: occurrence.submission.statusLabel || occurrence.statusLabel,
       };
@@ -258,7 +246,6 @@ export class AssignedFormsService {
     const assignmentStats = this.asRecord(
       record['assignmentStats'] ?? record['assignment_stats'],
     );
-    const occurrenceStats = this.asRecord(record['stats']);
     const meta = this.asRecord(record['meta']);
     const items = this.extractArray(response).map((item) =>
       this.normalizeListItem(this.asRecord(item)),
@@ -281,21 +268,6 @@ export class AssignedFormsService {
           assignmentStats['fullyCompleted'] ??
             assignmentStats['fully_completed'] ??
             assignmentStats['completed'],
-        ),
-      },
-      occurrenceStats: {
-        totalAssigned: this.toNumber(
-          occurrenceStats['totalAssigned'] ?? occurrenceStats['total_assigned'],
-        ),
-        completed: this.toNumber(occurrenceStats['completed']),
-        inProgress: this.toNumber(
-          occurrenceStats['inProgress'] ?? occurrenceStats['in_progress'],
-        ),
-        overdue: this.toNumber(occurrenceStats['overdue']),
-        notStarted: this.toNumber(
-          occurrenceStats['notStarted'] ??
-            occurrenceStats['not_started'] ??
-            occurrenceStats['pending'],
         ),
       },
       meta: {
