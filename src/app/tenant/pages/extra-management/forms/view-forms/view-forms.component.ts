@@ -113,7 +113,7 @@ export class ViewFormsComponent implements OnInit {
     if (this.isArchivedView()) {
       return this.canView || this.canRestore;
     }
-    return this.canEdit || this.canDelete;
+    return this.canView || this.canEdit || this.canDelete;
   });
 
   readonly deleting = signal(false);
@@ -366,6 +366,16 @@ export class ViewFormsComponent implements OnInit {
       return;
     }
     this.router.navigate(['edit', form.id], { relativeTo: this.route });
+  }
+
+  previewForm(form: SavedDynamicForm): void {
+    if (!form.id) {
+      return;
+    }
+    this.router.navigate(['preview', form.id], {
+      relativeTo: this.route,
+      queryParams: { returnTo: '/dynamic-forms' },
+    });
   }
 
   deleteForm(form: SavedDynamicForm): void {

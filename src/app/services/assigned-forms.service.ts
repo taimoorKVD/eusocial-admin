@@ -71,6 +71,8 @@ export interface AssignmentSummary {
   periodLabel: string;
   progress: AssignmentProgress;
   statusLabel: string;
+  /** Template id for Form Template Preview (`GET /templates/:id`). */
+  templateId: string | null;
 }
 
 export type OccurrenceAction = 'view' | 'continue' | '';
@@ -350,6 +352,11 @@ export class AssignedFormsService {
           this.readString(
             summarySource['statusLabel'] ?? summarySource['status_label'],
           ) || this.formatStatusLabel(summarySource['status']),
+        templateId:
+          this.readTemplateId(summarySource) ||
+          this.readTemplateId(assignment) ||
+          this.readTemplateId(root) ||
+          this.readTemplateIdFromOccurrences(occurrenceItems),
       },
       occurrences: occurrenceItems,
       occurrencesMeta: {
@@ -541,6 +548,51 @@ export class AssignedFormsService {
 
     const id = this.readId(item);
     return id ? `Assignment #${id}` : 'Untitled form';
+  }
+
+  /** Resolve template id from assignment / template / submission shapes. */
+  private readTemplateId(item: Record<string, unknown>): string | null {
+    const template = this.asRecord(item['template']);
+    const submission = this.asRecord(item['submission']);
+    const submissionTemplate = this.asRecord(submission['template']);
+    const candidates = [
+      item['templateId'],
+      item['template_id'],
+      template['id'],
+      submission['templateId'],
+      submission['template_id'],
+      submissionTemplate['id'],
+    ];
+
+    for (const candidate of candidates) {
+      if (candidate == null || candidate === '') {
+        continue;
+      }
+      const value = String(candidate).trim();
+      if (value) {
+        return value;
+      }
+    }
+
+    return null;
+  }
+
+  private readTemplateIdFromOccurrences(
+    occurrences: AssignmentOccurrenceItem[],
+  ): string | null {
+    for (const occurrence of occurrences) {
+      const fromSubmission = occurrence.submission
+        ? this.readTemplateId(occurrence.submission.raw)
+        : null;
+      if (fromSubmission) {
+        return fromSubmission;
+      }
+      const fromRaw = this.readTemplateId(occurrence.raw);
+      if (fromRaw) {
+        return fromRaw;
+      }
+    }
+    return null;
   }
 
   private readAssignedToDisplay(item: Record<string, unknown>): {

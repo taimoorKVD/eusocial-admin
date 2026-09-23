@@ -10,7 +10,9 @@
         </button>
 
         <div class="regular-form-shell__task-context">
-          <span class="regular-form-shell__eyebrow">Assigned task</span>
+          <span class="regular-form-shell__eyebrow">
+            {{ isPreview() ? 'Form Template Preview' : 'Assigned task' }}
+          </span>
 
           @if (formTitle()) {
             <h1 class="regular-form-shell__title">{{ formTitle() }}</h1>
@@ -34,30 +36,38 @@
                 {{ sections().length }} {{ sections().length === 1 ? 'section' : 'sections' }}
               </span>
             }
+
+            @if (isPreview()) {
+              <span class="regular-form-shell__meta-item">
+                Read-only preview
+              </span>
+            }
           </div>
         </div>
       </div>
 
-      <div class="regular-form-shell__mode" role="group" aria-label="Form fill mode">
-        <button
-          type="button"
-          class="regular-form-shell__mode-btn"
-          [class.regular-form-shell__mode-btn--active]="isNormalMode()"
-          [attr.aria-pressed]="isNormalMode()"
-          (click)="setInteractionMode('normal')"
-        >
-          Regular Form
-        </button>
-        <button
-          type="button"
-          class="regular-form-shell__mode-btn"
-          [class.regular-form-shell__mode-btn--active]="isManualMode()"
-          [attr.aria-pressed]="isManualMode()"
-          (click)="setInteractionMode('manual')"
-        >
-          Voice Reply
-        </button>
-      </div>
+      @if (!isPreview()) {
+        <div class="regular-form-shell__mode" role="group" aria-label="Form fill mode">
+          <button
+            type="button"
+            class="regular-form-shell__mode-btn"
+            [class.regular-form-shell__mode-btn--active]="isNormalMode()"
+            [attr.aria-pressed]="isNormalMode()"
+            (click)="setInteractionMode('normal')"
+          >
+            Regular Form
+          </button>
+          <button
+            type="button"
+            class="regular-form-shell__mode-btn"
+            [class.regular-form-shell__mode-btn--active]="isManualMode()"
+            [attr.aria-pressed]="isManualMode()"
+            (click)="setInteractionMode('manual')"
+          >
+            Voice Reply
+          </button>
+        </div>
+      }
     </div>
   </header>
 
@@ -65,10 +75,17 @@
     <div class="regular-form-shell__content">
       <div class="regular-form-shell__panel">
         <div class="regular-form-shell__panel-intro">
-          <p class="regular-form-shell__panel-title">Complete the form</p>
-          <p class="regular-form-shell__panel-copy">
-            Fill in each field below. Required fields are marked with an asterisk.
-          </p>
+          @if (isPreview()) {
+            <p class="regular-form-shell__panel-title">Preview only</p>
+            <p class="regular-form-shell__panel-copy">
+              This is how the form appears to employees. Fields are read-only — answers are not saved or submitted.
+            </p>
+          } @else {
+            <p class="regular-form-shell__panel-title">Complete the form</p>
+            <p class="regular-form-shell__panel-copy">
+              Fill in each field below. Required fields are marked with an asterisk.
+            </p>
+          }
         </div>
 
         <app-dynamic-form
@@ -78,7 +95,7 @@
           [typeformMode]="false"
         ></app-dynamic-form>
 
-        @if (canFill()) {
+        @if (showSubmit()) {
           <div class="regular-form-shell__actions">
             <p class="regular-form-shell__actions-hint">
               Review your answers, then submit to complete this task.

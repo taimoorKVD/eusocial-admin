@@ -152,6 +152,22 @@ export class AssignedFormDetailsComponent implements OnInit {
     this.router.navigate(['/assigned-forms']);
   }
 
+  previewForm(): void {
+    const templateId = this.summary()?.templateId;
+    const assignmentId = this.summary()?.id;
+    if (!templateId) {
+      return;
+    }
+
+    this.router.navigate(['/dynamic-forms/preview', templateId], {
+      queryParams: {
+        returnTo: assignmentId
+          ? `/assigned-forms/${assignmentId}`
+          : '/assigned-forms',
+      },
+    });
+  }
+
   retry(): void {
     const id = this.route.snapshot.paramMap.get('id');
     if (!id) {

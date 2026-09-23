@@ -1,0 +1,52 @@
+<div class="min-h-[calc(100vh-4rem)] bg-[#fafafa] font-ibm">
+  @if (loading()) {
+    <div class="p-4 md:p-6">
+      <app-eu-loader></app-eu-loader>
+    </div>
+  } @else if (errorMessage()) {
+    <div class="p-4 md:p-6">
+      <button
+        type="button"
+        class="mb-4 text-sm font-medium text-[#FF9015] hover:underline"
+        (click)="goBack()"
+      >
+        ← Back
+      </button>
+      <div class="rounded-xl border border-[#FECACA] bg-[#FEF2F2] px-4 py-4">
+        <p class="m-0 text-sm text-[#B42318]">{{ errorMessage() }}</p>
+        <button
+          type="button"
+          class="mt-3 text-sm font-medium text-[#FF9015] hover:underline"
+          (click)="retry()"
+        >
+          Try again
+        </button>
+      </div>
+    </div>
+  } @else if (sections().length) {
+    <app-regular-form-shell
+      [sections]="sections()"
+      [formTitle]="formTitle()"
+      [canFill]="false"
+      [previewMode]="true"
+      [interactionMode]="'normal'"
+      (exitRequested)="goBack()"
+    ></app-regular-form-shell>
+  } @else {
+    <div class="p-4 md:p-6">
+      <button
+        type="button"
+        class="mb-4 text-sm font-medium text-[#FF9015] hover:underline"
+        (click)="goBack()"
+      >
+        ← Back
+      </button>
+      <div class="rounded-xl border border-[#E8E8E8] bg-white px-6 py-12 text-center shadow-sm">
+        <h2 class="m-0 text-lg font-semibold text-[#161616]">{{ formTitle() }}</h2>
+        <p class="mt-3 m-0 text-sm text-[#6F6F6F]">
+          This template has no sections or fields to preview yet.
+        </p>
+      </div>
+    </div>
+  }
+</div>
