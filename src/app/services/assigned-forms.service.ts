@@ -126,7 +126,10 @@ export interface AssignmentDetailPage {
 export interface AssignmentDetailQuery {
   page?: number;
   limit?: number;
-  month?: string | null;
+  /** Occurrence status filter (`completed`, `in_progress`, `overdue`, `upcoming`). */
+  status?: string | null;
+  /** Exact date filter (`Y-m-d`), replaces the previous month filter. */
+  date?: string | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -195,9 +198,13 @@ export class AssignedFormsService {
     if (query.limit != null) {
       params = params.set('limit', String(query.limit));
     }
-    const month = query.month?.trim();
-    if (month) {
-      params = params.set('month', month);
+    const status = query.status?.trim();
+    if (status) {
+      params = params.set('status', status);
+    }
+    const date = query.date?.trim();
+    if (date) {
+      params = params.set('date', date);
     }
 
     return this.http

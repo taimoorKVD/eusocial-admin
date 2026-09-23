@@ -6,3 +6,60 @@
   min-height: calc(100vh - 4rem);
   background: #fafafa;
 }
+
+.assigned-form-details-date {
+  min-width: 0;
+  position: relative;
+}
+
+:host ::ng-deep {
+  .assigned-form-details-date .flatpickr-input,
+  .assigned-form-details-date .flatpickr-input.form-control,
+  .assigned-form-details-date input.flatpickr-input,
+  .assigned-form-details-date .assigned-form-details-date__input {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid #e0e0e0;
+    border-radius: 0.5rem;
+    background: #fff;
+    padding: 0.5rem 0.75rem 0.5rem 2.25rem;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 0.875rem;
+    color: #161616;
+    cursor: pointer;
+  }
+
+  .assigned-form-details-date .flatpickr-input:focus,
+  .assigned-form-details-date input.flatpickr-input:focus {
+    border-color: #ff9015;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(255, 144, 21, 0.2);
+  }
+
+  .assigned-form-details-date .flatpickr-calendar.static {
+    position: absolute;
+    top: calc(100% + 0.25rem);
+    left: auto;
+    right: 0;
+    margin: 0;
+    z-index: 60;
+  }
+
+  .assigned-form-details-date .flatpickr-wrapper {
+    display: block;
+    width: 100%;
+    position: relative;
+  }
+
+  .flatpickr-day.selected,
+  .flatpickr-day.startRange,
+  .flatpickr-day.endRange {
+    background: #ff9015 !important;
+    border-color: #ff9015 !important;
+  }
+
+  .flatpickr-day:hover {
+    background: #fff5eb;
+    border-color: #fff5eb;
+  }
+}

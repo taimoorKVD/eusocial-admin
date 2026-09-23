@@ -14,6 +14,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { catchError, finalize, of, switchMap } from 'rxjs';
 import { SharedModule } from '../../../shared/shared.module';
 import { PageSizeSelectComponent } from '../../../shared/dynamic-listing/page-size-select.component';
+import { FlatpickrDirective } from '../../../shared/directives/flatpickr/flatpickr.directive';
 import {
   AssignmentDetailPage,
   AssignmentOccurrenceItem,
@@ -21,10 +22,30 @@ import {
 } from '../../../services/assigned-forms.service';
 import { environment } from '../../../../environments/environment';
 
+type OccurrenceStatusFilter =
+  | 'completed'
+  | 'in_progress'
+  | 'overdue'
+  | 'upcoming';
+
+interface ProgressCard {
+  key: string;
+  label: string;
+  value: number;
+  tone: 'gray' | 'green' | 'amber' | 'red' | 'blue';
+  status: OccurrenceStatusFilter | null;
+}
+
 @Component({
   selector: 'app-assigned-form-details',
   standalone: true,
-  imports: [CommonModule, FormsModule, SharedModule, PageSizeSelectComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    SharedModule,
+    PageSizeSelectComponent,
+    FlatpickrDirective,
+  ],
   templateUrl: './assigned-form-details.component.html',
   styleUrl: './assigned-form-details.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -45,24 +66,55 @@ export class AssignedFormDetailsComponent implements OnInit {
   readonly lastPage = signal(1);
   readonly total = signal(0);
   readonly limit = signal(this.defaultLimit);
-  readonly month = signal<string | null>(null);
+  readonly selectedStatus = signal<OccurrenceStatusFilter | null>(null);
+  readonly selectedDate = signal<string | null>(null);
 
   readonly summary = computed(() => this.detail()?.summary ?? null);
   readonly occurrences = computed(() => this.detail()?.occurrences ?? []);
   readonly pageSizeValue = computed(() => this.limit());
 
-  readonly progressCards = computed(() => {
+  readonly progressCards = computed((): ProgressCard[] => {
     const progress = this.summary()?.progress;
     if (!progress) {
       return [];
     }
     return [
-      { key: 'total', label: 'Total Occurrences', value: progress.total, tone: 'gray' },
-      { key: 'completed', label: 'Completed', value: progress.completed, tone: 'green' },
-      { key: 'in-progress', label: 'In Progress', value: progress.inProgress, tone: 'amber' },
-      { key: 'overdue', label: 'Overdue', value: progress.overdue, tone: 'red' },
-      { key: 'upcoming', label: 'Upcoming', value: progress.upcoming, tone: 'blue' },
-    ] as const;
+      {
+        key: 'total',
+        label: 'Total Occurrences',
+        value: progress.total,
+        tone: 'gray',
+        status: null,
+      },
+      {
+        key: 'completed',
+        label: 'Completed',
+        value: progress.completed,
+        tone: 'green',
+        status: 'completed',
+      },
+      {
+        key: 'in-progress',
+        label: 'In Progress',
+        value: progress.inProgress,
+        tone: 'amber',
+        status: 'in_progress',
+      },
+      {
+        key: 'overdue',
+        label: 'Overdue',
+        value: progress.overdue,
+        tone: 'red',
+        status: 'overdue',
+      },
+      {
+        key: 'upcoming',
+        label: 'Upcoming',
+        value: progress.upcoming,
+        tone: 'blue',
+        status: 'upcoming',
+      },
+    ];
   });
 
   ngOnInit(): void {
@@ -80,8 +132,10 @@ export class AssignedFormDetailsComponent implements OnInit {
           this.errorMessage.set('');
           this.detail.set(null);
           this.page.set(1);
+          this.selectedStatus.set(null);
+          this.selectedDate.set(null);
 
-          return this.fetchDetail(id, 1, this.limit(), this.month()).pipe(
+          return this.fetchDetail(id, 1, this.limit()).pipe(
             catchError((err) => {
               this.errorMessage.set(
                 err?.error?.message ||
@@ -113,7 +167,7 @@ export class AssignedFormDetailsComponent implements OnInit {
     }
     this.loading.set(true);
     this.errorMessage.set('');
-    this.fetchDetail(id, this.page(), this.limit(), this.month())
+    this.fetchDetail(id, this.page(), this.limit())
       .pipe(
         finalize(() => this.loading.set(false)),
         takeUntilDestroyed(this.destroyRef),
@@ -152,21 +206,35 @@ export class AssignedFormDetailsComponent implements OnInit {
     this.loadOccurrences(1);
   }
 
-  onMonthChange(value: string): void {
-    const next = value?.trim() || null;
-    if (next === this.month()) {
+  onStatusCardClick(card: ProgressCard): void {
+    if (!card.status) {
       return;
     }
-    this.month.set(next);
+    const next =
+      this.selectedStatus() === card.status ? null : card.status;
+    this.selectedStatus.set(next);
     this.loadOccurrences(1);
   }
 
-  clearMonth(): void {
-    if (!this.month()) {
+  onDateChange(value: string | null): void {
+    const next = value?.trim() || null;
+    if (next === this.selectedDate()) {
       return;
     }
-    this.month.set(null);
+    this.selectedDate.set(next);
     this.loadOccurrences(1);
+  }
+
+  clearDate(): void {
+    if (!this.selectedDate()) {
+      return;
+    }
+    this.selectedDate.set(null);
+    this.loadOccurrences(1);
+  }
+
+  isStatusCardActive(card: ProgressCard): boolean {
+    return !!card.status && this.selectedStatus() === card.status;
   }
 
   onOccurrenceAction(occurrence: AssignmentOccurrenceItem): void {
@@ -219,7 +287,7 @@ export class AssignedFormDetailsComponent implements OnInit {
     }
   }
 
-  progressToneClass(tone: string): string {
+  progressToneClass(tone: ProgressCard['tone']): string {
     switch (tone) {
       case 'green':
         return 'bg-[#DCFCE7] text-[#166534]';
@@ -234,16 +302,6 @@ export class AssignedFormDetailsComponent implements OnInit {
     }
   }
 
-  actionLabel(occurrence: AssignmentOccurrenceItem): string {
-    if (occurrence.action === 'view') {
-      return 'View';
-    }
-    if (occurrence.action === 'continue') {
-      return 'Continue';
-    }
-    return '—';
-  }
-
   private loadOccurrences(page: number): void {
     const id = this.route.snapshot.paramMap.get('id');
     if (!id) {
@@ -251,7 +309,7 @@ export class AssignedFormDetailsComponent implements OnInit {
     }
 
     this.occurrencesLoading.set(true);
-    this.fetchDetail(id, page, this.limit(), this.month())
+    this.fetchDetail(id, page, this.limit())
       .pipe(
         finalize(() => this.occurrencesLoading.set(false)),
         takeUntilDestroyed(this.destroyRef),
@@ -267,16 +325,12 @@ export class AssignedFormDetailsComponent implements OnInit {
       });
   }
 
-  private fetchDetail(
-    id: string,
-    page: number,
-    limit: number,
-    month: string | null,
-  ) {
+  private fetchDetail(id: string, page: number, limit: number) {
     return this.assignedFormsService.getAssignmentDetail(id, {
       page,
       limit,
-      month,
+      status: this.selectedStatus(),
+      date: this.selectedDate(),
     });
   }
 
@@ -286,8 +340,5 @@ export class AssignedFormDetailsComponent implements OnInit {
     this.lastPage.set(Math.max(1, result.occurrencesMeta.lastPage || 1));
     this.total.set(result.occurrencesMeta.total);
     this.limit.set(result.occurrencesMeta.limit || this.limit());
-    if (result.occurrencesMeta.month && !this.month()) {
-      // Keep user-selected month; only seed when empty and API provides one.
-    }
   }
 }

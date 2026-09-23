@@ -61,10 +61,31 @@
 
       <div class="mt-5 grid grid-cols-2 gap-3 md:grid-cols-5">
         @for (card of progressCards(); track card.key) {
-          <div class="rounded-xl border border-[#ECECEC] px-3 py-3" [ngClass]="progressToneClass(card.tone)">
-            <p class="m-0 text-2xl font-semibold leading-none">{{ card.value }}</p>
-            <p class="m-0 mt-1.5 text-xs font-medium opacity-80">{{ card.label }}</p>
-          </div>
+          @if (card.status) {
+            <button
+              type="button"
+              class="rounded-xl border px-3 py-3 text-left transition focus:outline-none focus:ring-2 focus:ring-[#FF9015]/40"
+              [ngClass]="[
+                progressToneClass(card.tone),
+                isStatusCardActive(card)
+                  ? 'border-[#FF9015] ring-2 ring-[#FF9015]/30 shadow-sm'
+                  : 'border-[#ECECEC] hover:border-[#FF9015]/50'
+              ]"
+              [attr.aria-pressed]="isStatusCardActive(card)"
+              (click)="onStatusCardClick(card)"
+            >
+              <p class="m-0 text-2xl font-semibold leading-none">{{ card.value }}</p>
+              <p class="m-0 mt-1.5 text-xs font-medium opacity-80">{{ card.label }}</p>
+            </button>
+          } @else {
+            <div
+              class="rounded-xl border border-[#ECECEC] px-3 py-3"
+              [ngClass]="progressToneClass(card.tone)"
+            >
+              <p class="m-0 text-2xl font-semibold leading-none">{{ card.value }}</p>
+              <p class="m-0 mt-1.5 text-xs font-medium opacity-80">{{ card.label }}</p>
+            </div>
+          }
         }
       </div>
     </div>
@@ -79,22 +100,43 @@
           </p>
         </div>
 
-        <div class="flex flex-wrap items-center gap-2">
-          <label class="inline-flex items-center gap-2 text-sm text-[#525252]" for="occurrence-month">
-            <span class="whitespace-nowrap">Month</span>
-            <input
-              id="occurrence-month"
-              type="month"
-              class="rounded-lg border border-[#E0E0E0] bg-white px-2.5 py-1.5 text-sm outline-none focus:border-[#FF9015] focus:ring-2 focus:ring-[#FF9015]/20"
-              [ngModel]="month() || ''"
-              (ngModelChange)="onMonthChange($event)"
-            />
-          </label>
-          @if (month()) {
+        <div class="flex flex-wrap items-end gap-2">
+          <div class="assigned-form-details-date">
+            <label
+              class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-[#8D8D8D]"
+              for="occurrence-date"
+            >
+              Date
+            </label>
+            <div class="relative min-w-[11rem]">
+              <svg
+                class="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-[#8D8D8D]"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                aria-hidden="true"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8 3v3M16 3v3M4 9h16M6 5h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z" />
+              </svg>
+              <input
+                id="occurrence-date"
+                type="text"
+                class="assigned-form-details-date__input w-full rounded-lg border border-[#E0E0E0] bg-white py-2 pl-9 pr-3 text-sm text-[#161616] outline-none transition placeholder:text-[#A8A8A8] focus:border-[#FF9015] focus:ring-2 focus:ring-[#FF9015]/20"
+                placeholder="Select date"
+                readonly
+                appFlatpickr
+                [fpStatic]="true"
+                [fpValue]="selectedDate()"
+                (fpChange)="onDateChange($event)"
+              />
+            </div>
+          </div>
+          @if (selectedDate()) {
             <button
               type="button"
-              class="rounded-lg border border-[#C6C6C6] bg-white px-3 py-1.5 text-sm text-[#525252] hover:bg-[#F4F4F4]"
-              (click)="clearMonth()"
+              class="rounded-lg border border-[#C6C6C6] bg-white px-3 py-2 text-sm text-[#525252] hover:bg-[#F4F4F4]"
+              (click)="clearDate()"
             >
               Clear
             </button>
@@ -121,7 +163,7 @@
             } @else if (occurrences().length === 0) {
               <tr>
                 <td colspan="3" class="px-4 py-8 text-center text-[#6F6F6F]">
-                  No occurrences found for this period.
+                  No occurrences found for this filter.
                 </td>
               </tr>
             } @else {
