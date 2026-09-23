@@ -38,6 +38,8 @@ export interface AssignedFormsSummaryCard {
   label: string;
   value: number;
   iconTone: 'blue' | 'green' | 'amber' | 'red';
+  /** Existing listing status filter value; `null` = clear status (Total Assigned). */
+  status: AssignedFormApiStatus | null;
 }
 
 interface AssignedUserOption {
@@ -126,24 +128,28 @@ export class AssignedFormsComponent implements OnInit {
         label: 'Total Assigned',
         value: current.totalAssigned,
         iconTone: 'blue',
+        status: null,
       },
       {
         key: 'with-overdue',
         label: 'With Overdue',
         value: current.withOverdue,
         iconTone: 'red',
+        status: 'overdue',
       },
       {
         key: 'in-progress',
         label: 'In Progress',
         value: current.inProgress,
         iconTone: 'amber',
+        status: 'in_progress',
       },
       {
         key: 'fully-completed',
         label: 'Fully Completed',
         value: current.fullyCompleted,
         iconTone: 'green',
+        status: 'completed',
       },
     ];
   });
@@ -357,6 +363,34 @@ export class AssignedFormsComponent implements OnInit {
     this.closeFilterDropdowns();
     this.page.set(1);
     this.loadAssignedForms();
+  }
+
+  onSummaryCardClick(card: AssignedFormsSummaryCard): void {
+    const selected = this.selectedStatuses();
+
+    if (card.status == null) {
+      if (selected.length === 0) {
+        return;
+      }
+      this.selectedStatuses.set([]);
+    } else {
+      const isActive =
+        selected.length === 1 && selected[0] === card.status;
+      this.selectedStatuses.set(isActive ? [] : [card.status]);
+    }
+
+    this.closeFilterDropdowns();
+    this.page.set(1);
+    this.goToPageInput.set('1');
+    this.loadAssignedForms();
+  }
+
+  isSummaryCardActive(card: AssignedFormsSummaryCard): boolean {
+    const selected = this.selectedStatuses();
+    if (card.status == null) {
+      return selected.length === 0;
+    }
+    return selected.length === 1 && selected[0] === card.status;
   }
 
   goToPage(page: number): void {
