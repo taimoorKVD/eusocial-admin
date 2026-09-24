@@ -47,10 +47,11 @@ import { PERMISSIONS } from '../constants/permissions';
  * Route groups under the authenticated tenant layout:
  *
  * 1. Shared reusable features — permissionGuard only (any account_type)
+ *    (Users, Items, Vendors, Locations, Form Templates, My Tasks)
  * 2. Tenant-admin experience — tenantAdminGuard (+ permissions where set)
  * 3. Employee experience — tenantEmployeeGuard (+ permissions where set)
  *
- * account_type selects portal experience; permissions gate feature access.
+ * account_type selects portal chrome; permissions gate feature access.
  */
 const routes: Routes = [
   {
@@ -172,6 +173,30 @@ const routes: Routes = [
                 (m) => m.DYNAMIC_FORMS_ROUTES,
               ),
           },
+
+          /*
+           * My Tasks / My Forms — permission-gated for any account_type.
+           * Admins with Task permissions (via role and/or job position) can access;
+           * users without VIEW_ASSIGNMENT (etc.) remain blocked by permissionGuard.
+           */
+          {
+            path: 'my-forms',
+            component: EmployeeMyFormsComponent,
+            canActivate: [permissionGuard],
+            data: { permission: PERMISSIONS.DATA_COLLECTION.VIEW_ASSIGNMENT },
+          },
+          {
+            path: 'my-forms/:id',
+            component: EmployeeAssignmentComponent,
+            canActivate: [permissionGuard],
+            data: {
+              anyPermission: [
+                PERMISSIONS.DATA_COLLECTION.VIEW_ASSIGNMENT,
+                PERMISSIONS.DATA_COLLECTION.COMPLETE_ASSIGNMENT,
+                PERMISSIONS.DATA_COLLECTION.VIEW_SUBMISSION,
+              ],
+            },
+          },
         ],
       },
 
@@ -268,30 +293,12 @@ const routes: Routes = [
       },
 
       /*
-       * Employee experience-only features.
+       * Employee experience-only features (History remains employee portal chrome).
        */
       {
         path: '',
         canActivate: [tenantEmployeeGuard],
         children: [
-          {
-            path: 'my-forms',
-            component: EmployeeMyFormsComponent,
-            canActivate: [permissionGuard],
-            data: { permission: PERMISSIONS.DATA_COLLECTION.VIEW_ASSIGNMENT },
-          },
-          {
-            path: 'my-forms/:id',
-            component: EmployeeAssignmentComponent,
-            canActivate: [permissionGuard],
-            data: {
-              anyPermission: [
-                PERMISSIONS.DATA_COLLECTION.VIEW_ASSIGNMENT,
-                PERMISSIONS.DATA_COLLECTION.COMPLETE_ASSIGNMENT,
-                PERMISSIONS.DATA_COLLECTION.VIEW_SUBMISSION,
-              ],
-            },
-          },
           {
             path: 'history',
             component: EmployeeHistoryComponent,
