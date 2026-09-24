@@ -10,10 +10,18 @@
   </div>
 
   <!-- Summary cards -->
-  <div class="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+  <div class="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
     @for (card of summaryCards(); track card.key) {
-      <div
-        class="flex items-center gap-3 rounded-xl border border-[#E8E8E8] bg-white p-4 shadow-sm"
+      <button
+        type="button"
+        class="flex w-full items-center gap-3 rounded-xl border bg-white p-4 text-left shadow-sm transition focus:outline-none focus:ring-2 focus:ring-[#FF9015]/40"
+        [ngClass]="
+          isSummaryCardActive(card)
+            ? 'border-[#FF9015] ring-2 ring-[#FF9015]/30'
+            : 'border-[#E8E8E8] hover:border-[#FF9015]/50'
+        "
+        [attr.aria-pressed]="isSummaryCardActive(card)"
+        (click)="onSummaryCardClick(card)"
       >
         <div
           class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
@@ -26,9 +34,9 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2Z" />
               </svg>
             }
-            @case ('completed') {
+            @case ('with-overdue') {
               <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0 3.75h.008M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
               </svg>
             }
             @case ('in-progress') {
@@ -37,15 +45,9 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
               </svg>
             }
-            @case ('overdue') {
+            @case ('fully-completed') {
               <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0 3.75h.008M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-              </svg>
-            }
-            @case ('pending') {
-              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5" />
-                <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
               </svg>
             }
           }
@@ -59,7 +61,7 @@
         <svg class="h-4 w-4 shrink-0 text-[#A8A8A8]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" d="m9 5 7 7-7 7" />
         </svg>
-      </div>
+      </button>
     }
   </div>
 
@@ -93,7 +95,7 @@
             id="assigned-forms-search"
             type="text"
             class="w-full rounded-lg border border-[#E0E0E0] bg-white py-2.5 pl-9 pr-3 text-sm text-[#161616] outline-none transition placeholder:text-[#A8A8A8] focus:border-[#FF9015] focus:ring-2 focus:ring-[#FF9015]/20"
-            placeholder="Search by form name or assignee"
+            placeholder="Search by form name"
             [ngModel]="searchQuery()"
             (ngModelChange)="onSearchInput($event)"
           />
@@ -322,7 +324,7 @@
       </div>
 
       <!-- Due From -->
-      <div class="assigned-forms-due-date">
+      <div class="assigned-forms-due-date relative min-w-0">
         <label class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-[#8D8D8D]" for="assigned-forms-due-from">
           Due From
         </label>
@@ -353,7 +355,7 @@
       </div>
 
       <!-- Due To -->
-      <div class="assigned-forms-due-date assigned-forms-due-date--to">
+      <div class="assigned-forms-due-date assigned-forms-due-date--to relative min-w-0">
         <label class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-[#8D8D8D]" for="assigned-forms-due-to">
           Due To
         </label>
@@ -412,74 +414,86 @@
     </div>
   }
 
-  <!-- Listing table -->
+  <!-- Assignment listing -->
   <div class="overflow-hidden rounded-xl border border-[#E8E8E8] bg-white shadow-sm">
-    <div class="overflow-x-auto">
-      <table class="w-full min-w-[48rem] table-fixed border-collapse text-left text-sm">
-        <thead class="bg-[#F3F4F6] text-[#374151]">
-          <tr>
-            <th class="w-[32%] px-4 py-3 font-semibold">Form Name</th>
-            <th class="w-[24%] px-4 py-3 font-semibold">Assigned To</th>
-            <th class="w-[16%] px-4 py-3 font-semibold">Due Date</th>
-            <th class="w-[16%] px-4 py-3 font-semibold">Status</th>
-            <th class="w-[12%] px-4 py-3 text-right font-semibold">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          @if (loading()) {
-            <tr>
-              <td colspan="5" class="px-4 py-10 text-center text-sm text-[#6F6F6F]">
-                Loading assigned forms…
-              </td>
-            </tr>
-          } @else if (rows().length === 0) {
-            <tr>
-              <td colspan="5" class="px-4 py-10 text-center text-sm text-[#6F6F6F]">
-                No assigned forms found.
-              </td>
-            </tr>
-          } @else {
-            @for (row of rows(); track row.id) {
-              <tr class="border-t border-[#ECECEC] transition hover:bg-[#FAFAFA]">
-                <td class="px-4 py-3 align-middle">
-                  <span class="block truncate font-medium text-[#161616]" [attr.title]="row.formName">
-                    {{ row.formName }}
+    <div class="divide-y divide-[#ECECEC]">
+      @if (loading()) {
+        <div class="px-4 py-10 text-center text-sm text-[#6F6F6F]">
+          Loading assigned forms…
+        </div>
+      } @else if (rows().length === 0) {
+        <div class="px-4 py-10 text-center text-sm text-[#6F6F6F]">
+          No assigned forms found.
+        </div>
+      } @else {
+        @for (row of rows(); track row.id) {
+          <div class="flex flex-col gap-4 p-4 transition hover:bg-[#FAFAFA] sm:flex-row sm:items-start sm:justify-between sm:p-5">
+            <div class="min-w-0 flex-1">
+              <div class="flex flex-wrap items-center gap-2">
+                <h2 class="m-0 text-base font-semibold text-[#161616] sm:text-lg">
+                  {{ row.formName }}
+                </h2>
+                <span
+                  class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold"
+                  [ngClass]="statusBadgeClass(row.statusLabel)"
+                >
+                  {{ row.statusLabel }}
+                </span>
+              </div>
+
+              <p class="m-0 mt-2 text-sm text-[#525252]">
+                <span class="font-medium text-[#6F6F6F]">Assigned To:</span>
+                {{ row.assignedTo }}
+                @if (row.assignedUserCount > 0) {
+                  <span class="text-[#8D8D8D]">
+                    ({{ row.assignedUserCount }}
+                    {{ row.assignedUserCount === 1 ? 'user' : 'users' }})
                   </span>
-                </td>
-                <td class="px-4 py-3 align-middle text-[#525252]">
-                  <span class="block truncate" [attr.title]="row.assignedTo">{{ row.assignedTo }}</span>
-                </td>
-                <td class="whitespace-nowrap px-4 py-3 align-middle text-[#525252]">
-                  {{ formatDueDate(row.dueDate) }}
-                </td>
-                <td class="px-4 py-3 align-middle">
-                  <span
-                    class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold"
-                    [ngClass]="statusClass(row.status)"
-                  >
-                    {{ statusLabel(row.status) }}
-                  </span>
-                </td>
-                <td class="px-4 py-3 align-middle text-right">
-                  @if (row.status === 'completed') {
-                    <button
-                      type="button"
-                      class="inline-flex items-center justify-center rounded-md p-1.5 text-[#ea580c] transition hover:bg-orange-50"
-                      aria-label="View assignment"
-                      (click)="viewAssignment(row)"
-                    >
-                      <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"></path>
-                        <circle cx="12" cy="12" r="3"></circle>
-                      </svg>
-                    </button>
-                  }
-                </td>
-              </tr>
-            }
-          }
-        </tbody>
-      </table>
+                }
+              </p>
+
+              <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-[#525252]">
+                <span>
+                  <span class="font-medium text-[#6F6F6F]">Frequency:</span>
+                  {{ row.frequencyLabel }}
+                </span>
+                <span>
+                  <span class="font-medium text-[#6F6F6F]">Period:</span>
+                  {{ row.periodLabel }}
+                </span>
+              </div>
+
+              <div class="mt-3 flex flex-wrap gap-2">
+                <span class="inline-flex rounded-lg bg-[#F3F4F6] px-2.5 py-1 text-xs font-medium text-[#374151]">
+                  Total {{ row.progress.total }}
+                </span>
+                <span class="inline-flex rounded-lg bg-[#DCFCE7] px-2.5 py-1 text-xs font-medium text-[#166534]">
+                  Completed {{ row.progress.completed }}
+                </span>
+                <span class="inline-flex rounded-lg bg-[#FEF3C7] px-2.5 py-1 text-xs font-medium text-[#92400E]">
+                  In Progress {{ row.progress.inProgress }}
+                </span>
+                <span class="inline-flex rounded-lg bg-[#FEE2E2] px-2.5 py-1 text-xs font-medium text-[#991B1B]">
+                  Overdue {{ row.progress.overdue }}
+                </span>
+                <span class="inline-flex rounded-lg bg-[#DBEAFE] px-2.5 py-1 text-xs font-medium text-[#1E40AF]">
+                  Upcoming {{ row.progress.upcoming }}
+                </span>
+              </div>
+            </div>
+
+            <div class="shrink-0">
+              <button
+                type="button"
+                class="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-[#FF9015] bg-[#FF9015] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#e57f0f] sm:w-auto"
+                (click)="viewAssignment(row)"
+              >
+                View Details
+              </button>
+            </div>
+          </div>
+        }
+      }
     </div>
 
     <div
@@ -496,7 +510,7 @@
 
         <app-page-size-select
           [total]="total()"
-          [value]="pageSizeValue()"
+          [value]="limit()"
           [disabled]="loading()"
           (valueChange)="onPageSizeChange($event)"
         ></app-page-size-select>

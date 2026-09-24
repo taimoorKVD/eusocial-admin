@@ -1,0 +1,32 @@
+/*
+ * Flatpickr injects calendar DOM that cannot be styled with Tailwind on the
+ * host template. Keep only positioning / day-tone overrides for the date filter.
+ */
+:host ::ng-deep {
+  .assigned-form-details-date .flatpickr-calendar.static {
+    position: absolute;
+    top: calc(100% + 0.25rem);
+    left: auto;
+    right: 0;
+    margin: 0;
+    z-index: 60;
+  }
+
+  .assigned-form-details-date .flatpickr-wrapper {
+    display: block;
+    width: 100%;
+    position: relative;
+  }
+
+  .flatpickr-day.selected,
+  .flatpickr-day.startRange,
+  .flatpickr-day.endRange {
+    background: #ff9015 !important;
+    border-color: #ff9015 !important;
+  }
+
+  .flatpickr-day:hover {
+    background: #fff5eb;
+    border-color: #fff5eb;
+  }
+}

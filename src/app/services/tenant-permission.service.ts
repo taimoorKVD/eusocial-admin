@@ -9,12 +9,15 @@ import {
 } from '../shared/permissions/permission-normalizer';
 
 /**
- * Centralized tenant RBAC checks from authenticated `user.role.permissions`.
+ * Centralized tenant RBAC checks from authenticated user permissions.
+ * Sources (merged): `user.role.permissions`, then `user.permissions`,
+ * then `user.job_position.permissions` — so Job Position Task grants apply
+ * even when the user also has a Role with other permissions.
  * Fail-closed: missing/empty permission data denies access.
  *
  * Also tracks plan-level `allowedModules` / `modules` when present on the
  * login payload. If that list is empty/missing, module allowance does not
- * block (role permissions remain the action source of truth).
+ * block (role/job-position permissions remain the action source of truth).
  */
 @Injectable({
   providedIn: 'root',
@@ -230,29 +233,36 @@ export class TenantPermissionService {
     }
 
     const record = user as Record<string, unknown>;
+    const merged: Permission[] = [];
+    const seen = new Set<string>();
+
+    const append = (raw: unknown): void => {
+      for (const permission of flattenRolePermissions(raw)) {
+        const key = this.normalize(permission?.name);
+        if (!key || seen.has(key)) {
+          continue;
+        }
+        seen.add(key);
+        merged.push(permission);
+      }
+    };
+
     const role = record['role'];
     if (role && typeof role === 'object') {
-      const permissions = (role as { permissions?: unknown }).permissions;
-      const flattened = flattenRolePermissions(permissions);
-      if (flattened.length) {
-        return flattened;
-      }
+      append((role as { permissions?: unknown }).permissions);
     }
 
-    // Rare fallbacks if backend nests permissions differently on the user.
-    const direct = flattenRolePermissions(record['permissions']);
-    if (direct.length) {
-      return direct;
-    }
+    // Direct user.permissions (if backend nests them on the user).
+    append(record['permissions']);
 
+    // Job Position permissions — include even when role already has grants,
+    // so Admin users with Task rights on their JP receive My Tasks access.
     const jobPosition = record['job_position'] ?? record['jobPosition'];
     if (jobPosition && typeof jobPosition === 'object') {
-      return flattenRolePermissions(
-        (jobPosition as { permissions?: unknown }).permissions,
-      );
+      append((jobPosition as { permissions?: unknown }).permissions);
     }
 
-    return [];
+    return merged;
   }
 
   private extractAllowedModules(user: unknown): string[] {

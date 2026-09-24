@@ -20,7 +20,7 @@
 
 .forms-listing__table {
   width: 100%;
-  min-width: 58rem;
+  min-width: 0;
   table-layout: fixed;
   border-collapse: collapse;
 }
@@ -32,28 +32,29 @@
 
 .forms-listing__col--name,
 .forms-listing__cell--name {
-  width: 18%;
+  width: 17%;
 }
 
 .forms-listing__col--freq,
 .forms-listing__cell--freq {
-  width: 22%;
+  width: 20%;
 }
 
 .forms-listing__col--party,
 .forms-listing__cell--party {
-  width: 15%;
+  width: 14%;
 }
 
 .forms-listing__col--created,
 .forms-listing__cell--created {
-  width: 12rem;
+  width: 10.5rem;
   white-space: nowrap;
 }
 
+/* Preview + Edit + Delete (or View + Restore) — keep icons visible without forcing table overflow. */
 .forms-listing__col--actions,
 .forms-listing__cell--actions {
-  width: 5.75rem;
+  width: 7.5rem;
   white-space: nowrap;
   vertical-align: middle;
 }
@@ -166,8 +167,14 @@
   white-space: nowrap;
 }
 
+/* Only allow horizontal scroll on narrower viewports; desktop fits in the container. */
 @media (max-width: 1024px) {
   .forms-listing__table {
     min-width: 52rem;
+  }
+
+  .forms-listing__col--actions,
+  .forms-listing__cell--actions {
+    width: 7.5rem;
   }
 }

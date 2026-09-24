@@ -197,6 +197,19 @@
             @if (showRowActions()) {
               <td class="forms-listing__cell forms-listing__cell--actions px-4 py-3 text-right">
                 <div class="forms-listing__actions">
+                @if (canView) {
+                  <button
+                    type="button"
+                    class="inline-flex items-center justify-center rounded-md p-1.5 text-[#2563EB] transition-colors hover:bg-blue-50"
+                    aria-label="Preview Form Template"
+                    title="Preview Form Template"
+                    (click)="previewForm(form)"
+                  >
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2Z" />
+                    </svg>
+                  </button>
+                }
                 @if (isArchivedView() && canView) {
                   <button
                     type="button"

@@ -39,6 +39,11 @@ export class RegularFormShellComponent {
   readonly canFill = input(true);
   readonly submitting = input(false);
   readonly interactionMode = input.required<AssignmentFormMode>();
+  /**
+   * Admin Form Template Preview: same Regular Form layout, no mode switcher,
+   * no submit, and preview-oriented chrome. Employee fill flow leaves this false.
+   */
+  readonly previewMode = input(false);
 
   readonly submitRequested = output<void>();
   readonly interactionModeChange = output<AssignmentFormMode>();
@@ -48,6 +53,8 @@ export class RegularFormShellComponent {
 
   readonly isManualMode = computed(() => this.interactionMode() === 'manual');
   readonly isNormalMode = computed(() => this.interactionMode() === 'normal');
+  readonly isPreview = computed(() => this.previewMode());
+  readonly showSubmit = computed(() => this.canFill() && !this.previewMode());
 
   /** Flat field list the form engine needs to build its single FormGroup. */
   readonly engineFields = computed<DynamicField[]>(() =>
@@ -85,7 +92,7 @@ export class RegularFormShellComponent {
   }
 
   submit(): void {
-    if (!this.canFill() || this.submitting()) {
+    if (!this.showSubmit() || this.submitting()) {
       return;
     }
 

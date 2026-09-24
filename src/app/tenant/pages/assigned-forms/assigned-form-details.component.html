@@ -1,0 +1,260 @@
+<div class="min-h-[calc(100vh-4rem)] bg-[#fafafa] p-4 md:p-6 font-ibm">
+  @if (loading()) {
+    <app-eu-loader></app-eu-loader>
+  }
+
+  <button
+    type="button"
+    class="mb-4 text-sm font-medium text-[#FF9015] hover:underline"
+    (click)="goBack()"
+  >
+    ← Back to Assigned Forms
+  </button>
+
+  @if (errorMessage()) {
+    <div class="rounded-xl border border-[#FECACA] bg-[#FEF2F2] px-4 py-4">
+      <p class="m-0 text-sm text-[#B42318]">{{ errorMessage() }}</p>
+      <button
+        type="button"
+        class="mt-3 text-sm font-medium text-[#FF9015] hover:underline"
+        (click)="retry()"
+      >
+        Try again
+      </button>
+    </div>
+  } @else if (!loading() && summary(); as current) {
+    <!-- Assignment summary -->
+    <div class="mb-5 rounded-xl border border-[#E8E8E8] bg-white p-4 shadow-sm sm:p-5">
+      <div class="flex flex-wrap items-start justify-between gap-3">
+        <div class="min-w-0">
+          <p class="m-0 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#FF9015]">
+            Assignment Details
+          </p>
+          <h1 class="m-0 mt-1.5 text-xl font-semibold text-[#161616] sm:text-2xl">
+            {{ current.formName }}
+          </h1>
+        </div>
+        <button
+          type="button"
+          class="inline-flex shrink-0 items-center gap-2 rounded-lg border border-[#FF9015] bg-white px-3.5 py-2 text-sm font-medium text-[#FF9015] transition hover:bg-[#fff5eb]"
+          [disabled]="!current.templateId"
+          [attr.title]="current.templateId ? 'Preview Form Template' : 'Template id unavailable'"
+          (click)="previewForm()"
+        >
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2Z" />
+          </svg>
+          Preview Form Template
+        </button>
+      </div>
+
+      <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div>
+          <p class="m-0 text-[11px] font-semibold uppercase tracking-wide text-[#8D8D8D]">
+            Assigned To
+          </p>
+          <p class="m-0 mt-1 text-sm font-medium text-[#161616]">
+            {{ current.assignedTo }}
+          </p>
+        </div>
+        <div>
+          <p class="m-0 text-[11px] font-semibold uppercase tracking-wide text-[#8D8D8D]">
+            Frequency
+          </p>
+          <p class="m-0 mt-1 text-sm font-medium text-[#161616]">
+            {{ current.frequencyLabel }}
+          </p>
+        </div>
+        <div>
+          <p class="m-0 text-[11px] font-semibold uppercase tracking-wide text-[#8D8D8D]">
+            Assignment Period
+          </p>
+          <p class="m-0 mt-1 text-sm font-medium text-[#161616]">
+            {{ current.periodLabel }}
+          </p>
+        </div>
+      </div>
+
+      <div class="mt-5 grid grid-cols-2 gap-3 md:grid-cols-5">
+        @for (card of progressCards(); track card.key) {
+          @if (card.status) {
+            <button
+              type="button"
+              class="rounded-xl border px-3 py-3 text-left transition focus:outline-none focus:ring-2 focus:ring-[#FF9015]/40"
+              [ngClass]="[
+                progressToneClass(card.tone),
+                isStatusCardActive(card)
+                  ? 'border-[#FF9015] ring-2 ring-[#FF9015]/30 shadow-sm'
+                  : 'border-[#ECECEC] hover:border-[#FF9015]/50'
+              ]"
+              [attr.aria-pressed]="isStatusCardActive(card)"
+              (click)="onStatusCardClick(card)"
+            >
+              <p class="m-0 text-2xl font-semibold leading-none">{{ card.value }}</p>
+              <p class="m-0 mt-1.5 text-xs font-medium opacity-80">{{ card.label }}</p>
+            </button>
+          } @else {
+            <div
+              class="rounded-xl border border-[#ECECEC] px-3 py-3"
+              [ngClass]="progressToneClass(card.tone)"
+            >
+              <p class="m-0 text-2xl font-semibold leading-none">{{ card.value }}</p>
+              <p class="m-0 mt-1.5 text-xs font-medium opacity-80">{{ card.label }}</p>
+            </div>
+          }
+        }
+      </div>
+    </div>
+
+    <!-- Occurrence history -->
+    <div class="overflow-hidden rounded-xl border border-[#E8E8E8] bg-white shadow-sm">
+      <div class="flex flex-col gap-3 border-b border-[#E8E8E8] px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 class="m-0 text-base font-semibold text-[#161616]">Occurrence History</h2>
+          <p class="m-0 mt-1 text-sm text-[#6F6F6F]">
+            Individual scheduled instances for this assignment.
+          </p>
+        </div>
+
+        <div class="flex flex-wrap items-end gap-2">
+          <div class="assigned-form-details-date relative min-w-0">
+            <label
+              class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-[#8D8D8D]"
+              for="occurrence-date"
+            >
+              Date
+            </label>
+            <div class="relative min-w-[11rem]">
+              <svg
+                class="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-[#8D8D8D]"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                aria-hidden="true"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8 3v3M16 3v3M4 9h16M6 5h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z" />
+              </svg>
+              <input
+                id="occurrence-date"
+                type="text"
+                class="assigned-form-details-date__input w-full rounded-lg border border-[#E0E0E0] bg-white py-2 pl-9 pr-3 text-sm text-[#161616] outline-none transition placeholder:text-[#A8A8A8] focus:border-[#FF9015] focus:ring-2 focus:ring-[#FF9015]/20"
+                placeholder="Select date"
+                readonly
+                appFlatpickr
+                [fpStatic]="true"
+                [fpValue]="selectedDate()"
+                (fpChange)="onDateChange($event)"
+              />
+            </div>
+          </div>
+          @if (selectedDate()) {
+            <button
+              type="button"
+              class="rounded-lg border border-[#C6C6C6] bg-white px-3 py-2 text-sm text-[#525252] hover:bg-[#F4F4F4]"
+              (click)="clearDate()"
+            >
+              Clear
+            </button>
+          }
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full min-w-[36rem] border-collapse text-left text-sm">
+          <thead class="bg-[#F3F4F6] text-[#374151]">
+            <tr>
+              <th class="px-4 py-3 font-semibold">Due Date</th>
+              <th class="px-4 py-3 font-semibold">Status</th>
+              <th class="px-4 py-3 text-right font-semibold">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (occurrencesLoading()) {
+              <tr>
+                <td colspan="3" class="px-4 py-8 text-center text-[#6F6F6F]">
+                  Loading occurrences…
+                </td>
+              </tr>
+            } @else if (occurrences().length === 0) {
+              <tr>
+                <td colspan="3" class="px-4 py-8 text-center text-[#6F6F6F]">
+                  No occurrences found for this filter.
+                </td>
+              </tr>
+            } @else {
+              @for (occurrence of occurrences(); track occurrence.id) {
+                <tr class="border-t border-[#ECECEC]">
+                  <td class="px-4 py-3 text-[#525252]">
+                    {{ formatDueDate(occurrence.dueDate) }}
+                  </td>
+                  <td class="px-4 py-3">
+                    <span
+                      class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold"
+                      [ngClass]="statusBadgeClass(occurrence.statusLabel)"
+                    >
+                      {{ occurrence.statusLabel }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3 text-right">
+                    @if (occurrence.action === 'view') {
+                      <button
+                        type="button"
+                        class="inline-flex items-center justify-center rounded-md px-2.5 py-1.5 text-sm font-medium text-[#ea580c] transition hover:bg-orange-50"
+                        (click)="onOccurrenceAction(occurrence)"
+                      >
+                        View
+                      </button>
+                    } @else if (occurrence.action === 'continue') {
+                      <span class="text-sm font-medium text-[#8D8D8D]">Continue</span>
+                    } @else {
+                      <span class="text-sm text-[#A8A8A8]">—</span>
+                    }
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div
+        class="flex flex-col gap-3 border-t border-[#E8E8E8] px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+      >
+        <div class="flex flex-wrap items-center gap-3">
+          <p class="m-0 text-sm text-[#6F6F6F]">
+            Page {{ page() }} of {{ lastPage() }}
+            @if (total()) {
+              <span>({{ total() }} total)</span>
+            }
+          </p>
+          <app-page-size-select
+            [total]="total()"
+            [value]="limit()"
+            [disabled]="occurrencesLoading()"
+            (valueChange)="onPageSizeChange($event)"
+          ></app-page-size-select>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            class="rounded-lg border border-[#E0E0E0] bg-white px-3 py-1.5 text-sm font-medium text-[#525252] transition hover:bg-[#F4F4F4] disabled:cursor-not-allowed disabled:opacity-40"
+            [disabled]="page() <= 1 || occurrencesLoading()"
+            (click)="prevPage()"
+          >
+            ← Prev
+          </button>
+          <button
+            type="button"
+            class="rounded-lg border border-[#E0E0E0] bg-white px-3 py-1.5 text-sm font-medium text-[#525252] transition hover:bg-[#F4F4F4] disabled:cursor-not-allowed disabled:opacity-40"
+            [disabled]="page() >= lastPage() || occurrencesLoading()"
+            (click)="nextPage()"
+          >
+            Next →
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

@@ -4,19 +4,19 @@ import { Observable, map } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { FormSection } from '../tenant/pages/extra-management/forms/models/dynamic-form.models';
 
-/** API status values for Assigned Forms filters/listing. */
+/** API status values for Assigned Forms filters. */
 export type AssignedFormApiStatus =
   | 'pending'
   | 'in_progress'
   | 'completed'
   | 'overdue';
 
-export interface AssignedFormsStats {
+/** Assignment-level summary cards from `assignmentStats`. */
+export interface AssignedFormsAssignmentStats {
   totalAssigned: number;
-  completed: number;
+  withOverdue: number;
   inProgress: number;
-  overdue: number;
-  notStarted: number;
+  fullyCompleted: number;
 }
 
 export interface AssignedFormsMeta {
@@ -26,20 +26,28 @@ export interface AssignedFormsMeta {
   limit: number;
 }
 
+export interface AssignmentProgress {
+  total: number;
+  completed: number;
+  inProgress: number;
+  overdue: number;
+  upcoming: number;
+}
+
 export interface AssignedFormListItem {
   id: string;
   formName: string;
   assignedTo: string;
-  assignedUserIds: string[];
-  dueDate: string | null;
-  status: AssignedFormApiStatus;
-  mode: string | null;
-  submissionId: string | null;
+  assignedUserCount: number;
+  frequencyLabel: string;
+  periodLabel: string;
+  progress: AssignmentProgress;
+  statusLabel: string;
   raw: Record<string, unknown>;
 }
 
 export interface AssignedFormsPage {
-  stats: AssignedFormsStats;
+  assignmentStats: AssignedFormsAssignmentStats;
   meta: AssignedFormsMeta;
   items: AssignedFormListItem[];
 }
@@ -50,25 +58,70 @@ export interface AssignedFormsQuery {
   search?: string;
   status?: string[];
   userId?: string[];
-  /** Same repeated-param convention as `userId`. */
   jobPositionId?: string[];
   dueFrom?: string | null;
   dueTo?: string | null;
 }
 
-export interface AssignedFormDetail {
+export interface AssignmentSummary {
   id: string;
-  status: AssignedFormApiStatus;
   formName: string;
   assignedTo: string;
+  frequencyLabel: string;
+  periodLabel: string;
+  progress: AssignmentProgress;
+  statusLabel: string;
+  /** Template id for Form Template Preview (`GET /templates/:id`). */
+  templateId: string | null;
+}
+
+export type OccurrenceAction = 'view' | 'continue' | '';
+
+/** Read-only completed occurrence submission. */
+export interface OccurrenceSubmissionDetail {
+  id: string;
+  formName: string;
   dueDate: string | null;
-  mode: string | null;
+  statusLabel: string;
   submittedAt: string | null;
-  submissionId: string | null;
   schema: Record<string, unknown>;
   sections: FormSection[];
   answers: Record<string, unknown>;
   raw: Record<string, unknown>;
+}
+
+export interface AssignmentOccurrenceItem {
+  id: string;
+  dueDate: string | null;
+  statusLabel: string;
+  action: OccurrenceAction;
+  /** Embedded completed submission from View Details API (when present). */
+  submission: OccurrenceSubmissionDetail | null;
+  raw: Record<string, unknown>;
+}
+
+export interface OccurrencesMeta {
+  total: number;
+  page: number;
+  lastPage: number;
+  limit: number;
+  month: string | null;
+}
+
+export interface AssignmentDetailPage {
+  summary: AssignmentSummary;
+  occurrences: AssignmentOccurrenceItem[];
+  occurrencesMeta: OccurrencesMeta;
+  raw: Record<string, unknown>;
+}
+
+export interface AssignmentDetailQuery {
+  page?: number;
+  limit?: number;
+  /** Occurrence status filter (`completed`, `in_progress`, `overdue`, `upcoming`). */
+  status?: string | null;
+  /** Exact date filter (`Y-m-d`), replaces the previous month filter. */
+  date?: string | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -125,11 +178,65 @@ export class AssignedFormsService {
       .pipe(map((response) => this.normalizePage(response, page, limit)));
   }
 
-  /** Detail for read-only View — same assignment detail endpoint used elsewhere. */
-  getAssignedForm(id: string): Observable<AssignedFormDetail> {
+  /** Assignment summary + paginated occurrences. */
+  getAssignmentDetail(
+    assignmentId: string,
+    query: AssignmentDetailQuery = {},
+  ): Observable<AssignmentDetailPage> {
+    let params = new HttpParams();
+    if (query.page != null) {
+      params = params.set('page', String(query.page));
+    }
+    if (query.limit != null) {
+      params = params.set('limit', String(query.limit));
+    }
+    const status = query.status?.trim();
+    if (status) {
+      params = params.set('status', status);
+    }
+    const date = query.date?.trim();
+    if (date) {
+      params = params.set('date', date);
+    }
+
     return this.http
-      .get<unknown>(`${this.apiUrl}/${id}`)
-      .pipe(map((response) => this.normalizeDetail(this.unwrapRecord(response), id)));
+      .get<unknown>(`${this.apiUrl}/assigned-forms/${assignmentId}`, { params })
+      .pipe(map((response) => this.normalizeAssignmentDetail(response, assignmentId)));
+  }
+
+  /**
+   * Build a read-only submission view model from an occurrence already loaded
+   * via GET /assigned-forms/:assignmentId (no extra HTTP call).
+   */
+  toOccurrenceSubmission(
+    occurrence: AssignmentOccurrenceItem,
+    formNameFallback?: string,
+  ): OccurrenceSubmissionDetail | null {
+    if (occurrence.submission) {
+      return {
+        ...occurrence.submission,
+        formName:
+          occurrence.submission.formName || formNameFallback || 'Completed Form',
+        dueDate: occurrence.submission.dueDate ?? occurrence.dueDate,
+        statusLabel: occurrence.submission.statusLabel || occurrence.statusLabel,
+      };
+    }
+
+    const submissionRaw = this.asRecord(occurrence.raw['submission']);
+    if (!Object.keys(submissionRaw).length) {
+      return null;
+    }
+
+    return this.normalizeOccurrenceSubmission(
+      {
+        ...occurrence.raw,
+        submission: submissionRaw,
+        dueDate: occurrence.dueDate,
+        statusLabel: occurrence.statusLabel,
+        formName: formNameFallback,
+      },
+      occurrence.id,
+    );
   }
 
   private normalizePage(
@@ -138,22 +245,31 @@ export class AssignedFormsService {
     fallbackLimit: number,
   ): AssignedFormsPage {
     const record = this.asRecord(response);
-    const stats = this.asRecord(record['stats']);
+    const assignmentStats = this.asRecord(
+      record['assignmentStats'] ?? record['assignment_stats'],
+    );
     const meta = this.asRecord(record['meta']);
     const items = this.extractArray(response).map((item) =>
       this.normalizeListItem(this.asRecord(item)),
     );
 
     return {
-      stats: {
+      assignmentStats: {
         totalAssigned: this.toNumber(
-          stats['totalAssigned'] ?? stats['total_assigned'] ?? meta['total'],
+          assignmentStats['totalAssigned'] ??
+            assignmentStats['total_assigned'] ??
+            meta['total'],
         ),
-        completed: this.toNumber(stats['completed']),
-        inProgress: this.toNumber(stats['inProgress'] ?? stats['in_progress']),
-        overdue: this.toNumber(stats['overdue']),
-        notStarted: this.toNumber(
-          stats['notStarted'] ?? stats['not_started'] ?? stats['pending'],
+        withOverdue: this.toNumber(
+          assignmentStats['withOverdue'] ?? assignmentStats['with_overdue'],
+        ),
+        inProgress: this.toNumber(
+          assignmentStats['inProgress'] ?? assignmentStats['in_progress'],
+        ),
+        fullyCompleted: this.toNumber(
+          assignmentStats['fullyCompleted'] ??
+            assignmentStats['fully_completed'] ??
+            assignmentStats['completed'],
         ),
       },
       meta: {
@@ -167,58 +283,187 @@ export class AssignedFormsService {
   }
 
   private normalizeListItem(item: Record<string, unknown>): AssignedFormListItem {
-    const submission = this.asRecord(item['submission']);
-    const user = this.asRecord(
-      item['user'] ?? item['assignee'] ?? item['assignedUser'] ?? item['assigned_user'],
+    const progress = this.normalizeProgress(
+      item['progress'] ?? item['Progress'],
     );
+    const assigned = this.readAssignedToDisplay(item);
 
     return {
       id: this.readId(item),
       formName: this.readFormName(item),
-      assignedTo: this.readAssignedTo(item, user),
-      assignedUserIds: this.readAssignedUserIds(item, user),
-      dueDate: this.readDate(item),
-      status: this.normalizeStatus(item['status']),
-      mode: this.readMode(item),
-      submissionId: this.readNullableId(
-        item['submissionId'] ?? item['submission_id'] ?? submission['id'],
-      ),
+      assignedTo: assigned.label,
+      assignedUserCount: assigned.count,
+      frequencyLabel:
+        this.readString(item['frequencyLabel'] ?? item['frequency_label']) ||
+        this.readString(item['frequency']) ||
+        '—',
+      periodLabel:
+        this.readString(item['periodLabel'] ?? item['period_label']) ||
+        this.readPeriodFallback(item),
+      progress,
+      statusLabel:
+        this.readString(item['statusLabel'] ?? item['status_label']) ||
+        this.formatStatusLabel(item['status']),
       raw: item,
     };
   }
 
-  private normalizeDetail(
-    item: Record<string, unknown>,
+  private normalizeAssignmentDetail(
+    response: unknown,
     fallbackId: string,
-  ): AssignedFormDetail {
-    const template = this.asRecord(item['template']);
-    const schema = this.extractSchema(item, template);
-    const submission = this.asRecord(item['submission']);
-    const user = this.asRecord(
-      item['user'] ?? item['assignee'] ?? item['assignedUser'] ?? item['assigned_user'],
+  ): AssignmentDetailPage {
+    const root = this.unwrapRecord(response);
+    const assignment = this.asRecord(
+      root['assignment'] ?? root['data'] ?? root,
+    );
+    const summarySource = this.asRecord(
+      assignment['summary'] ?? assignment,
+    );
+    const occurrencesBlock = this.asRecord(
+      root['occurrences'] ?? assignment['occurrences'],
+    );
+    const occurrencesMeta = this.asRecord(occurrencesBlock['meta']);
+    const occurrenceItems = this.extractNestedArray(occurrencesBlock).map((item) =>
+      this.normalizeOccurrence(this.asRecord(item)),
+    );
+
+    const progress = this.normalizeProgress(
+      summarySource['progress'] ?? assignment['progress'],
     );
 
     return {
-      id: this.readId(item) || fallbackId,
-      status: this.normalizeStatus(item['status']),
-      formName: this.readFormName(item),
-      assignedTo: this.readAssignedTo(item, user),
+      summary: {
+        id: this.readId(summarySource) || this.readId(assignment) || fallbackId,
+        formName: this.readFormName(summarySource) || this.readFormName(assignment),
+        assignedTo: this.readAssignedToDisplay(summarySource).label ||
+          this.readAssignedToDisplay(assignment).label,
+        frequencyLabel:
+          this.readString(
+            summarySource['frequencyLabel'] ?? summarySource['frequency_label'],
+          ) ||
+          this.readString(summarySource['frequency']) ||
+          '—',
+        periodLabel:
+          this.readString(
+            summarySource['periodLabel'] ?? summarySource['period_label'],
+          ) || this.readPeriodFallback(summarySource),
+        progress,
+        statusLabel:
+          this.readString(
+            summarySource['statusLabel'] ?? summarySource['status_label'],
+          ) || this.formatStatusLabel(summarySource['status']),
+        templateId:
+          this.readTemplateId(summarySource) ||
+          this.readTemplateId(assignment) ||
+          this.readTemplateId(root) ||
+          this.readTemplateIdFromOccurrences(occurrenceItems),
+      },
+      occurrences: occurrenceItems,
+      occurrencesMeta: {
+        total: this.toNumber(
+          occurrencesMeta['total'] ?? occurrenceItems.length,
+        ),
+        page: this.toNumber(occurrencesMeta['page'] ?? 1),
+        lastPage: this.toNumber(
+          occurrencesMeta['lastPage'] ?? occurrencesMeta['last_page'] ?? 1,
+        ),
+        limit: this.toNumber(
+          occurrencesMeta['limit'] ?? environment.limit ?? 15,
+        ),
+        month: this.readString(occurrencesMeta['month']) || null,
+      },
+      raw: root,
+    };
+  }
+
+  private normalizeOccurrence(item: Record<string, unknown>): AssignmentOccurrenceItem {
+    const actionRaw = this.readString(item['action']).toLowerCase();
+    let action: OccurrenceAction = '';
+    if (actionRaw === 'view') {
+      action = 'view';
+    } else if (actionRaw === 'continue') {
+      action = 'continue';
+    }
+
+    const id = this.readId(item);
+    const dueDate = this.readDate(item);
+    const statusLabel =
+      this.readString(item['statusLabel'] ?? item['status_label']) ||
+      this.formatStatusLabel(item['status']);
+
+    const submissionRaw = this.asRecord(item['submission']);
+    const submission =
+      Object.keys(submissionRaw).length > 0
+        ? this.normalizeOccurrenceSubmission(
+            {
+              ...item,
+              submission: submissionRaw,
+              dueDate,
+              statusLabel,
+            },
+            id,
+          )
+        : null;
+
+    return {
+      id,
+      dueDate,
+      statusLabel,
+      action,
+      submission,
+      raw: item,
+    };
+  }
+
+  private normalizeOccurrenceSubmission(
+    item: Record<string, unknown>,
+    fallbackId: string,
+  ): OccurrenceSubmissionDetail {
+    const submission = this.asRecord(
+      item['submission'] ?? item['data'] ?? item,
+    );
+    const template = this.asRecord(
+      submission['template'] ?? item['template'],
+    );
+    const schema = this.extractSchema(item, template, submission);
+    const answers = this.extractAnswers(submission, item);
+
+    return {
+      id: this.readId(item) || this.readId(submission) || fallbackId,
+      formName:
+        this.readFormName(item) ||
+        this.readFormName(template) ||
+        this.readString(schema['formName']) ||
+        'Completed Form',
       dueDate: this.readDate(item),
-      mode: this.readMode(item),
+      statusLabel:
+        this.readString(item['statusLabel'] ?? item['status_label']) ||
+        'Completed',
       submittedAt: this.readSubmittedAt(item, submission),
-      submissionId: this.readNullableId(
-        item['submissionId'] ?? item['submission_id'] ?? submission['id'],
-      ),
       schema,
       sections: this.extractSections(schema),
-      answers: this.extractAnswers(submission, item),
+      answers,
       raw: item,
+    };
+  }
+
+  private normalizeProgress(value: unknown): AssignmentProgress {
+    const progress = this.asRecord(value);
+    return {
+      total: this.toNumber(progress['total']),
+      completed: this.toNumber(progress['completed']),
+      inProgress: this.toNumber(
+        progress['inProgress'] ?? progress['in_progress'],
+      ),
+      overdue: this.toNumber(progress['overdue']),
+      upcoming: this.toNumber(progress['upcoming']),
     };
   }
 
   private extractSchema(
     item: Record<string, unknown>,
     template: Record<string, unknown>,
+    submission: Record<string, unknown> = {},
   ): Record<string, unknown> {
     if (this.isObject(item['schema'])) {
       return this.asRecord(item['schema']);
@@ -226,7 +471,6 @@ export class AssignedFormsService {
     if (this.isObject(template['schema'])) {
       return this.asRecord(template['schema']);
     }
-    const submission = this.asRecord(item['submission']);
     const submissionTemplate = this.asRecord(submission['template']);
     if (this.isObject(submissionTemplate['schema'])) {
       return this.asRecord(submissionTemplate['schema']);
@@ -241,14 +485,14 @@ export class AssignedFormsService {
     }
     return sections
       .filter((section) => this.isObject(section))
-      .map((section) => this.normalizeSectionShape(this.asRecord(section))) as unknown as FormSection[];
+      .map((section) =>
+        this.normalizeSectionShape(this.asRecord(section)),
+      ) as unknown as FormSection[];
   }
 
-  /**
-   * Some payloads expose section.fields instead of section.rows.
-   * Normalize locally so shared form mappers can read rows.
-   */
-  private normalizeSectionShape(section: Record<string, unknown>): Record<string, unknown> {
+  private normalizeSectionShape(
+    section: Record<string, unknown>,
+  ): Record<string, unknown> {
     const rows = section['rows'];
     if (Array.isArray(rows) && rows.length) {
       return section;
@@ -306,111 +550,163 @@ export class AssignedFormsService {
     return id ? `Assignment #${id}` : 'Untitled form';
   }
 
-  private readAssignedTo(
-    item: Record<string, unknown>,
-    user: Record<string, unknown>,
-  ): string {
-    const fromAssignedTo = this.readAssigneeNames(
-      item['assignedTo'] ?? item['assigned_to'],
-    );
-    if (fromAssignedTo) {
-      return fromAssignedTo;
-    }
-
+  /** Resolve template id from assignment / template / submission shapes. */
+  private readTemplateId(item: Record<string, unknown>): string | null {
+    const template = this.asRecord(item['template']);
+    const submission = this.asRecord(item['submission']);
+    const submissionTemplate = this.asRecord(submission['template']);
     const candidates = [
-      item['assigneeName'],
-      item['assignee_name'],
-      user['name'],
-      [user['first_name'], user['last_name']].filter(Boolean).join(' '),
-      [user['firstName'], user['lastName']].filter(Boolean).join(' '),
-      user['email'],
+      item['templateId'],
+      item['template_id'],
+      template['id'],
+      submission['templateId'],
+      submission['template_id'],
+      submissionTemplate['id'],
     ];
 
     for (const candidate of candidates) {
-      const value = this.readString(candidate);
+      if (candidate == null || candidate === '') {
+        continue;
+      }
+      const value = String(candidate).trim();
       if (value) {
         return value;
       }
     }
 
-    const fromUsers = this.readAssigneeNames(item['users'] ?? item['assignees']);
-    if (fromUsers) {
-      return fromUsers;
-    }
-
-    return '—';
+    return null;
   }
 
-  /** Resolve assignee display names from string/object/array payloads. */
-  private readAssigneeNames(value: unknown): string {
+  private readTemplateIdFromOccurrences(
+    occurrences: AssignmentOccurrenceItem[],
+  ): string | null {
+    for (const occurrence of occurrences) {
+      const fromSubmission = occurrence.submission
+        ? this.readTemplateId(occurrence.submission.raw)
+        : null;
+      if (fromSubmission) {
+        return fromSubmission;
+      }
+      const fromRaw = this.readTemplateId(occurrence.raw);
+      if (fromRaw) {
+        return fromRaw;
+      }
+    }
+    return null;
+  }
+
+  private readAssignedToDisplay(item: Record<string, unknown>): {
+    label: string;
+    count: number;
+  } {
+    const fromAssignedTo = this.readAssigneeNames(
+      item['assignedTo'] ?? item['assigned_to'] ?? item['assignees'],
+    );
+    if (fromAssignedTo.names.length) {
+      return {
+        label: this.formatAssigneeList(fromAssignedTo.names),
+        count: fromAssignedTo.names.length,
+      };
+    }
+
+    const user = this.asRecord(
+      item['user'] ?? item['assignee'] ?? item['assignedUser'],
+    );
+    const single =
+      this.readString(user['name']) ||
+      [user['first_name'], user['last_name']].filter(Boolean).join(' ').trim();
+    if (single) {
+      return { label: single, count: 1 };
+    }
+
+    return { label: '—', count: 0 };
+  }
+
+  private formatAssigneeList(names: string[]): string {
+    if (names.length <= 3) {
+      return names.join(', ');
+    }
+    const shown = names.slice(0, 3).join(', ');
+    return `${shown} + others`;
+  }
+
+  private readAssigneeNames(value: unknown): { names: string[] } {
     if (value == null) {
-      return '';
+      return { names: [] };
     }
 
     if (typeof value === 'string' || typeof value === 'number') {
-      return String(value).trim();
+      const text = String(value).trim();
+      return { names: text ? [text] : [] };
     }
 
     if (Array.isArray(value)) {
       const names = value
-        .map((entry) => this.readAssigneeNames(entry))
+        .map((entry) => {
+          if (typeof entry === 'string' || typeof entry === 'number') {
+            return String(entry).trim();
+          }
+          if (!this.isObject(entry)) {
+            return '';
+          }
+          const record = this.asRecord(entry);
+          return (
+            this.readString(record['name']) ||
+            [record['first_name'], record['last_name']]
+              .filter(Boolean)
+              .join(' ')
+              .trim() ||
+            [record['firstName'], record['lastName']]
+              .filter(Boolean)
+              .join(' ')
+              .trim() ||
+            this.readString(record['email'])
+          );
+        })
         .filter(Boolean);
-      return names.join(', ');
+      return { names };
     }
 
     if (this.isObject(value)) {
       const record = this.asRecord(value);
-      return (
+      const name =
         this.readString(record['name']) ||
-        [record['first_name'], record['last_name']].filter(Boolean).join(' ').trim() ||
-        [record['firstName'], record['lastName']].filter(Boolean).join(' ').trim() ||
-        this.readString(record['email'])
-      );
+        [record['first_name'], record['last_name']]
+          .filter(Boolean)
+          .join(' ')
+          .trim();
+      return { names: name ? [name] : [] };
     }
 
-    return '';
+    return { names: [] };
   }
 
-  private readAssignedUserIds(
-    item: Record<string, unknown>,
-    user: Record<string, unknown>,
-  ): string[] {
-    const ids = new Set<string>();
-    const single = this.readNullableId(
-      item['userId'] ?? item['user_id'] ?? item['assignedUserId'] ?? user['id'],
+  private readPeriodFallback(item: Record<string, unknown>): string {
+    const start = this.readString(
+      item['periodStart'] ??
+        item['period_start'] ??
+        item['startDate'] ??
+        item['start_date'],
     );
-    if (single) {
-      ids.add(single);
-    }
-
-    const list = item['userIds'] ?? item['user_ids'] ?? item['users'] ?? item['assignees'];
-    if (Array.isArray(list)) {
-      for (const entry of list) {
-        if (typeof entry === 'string' || typeof entry === 'number') {
-          ids.add(String(entry));
-          continue;
-        }
-        const id = this.readNullableId(this.asRecord(entry)['id']);
-        if (id) {
-          ids.add(id);
-        }
-      }
-    }
-
-    return [...ids];
-  }
-
-  private readMode(item: Record<string, unknown>): string | null {
-    const assign = this.asRecord(item['assign']);
-    const value = this.readString(
-      item['mode'] ?? item['assignMode'] ?? item['assign_mode'] ?? assign['mode'],
+    const end = this.readString(
+      item['periodEnd'] ??
+        item['period_end'] ??
+        item['endDate'] ??
+        item['end_date'],
     );
-    return value || null;
+    if (start && end) {
+      return `${start} → ${end}`;
+    }
+    return start || end || '—';
   }
 
   private readDate(item: Record<string, unknown>): string | null {
     const text = this.readString(
-      item['dueAt'] ?? item['due_at'] ?? item['dueDate'] ?? item['due_date'],
+      item['dueAt'] ??
+        item['due_at'] ??
+        item['dueDate'] ??
+        item['due_date'] ??
+        item['date'],
     );
     return text || null;
   }
@@ -430,28 +726,26 @@ export class AssignedFormsService {
     return text || null;
   }
 
-  private normalizeStatus(value: unknown): AssignedFormApiStatus {
+  private formatStatusLabel(value: unknown): string {
     const raw = this.readString(value).toLowerCase().replace(/[\s-]+/g, '_');
-    if (
-      raw === 'inprogress' ||
-      raw === 'in_progress' ||
-      raw === 'started' ||
-      raw === 'active'
-    ) {
-      return 'in_progress';
+    switch (raw) {
+      case 'completed':
+      case 'complete':
+      case 'submitted':
+        return 'Completed';
+      case 'in_progress':
+      case 'inprogress':
+        return 'In Progress';
+      case 'overdue':
+        return 'Overdue';
+      case 'upcoming':
+        return 'Upcoming';
+      case 'pending':
+      case 'not_started':
+        return 'Pending';
+      default:
+        return this.readString(value) || '—';
     }
-    if (
-      raw === 'complete' ||
-      raw === 'completed' ||
-      raw === 'submitted' ||
-      raw === 'done'
-    ) {
-      return 'completed';
-    }
-    if (raw === 'overdue' || raw === 'past_due' || raw === 'pastdue') {
-      return 'overdue';
-    }
-    return 'pending';
   }
 
   private unwrapRecord(response: unknown): Record<string, unknown> {
@@ -483,20 +777,29 @@ export class AssignedFormsService {
       }
     }
 
-    const fallback = record['items'] ?? record['assignments'] ?? record['results'];
+    const fallback =
+      record['items'] ?? record['assignments'] ?? record['results'];
     return Array.isArray(fallback) ? fallback : [];
   }
 
-  private readId(item: Record<string, unknown>): string {
-    const value = item['id'] ?? item['_id'] ?? item['assignmentId'] ?? item['assignment_id'];
-    return value == null ? '' : String(value);
+  private extractNestedArray(block: Record<string, unknown>): unknown[] {
+    const data = block['data'];
+    if (Array.isArray(data)) {
+      return data;
+    }
+    const items = block['items'] ?? block['results'];
+    return Array.isArray(items) ? items : [];
   }
 
-  private readNullableId(value: unknown): string | null {
-    if (value == null || value === '') {
-      return null;
-    }
-    return String(value);
+  private readId(item: Record<string, unknown>): string {
+    const value =
+      item['id'] ??
+      item['_id'] ??
+      item['assignmentId'] ??
+      item['assignment_id'] ??
+      item['occurrenceId'] ??
+      item['occurrence_id'];
+    return value == null ? '' : String(value);
   }
 
   private readString(value: unknown): string {

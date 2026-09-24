@@ -9,11 +9,12 @@ import {
 import { CommonModule } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
-import { catchError, finalize, forkJoin, map, of, switchMap } from 'rxjs';
+import { finalize, forkJoin, map, of } from 'rxjs';
 import { SharedModule } from '../../../shared/shared.module';
 import {
-  AssignedFormDetail,
+  AssignmentOccurrenceItem,
   AssignedFormsService,
+  OccurrenceSubmissionDetail,
 } from '../../../services/assigned-forms.service';
 import { DynamicFormFieldMapperService } from '../../forms/services/dynamic-form-field.mapper.service';
 import { EmployeeAssignmentSectionView } from '../../../interfaces/employee-assignment';
@@ -21,50 +22,50 @@ import { DynamicField } from '../../../interfaces/dynamic-field';
 import { mapAssignmentSectionsToBuilder } from '../employee/utils/assignment-form.mapper';
 import { CompletedFormViewComponent } from '../employee/typeform-fill/completed-form-view.component';
 
+interface OccurrenceViewNavState {
+  occurrence?: AssignmentOccurrenceItem;
+  formName?: string;
+}
+
 /**
- * Tenant Admin read-only view for a completed/assigned form submission.
+ * Tenant Admin read-only view for a completed occurrence submission.
+ * Uses submission data already loaded from Assignment Details — no extra API call.
  */
 @Component({
-  selector: 'app-assigned-form-view',
+  selector: 'app-assigned-form-submission',
   standalone: true,
   imports: [CommonModule, SharedModule, CompletedFormViewComponent],
   templateUrl: './assigned-form-view.component.html',
-  styleUrl: './assigned-form-view.component.scss',
+  host: { class: 'block' },
 })
-export class AssignedFormViewComponent implements OnInit {
+export class AssignedFormSubmissionComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly assignedFormsService = inject(AssignedFormsService);
   private readonly fieldMapper = inject(DynamicFormFieldMapperService);
   private readonly destroyRef = inject(DestroyRef);
 
+  /** Captured in constructor — getCurrentNavigation() is only available then. */
+  private readonly navState: OccurrenceViewNavState | null;
+
   readonly loading = signal(true);
   readonly errorMessage = signal('');
-  readonly detail = signal<AssignedFormDetail | null>(null);
+  readonly detail = signal<OccurrenceSubmissionDetail | null>(null);
   readonly sections = signal<EmployeeAssignmentSectionView[]>([]);
+  readonly assignmentId = signal('');
 
-  readonly formTitle = computed(() => this.detail()?.formName || 'Assigned Form');
+  readonly formTitle = computed(() => this.detail()?.formName || 'Completed Form');
   readonly answers = computed(() => this.detail()?.answers ?? {});
   readonly submittedAt = computed(() => this.detail()?.submittedAt ?? null);
-  readonly assignedTo = computed(() => this.detail()?.assignedTo || '—');
   readonly dueDate = computed(() => this.detail()?.dueDate ?? null);
-  readonly mode = computed(() => this.detail()?.mode ?? null);
 
-  readonly statusLabel = computed(() => {
-    switch (this.detail()?.status) {
-      case 'completed':
-        return 'Completed';
-      case 'in_progress':
-        return 'In Progress';
-      case 'overdue':
-        return 'Overdue';
-      default:
-        return 'Pending';
-    }
-  });
+  readonly statusLabel = computed(
+    () => this.detail()?.statusLabel || 'Completed',
+  );
 
   readonly statusClass = computed(() => {
-    switch (this.detail()?.status) {
+    const key = this.statusLabel().trim().toLowerCase().replace(/[\s-]+/g, '_');
+    switch (key) {
       case 'completed':
         return 'bg-[#ECFDF3] text-[#067647]';
       case 'in_progress':
@@ -83,87 +84,79 @@ export class AssignedFormViewComponent implements OnInit {
         Object.keys(this.answers()).length > 0),
   );
 
+  constructor() {
+    const nav = this.router.getCurrentNavigation();
+    this.navState =
+      (nav?.extras?.state as OccurrenceViewNavState | undefined) ??
+      (typeof history !== 'undefined'
+        ? (history.state as OccurrenceViewNavState | null)
+        : null);
+  }
+
   ngOnInit(): void {
-    this.route.paramMap
-      .pipe(
-        switchMap((params) => {
-          const id = params.get('id');
-          if (!id) {
-            this.loading.set(false);
-            this.errorMessage.set('Assignment id is missing.');
-            return of(null);
-          }
+    const assignmentId =
+      this.route.snapshot.paramMap.get('assignmentId') ||
+      this.route.snapshot.paramMap.get('id') ||
+      '';
+    this.assignmentId.set(assignmentId);
 
-          this.loading.set(true);
-          this.errorMessage.set('');
-          this.detail.set(null);
-          this.sections.set([]);
+    const occurrence = this.navState?.occurrence;
+    const formNameFallback = this.navState?.formName || '';
 
-          return this.assignedFormsService.getAssignedForm(id).pipe(
-            switchMap((detail) =>
-              this.hydrateSections(detail).pipe(
-                map((sections) => ({ detail, sections })),
-              ),
-            ),
-            catchError((err) => {
-              this.errorMessage.set(
-                err?.error?.message ||
-                  'Unable to load this assigned form. Please try again.',
-              );
-              return of(null);
-            }),
-            finalize(() => this.loading.set(false)),
-          );
-        }),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe((result) => {
-        if (!result) {
-          return;
-        }
-        this.detail.set(result.detail);
-        this.sections.set(result.sections);
-      });
-  }
+    if (!occurrence) {
+      this.loading.set(false);
+      this.errorMessage.set(
+        'Submission data is unavailable. Go back to Assignment Details and open View again.',
+      );
+      return;
+    }
 
-  goBack(): void {
-    this.router.navigate(['/assigned-forms']);
-  }
+    const detail = this.assignedFormsService.toOccurrenceSubmission(
+      occurrence,
+      formNameFallback,
+    );
 
-  retry(): void {
-    const id = this.route.snapshot.paramMap.get('id');
-    if (!id) {
+    if (!detail) {
+      this.loading.set(false);
+      this.errorMessage.set(
+        'No submission is available for this occurrence.',
+      );
       return;
     }
 
     this.loading.set(true);
     this.errorMessage.set('');
-
-    this.assignedFormsService
-      .getAssignedForm(id)
+    this.hydrateSections(detail)
       .pipe(
-        switchMap((detail) =>
-          this.hydrateSections(detail).pipe(
-            map((sections) => ({ detail, sections })),
-          ),
-        ),
         finalize(() => this.loading.set(false)),
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-        next: (result) => {
-          this.detail.set(result.detail);
-          this.sections.set(result.sections);
+        next: (sections) => {
+          this.detail.set(detail);
+          this.sections.set(sections);
         },
-        error: (err) => {
-          this.detail.set(null);
+        error: () => {
+          this.detail.set(detail);
           this.sections.set([]);
           this.errorMessage.set(
-            err?.error?.message ||
-              'Unable to load this assigned form. Please try again.',
+            'Unable to prepare this submission for display. Please try again.',
           );
         },
       });
+  }
+
+  goBack(): void {
+    const assignmentId = this.assignmentId();
+    if (assignmentId) {
+      this.router.navigate(['/assigned-forms', assignmentId]);
+      return;
+    }
+    this.router.navigate(['/assigned-forms']);
+  }
+
+  retry(): void {
+    this.goBack();
   }
 
   formatDueDate(value: string | null): string {
@@ -181,7 +174,7 @@ export class AssignedFormViewComponent implements OnInit {
     });
   }
 
-  private hydrateSections(detail: AssignedFormDetail) {
+  private hydrateSections(detail: OccurrenceSubmissionDetail) {
     const answers = detail.answers ?? {};
     const mapped = mapAssignmentSectionsToBuilder(
       detail.sections,

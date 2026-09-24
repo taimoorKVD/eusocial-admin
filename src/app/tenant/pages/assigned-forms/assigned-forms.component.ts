@@ -22,8 +22,8 @@ import { FormStorageService } from '../../forms/services/form-storage.service';
 import {
   AssignedFormApiStatus,
   AssignedFormListItem,
+  AssignedFormsAssignmentStats,
   AssignedFormsService,
-  AssignedFormsStats,
 } from '../../../services/assigned-forms.service';
 import { environment } from '../../../../environments/environment';
 
@@ -37,7 +37,9 @@ export interface AssignedFormsSummaryCard {
   key: string;
   label: string;
   value: number;
-  iconTone: 'blue' | 'green' | 'amber' | 'red' | 'gray';
+  iconTone: 'blue' | 'green' | 'amber' | 'red';
+  /** Existing listing status filter value; `null` = clear status (Total Assigned). */
+  status: AssignedFormApiStatus | null;
 }
 
 interface AssignedUserOption {
@@ -63,6 +65,7 @@ type FilterDropdownKey = 'status' | 'assignedTo' | 'jobPosition';
   imports: [CommonModule, FormsModule, FlatpickrDirective, PageSizeSelectComponent],
   templateUrl: './assigned-forms.component.html',
   styleUrl: './assigned-forms.component.scss',
+  host: { class: 'block' },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AssignedFormsComponent implements OnInit {
@@ -103,54 +106,50 @@ export class AssignedFormsComponent implements OnInit {
   readonly loading = signal(false);
   readonly errorMessage = signal('');
   readonly rows = signal<AssignedFormListItem[]>([]);
-  readonly stats = signal<AssignedFormsStats>({
+  readonly assignmentStats = signal<AssignedFormsAssignmentStats>({
     totalAssigned: 0,
-    completed: 0,
+    withOverdue: 0,
     inProgress: 0,
-    overdue: 0,
-    notStarted: 0,
+    fullyCompleted: 0,
   });
 
   readonly page = signal(1);
   readonly lastPage = signal(1);
   readonly total = signal(0);
   readonly limit = signal(this.pageLimitDefault);
-  readonly pageSizeValue = computed(() => this.limit());
   /** Bound value for the Go to page input (string keeps empty/invalid entry usable). */
   readonly goToPageInput = signal('1');
 
   readonly summaryCards = computed<AssignedFormsSummaryCard[]>(() => {
-    const current = this.stats();
+    const current = this.assignmentStats();
     return [
       {
         key: 'total',
         label: 'Total Assigned',
         value: current.totalAssigned,
         iconTone: 'blue',
+        status: null,
       },
       {
-        key: 'completed',
-        label: 'Completed',
-        value: current.completed,
-        iconTone: 'green',
+        key: 'with-overdue',
+        label: 'With Overdue',
+        value: current.withOverdue,
+        iconTone: 'red',
+        status: 'overdue',
       },
       {
         key: 'in-progress',
         label: 'In Progress',
         value: current.inProgress,
         iconTone: 'amber',
+        status: 'in_progress',
       },
       {
-        key: 'overdue',
-        label: 'Overdue',
-        value: current.overdue,
-        iconTone: 'red',
-      },
-      {
-        key: 'pending',
-        label: 'Pending',
-        value: current.notStarted,
-        iconTone: 'gray',
+        key: 'fully-completed',
+        label: 'Fully Completed',
+        value: current.fullyCompleted,
+        iconTone: 'green',
+        status: 'completed',
       },
     ];
   });
@@ -366,6 +365,34 @@ export class AssignedFormsComponent implements OnInit {
     this.loadAssignedForms();
   }
 
+  onSummaryCardClick(card: AssignedFormsSummaryCard): void {
+    const selected = this.selectedStatuses();
+
+    if (card.status == null) {
+      if (selected.length === 0) {
+        return;
+      }
+      this.selectedStatuses.set([]);
+    } else {
+      const isActive =
+        selected.length === 1 && selected[0] === card.status;
+      this.selectedStatuses.set(isActive ? [] : [card.status]);
+    }
+
+    this.closeFilterDropdowns();
+    this.page.set(1);
+    this.goToPageInput.set('1');
+    this.loadAssignedForms();
+  }
+
+  isSummaryCardActive(card: AssignedFormsSummaryCard): boolean {
+    const selected = this.selectedStatuses();
+    if (card.status == null) {
+      return selected.length === 0;
+    }
+    return selected.length === 1 && selected[0] === card.status;
+  }
+
   goToPage(page: number): void {
     if (page < 1 || page > this.lastPage() || page === this.page()) {
       this.goToPageInput.set(String(this.page()));
@@ -434,32 +461,21 @@ export class AssignedFormsComponent implements OnInit {
     }
   }
 
-  statusClass(status: AssignedFormApiStatus): string {
-    switch (status) {
+  statusBadgeClass(statusLabel: string): string {
+    const key = statusLabel.trim().toLowerCase().replace(/[\s-]+/g, '_');
+    switch (key) {
       case 'completed':
+      case 'fully_completed':
         return 'bg-[#16A34A] text-white';
       case 'in_progress':
         return 'bg-[#F59E0B] text-white';
       case 'overdue':
         return 'bg-[#DC2626] text-white';
+      case 'upcoming':
+        return 'bg-[#DBEAFE] text-[#1D4ED8]';
       default:
         return 'bg-[#E5E7EB] text-[#4B5563]';
     }
-  }
-
-  formatDueDate(value: string | null): string {
-    if (!value) {
-      return '—';
-    }
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-      return value;
-    }
-    return date.toLocaleDateString(undefined, {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
   }
 
   cardToneClass(tone: AssignedFormsSummaryCard['iconTone']): string {
@@ -472,8 +488,6 @@ export class AssignedFormsComponent implements OnInit {
         return 'bg-[#FEF3C7] text-[#D97706]';
       case 'red':
         return 'bg-[#FEE2E2] text-[#DC2626]';
-      case 'gray':
-        return 'bg-[#E5E7EB] text-[#4B5563]';
     }
   }
 
@@ -508,7 +522,7 @@ export class AssignedFormsComponent implements OnInit {
       .subscribe({
         next: (result) => {
           this.rows.set(result.items);
-          this.stats.set(result.stats);
+          this.assignmentStats.set(result.assignmentStats);
           this.page.set(result.meta.page || this.page());
           this.lastPage.set(Math.max(1, result.meta.lastPage || 1));
           this.total.set(result.meta.total);
@@ -517,12 +531,11 @@ export class AssignedFormsComponent implements OnInit {
         },
         error: (err) => {
           this.rows.set([]);
-          this.stats.set({
+          this.assignmentStats.set({
             totalAssigned: 0,
-            completed: 0,
+            withOverdue: 0,
             inProgress: 0,
-            overdue: 0,
-            notStarted: 0,
+            fullyCompleted: 0,
           });
           this.total.set(0);
           this.lastPage.set(1);

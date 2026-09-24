@@ -1,4 +1,4 @@
-<div class="assigned-form-view p-4 md:p-6 font-ibm">
+<div class="min-h-[calc(100vh-4rem)] bg-[#fafafa] p-4 md:p-6 font-ibm">
   @if (loading()) {
     <app-eu-loader></app-eu-loader>
   }
@@ -8,7 +8,7 @@
     class="mb-4 text-sm font-medium text-[#FF9015] hover:underline"
     (click)="goBack()"
   >
-    ← Back to Assigned Forms
+    ← Back to Assignment Details
   </button>
 
   @if (errorMessage()) {
@@ -27,11 +27,15 @@
       <div class="flex flex-wrap items-start justify-between gap-3">
         <div class="min-w-0">
           <p class="m-0 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#FF9015]">
-            Assigned Form
+            Completed Submission
           </p>
           <h1 class="m-0 mt-1.5 text-xl font-semibold text-[#161616] sm:text-2xl">
             {{ formTitle() }}
           </h1>
+          <p class="m-0 mt-2 text-sm text-[#6F6F6F]">
+            Due date:
+            <span class="font-medium text-[#161616]">{{ formatDueDate(dueDate()) }}</span>
+          </p>
         </div>
         <span
           class="inline-flex shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold"
@@ -39,46 +43,6 @@
         >
           {{ statusLabel() }}
         </span>
-      </div>
-
-      <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div>
-          <p class="m-0 text-[11px] font-semibold uppercase tracking-wide text-[#8D8D8D]">
-            Assigned To
-          </p>
-          <p class="m-0 mt-1 text-sm font-medium text-[#161616]">{{ assignedTo() }}</p>
-        </div>
-        <div>
-          <p class="m-0 text-[11px] font-semibold uppercase tracking-wide text-[#8D8D8D]">
-            Due Date
-          </p>
-          <p class="m-0 mt-1 text-sm font-medium text-[#161616]">
-            {{ formatDueDate(dueDate()) }}
-          </p>
-        </div>
-        @if (mode()) {
-          <div>
-            <p class="m-0 text-[11px] font-semibold uppercase tracking-wide text-[#8D8D8D]">
-              Mode
-            </p>
-            <p class="m-0 mt-1 text-sm font-medium capitalize text-[#161616]">
-              {{ mode() }}
-            </p>
-          </div>
-        }
-        @if (submittedAt(); as submitted) {
-          <div>
-            <p class="m-0 text-[11px] font-semibold uppercase tracking-wide text-[#8D8D8D]">
-              Submitted
-            </p>
-            <p class="m-0 mt-1 text-sm font-medium text-[#161616]">
-              {{ submitted | date: 'mediumDate' }}
-              <span class="font-normal text-[#6F6F6F]">
-                at {{ submitted | date: 'shortTime' }}
-              </span>
-            </p>
-          </div>
-        }
       </div>
     </div>
 
