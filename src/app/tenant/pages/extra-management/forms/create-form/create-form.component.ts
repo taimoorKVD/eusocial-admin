@@ -894,7 +894,7 @@ export class CreateFormComponent implements OnInit {
       date: frequency.date ?? null,
       time: isAtOnce
         ? frequency.time ?? null
-        : recurring.time ?? null,
+        : null,
       startDate: frequency.startDate ?? null,
       endDate: frequency.endDate ?? null,
       every: recurring.every,
@@ -1094,7 +1094,10 @@ export class CreateFormComponent implements OnInit {
           yearMonth: defaults.yearMonth,
           yearDay: defaults.yearDay,
           time: null,
-          times: [],
+          times: normalizeFrequencyTimes(
+            this.frequencyForm.controls.times.value,
+            repeatCount,
+          ),
           endDate: null,
         });
         break;
@@ -1107,7 +1110,10 @@ export class CreateFormComponent implements OnInit {
           yearMonth: defaults.yearMonth,
           yearDay: defaults.yearDay,
           time: null,
-          times: [],
+          times: normalizeFrequencyTimes(
+            this.frequencyForm.controls.times.value,
+            repeatCount,
+          ),
           endDate: null,
         });
         break;
@@ -1119,7 +1125,10 @@ export class CreateFormComponent implements OnInit {
           weekOrder: defaults.weekOrder,
           onTheMonth: defaults.onTheMonth,
           time: null,
-          times: [],
+          times: normalizeFrequencyTimes(
+            this.frequencyForm.controls.times.value,
+            repeatCount,
+          ),
           endDate: null,
           every: Math.min(
             10,
@@ -1162,7 +1171,7 @@ export class CreateFormComponent implements OnInit {
   }
 
   private syncDailyTimesToRepeatCount(repeatCount: number): void {
-    if (this.frequencyForm.controls.interval.value !== 'day') {
+    if (this.frequencyForm.controls.type.value !== 'recurring') {
       return;
     }
     const next = normalizeFrequencyTimes(
@@ -1206,7 +1215,11 @@ export class CreateFormComponent implements OnInit {
       return false;
     }
 
-    if (recurring.interval === 'day') {
+    if (recurring.interval === 'day' ||
+      recurring.interval === 'week' ||
+      recurring.interval === 'month' ||
+      recurring.interval === 'year'
+    ) {
       const times = normalizeFrequencyTimes(recurring.times, recurring.repeatCount);
       return times.every((slot) => isValidTimeFieldValue(slot));
     }
