@@ -234,7 +234,7 @@ export class ViewFormsComponent implements OnInit {
     const normalized = normalizeAssignReportMode(mode);
     const modeLabel =
       ASSIGN_REPORT_MODE_OPTIONS.find((option) => option.value === normalized)?.label ??
-      'Individual';
+      'One response';
     return { names, modeLabel };
   }
 

@@ -128,8 +128,8 @@ export type FrequencyMonthMode = 'dayOfMonth' | 'onThe';
 export type AssignReportMode = 'individual' | 'shared';
 
 export const ASSIGN_REPORT_MODE_OPTIONS: { label: string; value: AssignReportMode }[] = [
-  { label: 'Individual', value: 'individual' },
-  { label: 'Shared', value: 'shared' },
+  { label: 'One response', value: 'individual' },
+  { label: 'All assigned', value: 'shared' },
 ];
 
 export function normalizeAssignReportMode(value: unknown): AssignReportMode {

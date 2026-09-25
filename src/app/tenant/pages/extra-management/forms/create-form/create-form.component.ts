@@ -241,14 +241,14 @@ export class CreateFormComponent implements OnInit {
     const current = this.meta().assignMode;
     return (
       this.assignReportModeOptions.find((option) => option.value === current)?.label ??
-      'Individual'
+      'One response'
     );
   });
   readonly reportModeLabel = computed(() => {
     const current = this.meta().reportMode;
     return (
       this.assignReportModeOptions.find((option) => option.value === current)?.label ??
-      'Individual'
+      'One response'
     );
   });
 
