@@ -84,6 +84,7 @@ import {
   formatAssignReportModeLabel,
   normalizeAssignReportMode,
   normalizeFrequencyTimes,
+  resolveMinimumFrequencyEndDate,
   sanitizeFrequencyRecurring,
 } from '../models/dynamic-form.models';
 import {
@@ -136,10 +137,6 @@ export class CreateFormComponent implements OnInit {
       this.freqTypeSearch.set('');
       this.freqIntervalDropdownOpen.set(false);
       this.freqIntervalSearch.set('');
-      this.freqWeekOrderDropdownOpen.set(false);
-      this.freqWeekOrderSearch.set('');
-      this.freqMonthDropdownOpen.set(false);
-      this.freqMonthSearch.set('');
       this.freqYearMonthDropdownOpen.set(false);
       this.freqYearMonthSearch.set('');
     }
@@ -387,14 +384,6 @@ export class CreateFormComponent implements OnInit {
     { label: 'Year', value: 'year' },
   ];
 
-  readonly weekOrderOptions = [
-    { label: 'First', value: 'first' },
-    { label: 'Second', value: 'second' },
-    { label: 'Third', value: 'third' },
-    { label: 'Fourth', value: 'fourth' },
-    { label: 'Last', value: 'last' },
-  ];
-
   readonly monthOptions = [
     { label: 'January', value: 'january' },
     { label: 'February', value: 'february' },
@@ -429,10 +418,6 @@ export class CreateFormComponent implements OnInit {
   readonly freqTypeSearch = signal('');
   readonly freqIntervalDropdownOpen = signal(false);
   readonly freqIntervalSearch = signal('');
-  readonly freqWeekOrderDropdownOpen = signal(false);
-  readonly freqWeekOrderSearch = signal('');
-  readonly freqMonthDropdownOpen = signal(false);
-  readonly freqMonthSearch = signal('');
   readonly freqYearMonthDropdownOpen = signal(false);
   readonly freqYearMonthSearch = signal('');
 
@@ -448,20 +433,6 @@ export class CreateFormComponent implements OnInit {
     return q
       ? this.intervalOptions.filter((o) => o.label.toLowerCase().includes(q))
       : this.intervalOptions;
-  });
-
-  readonly filteredWeekOrderOptions = computed(() => {
-    const q = this.freqWeekOrderSearch().trim().toLowerCase();
-    return q
-      ? this.weekOrderOptions.filter((o) => o.label.toLowerCase().includes(q))
-      : this.weekOrderOptions;
-  });
-
-  readonly filteredMonthOptions = computed(() => {
-    const q = this.freqMonthSearch().trim().toLowerCase();
-    return q
-      ? this.monthOptions.filter((o) => o.label.toLowerCase().includes(q))
-      : this.monthOptions;
   });
 
   readonly filteredYearMonthOptions = computed(() => {
@@ -504,13 +475,6 @@ export class CreateFormComponent implements OnInit {
     { initialValue: 'month' as FrequencyInterval },
   );
 
-  readonly frequencyMonthMode = toSignal(
-    this.frequencyForm.controls.monthMode.valueChanges.pipe(
-      startWith(this.frequencyForm.controls.monthMode.value),
-    ),
-    { initialValue: 'dayOfMonth' as FrequencyMonthMode },
-  );
-
   readonly frequencyRepeatCount = toSignal(
     this.frequencyForm.controls.repeatCount.valueChanges.pipe(
       startWith(this.frequencyForm.controls.repeatCount.value),
@@ -524,6 +488,28 @@ export class CreateFormComponent implements OnInit {
     return Array.from({ length: count }, (_, i) => i);
   });
 
+  /**
+   * Minimum selectable Schedule End Date for week/month/year
+   * (first occurrence on/after start). Daily falls back to start.
+   */
+  readonly frequencyMinEndDate = computed(() => {
+    const meta = this.meta();
+    if (meta.frequencyType !== 'recurring') {
+      return null;
+    }
+    const start = meta.frequencyStartDate?.trim() || null;
+    if (!start) {
+      return null;
+    }
+    const interval = meta.frequencyRecurring.interval;
+    if (interval === 'day') {
+      return start;
+    }
+    return (
+      resolveMinimumFrequencyEndDate(start, meta.frequencyRecurring) || start
+    );
+  });
+
   // ── Dynamic Options ──────────────────────────────────────────
   readonly jobPositionOptions = signal<{ id: string; name: string }[]>([]);
   readonly userOptions = signal<{ id: string; name: string; jobPosition?: string }[]>([]);
@@ -531,7 +517,10 @@ export class CreateFormComponent implements OnInit {
   constructor() {
     this.frequencyForm.valueChanges
       .pipe(startWith(this.frequencyForm.getRawValue()), takeUntilDestroyed())
-      .subscribe(() => this.syncFrequencyToMeta());
+      .subscribe(() => {
+        this.enforceMinimumScheduleEndDate();
+        this.syncFrequencyToMeta();
+      });
 
     effect(() => {
       const step = this.currentStep();
@@ -562,12 +551,16 @@ export class CreateFormComponent implements OnInit {
 
       const needsRange =
         type === 'recurring' &&
-        (interval === 'day' || interval === 'week' || interval === 'month');
+        (interval === 'day' ||
+          interval === 'week' ||
+          interval === 'month' ||
+          interval === 'year');
 
       if (!needsRange || !startInput || !endInput) return;
 
       const startValue = this.frequencyForm.controls.startDate.value;
       const endValue = this.frequencyForm.controls.endDate.value;
+      const endMinDate = this.resolveCurrentMinEndDate() || startValue || 'today';
 
       this.flatpickrStartInstance = flatpickr(startInput.nativeElement, {
         dateFormat: 'Y-m-d',
@@ -578,9 +571,6 @@ export class CreateFormComponent implements OnInit {
         defaultDate: startValue || undefined,
         onChange: (_selectedDates, dateStr) => {
           this.onFrequencyStartDateChange(dateStr || null);
-          if (this.flatpickrEndInstance) {
-            this.flatpickrEndInstance.set('minDate', dateStr || 'today');
-          }
         },
       });
 
@@ -589,7 +579,7 @@ export class CreateFormComponent implements OnInit {
         altInput: true,
         altFormat: 'F j, Y',
         allowInput: false,
-        minDate: startValue || 'today',
+        minDate: endMinDate,
         defaultDate: endValue || undefined,
         onChange: (_selectedDates, dateStr) => {
           this.onFrequencyEndDateChange(dateStr || null);
@@ -598,22 +588,12 @@ export class CreateFormComponent implements OnInit {
     });
 
     effect(() => {
-      const mode = this.frequencyMonthMode();
-      const { dayOfMonth, weekOrder, onTheMonth } = this.frequencyForm.controls;
-      if (mode === 'dayOfMonth') {
-        dayOfMonth.enable({ emitEvent: false });
-        weekOrder.disable({ emitEvent: false });
-        onTheMonth.disable({ emitEvent: false });
-      } else {
-        dayOfMonth.disable({ emitEvent: false });
-        weekOrder.enable({ emitEvent: false });
-        onTheMonth.enable({ emitEvent: false });
+      const minEnd = this.frequencyMinEndDate();
+      if (!this.flatpickrEndInstance || !minEnd) {
+        return;
       }
+      this.flatpickrEndInstance.set('minDate', minEnd);
     });
-
-    this.frequencyForm.controls.monthMode.valueChanges
-      .pipe(takeUntilDestroyed())
-      .subscribe((mode) => this.resetFieldsForMonthMode(mode));
 
     this.frequencyForm.controls.repeatCount.valueChanges
       .pipe(takeUntilDestroyed())
@@ -865,7 +845,7 @@ export class CreateFormComponent implements OnInit {
       every: recurring.every,
       interval: recurring.interval,
       repeatCount: recurring.repeatCount,
-      monthMode: recurring.monthMode,
+      monthMode: 'dayOfMonth',
       dayOfMonth: recurring.dayOfMonth,
       weekOrder: recurring.weekOrder,
       onTheMonth: recurring.onTheMonth,
@@ -964,7 +944,7 @@ export class CreateFormComponent implements OnInit {
   // ── Frequency Custom Select Helpers ───────────────────────────
 
   getFreqSelectLabel(
-    controlName: 'type' | 'interval' | 'weekOrder' | 'onTheMonth' | 'yearMonth',
+    controlName: 'type' | 'interval' | 'yearMonth',
     options: { label: string; value: string }[],
     placeholder: string,
   ): string {
@@ -974,7 +954,7 @@ export class CreateFormComponent implements OnInit {
   }
 
   selectFreqOption(
-    controlName: 'type' | 'interval' | 'weekOrder' | 'onTheMonth' | 'yearMonth',
+    controlName: 'type' | 'interval' | 'yearMonth',
     value: string,
     dropdownSignal: WritableSignal<boolean>,
     searchSignal: WritableSignal<string>,
@@ -1068,6 +1048,9 @@ export class CreateFormComponent implements OnInit {
       case 'month':
         this.frequencyForm.patchValue({
           daysOfWeek: [],
+          monthMode: 'dayOfMonth',
+          weekOrder: defaults.weekOrder,
+          onTheMonth: defaults.onTheMonth,
           yearMonth: defaults.yearMonth,
           yearDay: defaults.yearDay,
           time: null,
@@ -1092,25 +1075,6 @@ export class CreateFormComponent implements OnInit {
     }
   }
 
-  /** Clear the inactive monthly sub-mode so stale onThe/dayOfMonth cannot mix. */
-  private resetFieldsForMonthMode(mode: FrequencyMonthMode): void {
-    if (this.frequencyForm.controls.interval.value !== 'month') {
-      return;
-    }
-    const defaults = createDefaultFrequencyRecurring();
-    if (mode === 'dayOfMonth') {
-      this.frequencyForm.patchValue({
-        daysOfWeek: [],
-        weekOrder: defaults.weekOrder,
-        onTheMonth: defaults.onTheMonth,
-      });
-    } else {
-      this.frequencyForm.patchValue({
-        dayOfMonth: defaults.dayOfMonth,
-      });
-    }
-  }
-
   private syncFrequencyToMeta(): void {
     const value = this.frequencyForm.getRawValue();
     const repeatCount = Math.max(1, Number(value.repeatCount) || 1);
@@ -1126,7 +1090,7 @@ export class CreateFormComponent implements OnInit {
         interval: value.interval,
         repeatCount,
         daysOfWeek: [...value.daysOfWeek],
-        monthMode: value.monthMode,
+        monthMode: 'dayOfMonth',
         dayOfMonth: Number(value.dayOfMonth),
         weekOrder: value.weekOrder,
         onTheMonth: value.onTheMonth,
@@ -1150,8 +1114,7 @@ export class CreateFormComponent implements OnInit {
   }
 
   /**
-   * Required scheduling fields for At Once / Daily / Weekly / Monthly.
-   * Yearly keeps existing (no new schedule requirements).
+   * Required scheduling fields for At Once / Daily / Weekly / Monthly / Yearly.
    * Reads `meta()` so `canSave` recomputes when frequency fields change.
    */
   isFrequencyScheduleValid(): boolean {
@@ -1165,14 +1128,22 @@ export class CreateFormComponent implements OnInit {
     }
 
     const recurring = meta.frequencyRecurring;
-    if (recurring.interval === 'year') {
-      return true;
-    }
-
     const start = meta.frequencyStartDate?.trim() || '';
     const end = meta.frequencyEndDate?.trim() || '';
     if (!start || !end || start > end) {
       return false;
+    }
+
+    if (
+      recurring.interval === 'week' ||
+      recurring.interval === 'month' ||
+      recurring.interval === 'year'
+    ) {
+      const minEnd =
+        resolveMinimumFrequencyEndDate(start, recurring) || start;
+      if (end < minEnd) {
+        return false;
+      }
     }
 
     if (recurring.interval === 'day') {
@@ -1181,6 +1152,65 @@ export class CreateFormComponent implements OnInit {
     }
 
     return isValidTimeFieldValue(recurring.time);
+  }
+
+  /**
+   * Clamp Schedule End Date so it never sits below the first valid occurrence
+   * for weekly / monthly / yearly configs (or below start for daily).
+   */
+  private enforceMinimumScheduleEndDate(): void {
+    const minEnd = this.resolveCurrentMinEndDate();
+    if (!minEnd) {
+      return;
+    }
+
+    const end = this.frequencyForm.controls.endDate.value?.trim() || null;
+    if (end && end < minEnd) {
+      this.frequencyForm.controls.endDate.setValue(minEnd, { emitEvent: false });
+    }
+  }
+
+  /** Compute min end date from the live frequency form (not meta). */
+  private resolveCurrentMinEndDate(): string | null {
+    const value = this.frequencyForm.getRawValue();
+    if (value.type !== 'recurring') {
+      return null;
+    }
+
+    const start = value.startDate?.trim() || null;
+    if (!start) {
+      return null;
+    }
+
+    if (value.interval === 'day') {
+      return start;
+    }
+
+    const repeatCount = Math.max(1, Number(value.repeatCount) || 1);
+    const recurring = sanitizeFrequencyRecurring({
+      every: Number(value.every) || 1,
+      interval: value.interval,
+      repeatCount,
+      daysOfWeek: [...value.daysOfWeek],
+      monthMode: 'dayOfMonth',
+      dayOfMonth: Number(value.dayOfMonth),
+      weekOrder: value.weekOrder,
+      onTheMonth: value.onTheMonth,
+      yearMonth: value.yearMonth,
+      yearDay: Number(value.yearDay) || 1,
+      time: value.time,
+      times: normalizeFrequencyTimes(value.times, repeatCount),
+    });
+
+    if (
+      recurring.interval === 'week' ||
+      recurring.interval === 'month' ||
+      recurring.interval === 'year'
+    ) {
+      return resolveMinimumFrequencyEndDate(start, recurring) || start;
+    }
+
+    return start;
   }
 
   dailyTimeSlotLabel(index: number): string {
@@ -1241,13 +1271,15 @@ export class CreateFormComponent implements OnInit {
 
   onFrequencyStartDateChange(value: string | null): void {
     this.frequencyForm.controls.startDate.setValue(value);
-    const end = this.frequencyForm.controls.endDate.value;
-    if (value && end && end < value) {
-      this.frequencyForm.controls.endDate.setValue(value);
-    }
+    this.enforceMinimumScheduleEndDate();
   }
 
   onFrequencyEndDateChange(value: string | null): void {
+    const minEnd = this.frequencyMinEndDate();
+    if (value && minEnd && value < minEnd) {
+      this.frequencyForm.controls.endDate.setValue(minEnd);
+      return;
+    }
     this.frequencyForm.controls.endDate.setValue(value);
   }
 
