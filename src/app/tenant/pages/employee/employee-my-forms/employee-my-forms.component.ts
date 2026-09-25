@@ -12,6 +12,7 @@ import {
 } from '../../../../interfaces/employee-assignment';
 import { TenantPermissionService } from '../../../../services/tenant-permission.service';
 import { PERMISSIONS } from '../../../../constants/permissions';
+import { formatAssignReportModeLabel } from '../../extra-management/forms/models/dynamic-form.models';
 
 /** Listing filter values — includes API filter `today` (not an assignment status). */
 type MyFormsStatusFilter = EmployeeAssignmentStatus | 'today' | '';
@@ -215,14 +216,7 @@ export class EmployeeMyFormsComponent implements OnInit {
    * (`item.raw.mode`) — no recalculation, no new request.
    */
   modeLabel(mode: unknown): string {
-    const raw = this.readModeString(mode).toLowerCase();
-    if (raw === 'shared') {
-      return 'Shared';
-    }
-    if (raw === 'individual') {
-      return 'Individual';
-    }
-    return raw ? this.titleCase(raw) : '';
+    return formatAssignReportModeLabel(mode);
   }
 
   modeClass(mode: unknown): string {
@@ -236,9 +230,9 @@ export class EmployeeMyFormsComponent implements OnInit {
   modeInfo(mode: unknown): string {
     const raw = this.readModeString(mode).toLowerCase();
     if (raw === 'shared') {
-      return 'A shared task is a single form assigned to multiple users. Any one of the assigned users can complete and submit it, and it only needs to be submitted once.';
+      return 'All assigned: a single form for multiple users. Any assigned user can complete and submit it once.';
     }
-    return 'An individual task is a task where each user has their own separate form to complete and submit.';
+    return 'One response: each user completes and submits their own separate form.';
   }
 
   private readModeString(value: unknown): string {
@@ -246,10 +240,6 @@ export class EmployeeMyFormsComponent implements OnInit {
       return '';
     }
     return String(value).trim();
-  }
-
-  private titleCase(value: string): string {
-    return value.replace(/\b\w/g, (ch) => ch.toUpperCase());
   }
 
   private loadAssignments(page: number): void {

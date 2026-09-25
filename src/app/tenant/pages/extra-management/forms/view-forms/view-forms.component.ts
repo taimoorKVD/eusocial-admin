@@ -13,10 +13,9 @@ import {
   TenantFormsService,
 } from '../services/tenant-forms.service';
 import {
-  ASSIGN_REPORT_MODE_OPTIONS,
   SavedDynamicForm,
+  formatAssignReportModeLabel,
   formatFrequencySummary,
-  normalizeAssignReportMode,
 } from '../models/dynamic-form.models';
 import { TenantPermissionService } from '../../../../../services/tenant-permission.service';
 import { TenantUserService } from '../../../../../services/tenant-user.service';
@@ -231,10 +230,8 @@ export class ViewFormsComponent implements OnInit {
     mode?: string,
   ): { names: string[]; modeLabel: string } {
     const names = [...users, ...positions].map((name) => name.trim()).filter(Boolean);
-    const normalized = normalizeAssignReportMode(mode);
     const modeLabel =
-      ASSIGN_REPORT_MODE_OPTIONS.find((option) => option.value === normalized)?.label ??
-      'Individual';
+      formatAssignReportModeLabel(mode, 'One response');
     return { names, modeLabel };
   }
 

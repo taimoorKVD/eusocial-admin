@@ -7,6 +7,7 @@ import { environment } from '../../../../../environments/environment';
 import { SharedModule } from '../../../../shared/shared.module';
 import { EmployeeHistoryService } from '../../../../services/employee-history.service';
 import { EmployeeHistorySubmissionListItem } from '../../../../interfaces/employee-history-submission';
+import { formatAssignReportModeLabel } from '../../extra-management/forms/models/dynamic-form.models';
 
 @Component({
   selector: 'app-employee-history',
@@ -91,19 +92,7 @@ export class EmployeeHistoryComponent implements OnInit {
   }
 
   modeLabel(mode: string | null | undefined): string {
-    const raw = String(mode ?? '')
-      .trim()
-      .toLowerCase();
-    if (raw === 'shared') {
-      return 'Shared';
-    }
-    if (raw === 'individual') {
-      return 'Individual';
-    }
-    if (!raw) {
-      return '—';
-    }
-    return raw.replace(/\b\w/g, (ch) => ch.toUpperCase());
+    return formatAssignReportModeLabel(mode, '—');
   }
 
   modeClass(mode: string | null | undefined): string {
