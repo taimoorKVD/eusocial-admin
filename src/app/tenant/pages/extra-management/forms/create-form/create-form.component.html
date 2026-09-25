@@ -987,16 +987,59 @@
           <!-- At Once -->
           @if (frequencyType() === 'atOnce') {
             <div class="frequency-panel frequency-panel--at-once">
-              <div class="frequency-field">
-                <label class="frequency-field__label" for="frequency-date">Execution Date</label>
-                <input
-                  #frequencyDateInput
-                  id="frequency-date"
-                  type="text"
-                  class="frequency-control"
-                  placeholder="Select a date"
-                  readonly
-                />
+              <div class="frequency-schedule-grid">
+                <div class="frequency-field">
+                  <label class="frequency-field__label" for="frequency-date">Execution Date</label>
+                  <input
+                    #frequencyDateInput
+                    id="frequency-date"
+                    type="text"
+                    class="frequency-control"
+                    placeholder="Select a date"
+                    readonly
+                  />
+                </div>
+                <div class="frequency-field">
+                  <label class="frequency-field__label" for="frequency-at-once-hour">Time</label>
+                  <div class="frequency-time" role="group" aria-label="Assignment time">
+                    <select
+                      id="frequency-at-once-hour"
+                      class="frequency-time__part"
+                      [value]="frequencyTimeHour(frequencyForm.controls.time.value) ?? ''"
+                      (change)="onFrequencyTimePartChange('single', 'hour', $any($event.target).value)"
+                      aria-label="Hour"
+                    >
+                      <option value="" disabled>HH</option>
+                      @for (hour of timeHourOptions; track hour) {
+                        <option [value]="hour">{{ hour < 10 ? '0' + hour : hour }}</option>
+                      }
+                    </select>
+                    <span class="frequency-time__sep" aria-hidden="true">:</span>
+                    <select
+                      class="frequency-time__part"
+                      [value]="frequencyTimeMinute(frequencyForm.controls.time.value) ?? ''"
+                      (change)="onFrequencyTimePartChange('single', 'minute', $any($event.target).value)"
+                      aria-label="Minute"
+                    >
+                      <option value="" disabled>MM</option>
+                      @for (minute of timeMinuteOptions; track minute) {
+                        <option [value]="minute">{{ minute < 10 ? '0' + minute : minute }}</option>
+                      }
+                    </select>
+                    <span class="frequency-time__divider" aria-hidden="true"></span>
+                    <select
+                      class="frequency-time__part"
+                      [value]="frequencyTimeMeridiem(frequencyForm.controls.time.value) ?? ''"
+                      (change)="onFrequencyTimePartChange('single', 'meridiem', $any($event.target).value)"
+                      aria-label="AM or PM"
+                    >
+                      <option value="" disabled>—</option>
+                      @for (meridiem of timeMeridiemOptions; track meridiem) {
+                        <option [value]="meridiem">{{ meridiem }}</option>
+                      }
+                    </select>
+                  </div>
+                </div>
               </div>
             </div>
           }
@@ -1263,6 +1306,135 @@
                       max="31"
                       aria-label="Day of month"
                     />
+                  </div>
+                </div>
+              }
+
+              <!-- Scheduling window: Daily / Weekly / Monthly -->
+              @if (
+                frequencyInterval() === 'day' ||
+                frequencyInterval() === 'week' ||
+                frequencyInterval() === 'month'
+              ) {
+                <div class="frequency-schedule frequency-schedule--stack frequency-schedule--window">
+                  <span class="frequency-schedule__label">Schedule</span>
+                  <div class="frequency-schedule-grid">
+                    <div class="frequency-field">
+                      <label class="frequency-field__label" for="frequency-start-date">Start Date</label>
+                      <input
+                        #frequencyStartDateInput
+                        id="frequency-start-date"
+                        type="text"
+                        class="frequency-control"
+                        placeholder="Select start date"
+                        readonly
+                      />
+                    </div>
+                    <div class="frequency-field">
+                      <label class="frequency-field__label" for="frequency-end-date">End Date</label>
+                      <input
+                        #frequencyEndDateInput
+                        id="frequency-end-date"
+                        type="text"
+                        class="frequency-control"
+                        placeholder="Select end date"
+                        readonly
+                      />
+                    </div>
+
+                    @if (frequencyInterval() === 'day') {
+                      @for (slotIndex of dailyTimeSlotIndexes(); track slotIndex) {
+                        <div class="frequency-field">
+                          <label class="frequency-field__label" [for]="'frequency-daily-hour-' + slotIndex">
+                            {{ dailyTimeSlotLabel(slotIndex) }}
+                          </label>
+                          <div
+                            class="frequency-time"
+                            role="group"
+                            [attr.aria-label]="dailyTimeSlotLabel(slotIndex)"
+                          >
+                            <select
+                              [id]="'frequency-daily-hour-' + slotIndex"
+                              class="frequency-time__part"
+                              [value]="frequencyTimeHour(frequencyForm.controls.times.value[slotIndex]) ?? ''"
+                              (change)="onFrequencyTimePartChange(slotIndex, 'hour', $any($event.target).value)"
+                              aria-label="Hour"
+                            >
+                              <option value="" disabled>HH</option>
+                              @for (hour of timeHourOptions; track hour) {
+                                <option [value]="hour">{{ hour < 10 ? '0' + hour : hour }}</option>
+                              }
+                            </select>
+                            <span class="frequency-time__sep" aria-hidden="true">:</span>
+                            <select
+                              class="frequency-time__part"
+                              [value]="frequencyTimeMinute(frequencyForm.controls.times.value[slotIndex]) ?? ''"
+                              (change)="onFrequencyTimePartChange(slotIndex, 'minute', $any($event.target).value)"
+                              aria-label="Minute"
+                            >
+                              <option value="" disabled>MM</option>
+                              @for (minute of timeMinuteOptions; track minute) {
+                                <option [value]="minute">{{ minute < 10 ? '0' + minute : minute }}</option>
+                              }
+                            </select>
+                            <span class="frequency-time__divider" aria-hidden="true"></span>
+                            <select
+                              class="frequency-time__part"
+                              [value]="frequencyTimeMeridiem(frequencyForm.controls.times.value[slotIndex]) ?? ''"
+                              (change)="onFrequencyTimePartChange(slotIndex, 'meridiem', $any($event.target).value)"
+                              aria-label="AM or PM"
+                            >
+                              <option value="" disabled>—</option>
+                              @for (meridiem of timeMeridiemOptions; track meridiem) {
+                                <option [value]="meridiem">{{ meridiem }}</option>
+                              }
+                            </select>
+                          </div>
+                        </div>
+                      }
+                    } @else {
+                      <div class="frequency-field">
+                        <label class="frequency-field__label" for="frequency-recurring-hour">Time</label>
+                        <div class="frequency-time" role="group" aria-label="Assignment time">
+                          <select
+                            id="frequency-recurring-hour"
+                            class="frequency-time__part"
+                            [value]="frequencyTimeHour(frequencyForm.controls.time.value) ?? ''"
+                            (change)="onFrequencyTimePartChange('single', 'hour', $any($event.target).value)"
+                            aria-label="Hour"
+                          >
+                            <option value="" disabled>HH</option>
+                            @for (hour of timeHourOptions; track hour) {
+                              <option [value]="hour">{{ hour < 10 ? '0' + hour : hour }}</option>
+                            }
+                          </select>
+                          <span class="frequency-time__sep" aria-hidden="true">:</span>
+                          <select
+                            class="frequency-time__part"
+                            [value]="frequencyTimeMinute(frequencyForm.controls.time.value) ?? ''"
+                            (change)="onFrequencyTimePartChange('single', 'minute', $any($event.target).value)"
+                            aria-label="Minute"
+                          >
+                            <option value="" disabled>MM</option>
+                            @for (minute of timeMinuteOptions; track minute) {
+                              <option [value]="minute">{{ minute < 10 ? '0' + minute : minute }}</option>
+                            }
+                          </select>
+                          <span class="frequency-time__divider" aria-hidden="true"></span>
+                          <select
+                            class="frequency-time__part"
+                            [value]="frequencyTimeMeridiem(frequencyForm.controls.time.value) ?? ''"
+                            (change)="onFrequencyTimePartChange('single', 'meridiem', $any($event.target).value)"
+                            aria-label="AM or PM"
+                          >
+                            <option value="" disabled>—</option>
+                            @for (meridiem of timeMeridiemOptions; track meridiem) {
+                              <option [value]="meridiem">{{ meridiem }}</option>
+                            }
+                          </select>
+                        </div>
+                      </div>
+                    }
                   </div>
                 </div>
               }

@@ -175,6 +175,16 @@ export interface FrequencyRecurringConfig {
   onTheMonth: string;
   yearMonth: string;
   yearDay: number;
+  /**
+   * Single assignment time (`HH:mm` 24h) for weekly / monthly recurring.
+   * Unused for daily (see `times`) and yearly.
+   */
+  time: string | null;
+  /**
+   * Per-occurrence times for daily recurring (`HH:mm` 24h).
+   * Length should match `repeatCount`.
+   */
+  times: string[];
 }
 
 export function createDefaultFrequencyRecurring(): FrequencyRecurringConfig {
@@ -189,6 +199,8 @@ export function createDefaultFrequencyRecurring(): FrequencyRecurringConfig {
     onTheMonth: 'january',
     yearMonth: 'january',
     yearDay: 1,
+    time: null,
+    times: [],
   };
 }
 
@@ -210,14 +222,20 @@ const MONTH_NUMBER: Record<string, number> = {
 /**
  * Drop fields that do not apply to the active interval/mode so leftover
  * weekly/monthly "onThe" values cannot override yearly day-of-month schedules.
+ * Also strips scheduling fields that belong only to other intervals.
  */
 export function sanitizeFrequencyRecurring(
   recurring: FrequencyRecurringConfig,
 ): FrequencyRecurringConfig {
   const defaults = createDefaultFrequencyRecurring();
   const every = Number(recurring.every) || 1;
-  const repeatCount = Number(recurring.repeatCount) || 1;
+  const repeatCount = Math.max(1, Number(recurring.repeatCount) || 1);
   const interval = recurring.interval || defaults.interval;
+  const normalizedTime =
+    typeof recurring.time === 'string' && recurring.time.trim()
+      ? recurring.time.trim()
+      : null;
+  const normalizedTimes = normalizeFrequencyTimes(recurring.times, repeatCount);
 
   switch (interval) {
     case 'day':
@@ -226,6 +244,8 @@ export function sanitizeFrequencyRecurring(
         every,
         interval,
         repeatCount,
+        time: null,
+        times: normalizedTimes,
       };
     case 'week':
       return {
@@ -234,6 +254,8 @@ export function sanitizeFrequencyRecurring(
         interval,
         repeatCount,
         daysOfWeek: [...(recurring.daysOfWeek ?? [])],
+        time: normalizedTime,
+        times: [],
       };
     case 'month': {
       const monthMode: FrequencyMonthMode =
@@ -246,6 +268,8 @@ export function sanitizeFrequencyRecurring(
           repeatCount,
           monthMode,
           dayOfMonth: Number(recurring.dayOfMonth) || 1,
+          time: normalizedTime,
+          times: [],
         };
       }
       return {
@@ -257,10 +281,13 @@ export function sanitizeFrequencyRecurring(
         weekOrder: recurring.weekOrder || defaults.weekOrder,
         onTheMonth: recurring.onTheMonth || defaults.onTheMonth,
         daysOfWeek: [...(recurring.daysOfWeek ?? [])],
+        time: normalizedTime,
+        times: [],
       };
     }
     case 'year':
-      // Yearly UI is day-of-month only (yearMonth + yearDay). Never keep onThe leftovers.
+      // Yearly UI is day-of-month only (yearMonth + yearDay). Never keep onThe leftovers
+      // or day/week/month scheduling fields.
       return {
         ...defaults,
         every,
@@ -269,6 +296,8 @@ export function sanitizeFrequencyRecurring(
         monthMode: 'dayOfMonth',
         yearMonth: recurring.yearMonth || defaults.yearMonth,
         yearDay: Number(recurring.yearDay) || 1,
+        time: null,
+        times: [],
       };
     default:
       return {
@@ -276,8 +305,25 @@ export function sanitizeFrequencyRecurring(
         every,
         interval: 'month',
         repeatCount,
+        time: null,
+        times: [],
       };
   }
+}
+
+/** Resize / pad daily time slots to match `repeatCount`. */
+export function normalizeFrequencyTimes(
+  times: string[] | null | undefined,
+  repeatCount: number,
+): string[] {
+  const count = Math.max(1, Number(repeatCount) || 1);
+  const source = Array.isArray(times) ? times : [];
+  const next: string[] = [];
+  for (let i = 0; i < count; i += 1) {
+    const raw = source[i];
+    next.push(typeof raw === 'string' ? raw.trim() : '');
+  }
+  return next;
 }
 
 /** Anchor date for the first occurrence (used by the API for recurring series). */
@@ -413,6 +459,12 @@ export interface FormMetaConfig {
   reportMode: AssignReportMode;
   frequencyJobPosition: string[];
   frequencyDate: string | null;
+  /** At Once assignment time (`HH:mm` 24h). */
+  frequencyTime: string | null;
+  /** Recurring (day/week/month) series start date (`Y-m-d`). */
+  frequencyStartDate: string | null;
+  /** Recurring (day/week/month) series end date (`Y-m-d`). */
+  frequencyEndDate: string | null;
   frequencyType: FrequencyType;
   frequencyRecurring: FrequencyRecurringConfig;
 }
@@ -432,6 +484,12 @@ export interface DynamicFormPayload {
   frequency: {
     jobPosition: string | null;
     date: string | null;
+    /** At Once time (`HH:mm` 24h); null for recurring. */
+    time: string | null;
+    /** Series start (`Y-m-d`) for day/week/month recurring; null otherwise. */
+    startDate: string | null;
+    /** Series end (`Y-m-d`) for day/week/month recurring; null otherwise. */
+    endDate: string | null;
     type: FrequencyType;
     recurring: FrequencyRecurringConfig | null;
   };
@@ -579,6 +637,13 @@ export function buildDynamicFormPayload(
       ? sanitizeFrequencyRecurring(meta.frequencyRecurring)
       : null;
 
+  const isDayWeekMonth =
+    meta.frequencyType === 'recurring' &&
+    !!recurring &&
+    (recurring.interval === 'day' ||
+      recurring.interval === 'week' ||
+      recurring.interval === 'month');
+
   return {
     formName: formName.trim(),
     assign: {
@@ -596,6 +661,12 @@ export function buildDynamicFormPayload(
         ? meta.frequencyJobPosition.join(', ')
         : null,
       date: resolveFrequencyDate(meta.frequencyType, meta.frequencyDate, recurring),
+      time:
+        meta.frequencyType === 'atOnce' && meta.frequencyTime?.trim()
+          ? meta.frequencyTime.trim()
+          : null,
+      startDate: isDayWeekMonth ? meta.frequencyStartDate?.trim() || null : null,
+      endDate: isDayWeekMonth ? meta.frequencyEndDate?.trim() || null : null,
       type: meta.frequencyType,
       recurring,
     },

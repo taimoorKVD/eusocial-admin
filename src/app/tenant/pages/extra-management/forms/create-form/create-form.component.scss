@@ -1040,13 +1040,77 @@
 
 /* Flatpickr alt input inherits our control look */
 .frequency-panel--at-once {
-  max-width: 22rem;
+  max-width: 36rem;
+}
+
+.frequency-schedule-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11.5rem, 1fr));
+  gap: 1rem 1.25rem;
+  width: 100%;
+}
+
+.frequency-schedule--window {
+  margin-top: 1.25rem;
+  padding-top: 1.15rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.frequency-time {
+  display: inline-flex;
+  align-items: center;
+  height: 2.65rem;
+  padding: 0 0.35rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  background: #fff;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+  &:focus-within {
+    border-color: #FF9015;
+    box-shadow: 0 0 0 3px rgba(255, 144, 21, 0.12);
+  }
+}
+
+.frequency-time__part {
+  height: 2.1rem;
+  min-width: 3.25rem;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 0 0.25rem;
+  text-align: center;
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #161616;
+  outline: none;
+  cursor: pointer;
+}
+
+.frequency-time__sep {
+  user-select: none;
+  padding: 0 0.1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #d1d5db;
+}
+
+.frequency-time__divider {
+  display: inline-block;
+  width: 1px;
+  height: 1.15rem;
+  margin: 0 0.2rem;
+  background: #e5e7eb;
 }
 
 :host ::ng-deep {
   .frequency-panel--at-once .flatpickr-input,
   .frequency-panel--at-once .flatpickr-input.form-control,
-  .frequency-panel--at-once input.flatpickr-input {
+  .frequency-panel--at-once input.flatpickr-input,
+  .frequency-schedule--window .flatpickr-input,
+  .frequency-schedule--window .flatpickr-input.form-control,
+  .frequency-schedule--window input.flatpickr-input {
     width: 100%;
     border: 1px solid #d1d5db;
     border-radius: 0.5rem;
@@ -1079,6 +1143,10 @@
 
   .frequency-panel--at-once {
     max-width: none;
+  }
+
+  .frequency-schedule-grid {
+    grid-template-columns: 1fr;
   }
 
   .frequency-field__control-wrap--inline {

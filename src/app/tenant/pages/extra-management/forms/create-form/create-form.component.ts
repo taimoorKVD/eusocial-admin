@@ -83,8 +83,18 @@ import {
   createId,
   formatAssignReportModeLabel,
   normalizeAssignReportMode,
+  normalizeFrequencyTimes,
   sanitizeFrequencyRecurring,
 } from '../models/dynamic-form.models';
+import {
+  TIME_MERIDIEM_OPTIONS,
+  TimeMeridiem,
+  composeTimeFrom12h,
+  getTimeHour12,
+  getTimeMeridiem,
+  getTimeMinute,
+  isValidTimeFieldValue,
+} from '../../../../../shared/dynamic-form/time-field.utils';
 
 interface WizardStep {
   label: string;
@@ -147,7 +157,13 @@ export class CreateFormComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
 
   private readonly frequencyDateInput = viewChild<ElementRef<HTMLInputElement>>('frequencyDateInput');
+  private readonly frequencyStartDateInput =
+    viewChild<ElementRef<HTMLInputElement>>('frequencyStartDateInput');
+  private readonly frequencyEndDateInput =
+    viewChild<ElementRef<HTMLInputElement>>('frequencyEndDateInput');
   private flatpickrInstance: FlatpickrInstance | null = null;
+  private flatpickrStartInstance: FlatpickrInstance | null = null;
+  private flatpickrEndInstance: FlatpickrInstance | null = null;
 
   // ── Assign & Report Multi-Select State ────────────────────────
   readonly assignModeDropdownOpen = signal(false);
@@ -233,6 +249,9 @@ export class CreateFormComponent implements OnInit {
     reportMode: 'individual',
     frequencyJobPosition: [],
     frequencyDate: null,
+    frequencyTime: null,
+    frequencyStartDate: null,
+    frequencyEndDate: null,
     frequencyType: 'atOnce',
     frequencyRecurring: createDefaultFrequencyRecurring(),
   });
@@ -309,7 +328,12 @@ export class CreateFormComponent implements OnInit {
   });
 
   readonly hasSections = computed(() => this.sections().length > 0);
-  readonly canSave = computed(() => this.formName().trim().length > 0 && this.hasSections());
+  readonly canSave = computed(
+    () =>
+      this.formName().trim().length > 0 &&
+      this.hasSections() &&
+      this.isFrequencyScheduleValid(),
+  );
 
   // ── Wizard State ──────────────────────────────────────────────
   readonly currentStep = signal(1);
@@ -396,6 +420,10 @@ export class CreateFormComponent implements OnInit {
     { label: 'Sun', value: 'sunday' },
   ];
 
+  readonly timeHourOptions = Array.from({ length: 12 }, (_, i) => i + 1);
+  readonly timeMinuteOptions = Array.from({ length: 60 }, (_, i) => i);
+  readonly timeMeridiemOptions = TIME_MERIDIEM_OPTIONS;
+
   // ── Frequency Custom Select State ─────────────────────────────
   readonly freqTypeDropdownOpen = signal(false);
   readonly freqTypeSearch = signal('');
@@ -446,6 +474,9 @@ export class CreateFormComponent implements OnInit {
   readonly frequencyForm = this.fb.nonNullable.group({
     type: this.fb.nonNullable.control<FrequencyType>('recurring'),
     date: this.fb.control<string | null>(null),
+    time: this.fb.control<string | null>(null),
+    startDate: this.fb.control<string | null>(null),
+    endDate: this.fb.control<string | null>(null),
     every: this.fb.nonNullable.control(1),
     interval: this.fb.nonNullable.control<FrequencyInterval>('month'),
     repeatCount: this.fb.nonNullable.control(1),
@@ -456,6 +487,7 @@ export class CreateFormComponent implements OnInit {
     daysOfWeek: this.fb.nonNullable.control<string[]>([]),
     yearMonth: this.fb.nonNullable.control('january'),
     yearDay: this.fb.nonNullable.control(1),
+    times: this.fb.nonNullable.control<string[]>(['']),
   });
 
   readonly frequencyType = toSignal(
@@ -479,6 +511,19 @@ export class CreateFormComponent implements OnInit {
     { initialValue: 'dayOfMonth' as FrequencyMonthMode },
   );
 
+  readonly frequencyRepeatCount = toSignal(
+    this.frequencyForm.controls.repeatCount.valueChanges.pipe(
+      startWith(this.frequencyForm.controls.repeatCount.value),
+    ),
+    { initialValue: 1 },
+  );
+
+  /** Indices for Daily time slots (length = repeatCount). */
+  readonly dailyTimeSlotIndexes = computed(() => {
+    const count = Math.max(1, Number(this.frequencyRepeatCount()) || 1);
+    return Array.from({ length: count }, (_, i) => i);
+  });
+
   // ── Dynamic Options ──────────────────────────────────────────
   readonly jobPositionOptions = signal<{ id: string; name: string }[]>([]);
   readonly userOptions = signal<{ id: string; name: string; jobPosition?: string }[]>([]);
@@ -491,21 +536,63 @@ export class CreateFormComponent implements OnInit {
     effect(() => {
       const step = this.currentStep();
       const type = this.frequencyType();
-      const input = this.frequencyDateInput();
+      const interval = this.frequencyInterval();
+      const dateInput = this.frequencyDateInput();
+      const startInput = this.frequencyStartDateInput();
+      const endInput = this.frequencyEndDateInput();
 
       this.destroyFlatpickr();
 
-      if (step !== 3 || type !== 'atOnce' || !input) return;
+      if (step !== 3) return;
 
-      this.flatpickrInstance = flatpickr(input.nativeElement, {
+      if (type === 'atOnce' && dateInput) {
+        this.flatpickrInstance = flatpickr(dateInput.nativeElement, {
+          dateFormat: 'Y-m-d',
+          altInput: true,
+          altFormat: 'F j, Y',
+          allowInput: false,
+          minDate: 'today',
+          defaultDate: this.frequencyForm.controls.date.value || undefined,
+          onChange: (_selectedDates, dateStr) => {
+            this.frequencyForm.controls.date.setValue(dateStr || null, { emitEvent: true });
+          },
+        });
+        return;
+      }
+
+      const needsRange =
+        type === 'recurring' &&
+        (interval === 'day' || interval === 'week' || interval === 'month');
+
+      if (!needsRange || !startInput || !endInput) return;
+
+      const startValue = this.frequencyForm.controls.startDate.value;
+      const endValue = this.frequencyForm.controls.endDate.value;
+
+      this.flatpickrStartInstance = flatpickr(startInput.nativeElement, {
         dateFormat: 'Y-m-d',
         altInput: true,
         altFormat: 'F j, Y',
         allowInput: false,
         minDate: 'today',
-        defaultDate: this.frequencyForm.controls.date.value || undefined,
+        defaultDate: startValue || undefined,
         onChange: (_selectedDates, dateStr) => {
-          this.frequencyForm.controls.date.setValue(dateStr || null, { emitEvent: true });
+          this.onFrequencyStartDateChange(dateStr || null);
+          if (this.flatpickrEndInstance) {
+            this.flatpickrEndInstance.set('minDate', dateStr || 'today');
+          }
+        },
+      });
+
+      this.flatpickrEndInstance = flatpickr(endInput.nativeElement, {
+        dateFormat: 'Y-m-d',
+        altInput: true,
+        altFormat: 'F j, Y',
+        allowInput: false,
+        minDate: startValue || 'today',
+        defaultDate: endValue || undefined,
+        onChange: (_selectedDates, dateStr) => {
+          this.onFrequencyEndDateChange(dateStr || null);
         },
       });
     });
@@ -527,6 +614,10 @@ export class CreateFormComponent implements OnInit {
     this.frequencyForm.controls.monthMode.valueChanges
       .pipe(takeUntilDestroyed())
       .subscribe((mode) => this.resetFieldsForMonthMode(mode));
+
+    this.frequencyForm.controls.repeatCount.valueChanges
+      .pipe(takeUntilDestroyed())
+      .subscribe((count) => this.syncDailyTimesToRepeatCount(Number(count) || 1));
 
     this.destroyRef.onDestroy(() => this.destroyFlatpickr());
   }
@@ -761,10 +852,16 @@ export class CreateFormComponent implements OnInit {
     const recurring = sanitizeFrequencyRecurring(
       frequency.recurring ?? createDefaultFrequencyRecurring(),
     );
+    const isAtOnce = (frequency.type ?? 'atOnce') === 'atOnce';
 
     this.frequencyForm.patchValue({
       type: frequency.type ?? 'atOnce',
       date: frequency.date ?? null,
+      time: isAtOnce
+        ? frequency.time ?? null
+        : recurring.time ?? null,
+      startDate: frequency.startDate ?? null,
+      endDate: frequency.endDate ?? null,
       every: recurring.every,
       interval: recurring.interval,
       repeatCount: recurring.repeatCount,
@@ -775,6 +872,10 @@ export class CreateFormComponent implements OnInit {
       daysOfWeek: [...recurring.daysOfWeek],
       yearMonth: recurring.yearMonth,
       yearDay: recurring.yearDay,
+      times: normalizeFrequencyTimes(
+        recurring.times,
+        recurring.repeatCount,
+      ),
     });
   }
 
@@ -881,6 +982,10 @@ export class CreateFormComponent implements OnInit {
     const previous = this.frequencyForm.controls[controlName].value;
     this.frequencyForm.get(controlName)?.setValue(value);
 
+    if (controlName === 'type' && previous !== value) {
+      this.resetFieldsForFrequencyType(value as FrequencyType);
+    }
+
     if (controlName === 'interval' && previous !== value) {
       this.resetFieldsForInterval(value as FrequencyInterval);
     }
@@ -893,9 +998,40 @@ export class CreateFormComponent implements OnInit {
     searchSignal.set((event.target as HTMLInputElement).value);
   }
 
+  /** Clear the opposite type's scheduling fields when switching At Once ↔ Recurring. */
+  private resetFieldsForFrequencyType(type: FrequencyType): void {
+    if (type === 'atOnce') {
+      this.frequencyForm.patchValue({
+        startDate: null,
+        endDate: null,
+        times: [],
+        time: null,
+        daysOfWeek: [],
+      });
+      return;
+    }
+
+    const repeatCount = Math.max(
+      1,
+      Number(this.frequencyForm.controls.repeatCount.value) || 1,
+    );
+    this.frequencyForm.patchValue({
+      date: null,
+      time: null,
+      startDate: null,
+      endDate: null,
+      times: normalizeFrequencyTimes([], repeatCount),
+    });
+    this.resetFieldsForInterval(this.frequencyForm.controls.interval.value);
+  }
+
   /** Clear schedule fields that belong to other intervals after a unit switch. */
   private resetFieldsForInterval(interval: FrequencyInterval): void {
     const defaults = createDefaultFrequencyRecurring();
+    const repeatCount = Math.max(
+      1,
+      Number(this.frequencyForm.controls.repeatCount.value) || 1,
+    );
     switch (interval) {
       case 'day':
         this.frequencyForm.patchValue({
@@ -906,6 +1042,13 @@ export class CreateFormComponent implements OnInit {
           onTheMonth: defaults.onTheMonth,
           yearMonth: defaults.yearMonth,
           yearDay: defaults.yearDay,
+          time: null,
+          times: normalizeFrequencyTimes(
+            this.frequencyForm.controls.times.value,
+            repeatCount,
+          ),
+          startDate: null,
+          endDate: null,
         });
         break;
       case 'week':
@@ -916,6 +1059,10 @@ export class CreateFormComponent implements OnInit {
           onTheMonth: defaults.onTheMonth,
           yearMonth: defaults.yearMonth,
           yearDay: defaults.yearDay,
+          time: null,
+          times: [],
+          startDate: null,
+          endDate: null,
         });
         break;
       case 'month':
@@ -923,6 +1070,10 @@ export class CreateFormComponent implements OnInit {
           daysOfWeek: [],
           yearMonth: defaults.yearMonth,
           yearDay: defaults.yearDay,
+          time: null,
+          times: [],
+          startDate: null,
+          endDate: null,
         });
         break;
       case 'year':
@@ -932,6 +1083,10 @@ export class CreateFormComponent implements OnInit {
           dayOfMonth: defaults.dayOfMonth,
           weekOrder: defaults.weekOrder,
           onTheMonth: defaults.onTheMonth,
+          time: null,
+          times: [],
+          startDate: null,
+          endDate: null,
         });
         break;
     }
@@ -958,14 +1113,18 @@ export class CreateFormComponent implements OnInit {
 
   private syncFrequencyToMeta(): void {
     const value = this.frequencyForm.getRawValue();
+    const repeatCount = Math.max(1, Number(value.repeatCount) || 1);
     this.meta.update((current) => ({
       ...current,
       frequencyDate: value.date,
+      frequencyTime: value.time,
+      frequencyStartDate: value.startDate,
+      frequencyEndDate: value.endDate,
       frequencyType: value.type,
       frequencyRecurring: sanitizeFrequencyRecurring({
         every: Number(value.every) || 1,
         interval: value.interval,
-        repeatCount: Number(value.repeatCount) || 1,
+        repeatCount,
         daysOfWeek: [...value.daysOfWeek],
         monthMode: value.monthMode,
         dayOfMonth: Number(value.dayOfMonth),
@@ -973,14 +1132,137 @@ export class CreateFormComponent implements OnInit {
         onTheMonth: value.onTheMonth,
         yearMonth: value.yearMonth,
         yearDay: Number(value.yearDay) || 1,
+        time: value.time,
+        times: normalizeFrequencyTimes(value.times, repeatCount),
       }),
     }));
+  }
+
+  private syncDailyTimesToRepeatCount(repeatCount: number): void {
+    if (this.frequencyForm.controls.interval.value !== 'day') {
+      return;
+    }
+    const next = normalizeFrequencyTimes(
+      this.frequencyForm.controls.times.value,
+      repeatCount,
+    );
+    this.frequencyForm.controls.times.setValue(next, { emitEvent: true });
+  }
+
+  /**
+   * Required scheduling fields for At Once / Daily / Weekly / Monthly.
+   * Yearly keeps existing (no new schedule requirements).
+   * Reads `meta()` so `canSave` recomputes when frequency fields change.
+   */
+  isFrequencyScheduleValid(): boolean {
+    const meta = this.meta();
+    if (meta.frequencyType === 'atOnce') {
+      return !!meta.frequencyDate?.trim() && isValidTimeFieldValue(meta.frequencyTime);
+    }
+
+    if (meta.frequencyType !== 'recurring') {
+      return true;
+    }
+
+    const recurring = meta.frequencyRecurring;
+    if (recurring.interval === 'year') {
+      return true;
+    }
+
+    const start = meta.frequencyStartDate?.trim() || '';
+    const end = meta.frequencyEndDate?.trim() || '';
+    if (!start || !end || start > end) {
+      return false;
+    }
+
+    if (recurring.interval === 'day') {
+      const times = normalizeFrequencyTimes(recurring.times, recurring.repeatCount);
+      return times.every((slot) => isValidTimeFieldValue(slot));
+    }
+
+    return isValidTimeFieldValue(recurring.time);
+  }
+
+  dailyTimeSlotLabel(index: number): string {
+    const count = this.dailyTimeSlotIndexes().length;
+    if (count === 1) {
+      return 'Time';
+    }
+    return `Assignment time ${index + 1}`;
+  }
+
+  frequencyTimeHour(value: string | null | undefined): number | null {
+    return getTimeHour12(value);
+  }
+
+  frequencyTimeMinute(value: string | null | undefined): number | null {
+    return getTimeMinute(value);
+  }
+
+  frequencyTimeMeridiem(value: string | null | undefined): TimeMeridiem | null {
+    return getTimeMeridiem(value);
+  }
+
+  onFrequencyTimePartChange(
+    target: 'single' | number,
+    part: 'hour' | 'minute' | 'meridiem',
+    raw: string,
+  ): void {
+    const current =
+      target === 'single'
+        ? this.frequencyForm.controls.time.value
+        : this.frequencyForm.controls.times.value[target] ?? null;
+
+    let hour = getTimeHour12(current) ?? 12;
+    let minute = getTimeMinute(current) ?? 0;
+    let meridiem = getTimeMeridiem(current) ?? 'AM';
+
+    if (part === 'hour') {
+      const parsed = Number(raw);
+      hour = Number.isFinite(parsed) ? parsed : hour;
+    } else if (part === 'minute') {
+      const parsed = Number(raw);
+      minute = Number.isFinite(parsed) ? parsed : minute;
+    } else if (raw === 'AM' || raw === 'PM') {
+      meridiem = raw;
+    }
+
+    const next = composeTimeFrom12h(hour, minute, meridiem);
+
+    if (target === 'single') {
+      this.frequencyForm.controls.time.setValue(next);
+      return;
+    }
+
+    const times = [...this.frequencyForm.controls.times.value];
+    times[target] = next ?? '';
+    this.frequencyForm.controls.times.setValue(times);
+  }
+
+  onFrequencyStartDateChange(value: string | null): void {
+    this.frequencyForm.controls.startDate.setValue(value);
+    const end = this.frequencyForm.controls.endDate.value;
+    if (value && end && end < value) {
+      this.frequencyForm.controls.endDate.setValue(value);
+    }
+  }
+
+  onFrequencyEndDateChange(value: string | null): void {
+    this.frequencyForm.controls.endDate.setValue(value);
   }
 
   private destroyFlatpickr(): void {
     if (this.flatpickrInstance) {
       this.flatpickrInstance.destroy();
       this.flatpickrInstance = null;
+    }
+    if (this.flatpickrStartInstance) {
+      this.flatpickrStartInstance.destroy();
+      this.flatpickrStartInstance = null;
+    }
+    if (this.flatpickrEndInstance) {
+      this.flatpickrEndInstance.destroy();
+      this.flatpickrEndInstance = null;
     }
   }
 
