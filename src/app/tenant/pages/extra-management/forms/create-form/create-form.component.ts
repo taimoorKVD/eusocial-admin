@@ -345,9 +345,29 @@ export class CreateFormComponent implements OnInit {
   readonly isFirstStep = computed(() => this.currentStep() === 1);
   readonly isLastStep = computed(() => this.currentStep() === this.totalSteps);
 
-  readonly step1Valid = computed(
-    () => this.formName().trim().length > 0 && this.sections().length > 0,
-  );
+  readonly step1Valid = computed(() => {
+    if (this.formName().trim().length === 0) {
+      return false;
+    }
+    const sections = this.sections();
+    if (sections.length === 0) {
+      return false;
+    }
+    // Every section must contain at least one field.
+    return sections.every((section) =>
+      section.rows.some((row) => row.fields.length > 0),
+    );
+  });
+
+  /** Assign and Report To each need at least one User or Job Position. */
+  readonly step2Valid = computed(() => {
+    const m = this.meta();
+    const assignOk =
+      m.assignUsers.length > 0 || m.assignJobPosition.length > 0;
+    const reportOk =
+      m.reportUsers.length > 0 || m.reportJobPosition.length > 0;
+    return assignOk && reportOk;
+  });
 
   /** Assigned people/teams for the relationship diagram. */
   readonly assignFlowItems = computed(() => {
@@ -649,6 +669,7 @@ export class CreateFormComponent implements OnInit {
 
   canProceed(): boolean {
     if (this.currentStep() === 1) return this.step1Valid();
+    if (this.currentStep() === 2) return this.step2Valid();
     return true;
   }
 
