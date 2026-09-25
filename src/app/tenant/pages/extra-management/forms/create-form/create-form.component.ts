@@ -81,6 +81,7 @@ import {
   AssignReportMode,
   buildDynamicFormPayload,
   createId,
+  formatAssignReportModeLabel,
   normalizeAssignReportMode,
   sanitizeFrequencyRecurring,
 } from '../models/dynamic-form.models';
@@ -237,20 +238,12 @@ export class CreateFormComponent implements OnInit {
   });
 
   readonly assignReportModeOptions = ASSIGN_REPORT_MODE_OPTIONS;
-  readonly assignModeLabel = computed(() => {
-    const current = this.meta().assignMode;
-    return (
-      this.assignReportModeOptions.find((option) => option.value === current)?.label ??
-      'One response'
-    );
-  });
-  readonly reportModeLabel = computed(() => {
-    const current = this.meta().reportMode;
-    return (
-      this.assignReportModeOptions.find((option) => option.value === current)?.label ??
-      'One response'
-    );
-  });
+  readonly assignModeLabel = computed(() =>
+    formatAssignReportModeLabel(this.meta().assignMode, 'One response'),
+  );
+  readonly reportModeLabel = computed(() =>
+    formatAssignReportModeLabel(this.meta().reportMode, 'One response'),
+  );
 
   /** Split-view row editor: palette + selected-row drop canvas. */
   readonly fieldBuilderOpen = signal(false);

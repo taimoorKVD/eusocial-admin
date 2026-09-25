@@ -139,6 +139,31 @@ export function normalizeAssignReportMode(value: unknown): AssignReportMode {
   return raw === 'shared' ? 'shared' : 'individual';
 }
 
+/**
+ * User-facing Assignment Mode label. Internal values stay `individual` / `shared`.
+ * Returns `emptyLabel` when the value is blank (callers may pass `''` or `'—'`).
+ */
+export function formatAssignReportModeLabel(
+  value: unknown,
+  emptyLabel = '',
+): string {
+  const raw = String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, '_');
+  if (!raw) {
+    return emptyLabel;
+  }
+  if (raw === 'shared') {
+    return 'All assigned';
+  }
+  if (raw === 'individual') {
+    return 'One response';
+  }
+  return ASSIGN_REPORT_MODE_OPTIONS.find((option) => option.value === raw)?.label
+    ?? raw.replace(/_/g, ' ').replace(/\b\w/g, (ch) => ch.toUpperCase());
+}
+
 export interface FrequencyRecurringConfig {
   every: number;
   interval: FrequencyInterval;
