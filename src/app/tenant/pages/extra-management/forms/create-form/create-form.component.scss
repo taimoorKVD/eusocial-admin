@@ -900,6 +900,15 @@
     padding-left: 0.5rem;
     padding-right: 0.5rem;
   }
+
+  &--year {
+    max-width: 8rem;
+  }
+
+  &--select {
+    cursor: pointer;
+    text-align: left;
+  }
 }
 
 .frequency-row {
@@ -1121,6 +1130,26 @@
     color: #161616;
     cursor: pointer;
     box-sizing: border-box;
+  }
+
+  /* Keep month label visible next to the year in the end-date calendar. */
+  .frequency-schedule--window .flatpickr-current-month {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    width: auto;
+    padding-top: 0;
+  }
+
+  .frequency-schedule--window .flatpickr-current-month .cur-month,
+  .frequency-schedule--window .flatpickr-current-month .flatpickr-monthDropdown-months {
+    display: inline-block;
+    visibility: visible;
+    opacity: 1;
+    color: #161616;
+    font-size: 1.05em;
+    font-weight: 600;
   }
 
   .flatpickr-day.selected,

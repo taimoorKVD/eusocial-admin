@@ -446,43 +446,45 @@ function firstMonthlyOccurrence(
   return null;
 }
 
-/** First yearly occurrence on/after `start` for yearMonth + yearDay. */
-function firstYearlyOccurrence(
+/**
+ * First daily occurrence boundary: start + (every * repeatCount) days.
+ * Example: start Oct 2, every 4, repeat 1 → Oct 6.
+ */
+function firstDailyOccurrence(
   start: Date,
   every: number,
-  yearMonth: string,
-  yearDay: number,
-): Date | null {
-  const month = MONTH_NUMBER[yearMonth];
-  if (!month) {
-    return null;
-  }
+  repeatCount: number,
+): Date {
   const interval = Math.max(1, Number(every) || 1);
-  const startDay = startOfLocalDay(start);
-  const monthIndex = month - 1;
-  let year = startDay.getFullYear();
-
-  for (let step = 0; step < 200; step += 1) {
-    const day = resolveDayInMonth(year, monthIndex, yearDay);
-    if (day != null) {
-      const candidate = new Date(year, monthIndex, day);
-      if (candidate >= startDay) {
-        const yearDiff = year - startDay.getFullYear();
-        if (yearDiff >= 0 && yearDiff % interval === 0) {
-          return candidate;
-        }
-      }
-    }
-    year += 1;
-  }
-
-  return null;
+  const times = Math.max(1, Number(repeatCount) || 1);
+  const result = startOfLocalDay(start);
+  result.setDate(result.getDate() + interval * times);
+  return result;
 }
 
 /**
- * Minimum valid Schedule End Date for week / month / year recurring.
- * Equals the first configured occurrence on or after the start date.
- * Returns null when start/config is incomplete (caller falls back to start).
+ * Advance a first occurrence by additional repeat cycles (repeatCount - 1).
+ */
+function advanceByRepeatCycles(
+  first: Date,
+  every: number,
+  repeatCount: number,
+  unit: 'week' | 'month',
+): Date {
+  const interval = Math.max(1, Number(every) || 1);
+  const extra = Math.max(0, (Math.max(1, Number(repeatCount) || 1) - 1) * interval);
+  const result = new Date(first.getFullYear(), first.getMonth(), first.getDate());
+  if (unit === 'week') {
+    result.setDate(result.getDate() + extra * 7);
+  } else {
+    result.setMonth(result.getMonth() + extra);
+  }
+  return result;
+}
+
+/**
+ * Minimum valid Schedule End Date for day / week / month / year recurring.
+ * Returns null when start/config is incomplete (e.g. weekly with no days).
  */
 export function resolveMinimumFrequencyEndDate(
   startDate: string | null | undefined,
@@ -494,28 +496,42 @@ export function resolveMinimumFrequencyEndDate(
   }
 
   const every = Math.max(1, Number(recurring.every) || 1);
-  let first: Date | null = null;
+  const repeatCount = Math.max(1, Number(recurring.repeatCount) || 1);
+  let boundary: Date | null = null;
 
   switch (recurring.interval) {
-    case 'week':
-      first = firstWeeklyOccurrence(start, every, recurring.daysOfWeek ?? []);
+    case 'day':
+      boundary = firstDailyOccurrence(start, every, repeatCount);
       break;
-    case 'month':
-      first = firstMonthlyOccurrence(start, every, Number(recurring.dayOfMonth) || 1);
+    case 'week': {
+      const first = firstWeeklyOccurrence(start, every, recurring.daysOfWeek ?? []);
+      boundary = first
+        ? advanceByRepeatCycles(first, every, repeatCount, 'week')
+        : null;
       break;
-    case 'year':
-      first = firstYearlyOccurrence(
+    }
+    case 'month': {
+      const first = firstMonthlyOccurrence(
         start,
         every,
-        recurring.yearMonth,
-        Number(recurring.yearDay) || 1,
+        Number(recurring.dayOfMonth) || 1,
       );
+      boundary = first
+        ? advanceByRepeatCycles(first, every, repeatCount, 'month')
+        : null;
       break;
+    }
+    case 'year': {
+      // Year-based window: minimum End Year = Start Year + repeat interval.
+      const startYear = start.getFullYear();
+      const minEndYear = startYear + every;
+      return `${minEndYear}-01-01`;
+    }
     default:
       return formatYmdLocal(start);
   }
 
-  return first ? formatYmdLocal(first) : null;
+  return boundary ? formatYmdLocal(boundary) : null;
 }
 
 /** Anchor date for the first occurrence (used by the API for recurring series). */

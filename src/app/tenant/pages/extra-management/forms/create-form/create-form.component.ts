@@ -442,6 +442,12 @@ export class CreateFormComponent implements OnInit {
       : this.monthOptions;
   });
 
+  /** Start Year options: current year through the next 10 years. */
+  readonly frequencyYearOptions = Array.from({ length: 11 }, (_, i) => {
+    const year = new Date().getFullYear() + i;
+    return { label: String(year), value: year };
+  });
+
   readonly frequencyForm = this.fb.nonNullable.group({
     type: this.fb.nonNullable.control<FrequencyType>('recurring'),
     date: this.fb.control<string | null>(null),
@@ -489,8 +495,8 @@ export class CreateFormComponent implements OnInit {
   });
 
   /**
-   * Minimum selectable Schedule End Date for week/month/year
-   * (first occurrence on/after start). Daily falls back to start.
+   * Minimum selectable Schedule End Date for recurring schedules.
+   * Null when start/config is incomplete (e.g. weekly with no days).
    */
   readonly frequencyMinEndDate = computed(() => {
     const meta = this.meta();
@@ -501,13 +507,27 @@ export class CreateFormComponent implements OnInit {
     if (!start) {
       return null;
     }
-    const interval = meta.frequencyRecurring.interval;
-    if (interval === 'day') {
-      return start;
+    return resolveMinimumFrequencyEndDate(start, meta.frequencyRecurring);
+  });
+
+  /**
+   * End Year options: selected Start Year + next 10 years, then filtered
+   * by the existing minimum End Year (startYear + repeat interval).
+   */
+  readonly frequencyEndYearOptions = computed(() => {
+    const meta = this.meta();
+    const startYear = this.yearFromYmd(meta.frequencyStartDate);
+    if (startYear == null) {
+      return [];
     }
-    return (
-      resolveMinimumFrequencyEndDate(start, meta.frequencyRecurring) || start
-    );
+
+    const range = Array.from({ length: 10 }, (_, i) => {
+      const year = startYear + 1 + i;
+      return { label: String(year), value: year };
+    });
+
+    const minYear = this.yearFromYmd(this.frequencyMinEndDate());
+    return range.filter((opt) => minYear == null || opt.value >= minYear);
   });
 
   // ── Dynamic Options ──────────────────────────────────────────
@@ -518,6 +538,7 @@ export class CreateFormComponent implements OnInit {
     this.frequencyForm.valueChanges
       .pipe(startWith(this.frequencyForm.getRawValue()), takeUntilDestroyed())
       .subscribe(() => {
+        this.enforceYearEveryMax();
         this.enforceMinimumScheduleEndDate();
         this.syncFrequencyToMeta();
       });
@@ -549,12 +570,10 @@ export class CreateFormComponent implements OnInit {
         return;
       }
 
+      // Yearly uses Start Year / End Year inputs — not date pickers.
       const needsRange =
         type === 'recurring' &&
-        (interval === 'day' ||
-          interval === 'week' ||
-          interval === 'month' ||
-          interval === 'year');
+        (interval === 'day' || interval === 'week' || interval === 'month');
 
       if (!needsRange || !startInput || !endInput) return;
 
@@ -584,7 +603,19 @@ export class CreateFormComponent implements OnInit {
         onChange: (_selectedDates, dateStr) => {
           this.onFrequencyEndDateChange(dateStr || null);
         },
+        onOpen: (_selectedDates, _dateStr, instance) => {
+          const minEnd = this.resolveCurrentMinEndDate();
+          const currentEnd = this.frequencyForm.controls.endDate.value;
+          const focusDate = currentEnd || minEnd;
+          if (focusDate) {
+            instance.jumpToDate(focusDate, false);
+          }
+        },
       });
+
+      if (!endValue && endMinDate && endMinDate !== 'today') {
+        this.flatpickrEndInstance.jumpToDate(endMinDate, false);
+      }
     });
 
     effect(() => {
@@ -593,6 +624,9 @@ export class CreateFormComponent implements OnInit {
         return;
       }
       this.flatpickrEndInstance.set('minDate', minEnd);
+      const currentEnd = this.frequencyForm.controls.endDate.value;
+      // Keep the calendar on a month that has selectable dates.
+      this.flatpickrEndInstance.jumpToDate(currentEnd || minEnd, false);
     });
 
     this.frequencyForm.controls.repeatCount.valueChanges
@@ -1027,7 +1061,6 @@ export class CreateFormComponent implements OnInit {
             this.frequencyForm.controls.times.value,
             repeatCount,
           ),
-          startDate: null,
           endDate: null,
         });
         break;
@@ -1041,7 +1074,6 @@ export class CreateFormComponent implements OnInit {
           yearDay: defaults.yearDay,
           time: null,
           times: [],
-          startDate: null,
           endDate: null,
         });
         break;
@@ -1055,7 +1087,6 @@ export class CreateFormComponent implements OnInit {
           yearDay: defaults.yearDay,
           time: null,
           times: [],
-          startDate: null,
           endDate: null,
         });
         break;
@@ -1068,10 +1099,17 @@ export class CreateFormComponent implements OnInit {
           onTheMonth: defaults.onTheMonth,
           time: null,
           times: [],
-          startDate: null,
           endDate: null,
+          every: Math.min(
+            10,
+            Math.max(1, Number(this.frequencyForm.controls.every.value) || 1),
+          ),
         });
         break;
+    }
+
+    if (this.flatpickrEndInstance) {
+      this.flatpickrEndInstance.clear();
     }
   }
 
@@ -1128,22 +1166,23 @@ export class CreateFormComponent implements OnInit {
     }
 
     const recurring = meta.frequencyRecurring;
-    const start = meta.frequencyStartDate?.trim() || '';
-    const end = meta.frequencyEndDate?.trim() || '';
-    if (!start || !end || start > end) {
+    const every = Math.max(1, Number(recurring.every) || 1);
+    if (recurring.interval === 'year' && every > 10) {
       return false;
     }
 
-    if (
-      recurring.interval === 'week' ||
-      recurring.interval === 'month' ||
-      recurring.interval === 'year'
-    ) {
-      const minEnd =
-        resolveMinimumFrequencyEndDate(start, recurring) || start;
-      if (end < minEnd) {
-        return false;
-      }
+    const start = meta.frequencyStartDate?.trim() || '';
+    const end = meta.frequencyEndDate?.trim() || '';
+    if (!start || !end) {
+      return false;
+    }
+
+    const minEnd = resolveMinimumFrequencyEndDate(start, recurring);
+    if (minEnd && end < minEnd) {
+      return false;
+    }
+    if (!minEnd && end < start) {
+      return false;
     }
 
     if (recurring.interval === 'day') {
@@ -1155,18 +1194,51 @@ export class CreateFormComponent implements OnInit {
   }
 
   /**
-   * Clamp Schedule End Date so it never sits below the first valid occurrence
-   * for weekly / monthly / yearly configs (or below start for daily).
+   * Yearly "Repeat every" is capped at 10. Day/Week/Month keep existing behavior.
+   */
+  private enforceYearEveryMax(): void {
+    const value = this.frequencyForm.getRawValue();
+    if (value.type !== 'recurring' || value.interval !== 'year') {
+      return;
+    }
+    const every = Number(value.every);
+    if (!Number.isFinite(every) || every <= 10) {
+      return;
+    }
+    this.frequencyForm.controls.every.setValue(10, { emitEvent: false });
+  }
+
+  /**
+   * Clear Schedule End Date when it no longer satisfies the current
+   * recurrence minimum (do not clamp to a stale/auto value).
    */
   private enforceMinimumScheduleEndDate(): void {
     const minEnd = this.resolveCurrentMinEndDate();
-    if (!minEnd) {
+    const end = this.frequencyForm.controls.endDate.value?.trim() || null;
+    if (!end) {
       return;
     }
 
-    const end = this.frequencyForm.controls.endDate.value?.trim() || null;
-    if (end && end < minEnd) {
-      this.frequencyForm.controls.endDate.setValue(minEnd, { emitEvent: false });
+    if (minEnd && end < minEnd) {
+      this.clearFrequencyEndDate();
+      return;
+    }
+
+    const start = this.frequencyForm.controls.startDate.value?.trim() || null;
+    if (!minEnd && start && end < start) {
+      this.clearFrequencyEndDate();
+    }
+  }
+
+  private clearFrequencyEndDate(): void {
+    this.frequencyForm.controls.endDate.setValue(null, { emitEvent: false });
+    if (this.flatpickrEndInstance) {
+      this.flatpickrEndInstance.clear();
+      const minEnd = this.resolveCurrentMinEndDate();
+      if (minEnd) {
+        this.flatpickrEndInstance.set('minDate', minEnd);
+        this.flatpickrEndInstance.jumpToDate(minEnd, false);
+      }
     }
   }
 
@@ -1180,10 +1252,6 @@ export class CreateFormComponent implements OnInit {
     const start = value.startDate?.trim() || null;
     if (!start) {
       return null;
-    }
-
-    if (value.interval === 'day') {
-      return start;
     }
 
     const repeatCount = Math.max(1, Number(value.repeatCount) || 1);
@@ -1202,15 +1270,56 @@ export class CreateFormComponent implements OnInit {
       times: normalizeFrequencyTimes(value.times, repeatCount),
     });
 
-    if (
-      recurring.interval === 'week' ||
-      recurring.interval === 'month' ||
-      recurring.interval === 'year'
-    ) {
-      return resolveMinimumFrequencyEndDate(start, recurring) || start;
-    }
+    return resolveMinimumFrequencyEndDate(start, recurring);
+  }
 
-    return start;
+  /** Year value stored in startDate (`YYYY-01-01`) for yearly schedules. */
+  frequencyStartYear(): number | null {
+    return this.yearFromYmd(this.frequencyForm.controls.startDate.value);
+  }
+
+  /** Year value stored in endDate (`YYYY-01-01`) for yearly schedules. */
+  frequencyEndYear(): number | null {
+    return this.yearFromYmd(this.frequencyForm.controls.endDate.value);
+  }
+
+  /** Minimum selectable End Year for the current yearly config (startYear + every). */
+  frequencyMinEndYear(): number | null {
+    const minEnd = this.frequencyMinEndDate();
+    return this.yearFromYmd(minEnd);
+  }
+
+  onFrequencyStartYearChange(raw: string): void {
+    const year = Number(raw);
+    if (!Number.isFinite(year)) {
+      this.frequencyForm.controls.startDate.setValue(null);
+      return;
+    }
+    this.frequencyForm.controls.startDate.setValue(`${Math.floor(year)}-01-01`);
+    this.enforceMinimumScheduleEndDate();
+  }
+
+  onFrequencyEndYearChange(raw: string): void {
+    const year = Number(raw);
+    if (!Number.isFinite(year)) {
+      this.clearFrequencyEndDate();
+      return;
+    }
+    const minYear = this.frequencyMinEndYear();
+    const nextYear = Math.floor(year);
+    if (minYear != null && nextYear < minYear) {
+      this.clearFrequencyEndDate();
+      return;
+    }
+    this.frequencyForm.controls.endDate.setValue(`${nextYear}-01-01`);
+  }
+
+  private yearFromYmd(value: string | null | undefined): number | null {
+    if (!value || !/^\d{4}/.test(value)) {
+      return null;
+    }
+    const year = Number(value.slice(0, 4));
+    return Number.isFinite(year) ? year : null;
   }
 
   dailyTimeSlotLabel(index: number): string {
@@ -1275,9 +1384,9 @@ export class CreateFormComponent implements OnInit {
   }
 
   onFrequencyEndDateChange(value: string | null): void {
-    const minEnd = this.frequencyMinEndDate();
+    const minEnd = this.resolveCurrentMinEndDate();
     if (value && minEnd && value < minEnd) {
-      this.frequencyForm.controls.endDate.setValue(minEnd);
+      this.clearFrequencyEndDate();
       return;
     }
     this.frequencyForm.controls.endDate.setValue(value);

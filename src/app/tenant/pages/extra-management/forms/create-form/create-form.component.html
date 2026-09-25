@@ -1055,6 +1055,7 @@
                   class="frequency-control frequency-control--number"
                   formControlName="every"
                   min="1"
+                  [attr.max]="frequencyInterval() === 'year' ? 10 : null"
                   aria-label="Repeat every count"
                 />
 
@@ -1218,28 +1219,61 @@
                 <div class="frequency-schedule frequency-schedule--stack frequency-schedule--window">
                   <span class="frequency-schedule__label">Schedule</span>
                   <div class="frequency-schedule-grid">
-                    <div class="frequency-field">
-                      <label class="frequency-field__label" for="frequency-start-date">Start Date</label>
-                      <input
-                        #frequencyStartDateInput
-                        id="frequency-start-date"
-                        type="text"
-                        class="frequency-control"
-                        placeholder="Select start date"
-                        readonly
-                      />
-                    </div>
-                    <div class="frequency-field">
-                      <label class="frequency-field__label" for="frequency-end-date">End Date</label>
-                      <input
-                        #frequencyEndDateInput
-                        id="frequency-end-date"
-                        type="text"
-                        class="frequency-control"
-                        placeholder="Select end date"
-                        readonly
-                      />
-                    </div>
+                    @if (frequencyInterval() === 'year') {
+                      <div class="frequency-field">
+                        <label class="frequency-field__label" for="frequency-start-year">Start Year</label>
+                        <select
+                          id="frequency-start-year"
+                          class="frequency-control frequency-control--year"
+                          [value]="frequencyStartYear() ?? ''"
+                          (change)="onFrequencyStartYearChange($any($event.target).value)"
+                          aria-label="Start year"
+                        >
+                          <option value="" disabled>Select year</option>
+                          @for (opt of frequencyYearOptions; track opt.value) {
+                            <option [value]="opt.value">{{ opt.label }}</option>
+                          }
+                        </select>
+                      </div>
+                      <div class="frequency-field">
+                        <label class="frequency-field__label" for="frequency-end-year">End Year</label>
+                        <select
+                          id="frequency-end-year"
+                          class="frequency-control frequency-control--year"
+                          [value]="frequencyEndYear() ?? ''"
+                          (change)="onFrequencyEndYearChange($any($event.target).value)"
+                          aria-label="End year"
+                        >
+                          <option value="" disabled>Select year</option>
+                          @for (opt of frequencyEndYearOptions(); track opt.value) {
+                            <option [value]="opt.value">{{ opt.label }}</option>
+                          }
+                        </select>
+                      </div>
+                    } @else {
+                      <div class="frequency-field">
+                        <label class="frequency-field__label" for="frequency-start-date">Start Date</label>
+                        <input
+                          #frequencyStartDateInput
+                          id="frequency-start-date"
+                          type="text"
+                          class="frequency-control"
+                          placeholder="Select start date"
+                          readonly
+                        />
+                      </div>
+                      <div class="frequency-field">
+                        <label class="frequency-field__label" for="frequency-end-date">End Date</label>
+                        <input
+                          #frequencyEndDateInput
+                          id="frequency-end-date"
+                          type="text"
+                          class="frequency-control"
+                          placeholder="Select end date"
+                          readonly
+                        />
+                      </div>
+                    }
 
                     @if (frequencyInterval() === 'day') {
                       @for (slotIndex of dailyTimeSlotIndexes(); track slotIndex) {
