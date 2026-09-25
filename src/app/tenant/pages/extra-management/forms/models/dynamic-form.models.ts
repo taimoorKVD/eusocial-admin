@@ -175,6 +175,16 @@ export interface FrequencyRecurringConfig {
   onTheMonth: string;
   yearMonth: string;
   yearDay: number;
+  /**
+   * Single assignment time (`HH:mm` 24h) for weekly / monthly / yearly recurring.
+   * Unused for daily (see `times`).
+   */
+  time: string | null;
+  /**
+   * Per-occurrence times for daily recurring (`HH:mm` 24h).
+   * Length should match `repeatCount`.
+   */
+  times: string[];
 }
 
 export function createDefaultFrequencyRecurring(): FrequencyRecurringConfig {
@@ -189,6 +199,8 @@ export function createDefaultFrequencyRecurring(): FrequencyRecurringConfig {
     onTheMonth: 'january',
     yearMonth: 'january',
     yearDay: 1,
+    time: null,
+    times: [],
   };
 }
 
@@ -210,14 +222,20 @@ const MONTH_NUMBER: Record<string, number> = {
 /**
  * Drop fields that do not apply to the active interval/mode so leftover
  * weekly/monthly "onThe" values cannot override yearly day-of-month schedules.
+ * Also strips scheduling fields that belong only to other intervals.
  */
 export function sanitizeFrequencyRecurring(
   recurring: FrequencyRecurringConfig,
 ): FrequencyRecurringConfig {
   const defaults = createDefaultFrequencyRecurring();
   const every = Number(recurring.every) || 1;
-  const repeatCount = Number(recurring.repeatCount) || 1;
+  const repeatCount = Math.max(1, Number(recurring.repeatCount) || 1);
   const interval = recurring.interval || defaults.interval;
+  const normalizedTime =
+    typeof recurring.time === 'string' && recurring.time.trim()
+      ? recurring.time.trim()
+      : null;
+  const normalizedTimes = normalizeFrequencyTimes(recurring.times, repeatCount);
 
   switch (interval) {
     case 'day':
@@ -226,6 +244,8 @@ export function sanitizeFrequencyRecurring(
         every,
         interval,
         repeatCount,
+        time: null,
+        times: normalizedTimes,
       };
     case 'week':
       return {
@@ -234,31 +254,21 @@ export function sanitizeFrequencyRecurring(
         interval,
         repeatCount,
         daysOfWeek: [...(recurring.daysOfWeek ?? [])],
+        time: normalizedTime,
+        times: [],
       };
-    case 'month': {
-      const monthMode: FrequencyMonthMode =
-        recurring.monthMode === 'onThe' ? 'onThe' : 'dayOfMonth';
-      if (monthMode === 'dayOfMonth') {
-        return {
-          ...defaults,
-          every,
-          interval,
-          repeatCount,
-          monthMode,
-          dayOfMonth: Number(recurring.dayOfMonth) || 1,
-        };
-      }
+    case 'month':
+      // Monthly UI is On Day only — never keep leftover "On the" values.
       return {
         ...defaults,
         every,
         interval,
         repeatCount,
-        monthMode,
-        weekOrder: recurring.weekOrder || defaults.weekOrder,
-        onTheMonth: recurring.onTheMonth || defaults.onTheMonth,
-        daysOfWeek: [...(recurring.daysOfWeek ?? [])],
+        monthMode: 'dayOfMonth',
+        dayOfMonth: Number(recurring.dayOfMonth) || 1,
+        time: normalizedTime,
+        times: [],
       };
-    }
     case 'year':
       // Yearly UI is day-of-month only (yearMonth + yearDay). Never keep onThe leftovers.
       return {
@@ -269,6 +279,8 @@ export function sanitizeFrequencyRecurring(
         monthMode: 'dayOfMonth',
         yearMonth: recurring.yearMonth || defaults.yearMonth,
         yearDay: Number(recurring.yearDay) || 1,
+        time: normalizedTime,
+        times: [],
       };
     default:
       return {
@@ -276,8 +288,250 @@ export function sanitizeFrequencyRecurring(
         every,
         interval: 'month',
         repeatCount,
+        time: null,
+        times: [],
       };
   }
+}
+
+/** Resize / pad daily time slots to match `repeatCount`. */
+export function normalizeFrequencyTimes(
+  times: string[] | null | undefined,
+  repeatCount: number,
+): string[] {
+  const count = Math.max(1, Number(repeatCount) || 1);
+  const source = Array.isArray(times) ? times : [];
+  const next: string[] = [];
+  for (let i = 0; i < count; i += 1) {
+    const raw = source[i];
+    next.push(typeof raw === 'string' ? raw.trim() : '');
+  }
+  return next;
+}
+
+const WEEKDAY_TO_JS: Record<string, number> = {
+  sunday: 0,
+  monday: 1,
+  tuesday: 2,
+  wednesday: 3,
+  thursday: 4,
+  friday: 5,
+  saturday: 6,
+};
+
+function parseYmdLocal(value: string | null | undefined): Date | null {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return null;
+  }
+  const [y, m, d] = value.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  if (
+    Number.isNaN(date.getTime()) ||
+    date.getFullYear() !== y ||
+    date.getMonth() !== m - 1 ||
+    date.getDate() !== d
+  ) {
+    return null;
+  }
+  return date;
+}
+
+function formatYmdLocal(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+function startOfLocalDay(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function daysInMonth(year: number, monthIndex: number): number {
+  return new Date(year, monthIndex + 1, 0).getDate();
+}
+
+/** Resolve day-of-month for a given calendar month (`-1` = last day). */
+function resolveDayInMonth(year: number, monthIndex: number, dayOfMonth: number): number | null {
+  const last = daysInMonth(year, monthIndex);
+  if (dayOfMonth === -1) {
+    return last;
+  }
+  if (!Number.isFinite(dayOfMonth) || dayOfMonth < 1) {
+    return null;
+  }
+  return Math.min(Math.floor(dayOfMonth), last);
+}
+
+/**
+ * First weekly occurrence on/after `start` for the selected weekdays.
+ * `every` weeks is measured from the week that contains `start` (week index 0).
+ */
+function firstWeeklyOccurrence(
+  start: Date,
+  every: number,
+  daysOfWeek: string[],
+): Date | null {
+  const selected = new Set(
+    daysOfWeek
+      .map((day) => WEEKDAY_TO_JS[day])
+      .filter((day): day is number => day !== undefined),
+  );
+  if (!selected.size) {
+    return null;
+  }
+
+  const interval = Math.max(1, Number(every) || 1);
+  const startDay = startOfLocalDay(start);
+  // Monday-based week index relative to the start date's week.
+  const startWeekMonday = new Date(startDay);
+  const startJsDay = startWeekMonday.getDay();
+  const mondayOffset = startJsDay === 0 ? -6 : 1 - startJsDay;
+  startWeekMonday.setDate(startWeekMonday.getDate() + mondayOffset);
+
+  for (let offset = 0; offset < 366 * 4; offset += 1) {
+    const candidate = new Date(startDay);
+    candidate.setDate(startDay.getDate() + offset);
+    if (!selected.has(candidate.getDay())) {
+      continue;
+    }
+
+    const candidateMonday = new Date(candidate);
+    const jsDay = candidateMonday.getDay();
+    const toMonday = jsDay === 0 ? -6 : 1 - jsDay;
+    candidateMonday.setDate(candidateMonday.getDate() + toMonday);
+
+    const weekDiff = Math.round(
+      (candidateMonday.getTime() - startWeekMonday.getTime()) / (7 * 24 * 60 * 60 * 1000),
+    );
+    if (weekDiff < 0 || weekDiff % interval !== 0) {
+      continue;
+    }
+
+    return candidate;
+  }
+
+  return null;
+}
+
+/** First monthly On-Day occurrence on/after `start`. */
+function firstMonthlyOccurrence(
+  start: Date,
+  every: number,
+  dayOfMonth: number,
+): Date | null {
+  const interval = Math.max(1, Number(every) || 1);
+  const startDay = startOfLocalDay(start);
+  let year = startDay.getFullYear();
+  let month = startDay.getMonth();
+
+  for (let step = 0; step < 480; step += 1) {
+    const day = resolveDayInMonth(year, month, dayOfMonth);
+    if (day != null) {
+      const candidate = new Date(year, month, day);
+      if (candidate >= startDay) {
+        // Month index 0 is the start month; only months on the interval fire.
+        const monthDiff =
+          (year - startDay.getFullYear()) * 12 + (month - startDay.getMonth());
+        if (monthDiff >= 0 && monthDiff % interval === 0) {
+          return candidate;
+        }
+      }
+    }
+    month += 1;
+    if (month > 11) {
+      month = 0;
+      year += 1;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * First daily occurrence boundary: start + (every * repeatCount) days.
+ * Example: start Oct 2, every 4, repeat 1 → Oct 6.
+ */
+function firstDailyOccurrence(
+  start: Date,
+  every: number,
+  repeatCount: number,
+): Date {
+  const interval = Math.max(1, Number(every) || 1);
+  const times = Math.max(1, Number(repeatCount) || 1);
+  const result = startOfLocalDay(start);
+  result.setDate(result.getDate() + interval * times);
+  return result;
+}
+
+/**
+ * Advance a first occurrence by additional repeat cycles (repeatCount - 1).
+ */
+function advanceByRepeatCycles(
+  first: Date,
+  every: number,
+  repeatCount: number,
+  unit: 'week' | 'month',
+): Date {
+  const interval = Math.max(1, Number(every) || 1);
+  const extra = Math.max(0, (Math.max(1, Number(repeatCount) || 1) - 1) * interval);
+  const result = new Date(first.getFullYear(), first.getMonth(), first.getDate());
+  if (unit === 'week') {
+    result.setDate(result.getDate() + extra * 7);
+  } else {
+    result.setMonth(result.getMonth() + extra);
+  }
+  return result;
+}
+
+/**
+ * Minimum valid Schedule End Date for day / week / month / year recurring.
+ * Returns null when start/config is incomplete (e.g. weekly with no days).
+ */
+export function resolveMinimumFrequencyEndDate(
+  startDate: string | null | undefined,
+  recurring: FrequencyRecurringConfig | null | undefined,
+): string | null {
+  const start = parseYmdLocal(startDate ?? null);
+  if (!start || !recurring) {
+    return null;
+  }
+
+  const every = Math.max(1, Number(recurring.every) || 1);
+  const repeatCount = Math.max(1, Number(recurring.repeatCount) || 1);
+  let boundary: Date | null = null;
+
+  switch (recurring.interval) {
+    case 'day':
+      boundary = firstDailyOccurrence(start, every, repeatCount);
+      break;
+    case 'week': {
+      const first = firstWeeklyOccurrence(start, every, recurring.daysOfWeek ?? []);
+      boundary = first
+        ? advanceByRepeatCycles(first, every, repeatCount, 'week')
+        : null;
+      break;
+    }
+    case 'month': {
+      const first = firstMonthlyOccurrence(
+        start,
+        every,
+        Number(recurring.dayOfMonth) || 1,
+      );
+      boundary = first
+        ? advanceByRepeatCycles(first, every, repeatCount, 'month')
+        : null;
+      break;
+    }
+    case 'year': {
+      // Year-based window: minimum End Year = Start Year + repeat interval.
+      const startYear = start.getFullYear();
+      const minEndYear = startYear + every;
+      return `${minEndYear}-01-01`;
+    }
+    default:
+      return formatYmdLocal(start);
+  }
+
+  return boundary ? formatYmdLocal(boundary) : null;
 }
 
 /** Anchor date for the first occurrence (used by the API for recurring series). */
@@ -335,14 +589,6 @@ const FREQUENCY_MONTH_NAME: Record<string, string> = {
   december: 'December',
 };
 
-const FREQUENCY_WEEK_ORDER_NAME: Record<string, string> = {
-  first: 'First',
-  second: 'Second',
-  third: 'Third',
-  fourth: 'Fourth',
-  last: 'Last',
-};
-
 /** Human-readable summary of the template frequency — mirrors the Frequency step rules. */
 export function formatFrequencySummary(
   frequency: DynamicFormPayload['frequency'] | null | undefined,
@@ -383,17 +629,10 @@ export function formatFrequencySummary(
       const dayText = days.join(', ');
       return every === 1 ? `Every ${dayText}` : `Every ${every} weeks on ${dayText}`;
     }
-    case 'month':
-      if (recurring.monthMode === 'onThe') {
-        const order = FREQUENCY_WEEK_ORDER_NAME[recurring.weekOrder] ?? recurring.weekOrder;
-        const month = FREQUENCY_MONTH_NAME[recurring.onTheMonth] ?? recurring.onTheMonth;
-        const when = `on the ${order} ${month}`;
-        return every === 1 ? `Monthly ${when}` : `Every ${every} months ${when}`;
-      }
-      {
-        const day = recurring.dayOfMonth === -1 ? 'last day' : `day ${recurring.dayOfMonth}`;
-        return every === 1 ? `Monthly on ${day}` : `Every ${every} months on ${day}`;
-      }
+    case 'month': {
+      const day = recurring.dayOfMonth === -1 ? 'last day' : `day ${recurring.dayOfMonth}`;
+      return every === 1 ? `Monthly on ${day}` : `Every ${every} months on ${day}`;
+    }
     case 'year': {
       const month = FREQUENCY_MONTH_NAME[recurring.yearMonth] ?? recurring.yearMonth;
       const when = `on ${month} ${recurring.yearDay}`;
@@ -413,6 +652,12 @@ export interface FormMetaConfig {
   reportMode: AssignReportMode;
   frequencyJobPosition: string[];
   frequencyDate: string | null;
+  /** At Once assignment time (`HH:mm` 24h). */
+  frequencyTime: string | null;
+  /** Recurring (day/week/month/year) series start date (`Y-m-d`). */
+  frequencyStartDate: string | null;
+  /** Recurring (day/week/month/year) series end date (`Y-m-d`). */
+  frequencyEndDate: string | null;
   frequencyType: FrequencyType;
   frequencyRecurring: FrequencyRecurringConfig;
 }
@@ -432,6 +677,12 @@ export interface DynamicFormPayload {
   frequency: {
     jobPosition: string | null;
     date: string | null;
+    /** At Once time (`HH:mm` 24h); null for recurring. */
+    time: string | null;
+    /** Series start (`Y-m-d`) for day/week/month/year recurring; null otherwise. */
+    startDate: string | null;
+    /** Series end (`Y-m-d`) for day/week/month/year recurring; null otherwise. */
+    endDate: string | null;
     type: FrequencyType;
     recurring: FrequencyRecurringConfig | null;
   };
@@ -579,6 +830,14 @@ export function buildDynamicFormPayload(
       ? sanitizeFrequencyRecurring(meta.frequencyRecurring)
       : null;
 
+  const hasScheduleWindow =
+    meta.frequencyType === 'recurring' &&
+    !!recurring &&
+    (recurring.interval === 'day' ||
+      recurring.interval === 'week' ||
+      recurring.interval === 'month' ||
+      recurring.interval === 'year');
+
   return {
     formName: formName.trim(),
     assign: {
@@ -596,6 +855,12 @@ export function buildDynamicFormPayload(
         ? meta.frequencyJobPosition.join(', ')
         : null,
       date: resolveFrequencyDate(meta.frequencyType, meta.frequencyDate, recurring),
+      time:
+        meta.frequencyType === 'atOnce' && meta.frequencyTime?.trim()
+          ? meta.frequencyTime.trim()
+          : null,
+      startDate: hasScheduleWindow ? meta.frequencyStartDate?.trim() || null : null,
+      endDate: hasScheduleWindow ? meta.frequencyEndDate?.trim() || null : null,
       type: meta.frequencyType,
       recurring,
     },
