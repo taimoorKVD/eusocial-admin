@@ -176,12 +176,12 @@ export interface FrequencyRecurringConfig {
   yearMonth: string;
   yearDay: number;
   /**
-   * Single assignment time (`HH:mm` 24h) for weekly / monthly / yearly recurring.
-   * Unused for daily (see `times`).
+   * Single assignment time (`HH:mm` 24h). Kept for backward compatibility;
+   * recurring schedules use `times` (length = repeatCount).
    */
   time: string | null;
   /**
-   * Per-occurrence times for daily recurring (`HH:mm` 24h).
+   * Per-occurrence assignment times for recurring schedules (`HH:mm` 24h).
    * Length should match `repeatCount`.
    */
   times: string[];
@@ -235,7 +235,12 @@ export function sanitizeFrequencyRecurring(
     typeof recurring.time === 'string' && recurring.time.trim()
       ? recurring.time.trim()
       : null;
-  const normalizedTimes = normalizeFrequencyTimes(recurring.times, repeatCount);
+  const hasTimes = Array.isArray(recurring.times)
+    && recurring.times.some((slot) => typeof slot === 'string' && slot.trim());
+  const normalizedTimes = normalizeFrequencyTimes(
+    hasTimes ? recurring.times : normalizedTime ? [normalizedTime] : [],
+    repeatCount,
+  );
 
   switch (interval) {
     case 'day':
@@ -254,8 +259,8 @@ export function sanitizeFrequencyRecurring(
         interval,
         repeatCount,
         daysOfWeek: [...(recurring.daysOfWeek ?? [])],
-        time: normalizedTime,
-        times: [],
+        time: null,
+        times: normalizedTimes,
       };
     case 'month':
       // Monthly UI is On Day only — never keep leftover "On the" values.
@@ -266,8 +271,8 @@ export function sanitizeFrequencyRecurring(
         repeatCount,
         monthMode: 'dayOfMonth',
         dayOfMonth: Number(recurring.dayOfMonth) || 1,
-        time: normalizedTime,
-        times: [],
+        time: null,
+        times: normalizedTimes,
       };
     case 'year':
       // Yearly UI is day-of-month only (yearMonth + yearDay). Never keep onThe leftovers.
@@ -279,8 +284,8 @@ export function sanitizeFrequencyRecurring(
         monthMode: 'dayOfMonth',
         yearMonth: recurring.yearMonth || defaults.yearMonth,
         yearDay: Number(recurring.yearDay) || 1,
-        time: normalizedTime,
-        times: [],
+        time: null,
+        times: normalizedTimes,
       };
     default:
       return {
@@ -289,12 +294,12 @@ export function sanitizeFrequencyRecurring(
         interval: 'month',
         repeatCount,
         time: null,
-        times: [],
+        times: normalizedTimes,
       };
   }
 }
 
-/** Resize / pad daily time slots to match `repeatCount`. */
+/** Resize / pad recurring time slots to match `repeatCount`. */
 export function normalizeFrequencyTimes(
   times: string[] | null | undefined,
   repeatCount: number,
