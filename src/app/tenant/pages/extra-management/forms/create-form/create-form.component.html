@@ -1295,9 +1295,12 @@
                             (change)="onFrequencyTimePartChange(slotIndex, 'hour', $any($event.target).value)"
                             aria-label="Hour"
                           >
-                            <option value="" disabled>HH</option>
+                            <option value="" disabled [selected]="frequencyTimeHour(frequencyForm.controls.times.value[slotIndex]) == null">HH</option>
                             @for (hour of timeHourOptions; track hour) {
-                              <option [value]="hour">{{ hour < 10 ? '0' + hour : hour }}</option>
+                              <option
+                                [value]="hour"
+                                [selected]="frequencyTimeHour(frequencyForm.controls.times.value[slotIndex]) === hour"
+                              >{{ hour < 10 ? '0' + hour : hour }}</option>
                             }
                           </select>
                           <span class="frequency-time__sep" aria-hidden="true">:</span>
@@ -1307,9 +1310,12 @@
                             (change)="onFrequencyTimePartChange(slotIndex, 'minute', $any($event.target).value)"
                             aria-label="Minute"
                           >
-                            <option value="" disabled>MM</option>
+                            <option value="" disabled [selected]="frequencyTimeMinute(frequencyForm.controls.times.value[slotIndex]) == null">MM</option>
                             @for (minute of timeMinuteOptions; track minute) {
-                              <option [value]="minute">{{ minute < 10 ? '0' + minute : minute }}</option>
+                              <option
+                                [value]="minute"
+                                [selected]="frequencyTimeMinute(frequencyForm.controls.times.value[slotIndex]) === minute"
+                              >{{ minute < 10 ? '0' + minute : minute }}</option>
                             }
                           </select>
                           <span class="frequency-time__divider" aria-hidden="true"></span>
@@ -1319,9 +1325,12 @@
                             (change)="onFrequencyTimePartChange(slotIndex, 'meridiem', $any($event.target).value)"
                             aria-label="AM or PM"
                           >
-                            <option value="" disabled>—</option>
+                            <option value="" disabled [selected]="frequencyTimeMeridiem(frequencyForm.controls.times.value[slotIndex]) == null">—</option>
                             @for (meridiem of timeMeridiemOptions; track meridiem) {
-                              <option [value]="meridiem">{{ meridiem }}</option>
+                              <option
+                                [value]="meridiem"
+                                [selected]="frequencyTimeMeridiem(frequencyForm.controls.times.value[slotIndex]) === meridiem"
+                              >{{ meridiem }}</option>
                             }
                           </select>
                         </div>
