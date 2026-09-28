@@ -2,13 +2,13 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { Observable, map, of, throwError } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { TenantProfile } from '../interfaces/tenant-profile';
+import { TenantProfile, TenantTimezoneOption } from '../interfaces/tenant-profile';
 import { TenantSessionService } from './tenant-session.service';
 
 export type TenantProfileUpdate = Partial<
   Pick<
     TenantProfile,
-    'firstName' | 'lastName' | 'name' | 'phone' | 'avatarUrl' | 'username'
+    'firstName' | 'lastName' | 'name' | 'phone' | 'avatarUrl' | 'username' | 'timezone'
   >
 >;
 
@@ -40,6 +40,13 @@ export class TenantProfileService {
     this.profileSignal.set(this.buildProfile());
   }
 
+  /** GET /api/timezones — options for the profile timezone dropdown. */
+  getTimezones(): Observable<TenantTimezoneOption[]> {
+    return this.http.get<unknown>(`${this.apiUrl}/timezones`).pipe(
+      map((response) => this.mapTimezoneOptions(response)),
+    );
+  }
+
   /**
    * Persists the editable profile fields through the backend API
    * (PUT /users/profile). Emits the refreshed profile once the backend
@@ -54,17 +61,21 @@ export class TenantProfileService {
     const firstName = this.clean(update.firstName ?? current.firstName);
     const lastName = this.clean(update.lastName ?? current.lastName);
     const phone = this.clean(update.phone ?? current.phone);
+    const timezone = this.clean(update.timezone ?? current.timezone);
 
-    const payload = {
+    const payload: Record<string, string> = {
       first_name: firstName,
       last_name: lastName,
       phone: phone,
+      timezone: timezone,
     };
 
     return this.http
       .put<unknown>(`${this.apiUrl}/users/profile`, payload)
       .pipe(
-        map((response) => this.applyProfileResponse(response, { firstName, lastName, phone }))
+        map((response) =>
+          this.applyProfileResponse(response, { firstName, lastName, phone, timezone }),
+        ),
       );
   }
 
@@ -163,6 +174,12 @@ export class TenantProfileService {
         this.clean(base['profileImage'] as string) ||
         this.clean(base['profile_image'] as string) ||
         undefined,
+      timezone:
+        this.clean(overrides.timezone) ||
+        this.clean(base.timezone) ||
+        this.clean(base['time_zone'] as string) ||
+        this.clean(base['timeZone'] as string) ||
+        undefined,
       role: base.role,
       accountType:
         this.clean(base.accountType as string) ||
@@ -200,7 +217,7 @@ export class TenantProfileService {
    */
   private applyProfileResponse(
     response: unknown,
-    submitted: { firstName: string; lastName: string; phone: string }
+    submitted: { firstName: string; lastName: string; phone: string; timezone: string },
   ): TenantProfile {
     const record = response && typeof response === 'object'
       ? (response as Record<string, unknown>)
@@ -211,13 +228,16 @@ export class TenantProfileService {
       : record;
 
     const firstName = this.clean(
-      data['first_name'] ?? data['firstName'] ?? submitted.firstName
+      data['first_name'] ?? data['firstName'] ?? submitted.firstName,
     );
     const lastName = this.clean(
-      data['last_name'] ?? data['lastName'] ?? submitted.lastName
+      data['last_name'] ?? data['lastName'] ?? submitted.lastName,
     );
     const phone = this.clean(
-      data['phone'] ?? data['phoneNumber'] ?? data['phone_number'] ?? submitted.phone
+      data['phone'] ?? data['phoneNumber'] ?? data['phone_number'] ?? submitted.phone,
+    );
+    const timezone = this.clean(
+      data['timezone'] ?? data['time_zone'] ?? data['timeZone'] ?? submitted.timezone,
     );
     const name =
       this.clean(data['name']) ||
@@ -230,6 +250,7 @@ export class TenantProfileService {
       last_name: lastName || undefined,
       name: name || undefined,
       phone: phone || undefined,
+      timezone: timezone || undefined,
     });
 
     this.clearOverrides();
@@ -240,6 +261,59 @@ export class TenantProfileService {
       throw new Error('No authenticated user profile available');
     }
     return next;
+  }
+
+  private mapTimezoneOptions(response: unknown): TenantTimezoneOption[] {
+    const list = this.unwrapList(response);
+    return list
+      .map((item): TenantTimezoneOption | null => {
+        if (!item || typeof item !== 'object') {
+          return null;
+        }
+        const row = item as Record<string, unknown>;
+        const name = this.clean(row['name']);
+        if (!name) {
+          return null;
+        }
+        const label = this.clean(row['label']) || name;
+        const region = this.clean(row['region']) || undefined;
+        const utcOffsetMinutes =
+          typeof row['utcOffsetMinutes'] === 'number'
+            ? row['utcOffsetMinutes']
+            : typeof row['utc_offset_minutes'] === 'number'
+              ? row['utc_offset_minutes']
+              : undefined;
+
+        return {
+          id: (row['id'] as number | string) ?? name,
+          name,
+          label,
+          ...(region ? { region } : {}),
+          ...(utcOffsetMinutes !== undefined ? { utcOffsetMinutes } : {}),
+        };
+      })
+      .filter((item): item is TenantTimezoneOption => item !== null);
+  }
+
+  private unwrapList(response: unknown): unknown[] {
+    if (Array.isArray(response)) {
+      return response;
+    }
+    if (!response || typeof response !== 'object') {
+      return [];
+    }
+    const record = response as Record<string, unknown>;
+    if (Array.isArray(record['data'])) {
+      return record['data'];
+    }
+    if (
+      record['data'] &&
+      typeof record['data'] === 'object' &&
+      Array.isArray((record['data'] as Record<string, unknown>)['data'])
+    ) {
+      return (record['data'] as Record<string, unknown>)['data'] as unknown[];
+    }
+    return [];
   }
 
   private storageKey(): string {

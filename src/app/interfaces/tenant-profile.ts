@@ -11,7 +11,18 @@ export interface TenantProfile {
   phone?: string;
   username?: string;
   avatarUrl?: string;
+  /** IANA timezone name, e.g. `Asia/Karachi`. */
+  timezone?: string;
   role?: string | { id?: number | string; name?: string };
   accountType?: string;
   [key: string]: unknown;
+}
+
+/** Timezone option from GET /api/timezones. */
+export interface TenantTimezoneOption {
+  id: number | string;
+  name: string;
+  label: string;
+  region?: string;
+  utcOffsetMinutes?: number;
 }
