@@ -75,6 +75,7 @@ import {
   FormSelectOption,
   FrequencyInterval,
   FrequencyMonthMode,
+  FrequencyTimeParts,
   FrequencyType,
   SavedDynamicForm,
   ASSIGN_REPORT_MODE_OPTIONS,
@@ -84,6 +85,7 @@ import {
   formatAssignReportModeLabel,
   normalizeAssignReportMode,
   normalizeFrequencyTimes,
+  resolveFrequencyScheduleTimes,
   resolveMinimumFrequencyEndDate,
   sanitizeFrequencyRecurring,
 } from '../models/dynamic-form.models';
@@ -884,11 +886,28 @@ export class CreateFormComponent implements OnInit {
 
   private applyFrequencyToForm(payload: DynamicFormPayload): void {
     const frequency = payload.frequency ?? ({} as DynamicFormPayload['frequency']);
-    const recurring = sanitizeFrequencyRecurring(
-      frequency.recurring ?? createDefaultFrequencyRecurring(),
+    const rawRecurring = frequency.recurring ?? createDefaultFrequencyRecurring();
+    // Edit API may expose slots as times / timesAmPm / timesParts (recurring or root).
+    const resolvedTimes = resolveFrequencyScheduleTimes(
+      rawRecurring,
+      frequency as {
+        times?: string[] | null;
+        timesAmPm?: string[] | null;
+        timesParts?: FrequencyTimeParts[] | null;
+      },
     );
+    const recurring = sanitizeFrequencyRecurring({
+      ...rawRecurring,
+      times: resolvedTimes,
+    });
     const isAtOnce = (frequency.type ?? 'atOnce') === 'atOnce';
+    const scheduleTimes = normalizeFrequencyTimes(
+      recurring.times,
+      recurring.repeatCount,
+    );
 
+    // Patch scheduling fields first. `repeatCount` valueChanges syncs/pads `times`
+    // from the previous value — always apply saved times afterward so edit restore wins.
     this.frequencyForm.patchValue({
       type: frequency.type ?? 'atOnce',
       date: frequency.date ?? null,
@@ -907,11 +926,8 @@ export class CreateFormComponent implements OnInit {
       daysOfWeek: [...recurring.daysOfWeek],
       yearMonth: recurring.yearMonth,
       yearDay: recurring.yearDay,
-      times: normalizeFrequencyTimes(
-        recurring.times,
-        recurring.repeatCount,
-      ),
     });
+    this.frequencyForm.controls.times.setValue(scheduleTimes, { emitEvent: true });
   }
 
   /** Map saved Assign/Report ids to display names once options are available. */

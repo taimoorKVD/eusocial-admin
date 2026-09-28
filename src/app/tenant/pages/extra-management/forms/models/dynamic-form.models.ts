@@ -219,6 +219,123 @@ const MONTH_NUMBER: Record<string, number> = {
   december: 12,
 };
 
+/** 12h parts as returned by the edit-template API (`timesParts`). */
+export interface FrequencyTimeParts {
+  hour?: string | number | null;
+  minute?: string | number | null;
+  period?: string | null;
+}
+
+/**
+ * Resolve recurring schedule slots (`HH:mm` 24h) from edit API shapes:
+ * `times`, `timesAmPm`, and/or `timesParts` (recurring or frequency root).
+ */
+export function resolveFrequencyScheduleTimes(
+  recurring: FrequencyRecurringConfig | null | undefined,
+  frequency?: {
+    times?: string[] | null;
+    timesAmPm?: string[] | null;
+    timesParts?: FrequencyTimeParts[] | null;
+  } | null,
+): string[] {
+  const source = (recurring ?? {}) as FrequencyRecurringConfig & {
+    timesAmPm?: string[] | null;
+    timesParts?: FrequencyTimeParts[] | null;
+  };
+  const repeatCount = Math.max(1, Number(source.repeatCount) || 1);
+
+  const fromTimes = normalizeFrequencyTimes(source.times, repeatCount);
+  if (fromTimes.some((slot) => !!slot)) {
+    return fromTimes;
+  }
+
+  const fromFrequencyTimes = normalizeFrequencyTimes(frequency?.times, repeatCount);
+  if (fromFrequencyTimes.some((slot) => !!slot)) {
+    return fromFrequencyTimes;
+  }
+
+  const amPmSources = [source.timesAmPm, frequency?.timesAmPm];
+  for (const amPm of amPmSources) {
+    if (!Array.isArray(amPm) || !amPm.length) {
+      continue;
+    }
+    const converted = normalizeFrequencyTimes(
+      amPm.map((slot) => {
+        if (typeof slot !== 'string' || !slot.trim()) {
+          return '';
+        }
+        const match = /^(\d{1,2}):(\d{2})\s*(AM|PM)$/i.exec(slot.trim());
+        if (!match) {
+          return slot.trim();
+        }
+        const hour12 = Number(match[1]);
+        const minute = Number(match[2]);
+        const period = match[3].toUpperCase() === 'PM' ? 'PM' : 'AM';
+        let hours24 = hour12 % 12;
+        if (period === 'PM') {
+          hours24 += 12;
+        }
+        if (
+          !Number.isInteger(hour12) ||
+          hour12 < 1 ||
+          hour12 > 12 ||
+          !Number.isInteger(minute) ||
+          minute < 0 ||
+          minute > 59
+        ) {
+          return '';
+        }
+        return `${String(hours24).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+      }),
+      repeatCount,
+    );
+    if (converted.some((slot) => !!slot)) {
+      return converted;
+    }
+  }
+
+  const partsSources = [source.timesParts, frequency?.timesParts];
+  for (const parts of partsSources) {
+    if (!Array.isArray(parts) || !parts.length) {
+      continue;
+    }
+    const converted = normalizeFrequencyTimes(
+      parts.map((part) => {
+        const hour12 = Number(part?.hour);
+        const minute = Number(part?.minute);
+        const periodRaw = String(part?.period ?? '')
+          .trim()
+          .toUpperCase();
+        const period = periodRaw === 'PM' ? 'PM' : periodRaw === 'AM' ? 'AM' : null;
+        if (
+          !period ||
+          !Number.isInteger(hour12) ||
+          hour12 < 1 ||
+          hour12 > 12 ||
+          !Number.isInteger(minute) ||
+          minute < 0 ||
+          minute > 59
+        ) {
+          return '';
+        }
+        let hours24 = hour12 % 12;
+        if (period === 'PM') {
+          hours24 += 12;
+        }
+        return `${String(hours24).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+      }),
+      repeatCount,
+    );
+    if (converted.some((slot) => !!slot)) {
+      return converted;
+    }
+  }
+
+  const legacyTime =
+    typeof source.time === 'string' && source.time.trim() ? source.time.trim() : null;
+  return normalizeFrequencyTimes(legacyTime ? [legacyTime] : [], repeatCount);
+}
+
 /**
  * Drop fields that do not apply to the active interval/mode so leftover
  * weekly/monthly "onThe" values cannot override yearly day-of-month schedules.
@@ -231,16 +348,7 @@ export function sanitizeFrequencyRecurring(
   const every = Number(recurring.every) || 1;
   const repeatCount = Math.max(1, Number(recurring.repeatCount) || 1);
   const interval = recurring.interval || defaults.interval;
-  const normalizedTime =
-    typeof recurring.time === 'string' && recurring.time.trim()
-      ? recurring.time.trim()
-      : null;
-  const hasTimes = Array.isArray(recurring.times)
-    && recurring.times.some((slot) => typeof slot === 'string' && slot.trim());
-  const normalizedTimes = normalizeFrequencyTimes(
-    hasTimes ? recurring.times : normalizedTime ? [normalizedTime] : [],
-    repeatCount,
-  );
+  const normalizedTimes = resolveFrequencyScheduleTimes(recurring);
 
   switch (interval) {
     case 'day':
