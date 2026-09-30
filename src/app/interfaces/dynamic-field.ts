@@ -24,6 +24,7 @@ export type DynamicFieldType =
   | 'length'
   | 'mass'
   | 'volume'
+  | 'temperature'
   | 'barcode'
   | 'qr-code';
 
@@ -89,7 +90,7 @@ export interface DynamicField {
   condition?: FieldCondition;
 
   /**
-   * Measurement fields (price / length / mass / volume).
+   * Measurement fields (price / length / mass / volume / temperature).
    */
   unitMode?: MeasurementUnitMode;
   unit?: string;

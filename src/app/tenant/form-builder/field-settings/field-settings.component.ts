@@ -638,6 +638,8 @@ export class FieldSettingsComponent {
         return 'Mass Unit';
       case 'volume':
         return 'Volume Unit';
+      case 'temperature':
+        return 'Temperature Unit';
       default:
         return 'Unit';
     }

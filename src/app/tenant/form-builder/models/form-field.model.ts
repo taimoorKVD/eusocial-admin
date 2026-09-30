@@ -19,6 +19,7 @@ export type FieldType =
   | 'length'
   | 'mass'
   | 'volume'
+  | 'temperature'
   | 'barcode'
   | 'qr-code';
 
@@ -111,7 +112,7 @@ export interface FormField {
   /** Time field / Time range display preference. Values are stored as HH:mm (24h). */
   timeFormat?: RangeTimeFormat;
   /**
-   * Measurement fields (price / length / mass / volume).
+   * Measurement fields (price / length / mass / volume / temperature).
    * `fixed` locks the unit; `selectable` lets the user choose at fill time.
    */
   unitMode?: MeasurementUnitMode;

@@ -166,6 +166,18 @@ export const FIELD_TEMPLATES: Omit<FormField, 'id'>[] = [
   },
 
   {
+    type: 'temperature',
+    label: 'Temperature',
+    placeholder: 'Enter temperature',
+    required: false,
+    allowDecimal: true,
+    unitMode: 'fixed',
+    unit: 'C',
+    minValue: -273.15,
+    options: []
+  },
+
+  {
     type: 'barcode',
     label: 'Barcode',
     placeholder: '',

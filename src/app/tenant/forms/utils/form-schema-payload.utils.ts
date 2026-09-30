@@ -49,11 +49,13 @@ export function buildFormSchemaPayload(fields: FormField[]) {
           field.type === 'price' ||
           field.type === 'length' ||
           field.type === 'mass' ||
-          field.type === 'volume'
+          field.type === 'volume' ||
+          field.type === 'temperature'
             ? field.type === 'price' ||
               field.type === 'length' ||
               field.type === 'mass' ||
-              field.type === 'volume'
+              field.type === 'volume' ||
+              field.type === 'temperature'
               ? true
               : field.allowDecimal === true
             : undefined,

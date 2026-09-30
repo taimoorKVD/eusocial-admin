@@ -675,6 +675,7 @@ function mapDynamicFieldToFilterType(field: DynamicField): string {
     case 'length':
     case 'mass':
     case 'volume':
+    case 'temperature':
       return 'number';
     case 'email':
       return 'email';

@@ -160,6 +160,7 @@ export function getInitialFieldValue(field: DynamicField): unknown {
     case 'length':
     case 'mass':
     case 'volume':
+    case 'temperature':
       return normalizeMeasurementValue(field.defaultValue ?? field.value, field.type, {
         unitMode: normalizeMeasurementUnitMode(field.unitMode),
         unit: field.unit,

@@ -40,6 +40,7 @@ export function getVoiceFieldSupport(field: DynamicField): VoiceFieldSupport {
     case 'length':
     case 'mass':
     case 'volume':
+    case 'temperature':
       return 'text';
     case 'select':
     case 'radio':
@@ -87,6 +88,7 @@ function parseTextLikeVoiceValue(field: DynamicField, transcript: string): Voice
     case 'length':
     case 'mass':
     case 'volume':
+    case 'temperature':
       return parseMeasurementVoiceValue(field, transcript);
     case 'text':
     case 'textarea':

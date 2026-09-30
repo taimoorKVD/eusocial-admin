@@ -24,6 +24,7 @@ export type FieldType =
   | 'length'
   | 'mass'
   | 'volume'
+  | 'temperature'
   | 'barcode'
   | 'qr-code';
 
@@ -836,6 +837,7 @@ export const FIELD_TYPE_OPTIONS: { label: string; value: FieldType }[] = [
   { label: 'Length / Distance', value: 'length' },
   { label: 'Weight / Mass', value: 'mass' },
   { label: 'Volume / Capacity', value: 'volume' },
+  { label: 'Temperature', value: 'temperature' },
   { label: 'Barcode', value: 'barcode' },
   { label: 'QR Code', value: 'qr-code' },
 ];

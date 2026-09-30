@@ -442,6 +442,9 @@
             @case ('volume') {
               <ng-container *ngTemplateOutlet="measurementFieldTpl; context: { $implicit: field }" />
             }
+            @case ('temperature') {
+              <ng-container *ngTemplateOutlet="measurementFieldTpl; context: { $implicit: field }" />
+            }
 
             @case ('textarea') {
               <textarea

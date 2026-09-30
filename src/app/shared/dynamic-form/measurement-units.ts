@@ -1,4 +1,4 @@
-export type MeasurementFieldType = 'price' | 'length' | 'mass' | 'volume';
+export type MeasurementFieldType = 'price' | 'length' | 'mass' | 'volume' | 'temperature';
 
 export type MeasurementUnitMode = 'fixed' | 'selectable';
 
@@ -13,6 +13,7 @@ export const MEASUREMENT_FIELD_TYPES: readonly MeasurementFieldType[] = [
   'length',
   'mass',
   'volume',
+  'temperature',
 ] as const;
 
 export const DEFAULT_MEASUREMENT_UNIT_MODE: MeasurementUnitMode = 'fixed';
@@ -73,16 +74,27 @@ export const VOLUME_UNITS: readonly MeasurementUnit[] = [
   { code: 'imp_gallon', label: 'Imperial Gallon', symbol: 'gal' },
 ] as const;
 
+export const TEMPERATURE_UNITS: readonly MeasurementUnit[] = [
+  { code: 'C', label: 'Celsius', symbol: '°C' },
+  { code: 'F', label: 'Fahrenheit', symbol: '°F' },
+  { code: 'K', label: 'Kelvin', symbol: 'K' },
+] as const;
+
 const DEFAULT_UNITS: Record<MeasurementFieldType, string> = {
   price: 'USD',
   length: 'm',
   mass: 'kg',
   volume: 'L',
+  temperature: 'C',
 };
 
 export function isMeasurementFieldType(type: unknown): type is MeasurementFieldType {
   return (
-    type === 'price' || type === 'length' || type === 'mass' || type === 'volume'
+    type === 'price' ||
+    type === 'length' ||
+    type === 'mass' ||
+    type === 'volume' ||
+    type === 'temperature'
   );
 }
 
@@ -96,6 +108,8 @@ export function getUnitsForFieldType(type: MeasurementFieldType): readonly Measu
       return MASS_UNITS;
     case 'volume':
       return VOLUME_UNITS;
+    case 'temperature':
+      return TEMPERATURE_UNITS;
     default:
       return [];
   }

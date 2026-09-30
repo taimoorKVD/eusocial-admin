@@ -67,6 +67,7 @@ function toFormFieldType(type: string): FormField['type'] {
     case 'length':
     case 'mass':
     case 'volume':
+    case 'temperature':
     case 'barcode':
     case 'qr-code':
     case 'number':
@@ -297,6 +298,7 @@ function resolveConfigType(field: FormField, selectedType?: string): FieldType {
     'length',
     'mass',
     'volume',
+    'temperature',
     'barcode',
     'qr-code',
   ];

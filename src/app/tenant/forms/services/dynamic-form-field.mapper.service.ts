@@ -48,6 +48,7 @@ const SUPPORTED_TYPES = new Set<DynamicFieldType>([
   'length',
   'mass',
   'volume',
+  'temperature',
   'barcode',
   'qr-code',
 ]);
