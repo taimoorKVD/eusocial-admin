@@ -11,7 +11,7 @@ import {
   getHiddenFormFields,
 } from '../../../form-builder/utils/form-field-operations';
 
-export type FormBuilderTab = 'fields' | 'settings' | 'versions';
+export type FormBuilderTab = 'fields' | 'settings' | 'versions' | 'logic';
 
 @Component({
   selector: 'app-form-builder-workspace',

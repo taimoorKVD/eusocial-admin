@@ -964,9 +964,9 @@
 
 <app-confirm-modal
   [isOpen]="isDeleteModalOpen"
-  title="Remove Field"
-  message="Remove this field from the form?"
-  confirmText="Remove"
+  [title]="deleteModalTitle"
+  [message]="deleteModalMessage"
+  [confirmText]="deleteConfirmText"
   cancelText="Cancel"
   (confirmed)="onDeleteConfirm()"
   (closed)="onDeleteModalClose()"

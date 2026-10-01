@@ -131,7 +131,7 @@
             </button>
           </div>
 
-          <nav class="flex items-center justify-between gap-1 border-b border-[#b2b2b2] bg-white px-1 sm:px-2" aria-label="Form builder tabs">
+          <nav class="flex flex-wrap items-center justify-between gap-1 border-b border-[#b2b2b2] bg-white px-1 sm:px-2" aria-label="Form builder tabs">
             <button
               type="button"
               class="flex-1 px-2 py-3 text-center text-sm font-medium transition focus:outline-none sm:px-3 sm:py-4"
@@ -147,6 +147,14 @@
               (click)="onBuilderActiveTabChange('settings')"
             >
               Input Customization
+            </button>
+            <button
+              type="button"
+              class="flex-1 px-2 py-3 text-center text-sm font-medium transition focus:outline-none sm:px-3 sm:py-4"
+              [ngClass]="builderActiveTab() === 'logic' ? 'border-b border-[#FF9015] text-[16px] font-medium tracking-[0.32px] text-[#FF9015]' : 'text-slate-500 hover:bg-slate-100'"
+              (click)="onBuilderActiveTabChange('logic')"
+            >
+              Logic
             </button>
             <button
               type="button"
@@ -170,6 +178,14 @@
               <!-- Versions reserved for future implementation -->
             }
 
+            @if (builderActiveTab() === 'logic') {
+              <app-logic-rules-panel
+                [schema]="logicSchemaFields()"
+                [rules]="logicRules()"
+                (rulesChange)="onLogicRulesChange($event)"
+              ></app-logic-rules-panel>
+            }
+
             <div [class.hidden]="builderActiveTab() !== 'settings'" class="space-y-4">
               @if (selectedBuilderField(); as draftField) {
                 <app-field-settings
@@ -177,6 +193,7 @@
                   [schema]="builderCombinedSchema()"
                   [activeModuleName]="builderModuleName"
                   [enforceUniqueDynamicModules]="true"
+                  [fieldUsedInLogicRules]="isDraftFieldUsedInLogicRules()"
                   (update)="onUpdateField($event)"
                   (duplicate)="onDuplicateSelectedDraft()"
                   (delete)="onDeleteSelectedDraft()"

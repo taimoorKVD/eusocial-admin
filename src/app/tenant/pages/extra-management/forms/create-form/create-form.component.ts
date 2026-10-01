@@ -47,6 +47,12 @@ import {
 import { getLocationFieldDeleteBlockReason } from '../../../../form-builder/utils/location-field-dependencies.utils';
 import { FormEditorCoreModule } from '../../../../forms/form-editor-core.module';
 import { FormBuilderTab } from '../../../../forms/components/form-builder-workspace/form-builder-workspace.component';
+import { FormLogicRule } from '../../../../forms/logic-rules/logic-rule.models';
+import {
+  findLogicRulesUsingField,
+  normalizeLogicRules,
+  pruneLogicRulesForDeletedFields,
+} from '../../../../forms/logic-rules/logic-rule.utils';
 import { SectionFieldPreviewComponent } from '../components/section-field-preview/section-field-preview.component';
 import {
   mapBuilderFieldToConfig,
@@ -284,6 +290,32 @@ export class CreateFormComponent implements OnInit {
     ...this.builderSchema(),
   ]);
 
+  /** All form fields across sections + current builder drafts — for Logic Rules. */
+  readonly logicSchemaFields = computed(() => {
+    const fromSections = this.sections().flatMap((section) =>
+      section.rows.flatMap((row) =>
+        row.fields.map((field) => mapConfigFieldToBuilder(field)),
+      ),
+    );
+    const draftFields = this.builderSchema();
+    const draftIds = new Set(draftFields.map((field) => field.id));
+    const merged = [
+      ...fromSections.filter((field) => !draftIds.has(field.id)),
+      ...draftFields,
+    ];
+    const rowLive = this.rowBuilderFields();
+    if (!rowLive.length) {
+      return merged;
+    }
+    const rowIds = new Set(rowLive.map((field) => field.id));
+    return [
+      ...merged.filter((field) => !rowIds.has(field.id)),
+      ...rowLive,
+    ];
+  });
+
+  readonly logicRules = signal<FormLogicRule[]>([]);
+
   /** Section + row context for the open Add Field editor. */
   readonly builderRowContext = computed(() => {
     const target = this.pendingFieldTarget();
@@ -315,6 +347,14 @@ export class CreateFormComponent implements OnInit {
       this.rowBuilderFields().find((field) => field.id === id) ??
       null
     );
+  });
+
+  readonly isDraftFieldUsedInLogicRules = computed(() => {
+    const field = this.selectedBuilderField();
+    if (!field) {
+      return false;
+    }
+    return findLogicRulesUsingField(this.logicRules(), field.id).length > 0;
   });
 
   readonly canSaveDraftField = computed(() => {
@@ -807,6 +847,7 @@ export class CreateFormComponent implements OnInit {
     this.formName.set(payload.formName?.trim() || template.formName || '');
     this.sections.set(this.deserializeSections(payload.sections ?? []));
     this.applyFrequencyToForm(payload);
+    this.logicRules.set(normalizeLogicRules(payload.conditionalRules));
     this.loadedSchema = payload;
     this.applyLoadedMeta();
     this.wireRowLocationDependencies();
@@ -1537,6 +1578,16 @@ export class CreateFormComponent implements OnInit {
   confirmRemoveSection(): void {
     const section = this.sectionPendingRemoval();
     if (!section) return;
+
+    const deletedIds = section.rows.flatMap((row) =>
+      row.fields.map((field) => field.id),
+    );
+    if (deletedIds.length) {
+      this.logicRules.set(
+        pruneLogicRulesForDeletedFields(this.logicRules(), deletedIds),
+      );
+    }
+
     this.sections.update((list) => list.filter((item) => item.id !== section.id));
     this.sectionPendingRemoval.set(null);
   }
@@ -1549,9 +1600,17 @@ export class CreateFormComponent implements OnInit {
   }
 
   removeSectionRow(section: CustomFormSection, rowId: string): void {
+    const row = section.rows.find((item) => item.id === rowId);
+    const deletedIds = (row?.fields ?? []).map((field) => field.id);
+    if (deletedIds.length) {
+      this.logicRules.set(
+        pruneLogicRulesForDeletedFields(this.logicRules(), deletedIds),
+      );
+    }
+
     this.updateSection({
       ...section,
-      rows: section.rows.filter((row) => row.id !== rowId),
+      rows: section.rows.filter((item) => item.id !== rowId),
     });
   }
 
@@ -1567,6 +1626,10 @@ export class CreateFormComponent implements OnInit {
     if (blockReason) {
       return;
     }
+
+    this.logicRules.set(
+      pruneLogicRulesForDeletedFields(this.logicRules(), [fieldId]),
+    );
 
     this.updateSection({
       ...section,
@@ -1784,6 +1847,10 @@ export class CreateFormComponent implements OnInit {
       return;
     }
 
+    this.logicRules.set(
+      pruneLogicRulesForDeletedFields(this.logicRules(), [field.id]),
+    );
+
     if (this.isExistingRowField(field.id)) {
       this.rowBuilderFields.update((fields) => removeFormField(field, fields));
       this.builderSchema.update((fields) => clearStaleConditionalLogic(fields, [field.id]));
@@ -1806,6 +1873,10 @@ export class CreateFormComponent implements OnInit {
       this.selectedFieldId.set(null);
       this.builderActiveTab.set('fields');
     }
+  }
+
+  onLogicRulesChange(rules: FormLogicRule[]): void {
+    this.logicRules.set(normalizeLogicRules(rules));
   }
 
   onDeleteSelectedDraft(): void {
@@ -2470,9 +2541,15 @@ export class CreateFormComponent implements OnInit {
   }
 
   private buildPayload() {
-    return buildDynamicFormPayload(this.formName(), this.sections(), this.meta(), {
-      users: this.userOptions(),
-      jobPositions: this.jobPositionOptions(),
-    });
+    return buildDynamicFormPayload(
+      this.formName(),
+      this.sections(),
+      this.meta(),
+      {
+        users: this.userOptions(),
+        jobPositions: this.jobPositionOptions(),
+      },
+      this.logicRules(),
+    );
   }
 }

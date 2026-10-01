@@ -3,6 +3,8 @@ import {
   OptionSource,
   SelectSelectionType,
 } from '../../../../form-builder/models/form-field.model';
+import { FormLogicRule } from '../../../../forms/logic-rules/logic-rule.models';
+import { normalizeLogicRules } from '../../../../forms/logic-rules/logic-rule.utils';
 
 export type FieldType =
   | 'text'
@@ -806,6 +808,11 @@ export interface DynamicFormPayload {
     type: 'custom';
     rows: Array<{ fields: Omit<FormFieldConfig, 'id'>[] }>;
   }>;
+  /**
+   * Form-level Logic Rules (automation intent). Separate from per-field
+   * Conditional Logic stored on each field's `condition`.
+   */
+  conditionalRules?: FormLogicRule[];
 }
 
 export interface SavedDynamicForm {
@@ -870,9 +877,9 @@ export function createCustomSection(name: string): CustomFormSection {
 export function stripFieldId(field: FormFieldConfig): Omit<FormFieldConfig, 'id'> & {
   id?: string;
   condition?: FieldCondition;
+  optionSource?: FormFieldConfig['optionSource'];
 } {
   const {
-    optionSource: _optionSource,
     fieldTypeName: _fieldTypeName,
     isEditable: _isEditable,
     isShow: _isShow,
@@ -880,6 +887,7 @@ export function stripFieldId(field: FormFieldConfig): Omit<FormFieldConfig, 'id'
     defaultValue: _defaultValue,
     options,
     condition,
+    optionSource,
     id,
     ...rest
   } = field;
@@ -892,6 +900,7 @@ export function stripFieldId(field: FormFieldConfig): Omit<FormFieldConfig, 'id'
     ...rest,
     ...(id ? { id } : {}),
     ...(condition ? { condition } : {}),
+    ...(optionSource ? { optionSource } : {}),
     ...(normalizedOptions ? { options: normalizedOptions } : {}),
   };
 }
@@ -934,6 +943,7 @@ export function buildDynamicFormPayload(
   sections: FormSection[],
   meta: FormMetaConfig,
   options: AssignReportOptions = {},
+  conditionalRules: FormLogicRule[] = [],
 ): DynamicFormPayload {
   const assignJobPositionIds = resolveSelectedIds(meta.assignJobPosition, options.jobPositions);
   const assignUserIds = resolveSelectedIds(meta.assignUsers, options.users);
@@ -987,5 +997,6 @@ export function buildDynamicFormPayload(
         fields: row.fields.map(stripFieldId),
       })),
     })),
+    conditionalRules: normalizeLogicRules(conditionalRules),
   };
 }

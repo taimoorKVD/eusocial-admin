@@ -116,6 +116,12 @@ export class FieldSettingsComponent {
    */
   @Input() enforceUniqueDynamicModules = false;
 
+  /**
+   * When true, the current field is referenced by one or more form-level Logic Rules.
+   * Parents compute this (Form Template only).
+   */
+  @Input() fieldUsedInLogicRules = false;
+
   @Input() set schema(value: FormField[] | null | undefined) {
     this.schemaSignal.set(value ?? []);
     this.ensureConditionSourceIsValid(false);
@@ -1426,6 +1432,21 @@ export class FieldSettingsComponent {
   }
 
   isDeleteModalOpen = false;
+
+  get deleteModalTitle(): string {
+    return this.fieldUsedInLogicRules ? 'Delete Field & Rules' : 'Remove Field';
+  }
+
+  get deleteModalMessage(): string {
+    if (this.fieldUsedInLogicRules) {
+      return 'This field is used in one or more logic rules. Deleting this field will also remove the related logic rules.';
+    }
+    return 'Remove this field from the form?';
+  }
+
+  get deleteConfirmText(): string {
+    return this.fieldUsedInLogicRules ? 'Delete Field & Rules' : 'Remove';
+  }
 
   onDeleteClick(): void {
     if (!this.isFieldEditable) {
