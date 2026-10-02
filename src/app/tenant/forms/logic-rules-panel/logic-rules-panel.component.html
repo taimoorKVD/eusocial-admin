@@ -73,7 +73,7 @@
                 <label class="inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-slate-600">
                   <input
                     type="checkbox"
-                    class="logic-rules-checkbox"
+                    class="h-4 w-4 shrink-0 cursor-pointer rounded border border-slate-300 bg-white accent-[#ea580c] transition hover:border-[#ea580c] focus:outline-none focus:ring-[3px] focus:ring-[rgb(234_88_12_/_0.12)] disabled:cursor-not-allowed disabled:opacity-50"
                     [checked]="rule.enabled"
                     (change)="toggleRuleEnabled(rule, $any($event.target).checked)"
                   />
@@ -147,7 +147,7 @@
         <input
           id="logic-rule-name"
           type="text"
-          class="logic-rules-input"
+          class="w-full rounded-md border border-slate-200 bg-white px-3 py-2.5 text-sm leading-5 text-slate-700 transition hover:border-orange-300 hover:bg-[#fffaf5] focus:border-[#ea580c] focus:bg-white focus:outline-none focus:ring-[3px] focus:ring-[rgb(234_88_12_/_0.12)] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
           [(ngModel)]="editingRule.name"
           placeholder="e.g. Low Stock Alert"
         />
@@ -167,22 +167,22 @@
         <div class="space-y-5 px-4 py-4">
           <div>
             <p class="mb-2 text-xs font-medium text-slate-600">Match</p>
-            <div class="space-y-2 rounded-md border border-slate-100 bg-slate-50 px-3 py-3">
-              <label class="flex items-center gap-2.5 text-sm text-slate-700">
+            <div class="flex flex-wrap gap-x-5 gap-y-2 rounded-md border border-slate-100 bg-slate-50 px-3 py-3">
+              <label class="inline-flex items-center gap-2.5 text-sm text-slate-700">
                 <input
                   type="radio"
                   name="logic-match-mode"
-                  class="logic-rules-radio"
+                  class="h-4 w-4 shrink-0 cursor-pointer rounded-full border border-slate-300 bg-white accent-[#ea580c] transition hover:border-[#ea580c] focus:outline-none focus:ring-[3px] focus:ring-[rgb(234_88_12_/_0.12)] disabled:cursor-not-allowed disabled:opacity-50"
                   [checked]="editingRule.conditions.match === 'all'"
                   (change)="setMatchMode('all')"
                 />
                 All conditions
               </label>
-              <label class="flex items-center gap-2.5 text-sm text-slate-700">
+              <label class="inline-flex items-center gap-2.5 text-sm text-slate-700">
                 <input
                   type="radio"
                   name="logic-match-mode"
-                  class="logic-rules-radio"
+                  class="h-4 w-4 shrink-0 cursor-pointer rounded-full border border-slate-300 bg-white accent-[#ea580c] transition hover:border-[#ea580c] focus:outline-none focus:ring-[3px] focus:ring-[rgb(234_88_12_/_0.12)] disabled:cursor-not-allowed disabled:opacity-50"
                   [checked]="editingRule.conditions.match === 'any'"
                   (change)="setMatchMode('any')"
                 />
@@ -193,7 +193,7 @@
 
           <div class="space-y-4">
             @for (condition of editingRule.conditions.items; track trackByConditionId($index, condition)) {
-              <div class="space-y-4 rounded-md border border-slate-100 bg-slate-50 px-3.5 py-4">
+              <div class="space-y-3 rounded-md border border-slate-100 bg-slate-50 px-3.5 py-4">
                 <div class="flex items-center justify-between gap-2">
                   <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                     Condition {{ $index + 1 }}
@@ -209,12 +209,12 @@
                   }
                 </div>
 
-                <!-- Stack in narrow panel for readability -->
-                <div class="grid grid-cols-1 gap-3.5">
-                  <div class="min-w-0 space-y-1.5">
+                <!-- Field / Operator / Compare With (+ Value) on one wrapping row -->
+                <div class="flex flex-wrap gap-3">
+                  <div class="min-w-[9rem] flex-1 space-y-1.5">
                     <label class="block text-xs font-medium text-slate-600">Field</label>
                     <select
-                      class="logic-rules-select"
+                      class="logic-rules-select w-full cursor-pointer appearance-none rounded-md border border-slate-200 bg-white px-3 py-2.5 pr-9 text-sm leading-5 text-slate-700 transition hover:border-orange-300 hover:bg-[#fffaf5] focus:border-[#ea580c] focus:bg-white focus:outline-none focus:ring-[3px] focus:ring-[rgb(234_88_12_/_0.12)] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
                       [ngModel]="condition.fieldId"
                       (ngModelChange)="onConditionFieldChange(condition, $event)"
                     >
@@ -225,10 +225,10 @@
                     </select>
                   </div>
 
-                  <div class="min-w-0 space-y-1.5">
+                  <div class="min-w-[9rem] flex-1 space-y-1.5">
                     <label class="block text-xs font-medium text-slate-600">Operator</label>
                     <select
-                      class="logic-rules-select"
+                      class="logic-rules-select w-full cursor-pointer appearance-none rounded-md border border-slate-200 bg-white px-3 py-2.5 pr-9 text-sm leading-5 text-slate-700 transition hover:border-orange-300 hover:bg-[#fffaf5] focus:border-[#ea580c] focus:bg-white focus:outline-none focus:ring-[3px] focus:ring-[rgb(234_88_12_/_0.12)] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
                       [ngModel]="condition.operator"
                       (ngModelChange)="onConditionOperatorChange(condition, $event)"
                       [disabled]="!condition.fieldId"
@@ -240,12 +240,12 @@
                   </div>
 
                   @if (needsValue(condition)) {
-                    <div class="min-w-0 space-y-1.5">
+                    <div class="min-w-[9rem] flex-1 space-y-1.5">
                       <label class="block text-xs font-medium text-slate-600">
                         Compare With
                       </label>
                       <select
-                        class="logic-rules-select"
+                        class="logic-rules-select w-full cursor-pointer appearance-none rounded-md border border-slate-200 bg-white px-3 py-2.5 pr-9 text-sm leading-5 text-slate-700 transition hover:border-orange-300 hover:bg-[#fffaf5] focus:border-[#ea580c] focus:bg-white focus:outline-none focus:ring-[3px] focus:ring-[rgb(234_88_12_/_0.12)] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
                         [ngModel]="condition.comparison.type"
                         (ngModelChange)="onComparisonTypeChange(condition, $event)"
                         [disabled]="!condition.fieldId"
@@ -256,15 +256,13 @@
                       </select>
                     </div>
                   }
-                </div>
 
-                @if (needsValue(condition) && condition.fieldId) {
-                  @if (condition.comparison.type === 'fixed') {
-                    <div class="space-y-1.5">
+                  @if (needsValue(condition) && condition.fieldId && condition.comparison.type === 'fixed') {
+                    <div class="min-w-[9rem] flex-1 space-y-1.5">
                       <label class="block text-xs font-medium text-slate-600">Value</label>
                       <input
                         [type]="fixedValueInputType(condition)"
-                        class="logic-rules-input"
+                        class="w-full rounded-md border border-slate-200 bg-white px-3 py-2.5 text-sm leading-5 text-slate-700 transition hover:border-orange-300 hover:bg-[#fffaf5] focus:border-[#ea580c] focus:bg-white focus:outline-none focus:ring-[3px] focus:ring-[rgb(234_88_12_/_0.12)] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
                         [ngModel]="condition.comparison.value"
                         (ngModelChange)="onFixedValueChange(condition, $event)"
                         placeholder="Enter value"
@@ -272,13 +270,13 @@
                     </div>
                   }
 
-                  @if (condition.comparison.type === 'field') {
-                    <div class="space-y-1.5">
+                  @if (needsValue(condition) && condition.fieldId && condition.comparison.type === 'field') {
+                    <div class="min-w-[9rem] flex-1 space-y-1.5">
                       <label class="block text-xs font-medium text-slate-600">
                         Form Field
                       </label>
                       <select
-                        class="logic-rules-select"
+                        class="logic-rules-select w-full cursor-pointer appearance-none rounded-md border border-slate-200 bg-white px-3 py-2.5 pr-9 text-sm leading-5 text-slate-700 transition hover:border-orange-300 hover:bg-[#fffaf5] focus:border-[#ea580c] focus:bg-white focus:outline-none focus:ring-[3px] focus:ring-[rgb(234_88_12_/_0.12)] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
                         [ngModel]="condition.comparison.fieldId"
                         (ngModelChange)="onCompareFieldChange(condition, $event)"
                       >
@@ -294,69 +292,69 @@
                       }
                     </div>
                   }
+                </div>
 
-                  @if (condition.comparison.type === 'relatedData') {
-                    <div class="space-y-3.5 rounded-md border border-dashed border-slate-200 bg-white px-3.5 py-3.5">
-                      <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                        Related Data
+                @if (needsValue(condition) && condition.fieldId && condition.comparison.type === 'relatedData') {
+                  <div class="space-y-3.5 rounded-md border border-dashed border-slate-200 bg-white px-3.5 py-3.5">
+                    <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                      Related Data
+                    </p>
+
+                    @if (!hasRelatedDataSources()) {
+                      <p class="text-xs leading-relaxed text-slate-500">
+                        No dynamic dropdown fields are configured on this form. Add a dynamic
+                        select (e.g. Items) to use related data.
                       </p>
-
-                      @if (!hasRelatedDataSources()) {
-                        <p class="text-xs leading-relaxed text-slate-500">
-                          No dynamic dropdown fields are configured on this form. Add a dynamic
-                          select (e.g. Items) to use related data.
-                        </p>
-                      } @else {
-                        <div class="grid grid-cols-1 gap-3.5">
-                          <div class="min-w-0 space-y-1.5">
-                            <label class="block text-xs font-medium text-slate-600">
-                              Source
-                            </label>
-                            <select
-                              class="logic-rules-select"
-                              [ngModel]="condition.comparison.sourceFieldId"
-                              (ngModelChange)="onRelatedSourceChange(condition, $event)"
-                            >
-                              <option value="">Select Source</option>
-                              @for (field of dynamicSourceFields; track field.id) {
-                                <option [value]="field.id">{{ field.label }}</option>
-                              }
-                            </select>
-                          </div>
-
-                          <div class="min-w-0 space-y-1.5">
-                            <label class="block text-xs font-medium text-slate-600">
-                              Property
-                            </label>
-                            <select
-                              class="logic-rules-select"
-                              [ngModel]="condition.comparison.property"
-                              (ngModelChange)="onRelatedPropertyChange(condition, $event)"
-                              [disabled]="!condition.comparison.sourceFieldId"
-                            >
-                              <option value="">Select Property</option>
-                              @for (
-                                column of relatedPropertiesFor(condition.comparison.sourceFieldId);
-                                track column.id
-                              ) {
-                                <option [value]="column.id">{{ column.label }}</option>
-                              }
-                            </select>
-                            @if (isRelatedPropertiesLoading(condition.comparison.sourceFieldId)) {
-                              <p class="text-[11px] text-slate-400">Loading properties…</p>
-                            } @else if (
-                              condition.comparison.sourceFieldId &&
-                              !relatedPropertiesFor(condition.comparison.sourceFieldId).length
-                            ) {
-                              <p class="text-[11px] text-slate-400">
-                                No properties available for this source.
-                              </p>
+                    } @else {
+                      <div class="flex flex-wrap gap-3">
+                        <div class="min-w-[9rem] flex-1 space-y-1.5">
+                          <label class="block text-xs font-medium text-slate-600">
+                            Source
+                          </label>
+                          <select
+                            class="logic-rules-select w-full cursor-pointer appearance-none rounded-md border border-slate-200 bg-white px-3 py-2.5 pr-9 text-sm leading-5 text-slate-700 transition hover:border-orange-300 hover:bg-[#fffaf5] focus:border-[#ea580c] focus:bg-white focus:outline-none focus:ring-[3px] focus:ring-[rgb(234_88_12_/_0.12)] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                            [ngModel]="condition.comparison.sourceFieldId"
+                            (ngModelChange)="onRelatedSourceChange(condition, $event)"
+                          >
+                            <option value="">Select Source</option>
+                            @for (field of dynamicSourceFields; track field.id) {
+                              <option [value]="field.id">{{ field.label }}</option>
                             }
-                          </div>
+                          </select>
                         </div>
-                      }
-                    </div>
-                  }
+
+                        <div class="min-w-[9rem] flex-1 space-y-1.5">
+                          <label class="block text-xs font-medium text-slate-600">
+                            Property
+                          </label>
+                          <select
+                            class="logic-rules-select w-full cursor-pointer appearance-none rounded-md border border-slate-200 bg-white px-3 py-2.5 pr-9 text-sm leading-5 text-slate-700 transition hover:border-orange-300 hover:bg-[#fffaf5] focus:border-[#ea580c] focus:bg-white focus:outline-none focus:ring-[3px] focus:ring-[rgb(234_88_12_/_0.12)] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                            [ngModel]="condition.comparison.property"
+                            (ngModelChange)="onRelatedPropertyChange(condition, $event)"
+                            [disabled]="!condition.comparison.sourceFieldId"
+                          >
+                            <option value="">Select Property</option>
+                            @for (
+                              column of relatedPropertiesFor(condition.comparison.sourceFieldId);
+                              track column.id
+                            ) {
+                              <option [value]="column.id">{{ column.label }}</option>
+                            }
+                          </select>
+                          @if (isRelatedPropertiesLoading(condition.comparison.sourceFieldId)) {
+                            <p class="text-[11px] text-slate-400">Loading properties…</p>
+                          } @else if (
+                            condition.comparison.sourceFieldId &&
+                            !relatedPropertiesFor(condition.comparison.sourceFieldId).length
+                          ) {
+                            <p class="text-[11px] text-slate-400">
+                              No properties available for this source.
+                            </p>
+                          }
+                        </div>
+                      </div>
+                    }
+                  </div>
                 }
               </div>
             }
@@ -389,13 +387,13 @@
         <div class="space-y-4 px-4 py-4">
           <div class="space-y-3">
             @for (action of editingRule.actions; track trackByActionId($index, action)) {
-              <div class="flex items-center gap-2.5">
+              <div class="flex flex-wrap items-end gap-2.5">
                 <div class="min-w-0 flex-1 space-y-1.5">
                   <label class="block text-xs font-medium text-slate-600">
                     Action {{ $index + 1 }}
                   </label>
                   <select
-                    class="logic-rules-select"
+                    class="logic-rules-select w-full cursor-pointer appearance-none rounded-md border border-slate-200 bg-white px-3 py-2.5 pr-9 text-sm leading-5 text-slate-700 transition hover:border-orange-300 hover:bg-[#fffaf5] focus:border-[#ea580c] focus:bg-white focus:outline-none focus:ring-[3px] focus:ring-[rgb(234_88_12_/_0.12)] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
                     [ngModel]="action.type"
                     (ngModelChange)="onActionTypeChange(action, $event)"
                   >
@@ -407,7 +405,7 @@
                 @if (editingRule.actions.length > 1) {
                   <button
                     type="button"
-                    class="mt-5 shrink-0 rounded-md border border-red-200 px-2.5 py-2.5 text-xs text-red-600 transition hover:bg-red-50"
+                    class="mb-0.5 shrink-0 rounded-md border border-red-200 px-2.5 py-2.5 text-xs text-red-600 transition hover:bg-red-50"
                     (click)="removeAction(action.id)"
                     aria-label="Remove action"
                   >
