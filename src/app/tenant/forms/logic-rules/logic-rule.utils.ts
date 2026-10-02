@@ -407,29 +407,58 @@ export function findFieldLabel(
   fieldId: string | undefined | null,
 ): string {
   if (!fieldId) {
-    return 'Field';
+    return 'Unknown field';
   }
   const field = schema.find((item) => item.id === fieldId);
-  return field?.label?.trim() || 'Field';
+  const label = field?.label?.trim();
+  return label || 'Unknown field';
 }
 
+/**
+ * Humanize a stored property key when no column label is available.
+ * Never returns a raw internal field-id style string to the UI.
+ */
 export function formatPropertyLabel(
   property: string | undefined | null,
 ): string {
-  if (!property) {
-    return 'Property';
+  if (!property?.trim()) {
+    return 'Unknown property';
+  }
+  if (looksLikeInternalFieldId(property)) {
+    return 'Unknown property';
   }
   return property
     .replace(/[_-]+/g, ' ')
     .replace(/\b\w/g, (ch) => ch.toUpperCase());
 }
 
+function looksLikeInternalFieldId(value: string): boolean {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return false;
+  }
+  // Builder/module field ids such as fld_1788885525561_swrehc0
+  if (/^fld[_-]/i.test(trimmed)) {
+    return true;
+  }
+  if (/[_-]?\d{10,}[_-]?/i.test(trimmed) && /[a-z]/i.test(trimmed)) {
+    return true;
+  }
+  return false;
+}
+
+export type LogicPropertyLabelResolver = (
+  sourceFieldId: string | undefined,
+  property: string | undefined,
+) => string | null | undefined;
+
 export function summarizeCondition(
   condition: LogicConditionItem,
   schema: FormField[],
+  resolvePropertyLabel?: LogicPropertyLabelResolver,
 ): string {
   const field = schema.find((item) => item.id === condition.fieldId);
-  const fieldLabel = field?.label?.trim() || 'Field';
+  const fieldLabel = field?.label?.trim() || 'Unknown field';
   const operatorLabel = getOperatorLabel(condition.operator, field);
 
   if (!operatorNeedsComparisonValue(condition.operator)) {
@@ -443,7 +472,12 @@ export function summarizeCondition(
 
   if (comparison.type === 'relatedData') {
     const sourceLabel = findFieldLabel(schema, comparison.sourceFieldId);
-    const propertyLabel = formatPropertyLabel(comparison.property);
+    const resolved =
+      resolvePropertyLabel?.(
+        comparison.sourceFieldId,
+        comparison.property,
+      )?.trim() || '';
+    const propertyLabel = resolved || formatPropertyLabel(comparison.property);
     return `${fieldLabel} ${operatorLabel} ${sourceLabel} → ${propertyLabel}`;
   }
 
@@ -457,13 +491,16 @@ export function summarizeCondition(
 export function summarizeConditions(
   rule: FormLogicRule,
   schema: FormField[],
+  resolvePropertyLabel?: LogicPropertyLabelResolver,
 ): string {
   const items = rule.conditions.items.filter((item) => item.fieldId);
   if (!items.length) {
     return 'No conditions configured';
   }
   const joiner = rule.conditions.match === 'any' ? ' OR ' : ' AND ';
-  return items.map((item) => summarizeCondition(item, schema)).join(joiner);
+  return items
+    .map((item) => summarizeCondition(item, schema, resolvePropertyLabel))
+    .join(joiner);
 }
 
 export function summarizeActions(rule: FormLogicRule): string {
@@ -476,9 +513,10 @@ export function summarizeActions(rule: FormLogicRule): string {
 export function summarizeRuleCard(
   rule: FormLogicRule,
   schema: FormField[],
+  resolvePropertyLabel?: LogicPropertyLabelResolver,
 ): { when: string; then: string } {
   return {
-    when: `IF ${summarizeConditions(rule, schema)}`,
+    when: `IF ${summarizeConditions(rule, schema, resolvePropertyLabel)}`,
     then: `THEN ${summarizeActions(rule)}`,
   };
 }

@@ -76,8 +76,11 @@ export class LogicRulesPanelComponent implements OnChanges {
     if (changes['rules']) {
       this.localRules = normalizeLogicRules(this.rules);
     }
-    if (changes['schema'] && this.editingRule) {
-      this.prefetchRelatedPropertiesForRule(this.editingRule);
+    if (changes['rules'] || changes['schema']) {
+      this.prefetchRelatedPropertiesForRules(this.localRules);
+      if (this.editingRule) {
+        this.prefetchRelatedPropertiesForRule(this.editingRule);
+      }
     }
   }
 
@@ -110,7 +113,26 @@ export class LogicRulesPanelComponent implements OnChanges {
   }
 
   ruleSummary(rule: FormLogicRule): { when: string; then: string } {
-    return summarizeRuleCard(rule, this.schema || []);
+    return summarizeRuleCard(
+      rule,
+      this.schema || [],
+      (sourceFieldId, property) =>
+        this.resolveRelatedPropertyLabel(sourceFieldId, property),
+    );
+  }
+
+  /** Resolve stored related-data property id → human column/field label. */
+  resolveRelatedPropertyLabel(
+    sourceFieldId: string | undefined,
+    property: string | undefined,
+  ): string | null {
+    if (!sourceFieldId || !property) {
+      return null;
+    }
+    const columns = this.relatedPropertyCache.get(sourceFieldId) ?? [];
+    const match = columns.find((column) => column.id === property);
+    const label = match?.label?.trim();
+    return label || null;
   }
 
   openCreateEditor(): void {
@@ -460,6 +482,12 @@ export class LogicRulesPanelComponent implements OnChanges {
     this.localRules = next;
     this.rulesChange.emit(next);
     this.cdr.markForCheck();
+  }
+
+  private prefetchRelatedPropertiesForRules(rules: FormLogicRule[]): void {
+    for (const rule of rules) {
+      this.prefetchRelatedPropertiesForRule(rule);
+    }
   }
 
   private prefetchRelatedPropertiesForRule(rule: FormLogicRule): void {
