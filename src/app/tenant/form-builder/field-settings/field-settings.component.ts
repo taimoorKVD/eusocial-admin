@@ -29,7 +29,7 @@ import {
 } from '../../../shared/conditional-logic';
 import { FormField, FieldOption, OptionSource, RangeFieldType, RangeTimeFormat } from '../models/form-field.model';
 import { ImageFile } from '../models/image-file.model';
-import { normalizeFieldOption, normalizeStaticSelectFieldOptions, toDynamicSelectOptionIds } from '../utils/field-options.utils';
+import { normalizeFieldOption, normalizeStaticSelectFieldOptions } from '../utils/field-options.utils';
 import { buildPlaceholderFromLabel, supportsPlaceholderAutoGeneration } from '../utils/form-field.factory';
 import {
   cloneImageFiles,
@@ -1238,7 +1238,7 @@ export class FieldSettingsComponent {
       return;
     }
 
-    const current = toDynamicSelectOptionIds(this._field.options);
+    const current = [...(this._field.options || [])];
     const allTargetsSelected = targets.every((option) =>
       this.isDynamicOptionSelected(option),
     );
@@ -1247,16 +1247,20 @@ export class FieldSettingsComponent {
       // Deselect only currently visible options; keep hidden selections.
       const removeValues = new Set(targets.map((option) => String(option.value)));
       this._field.options = current.filter(
-        (item) => !removeValues.has(String(item)),
+        (item) => !removeValues.has(String(this.readOptionValue(item))),
       );
     } else {
       // Select all visible options without clearing previously selected hidden ones.
       for (const option of targets) {
         const exists = current.some(
-          (item) => String(item) === String(option.value),
+          (item) => String(this.readOptionValue(item)) === String(option.value),
         );
         if (!exists) {
-          current.push(option.value);
+          current.push({
+            id: typeof option.value === 'number' ? option.value : undefined,
+            label: option.label,
+            value: option.value,
+          });
         }
       }
       this._field.options = current;
@@ -1277,15 +1281,19 @@ export class FieldSettingsComponent {
       return;
     }
 
-    const current = toDynamicSelectOptionIds(this._field.options);
+    const current = [...(this._field.options || [])];
     const existingIndex = current.findIndex(
-      (item) => String(item) === String(option.value),
+      (item) => String(this.readOptionValue(item)) === String(option.value),
     );
 
     if (existingIndex >= 0) {
       current.splice(existingIndex, 1);
     } else {
-      current.push(option.value);
+      current.push({
+        id: typeof option.value === 'number' ? option.value : undefined,
+        label: option.label,
+        value: option.value,
+      });
     }
 
     this._field.options = current;
@@ -1845,19 +1853,17 @@ export class FieldSettingsComponent {
 
     this._field.optionSource = this.buildDynamicOptionSource();
 
-    // Countries/States/Cities: no Select Options filtering — bake all record values.
+    // Countries/States/Cities: no Select Options filtering — bake all records.
     if (isDynamicSelectOptionsHiddenForModule(this.selectedModuleSlug)) {
-      const allIds = toDynamicSelectOptionIds(this.availableDynamicOptions);
-
       if (emitUpdate) {
-        this._field.options = allIds;
+        this._field.options = [...this.availableDynamicOptions];
         this.skipFieldReinitialize = true;
         this.onChange();
         return;
       }
 
       if (preserveSelection && !(this._field.options?.length)) {
-        this._field.options = allIds;
+        this._field.options = [...this.availableDynamicOptions];
         this.skipFieldReinitialize = true;
         this.onChange();
       }
@@ -1876,7 +1882,7 @@ export class FieldSettingsComponent {
     }
 
     if (emitUpdate) {
-      this._field.options = toDynamicSelectOptionIds(this.availableDynamicOptions);
+      this._field.options = [...this.availableDynamicOptions];
       this.skipFieldReinitialize = true;
       this.onChange();
     }
@@ -1884,7 +1890,8 @@ export class FieldSettingsComponent {
 
   /**
    * Keep previously saved selections that still exist in the module,
-   * refreshing to the current configured valueKey values.
+   * refreshing labels from the current valueKey/labelKey mapping.
+   * In-memory options keep `{ label, value }` for UI; save paths strip to IDs.
    */
   private syncSelectedDynamicOptionsWithAvailable(): void {
     if (!this._field) {
@@ -1895,7 +1902,7 @@ export class FieldSettingsComponent {
       this.availableDynamicOptions.map((option) => [String(option.value), option]),
     );
 
-    const next: Array<string | number> = [];
+    const next: FieldOption[] = [];
     for (const item of this._field.options || []) {
       const value = this.readOptionValue(item);
       if (value == null || value === '') {
@@ -1903,7 +1910,11 @@ export class FieldSettingsComponent {
       }
       const match = availableByValue.get(String(value));
       if (match) {
-        next.push(match.value);
+        next.push({
+          id: typeof match.value === 'number' ? match.value : undefined,
+          label: match.label,
+          value: match.value,
+        });
       }
     }
 

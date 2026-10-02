@@ -59,6 +59,10 @@ import {
   mapConfigFieldToBuilder,
 } from '../utils/field-builder-adapter.utils';
 import {
+  hydrateFormTemplateDynamicSelectField,
+  hydrateFormTemplateDynamicSelectOptions,
+} from '../utils/hydrate-dynamic-select-options.utils';
+import {
   clearDependentLocationOptions,
   getConfigFieldLocationKind,
   getFieldOptionLabelKey,
@@ -845,12 +849,19 @@ export class CreateFormComponent implements OnInit {
     const payload = template.payload ?? ({} as DynamicFormPayload);
 
     this.formName.set(payload.formName?.trim() || template.formName || '');
-    this.sections.set(this.deserializeSections(payload.sections ?? []));
+    const sections = this.deserializeSections(payload.sections ?? []);
     this.applyFrequencyToForm(payload);
     this.logicRules.set(normalizeLogicRules(payload.conditionalRules));
     this.loadedSchema = payload;
     this.applyLoadedMeta();
-    this.wireRowLocationDependencies();
+
+    // Resolve saved dynamic Select IDs → labels for canvas display (payload stays IDs).
+    hydrateFormTemplateDynamicSelectOptions(this.formStorageService, sections)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((hydratedSections) => {
+        this.sections.set(hydratedSections);
+        this.wireRowLocationDependencies();
+      });
   }
 
   private deserializeSections(
@@ -1816,9 +1827,10 @@ export class CreateFormComponent implements OnInit {
       const result = duplicateFormField(field, this.rowBuilderFields());
       this.rowBuilderFields.set(result.schema);
       if (result.duplicate) {
-        this.appendRowFieldToSections(
-          mapBuilderFieldToConfig(result.duplicate, { preserveId: true }),
-        );
+        const mapped = mapBuilderFieldToConfig(result.duplicate, { preserveId: true });
+        hydrateFormTemplateDynamicSelectField(this.formStorageService, mapped)
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe((hydrated) => this.appendRowFieldToSections(hydrated));
         this.onSelectField(result.duplicate);
       }
       return;
@@ -1889,9 +1901,10 @@ export class CreateFormComponent implements OnInit {
   onUpdateField(updated: FormField): void {
     if (this.isExistingRowField(updated.id)) {
       this.rowBuilderFields.update((fields) => updateFormField(updated, fields));
-      this.updateRowFieldInSections(
-        mapBuilderFieldToConfig(updated, { preserveId: true }),
-      );
+      const mapped = mapBuilderFieldToConfig(updated, { preserveId: true });
+      hydrateFormTemplateDynamicSelectField(this.formStorageService, mapped)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe((hydrated) => this.updateRowFieldInSections(hydrated));
       return;
     }
 
@@ -1917,9 +1930,10 @@ export class CreateFormComponent implements OnInit {
     if (!fieldsToAdd.length) return;
 
     for (const field of fieldsToAdd) {
-      this.appendFieldToPendingTarget(
-        mapBuilderFieldToConfig(field, { preserveId: true }),
-      );
+      const mapped = mapBuilderFieldToConfig(field, { preserveId: true });
+      hydrateFormTemplateDynamicSelectField(this.formStorageService, mapped)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe((hydrated) => this.appendFieldToPendingTarget(hydrated));
     }
 
     // closeFieldBuilder also refreshes row location dependencies for the target row.

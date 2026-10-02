@@ -22,7 +22,6 @@ import {
   createFieldFromTemplate,
   toFieldName,
 } from '../../../../form-builder/utils/form-field.factory';
-import { toDynamicSelectOptionIds } from '../../../../form-builder/utils/field-options.utils';
 import {
   isMultiSelectionTypeHiddenForModule,
   resolveBuilderLocationKind,
@@ -181,7 +180,7 @@ export function mapBuilderFieldToConfig(
   const type = resolveConfigType(field, options.selectedType);
   const isDynamic = field.optionSource?.type === 'dynamic';
   const mappedOptions = isDynamic
-    ? toDynamicSelectOptionIds(field.options)
+    ? mapDynamicOptionsForTemplateDisplay(field.options)
     : (field.options ?? [])
         .map((opt) =>
           typeof opt === 'string' || typeof opt === 'number'
@@ -269,8 +268,13 @@ function mapConfigOptionsToBuilder(
   const rawOptions = field.options ?? [];
 
   if (field.optionSource?.type === 'dynamic') {
-    // Keep saved valueKey ids; Field Settings resolves labels for display.
-    return toDynamicSelectOptionIds(rawOptions);
+    // Prefer label+value objects when already hydrated; bare IDs are resolved in Field Settings.
+    return rawOptions.map((opt) => {
+      if (typeof opt === 'string' || typeof opt === 'number') {
+        return opt;
+      }
+      return { label: String(opt.label), value: opt.value };
+    });
   }
 
   return rawOptions.map((opt) =>
@@ -278,6 +282,34 @@ function mapConfigOptionsToBuilder(
       ? opt
       : { label: String(opt.label), value: opt.value },
   );
+}
+
+/**
+ * Form Template canvas needs labels for display. Keep `{ label, value }` when present;
+ * bare IDs are hydrated after load. Payload save still strips to valueKey IDs.
+ */
+function mapDynamicOptionsForTemplateDisplay(
+  options: FormField['options'] | undefined,
+): Array<string | number | { label: string; value: string | number }> {
+  const mapped: Array<string | number | { label: string; value: string | number }> = [];
+
+  for (const opt of options ?? []) {
+    if (typeof opt === 'string' || typeof opt === 'number') {
+      mapped.push(opt);
+      continue;
+    }
+
+    if (opt?.value == null || opt.value === '') {
+      continue;
+    }
+
+    mapped.push({
+      label: String(opt.label ?? opt.value),
+      value: opt.value,
+    });
+  }
+
+  return mapped;
 }
 
 function resolveConfigType(field: FormField, selectedType?: string): FieldType {
