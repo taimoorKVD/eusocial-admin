@@ -62,10 +62,12 @@ export function toFieldName(label: string | null | undefined): string {
 }
 
 function cloneOptions(
-  options: Array<string | { label: string; value: string | number }> = []
-): Array<string | { label: string; value: string | number }> {
+  options: Array<string | number | { label: string; value: string | number }> = []
+): Array<string | number | { label: string; value: string | number }> {
   return options.map(option =>
-    typeof option === 'string' ? option : { ...option }
+    typeof option === 'string' || typeof option === 'number'
+      ? option
+      : { ...option }
   );
 }
 

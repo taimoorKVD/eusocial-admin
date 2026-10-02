@@ -22,6 +22,7 @@ import {
   createFieldFromTemplate,
   toFieldName,
 } from '../../../../form-builder/utils/form-field.factory';
+import { toDynamicSelectOptionIds } from '../../../../form-builder/utils/field-options.utils';
 import {
   isMultiSelectionTypeHiddenForModule,
   resolveBuilderLocationKind,
@@ -178,9 +179,16 @@ export function mapBuilderFieldToConfig(
   options: MapBuilderFieldToConfigOptions = {},
 ): FormFieldConfig {
   const type = resolveConfigType(field, options.selectedType);
-  const optionLabels = (field.options ?? [])
-    .map((opt) => (typeof opt === 'string' ? opt : String(opt.label ?? opt.value)))
-    .filter((opt) => opt.trim().length > 0);
+  const isDynamic = field.optionSource?.type === 'dynamic';
+  const mappedOptions = isDynamic
+    ? toDynamicSelectOptionIds(field.options)
+    : (field.options ?? [])
+        .map((opt) =>
+          typeof opt === 'string' || typeof opt === 'number'
+            ? String(opt)
+            : String(opt.label ?? opt.value),
+        )
+        .filter((opt) => opt.trim().length > 0);
 
   return {
     id: options.preserveId !== false && field.id ? field.id : createId('field'),
@@ -190,7 +198,7 @@ export function mapBuilderFieldToConfig(
     placeholder: field.placeholder?.trim() || undefined,
     required: !!field.required,
     readonly: field.isReadonly || undefined,
-    options: optionLabels.length ? optionLabels : undefined,
+    options: mappedOptions.length ? mappedOptions : undefined,
     width: mapBuilderWidthToPercent(field.width),
     isDefault: false,
     value: normalizeConfigFieldValue(field.value),
@@ -257,20 +265,17 @@ export function mapBuilderFieldToConfig(
 
 function mapConfigOptionsToBuilder(
   field: FormFieldConfig,
-): Array<string | FieldOption> {
+): Array<string | number | FieldOption> {
   const rawOptions = field.options ?? [];
 
   if (field.optionSource?.type === 'dynamic') {
-    return rawOptions.map((opt) =>
-      typeof opt === 'string'
-        ? { label: opt, value: opt }
-        : { label: String(opt.label), value: opt.value },
-    );
+    // Keep saved valueKey ids; Field Settings resolves labels for display.
+    return toDynamicSelectOptionIds(rawOptions);
   }
 
   return rawOptions.map((opt) =>
-    typeof opt === 'string'
-      ? { label: opt, value: opt }
+    typeof opt === 'string' || typeof opt === 'number'
+      ? opt
       : { label: String(opt.label), value: opt.value },
   );
 }

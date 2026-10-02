@@ -65,7 +65,7 @@ export interface FormField {
   isShow?: boolean;
   isReadonly?: boolean;
   isEditable?: boolean;
-  options: Array<string | FieldOption>;
+  options: Array<string | number | FieldOption>;
   optionSource?: OptionSource;
   /** Select field only. Defaults to `single` for backward compatibility. */
   selectionType?: SelectSelectionType;

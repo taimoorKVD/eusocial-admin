@@ -59,7 +59,7 @@ export interface DynamicField {
   radio?: any;
   isShow?: boolean;
   isReadonly?: boolean;
-  options?: (string | DynamicFieldOption)[];
+  options?: (string | number | DynamicFieldOption)[];
   optionSource?: DynamicFieldOptionSource;
   /** Select field only. Defaults to `single` when missing. */
   selectionType?: DynamicSelectSelectionType;

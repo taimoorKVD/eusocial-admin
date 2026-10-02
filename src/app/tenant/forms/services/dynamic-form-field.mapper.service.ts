@@ -200,7 +200,7 @@ export class DynamicFormFieldMapperService {
 
   private normalizeOptions(
     field: FormField,
-    options: Array<string | FieldOption>
+    options: Array<string | number | FieldOption>
   ): FieldOption[] {
     if (field.type === 'checkbox') {
       return normalizeCheckboxFieldOptions(options);

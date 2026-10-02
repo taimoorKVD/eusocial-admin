@@ -23,7 +23,7 @@ export interface VoiceApplyResult {
 }
 
 export interface VoiceParseContext {
-  getFieldOptions?: (field: DynamicField) => (string | DynamicFieldOption)[];
+  getFieldOptions?: (field: DynamicField) => (string | number | DynamicFieldOption)[];
 }
 
 export function getVoiceFieldSupport(field: DynamicField): VoiceFieldSupport {
@@ -194,7 +194,7 @@ function parseStructuredVoiceValue(
 function parseCheckboxVoiceValue(
   field: DynamicField,
   transcript: string,
-  options: (string | DynamicFieldOption)[],
+  options: (string | number | DynamicFieldOption)[],
 ): VoiceApplyResult {
   const normalizedTranscript = stripOptionFillers(normalizeSpeechText(transcript));
   const selected: unknown[] = [];
@@ -249,8 +249,11 @@ function stripOptionFillers(value: string): string {
     .trim();
 }
 
-function getOptionLabel(option: string | DynamicFieldOption, index: number): string {
-  return typeof option === 'string' ? option : option.label;
+function getOptionLabel(option: string | number | DynamicFieldOption, index: number): string {
+  if (typeof option === 'string' || typeof option === 'number') {
+    return String(option);
+  }
+  return option.label;
 }
 
 function normalizeSpeechText(value: string): string {

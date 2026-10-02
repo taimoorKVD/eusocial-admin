@@ -30,9 +30,10 @@ export type FieldType =
   | 'barcode'
   | 'qr-code';
 
-/** Select option — string label, or label+value (id) for location dependencies. */
+/** Select option — label, record value/id, or label+value for location dependencies. */
 export type FormSelectOption =
   | string
+  | number
   | {
       label: string;
       value: string | number;
@@ -892,9 +893,18 @@ export function stripFieldId(field: FormFieldConfig): Omit<FormFieldConfig, 'id'
     ...rest
   } = field;
 
-  const normalizedOptions = options?.map((opt) =>
-    typeof opt === 'string' ? opt : String(opt.label ?? opt.value),
-  );
+  const normalizedOptions =
+    optionSource?.type === 'dynamic'
+      ? options?.length
+        ? options.map((opt) =>
+            typeof opt === 'string' || typeof opt === 'number' ? opt : opt.value,
+          )
+        : undefined
+      : options?.map((opt) =>
+          typeof opt === 'string' || typeof opt === 'number'
+            ? opt
+            : String(opt.label ?? opt.value),
+        );
 
   return {
     ...rest,

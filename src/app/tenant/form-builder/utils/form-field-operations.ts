@@ -91,7 +91,9 @@ export function duplicateFormField(
     label: duplicateLabel,
     name: duplicateName,
     options: (field.options || []).map(option =>
-      typeof option === 'string' ? option : { ...option }
+      typeof option === 'string' || typeof option === 'number'
+        ? option
+        : { ...option }
     ),
     optionSource: cloneOptionSource(field.optionSource),
     condition: serializeConditionalLogic(field.condition),

@@ -87,7 +87,7 @@ export class DynamicModuleOptionsService {
     if (!this.recordsCache.has(cacheKey)) {
       const endpoint = this.resolveModuleEndpoint(moduleSlug);
       const base = environment.tenantApiUrl.replace(/\/$/, '');
-      const url = `${base}${endpoint}?page=1&limit=500`;
+      const url = `${base}${endpoint}`;
 
       const request = this.http.get<unknown>(url).pipe(
         map(response => this.extractRecords(response)),
@@ -138,9 +138,11 @@ export class DynamicModuleOptionsService {
 
   buildOptionsFromRecords(
     records: Record<string, unknown>[],
-    labelKey: string
+    labelKey: string,
+    valueKey = 'id'
   ): FieldOption[] {
     const normalizedLabelKey = String(labelKey ?? '').trim();
+    const normalizedValueKey = String(valueKey ?? '').trim() || 'id';
 
     if (!normalizedLabelKey) {
       return [];
@@ -148,21 +150,21 @@ export class DynamicModuleOptionsService {
 
     return records
       .map((record, index) => {
-        const id = this.readRecordId(record);
+        const value = this.readRecordOptionValue(record, normalizedValueKey);
         const labelValue = this.readScalarValue(record, normalizedLabelKey);
 
-        if (id == null || labelValue == null || labelValue === '') {
+        if (value == null || labelValue == null || labelValue === '') {
           return null;
         }
 
         const option: FieldOption = {
           label: String(labelValue),
-          value: id,
+          value,
           sortOrder: index,
         };
 
-        if (typeof id === 'number') {
-          option.id = id;
+        if (typeof value === 'number') {
+          option.id = value;
         }
 
         return option;
@@ -549,6 +551,24 @@ export class DynamicModuleOptionsService {
 
     if (typeof id === 'string' || typeof id === 'number') {
       return id;
+    }
+
+    return null;
+  }
+
+  /** Read option value using configured `valueKey` (falls back to id/_id when key is `id`). */
+  private readRecordOptionValue(
+    record: Record<string, unknown>,
+    valueKey: string
+  ): string | number | null {
+    const fromKey = this.readScalarValue(record, valueKey);
+
+    if (typeof fromKey === 'string' || typeof fromKey === 'number') {
+      return fromKey;
+    }
+
+    if (valueKey === 'id' || valueKey === '_id') {
+      return this.readRecordId(record);
     }
 
     return null;

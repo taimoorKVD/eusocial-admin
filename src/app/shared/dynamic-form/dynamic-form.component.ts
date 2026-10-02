@@ -263,7 +263,7 @@ export class DynamicFormComponent implements OnDestroy {
   readonly filteredSelectOptions = computed(() => {
     const queries = this.selectSearchQueries();
     const overrides = this.locationOptionOverrides();
-    const result: Record<string, (string | DynamicFieldOption)[]> = {};
+    const result: Record<string, (string | number | DynamicFieldOption)[]> = {};
 
     for (const field of this.sortedFields()) {
       if (field.type !== 'select') {
@@ -515,8 +515,11 @@ export class DynamicFormComponent implements OnDestroy {
     );
   }
 
-  getOptionLabel(option: string | DynamicFieldOption): string {
-    return typeof option === 'string' ? option : option.label;
+  getOptionLabel(option: string | number | DynamicFieldOption): string {
+    if (typeof option === 'string' || typeof option === 'number') {
+      return String(option);
+    }
+    return option.label;
   }
 
   /** Typeform-style A–Z marker for single-select options (presentation only). */
@@ -532,7 +535,7 @@ export class DynamicFormComponent implements OnDestroy {
     return String(index + 1);
   }
 
-  getOptionValue(option: string | DynamicFieldOption, index = 0): string | number {
+  getOptionValue(option: string | number | DynamicFieldOption, index = 0): string | number {
     return getOptionValue(option, index);
   }
 
@@ -541,7 +544,7 @@ export class DynamicFormComponent implements OnDestroy {
    * otherwise the field's own options. Used by the template for empty-state and
    * label resolution so dependent dropdowns stay in sync with their parent.
    */
-  getFieldOptions(field: DynamicField): (string | DynamicFieldOption)[] {
+  getFieldOptions(field: DynamicField): (string | number | DynamicFieldOption)[] {
     return this.locationOptionOverrides()[field.name] ?? field.options ?? [];
   }
 
@@ -1460,7 +1463,7 @@ export class DynamicFormComponent implements OnDestroy {
 
   isSelectOptionSelected(
     field: DynamicField,
-    option: string | DynamicFieldOption,
+    option: string | number | DynamicFieldOption,
     index: number,
   ): boolean {
     const control = this.form?.get(field.name);
@@ -1480,7 +1483,7 @@ export class DynamicFormComponent implements OnDestroy {
 
   selectOption(
     field: DynamicField,
-    option?: string | DynamicFieldOption,
+    option?: string | number | DynamicFieldOption,
     index = 0,
   ): void {
     const control = this.form.get(field.name);
@@ -1504,7 +1507,7 @@ export class DynamicFormComponent implements OnDestroy {
 
   toggleMultiSelectOption(
     field: DynamicField,
-    option?: string | DynamicFieldOption,
+    option?: string | number | DynamicFieldOption,
     index = 0,
   ): void {
     const control = this.form.get(field.name);
@@ -2026,7 +2029,7 @@ export class DynamicFormComponent implements OnDestroy {
 
   private mapLocationValueToNames(
     value: unknown,
-    options: (string | DynamicFieldOption)[],
+    options: (string | number | DynamicFieldOption)[],
   ): unknown {
     if (this.isEmptyValue(value)) {
       return value;

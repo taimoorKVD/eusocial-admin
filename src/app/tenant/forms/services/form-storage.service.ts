@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { FormField } from '../../form-builder/models/form-field.model';
 import { normalizeFieldOrder } from '../../form-builder/utils/form-field.factory';
+import { toDynamicSelectOptionIds } from '../../form-builder/utils/field-options.utils';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { LocationCacheService } from '../../../services/location-cache.service';
@@ -45,9 +46,15 @@ export class FormStorageService {
       markAsDraft?: boolean;
     }
   ): Observable<StoredFormSchema> {
+    const fields = (data.fields ?? []).map((field) =>
+      field.optionSource?.type === 'dynamic'
+        ? { ...field, options: toDynamicSelectOptionIds(field.options) }
+        : field,
+    );
+
     const schema = {
       sections: data.sections ?? [],
-      fields: data.fields ?? [],
+      fields,
       conditionalRules: data.conditionalRules ?? []
     };
 
