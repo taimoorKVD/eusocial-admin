@@ -30,6 +30,10 @@ import {
 import { FormField, FieldOption, OptionSource, RangeFieldType, RangeTimeFormat } from '../models/form-field.model';
 import { ImageFile } from '../models/image-file.model';
 import { normalizeFieldOption, normalizeStaticSelectFieldOptions } from '../utils/field-options.utils';
+import {
+  CURRENT_USER_DEFAULT_TOKEN,
+  supportsCurrentUserDefault,
+} from '../utils/field-default-value.utils';
 import { buildPlaceholderFromLabel, supportsPlaceholderAutoGeneration } from '../utils/form-field.factory';
 import {
   cloneImageFiles,
@@ -58,6 +62,7 @@ import {
   DEFAULT_RANGE_STEP,
   normalizeRangeTimeFormat,
   normalizeRangeType,
+  normalizeRangeValue,
   resetRangeTypeSpecificConfig,
   sanitizeDateBounds,
   sanitizeRangeBounds,
@@ -72,6 +77,9 @@ import {
   normalizeMeasurementUnitCode,
   normalizeMeasurementUnitMode,
 } from '../../../shared/dynamic-form/measurement-units';
+import {
+  normalizeMeasurementValue,
+} from '../../../shared/dynamic-form/measurement-field.utils';
 import {
   getLocationFieldDeleteBlockReason,
   isDynamicSelectOptionsHiddenForModule,
@@ -213,6 +221,7 @@ export class FieldSettingsComponent {
       ...this._field,
       isShow: this._field.isShow !== false,
       isReadonly: this._field.isReadonly === true,
+      defaultValue: this._field.defaultValue,
       options: [...(this._field.options || [])],
       optionSource: this.resolveEmittedOptionSource(),
       referenceImages:
@@ -675,6 +684,203 @@ export class FieldSettingsComponent {
     return this.isRangeField && this.rangeTypeValue === 'time';
   }
 
+  get isTextareaField(): boolean {
+    return this._field?.type === 'textarea';
+  }
+
+  get isRadioField(): boolean {
+    return this._field?.type === 'radio';
+  }
+
+  get isCheckboxField(): boolean {
+    return this._field?.type === 'checkbox';
+  }
+
+  get isTextLikeValueField(): boolean {
+    const type = this._field?.type;
+    return (
+      type === 'text' ||
+      type === 'email' ||
+      type === 'barcode' ||
+      type === 'qr-code'
+    );
+  }
+
+  get supportsConfiguredValue(): boolean {
+    if (!this._field) {
+      return false;
+    }
+    // Image / signature / file have no Value configuration (file may appear via fieldTypeName).
+    const type = String(this._field.type);
+    const typeName = String(this._field.fieldTypeName ?? '').toLowerCase();
+    return !(
+      type === 'image' ||
+      type === 'signature' ||
+      type === 'file' ||
+      typeName === 'file' ||
+      typeName === 'image' ||
+      typeName === 'signature'
+    );
+  }
+
+  get isStaticOptionValueField(): boolean {
+    return (
+      (this.isSelectField && this.optionsMode === 'static') ||
+      this.isRadioField ||
+      this.isCheckboxField
+    );
+  }
+
+  get supportsCurrentUserValue(): boolean {
+    return !!this._field && supportsCurrentUserDefault(this._field);
+  }
+
+  readonly currentUserDefaultToken = CURRENT_USER_DEFAULT_TOKEN;
+
+  get configuredDefaultValue(): unknown {
+    return this._field?.defaultValue ?? '';
+  }
+
+  get configuredValueText(): string {
+    const value = this._field?.defaultValue;
+    if (value == null || value === '') {
+      return '';
+    }
+    if (typeof value === 'object') {
+      return '';
+    }
+    return String(value);
+  }
+
+  get staticValueOptions(): Array<{ label: string; value: string | number }> {
+    return (this._field?.options || [])
+      .map((option, index) => {
+        if (typeof option === 'string' || typeof option === 'number') {
+          return { label: String(option), value: option };
+        }
+        const normalized = normalizeFieldOption(option);
+        if (!normalized) {
+          return null;
+        }
+        return {
+          label: normalized.label,
+          value: normalized.value ?? index,
+        };
+      })
+      .filter((option): option is { label: string; value: string | number } => !!option);
+  }
+
+  get configuredRangeFrom(): string {
+    const range = normalizeRangeValue(this._field?.defaultValue);
+    return range.from == null || range.from === '' ? '' : String(range.from);
+  }
+
+  get configuredRangeTo(): string {
+    const range = normalizeRangeValue(this._field?.defaultValue);
+    return range.to == null || range.to === '' ? '' : String(range.to);
+  }
+
+  get configuredMeasurementAmount(): string {
+    if (!this._field || !isMeasurementFieldType(this._field.type)) {
+      return '';
+    }
+    const current = normalizeMeasurementValue(this._field.defaultValue, this._field.type, {
+      unitMode: normalizeMeasurementUnitMode(this._field.unitMode),
+      unit: this._field.unit,
+    });
+    return current.value == null ? '' : String(current.value);
+  }
+
+  onConfiguredDefaultValueChange(value: unknown): void {
+    if (!this._field || !this.isFieldEditable || !this.supportsConfiguredValue) {
+      return;
+    }
+    this._field.defaultValue = value ?? '';
+    this.onChange();
+  }
+
+  compareConfiguredOptionValues = (a: unknown, b: unknown): boolean =>
+    String(a ?? '') === String(b ?? '');
+
+  onConfiguredValueTextChange(value: string | number): void {
+    if (!this._field || !this.isFieldEditable || !this.supportsConfiguredValue) {
+      return;
+    }
+    this._field.defaultValue = value == null ? '' : value;
+    this.onChange();
+  }
+
+  isConfiguredMultiValueSelected(optionValue: string | number): boolean {
+    const current = this._field?.defaultValue;
+    if (!Array.isArray(current)) {
+      return String(current ?? '') === String(optionValue);
+    }
+    return current.some((item) => String(item) === String(optionValue));
+  }
+
+  toggleConfiguredMultiValue(optionValue: string | number, checked: boolean): void {
+    if (!this._field || !this.isFieldEditable || !this.supportsConfiguredValue) {
+      return;
+    }
+
+    const current = Array.isArray(this._field.defaultValue)
+      ? [...this._field.defaultValue]
+      : [];
+
+    const next = checked
+      ? current.some((item) => String(item) === String(optionValue))
+        ? current
+        : [...current, optionValue]
+      : current.filter((item) => String(item) !== String(optionValue));
+
+    this._field.defaultValue = next;
+    this.onChange();
+  }
+
+  onConfiguredRangeSideChange(side: 'from' | 'to', raw: string | number): void {
+    if (!this._field || !this.isFieldEditable || !this.isRangeField) {
+      return;
+    }
+
+    const current = normalizeRangeValue(this._field.defaultValue);
+    let nextSide: string | number | null =
+      raw === '' || raw == null ? null : raw;
+
+    if (this.isNumberRange && typeof nextSide === 'string') {
+      const parsed = Number(nextSide);
+      nextSide = nextSide.trim() === '' || !Number.isFinite(parsed) ? null : parsed;
+    }
+
+    this._field.defaultValue = {
+      ...current,
+      [side]: nextSide,
+    };
+    this.onChange();
+  }
+
+  onConfiguredMeasurementAmountChange(raw: string | number): void {
+    if (!this._field || !this.isFieldEditable || !isMeasurementFieldType(this._field.type)) {
+      return;
+    }
+
+    const current = normalizeMeasurementValue(this._field.defaultValue, this._field.type, {
+      unitMode: normalizeMeasurementUnitMode(this._field.unitMode),
+      unit: this._field.unit,
+    });
+
+    const text = String(raw ?? '').trim();
+    const amount = text === '' ? null : Number(text);
+
+    this._field.defaultValue = {
+      value: amount != null && Number.isFinite(amount) ? amount : null,
+      unit:
+        current.unit ??
+        normalizeMeasurementUnitCode(this._field.type, this._field.unit) ??
+        getDefaultUnitCode(this._field.type),
+    };
+    this.onChange();
+  }
+
   get rangeStepValue(): number {
     const step = Number(this._field?.rangeStep);
     return Number.isFinite(step) && step > 0 ? step : DEFAULT_RANGE_STEP;
@@ -1095,6 +1301,37 @@ export class FieldSettingsComponent {
         .toLowerCase()
         .includes(query),
     );
+  }
+
+  /** Value picker: prefer selected dynamic options; fall back to loaded module options. */
+  get configuredDynamicValueOptions(): FieldOption[] {
+    const selected = (this._field?.options || [])
+      .map((option, index) => {
+        if (typeof option === 'string' || typeof option === 'number') {
+          const match = this.availableDynamicOptions.find(
+            (item) => String(item.value) === String(option),
+          );
+          return {
+            label: match?.label ?? String(option),
+            value: match?.value ?? option,
+          } as FieldOption;
+        }
+        const normalized = normalizeFieldOption(option);
+        if (!normalized) {
+          return null;
+        }
+        return {
+          label: normalized.label,
+          value: normalized.value ?? index,
+        } as FieldOption;
+      })
+      .filter((option): option is FieldOption => !!option);
+
+    if (selected.length) {
+      return selected;
+    }
+
+    return this.availableDynamicOptions;
   }
 
   onDynamicOptionsSearch(event: Event): void {
@@ -1518,7 +1755,10 @@ export class FieldSettingsComponent {
   private assignField(value: FormField): void {
     this._field = {
       ...value,
-      defaultValue: value.defaultValue ?? value.value ?? '',
+      defaultValue:
+        value.defaultValue !== undefined && value.defaultValue !== null
+          ? value.defaultValue
+          : '',
       width: value.width ?? 12,
       validations: value.validations || {},
       condition: serializeConditionalLogic(value.condition),

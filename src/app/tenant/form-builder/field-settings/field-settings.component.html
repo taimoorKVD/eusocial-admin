@@ -54,6 +54,18 @@
       <label for="field-required" class="text-sm text-slate-700">Required field</label>
     </div>
 
+    <div class="flex items-center gap-2">
+      <input
+        id="field-is-readonly"
+        type="checkbox"
+        [(ngModel)]="field.isReadonly"
+        (change)="onChange()"
+        [disabled]="!isFieldEditable"
+        class="field-settings-checkbox"
+      />
+      <label for="field-is-readonly" class="text-sm text-slate-700">Readonly field</label>
+    </div>
+
     <div *ngIf="isNumberField" class="flex items-center gap-2">
       <input
         id="field-allow-decimal"
@@ -65,28 +77,265 @@
       />
       <label for="field-allow-decimal" class="text-sm text-slate-700">Allow Decimal Point</label>
     </div>
+  </div>
 
-    <!-- <div class="flex items-center gap-2">
-      <input
-        id="field-is-show"
-        type="checkbox"
-        [ngModel]="field.isShow !== false"
-        (ngModelChange)="onShowChange($event)"
-        class="field-settings-checkbox"
-      />
-      <label for="field-is-show" class="text-sm text-slate-700">Show field</label>
+  <div *ngIf="supportsConfiguredValue" class="space-y-2">
+    <label class="mb-1.5 block text-xs font-medium text-slate-600">Value</label>
+    <p class="text-[11px] leading-relaxed text-slate-500">
+      Pre-fill this field when the form is shown. With Readonly enabled, employees can see it but cannot change it.
+    </p>
+
+    <!-- Text-like -->
+    <input
+      *ngIf="isTextLikeValueField"
+      type="text"
+      [ngModel]="configuredValueText"
+      (ngModelChange)="onConfiguredValueTextChange($event)"
+      [disabled]="!isFieldEditable"
+      [attr.maxlength]="characterLimitValue || null"
+      class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+      placeholder="Enter value"
+    />
+
+    <textarea
+      *ngIf="isTextareaField"
+      rows="3"
+      [ngModel]="configuredValueText"
+      (ngModelChange)="onConfiguredValueTextChange($event)"
+      [disabled]="!isFieldEditable"
+      [attr.maxlength]="characterLimitValue || null"
+      class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+      placeholder="Enter value"
+    ></textarea>
+
+    <input
+      *ngIf="isNumberField"
+      type="number"
+      [attr.step]="field.allowDecimal === true ? 'any' : '1'"
+      [ngModel]="configuredValueText"
+      (ngModelChange)="onConfiguredValueTextChange($event)"
+      [disabled]="!isFieldEditable"
+      class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+      placeholder="Enter number"
+    />
+
+    <input
+      *ngIf="isDateField"
+      appFlatpickr
+      [fpValue]="configuredValueText || null"
+      (fpChange)="onConfiguredValueTextChange($event || '')"
+      [fpDisabled]="!isFieldEditable"
+      class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100"
+      placeholder="Select date"
+    />
+
+    <input
+      *ngIf="isTimeField"
+      type="time"
+      [ngModel]="configuredValueText"
+      (ngModelChange)="onConfiguredValueTextChange($event)"
+      [disabled]="!isFieldEditable"
+      class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100"
+    />
+
+    <!-- Static / radio / checkbox option-based -->
+    <ng-container *ngIf="isStaticOptionValueField">
+      <select
+        *ngIf="isSelectField && selectionType !== 'multi' && optionsMode === 'static'"
+        [ngModel]="configuredDefaultValue"
+        (ngModelChange)="onConfiguredDefaultValueChange($event)"
+        [compareWith]="compareConfiguredOptionValues"
+        [disabled]="!isFieldEditable"
+        class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100"
+      >
+        <option [ngValue]="''">Select value</option>
+        <option *ngFor="let opt of staticValueOptions" [ngValue]="opt.value">{{ opt.label }}</option>
+      </select>
+
+      <div *ngIf="isSelectField && selectionType === 'multi' && optionsMode === 'static'" class="space-y-1.5">
+        <label
+          *ngFor="let opt of staticValueOptions"
+          class="flex items-center gap-2 text-sm text-slate-700"
+        >
+          <input
+            type="checkbox"
+            class="field-settings-checkbox"
+            [checked]="isConfiguredMultiValueSelected(opt.value)"
+            (change)="toggleConfiguredMultiValue(opt.value, $any($event.target).checked)"
+            [disabled]="!isFieldEditable"
+          />
+          <span>{{ opt.label }}</span>
+        </label>
+      </div>
+
+      <div *ngIf="isRadioField" class="space-y-1.5">
+        <label
+          *ngFor="let opt of staticValueOptions"
+          class="flex items-center gap-2 text-sm text-slate-700"
+        >
+          <input
+            type="radio"
+            name="field-configured-value-radio"
+            class="field-settings-checkbox"
+            [value]="opt.value"
+            [ngModel]="configuredDefaultValue"
+            (ngModelChange)="onConfiguredDefaultValueChange($event)"
+            [disabled]="!isFieldEditable"
+          />
+          <span>{{ opt.label }}</span>
+        </label>
+      </div>
+
+      <div *ngIf="isCheckboxField" class="space-y-1.5">
+        <label
+          *ngFor="let opt of staticValueOptions"
+          class="flex items-center gap-2 text-sm text-slate-700"
+        >
+          <input
+            type="checkbox"
+            class="field-settings-checkbox"
+            [checked]="isConfiguredMultiValueSelected(opt.value)"
+            (change)="toggleConfiguredMultiValue(opt.value, $any($event.target).checked)"
+            [disabled]="!isFieldEditable"
+          />
+          <span>{{ opt.label }}</span>
+        </label>
+      </div>
+    </ng-container>
+
+    <!-- Dynamic select -->
+    <ng-container *ngIf="isSelectField && optionsMode === 'dynamic'">
+      <select
+        *ngIf="selectionType !== 'multi'"
+        [ngModel]="configuredDefaultValue"
+        (ngModelChange)="onConfiguredDefaultValueChange($event)"
+        [compareWith]="compareConfiguredOptionValues"
+        [disabled]="!isFieldEditable || !selectedModuleSlug"
+        class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100"
+      >
+        <option [ngValue]="''">Select value</option>
+        <option *ngIf="supportsCurrentUserValue" [ngValue]="currentUserDefaultToken">
+          Current logged-in user
+        </option>
+        <option *ngFor="let opt of configuredDynamicValueOptions" [ngValue]="opt.value">
+          {{ opt.label }}
+        </option>
+      </select>
+
+      <div *ngIf="selectionType === 'multi'" class="max-h-40 space-y-1.5 overflow-y-auto rounded-md border border-slate-100 bg-white px-2.5 py-2">
+        <label
+          *ngIf="supportsCurrentUserValue"
+          class="flex items-center gap-2 text-sm text-slate-700"
+        >
+          <input
+            type="checkbox"
+            class="field-settings-checkbox"
+            [checked]="isConfiguredMultiValueSelected(currentUserDefaultToken)"
+            (change)="toggleConfiguredMultiValue(currentUserDefaultToken, $any($event.target).checked)"
+            [disabled]="!isFieldEditable"
+          />
+          <span>Current logged-in user</span>
+        </label>
+        <label
+          *ngFor="let opt of configuredDynamicValueOptions"
+          class="flex items-center gap-2 text-sm text-slate-700"
+        >
+          <input
+            type="checkbox"
+            class="field-settings-checkbox"
+            [checked]="isConfiguredMultiValueSelected(opt.value)"
+            (change)="toggleConfiguredMultiValue(opt.value, $any($event.target).checked)"
+            [disabled]="!isFieldEditable"
+          />
+          <span>{{ opt.label }}</span>
+        </label>
+        <p *ngIf="!configuredDynamicValueOptions.length" class="text-xs text-slate-400">
+          Select a module and options first.
+        </p>
+      </div>
+    </ng-container>
+
+    <input
+      *ngIf="isRatingField"
+      type="number"
+      min="1"
+      [max]="field.maxRating || 5"
+      [ngModel]="configuredValueText"
+      (ngModelChange)="onConfiguredValueTextChange($event)"
+      [disabled]="!isFieldEditable"
+      class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100"
+      placeholder="Rating value"
+    />
+
+    <div *ngIf="isRangeField" class="grid grid-cols-2 gap-2">
+      <div>
+        <label class="mb-1 block text-[11px] font-medium text-slate-600">From</label>
+        <input
+          *ngIf="isNumberRange"
+          type="number"
+          [ngModel]="configuredRangeFrom"
+          (ngModelChange)="onConfiguredRangeSideChange('from', $event)"
+          [disabled]="!isFieldEditable"
+          class="w-full rounded-md border border-slate-200 px-2.5 py-1.5 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100"
+        />
+        <input
+          *ngIf="isDateRange"
+          appFlatpickr
+          [fpValue]="configuredRangeFrom || null"
+          (fpChange)="onConfiguredRangeSideChange('from', $event || '')"
+          [fpDisabled]="!isFieldEditable"
+          class="w-full rounded-md border border-slate-200 px-2.5 py-1.5 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100"
+        />
+        <input
+          *ngIf="isTimeRange"
+          type="time"
+          [ngModel]="configuredRangeFrom"
+          (ngModelChange)="onConfiguredRangeSideChange('from', $event)"
+          [disabled]="!isFieldEditable"
+          class="w-full rounded-md border border-slate-200 px-2.5 py-1.5 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100"
+        />
+      </div>
+      <div>
+        <label class="mb-1 block text-[11px] font-medium text-slate-600">To</label>
+        <input
+          *ngIf="isNumberRange"
+          type="number"
+          [ngModel]="configuredRangeTo"
+          (ngModelChange)="onConfiguredRangeSideChange('to', $event)"
+          [disabled]="!isFieldEditable"
+          class="w-full rounded-md border border-slate-200 px-2.5 py-1.5 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100"
+        />
+        <input
+          *ngIf="isDateRange"
+          appFlatpickr
+          [fpValue]="configuredRangeTo || null"
+          (fpChange)="onConfiguredRangeSideChange('to', $event || '')"
+          [fpDisabled]="!isFieldEditable"
+          class="w-full rounded-md border border-slate-200 px-2.5 py-1.5 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100"
+        />
+        <input
+          *ngIf="isTimeRange"
+          type="time"
+          [ngModel]="configuredRangeTo"
+          (ngModelChange)="onConfiguredRangeSideChange('to', $event)"
+          [disabled]="!isFieldEditable"
+          class="w-full rounded-md border border-slate-200 px-2.5 py-1.5 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100"
+        />
+      </div>
     </div>
 
-    <div class="flex items-center gap-2">
+    <div *ngIf="isMeasurementField" class="grid grid-cols-[1fr_auto] gap-2">
       <input
-        id="field-is-readonly"
-        type="checkbox"
-        [(ngModel)]="field.isReadonly"
-        (change)="onChange()"
-        class="field-settings-checkbox"
+        type="number"
+        step="any"
+        [ngModel]="configuredMeasurementAmount"
+        (ngModelChange)="onConfiguredMeasurementAmountChange($event)"
+        [disabled]="!isFieldEditable"
+        class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100"
+        placeholder="Amount"
       />
-      <label for="field-is-readonly" class="text-sm text-slate-700">Readonly field</label>
-    </div> -->
+      <span class="flex items-center text-sm text-slate-500">{{ field.unit || '' }}</span>
+    </div>
   </div>
 
   <div *ngIf="isImageField" class="space-y-3">

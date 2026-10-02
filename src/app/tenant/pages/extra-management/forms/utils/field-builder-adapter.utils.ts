@@ -22,6 +22,7 @@ import {
   createFieldFromTemplate,
   toFieldName,
 } from '../../../../form-builder/utils/form-field.factory';
+import { isCurrentUserDefaultValue } from '../../../../form-builder/utils/field-default-value.utils';
 import {
   isMultiSelectionTypeHiddenForModule,
   resolveBuilderLocationKind,
@@ -117,7 +118,7 @@ export function mapConfigFieldToBuilder(field: FormFieldConfig): FormField {
     name: field.name,
     placeholder: field.placeholder ?? '',
     required: field.required,
-    isReadonly: field.readonly === true,
+    isReadonly: field.readonly === true || (field as { isReadonly?: boolean }).isReadonly === true,
     isEditable: field.isDefault ? false : field.isEditable !== false,
     isShow: field.isShow !== false,
     options: builderOptions,
@@ -200,7 +201,7 @@ export function mapBuilderFieldToConfig(
     options: mappedOptions.length ? mappedOptions : undefined,
     width: mapBuilderWidthToPercent(field.width),
     isDefault: false,
-    value: normalizeConfigFieldValue(field.value),
+    value: resolveConfigPreviewValue(field),
     optionSource: cloneOptionSource(field.optionSource),
     selectionType: type === 'select' ? resolveBuilderSelectionType(field) : undefined,
     fieldTypeName: field.fieldTypeName ?? type,
@@ -404,6 +405,36 @@ function normalizeConfigFieldValue(
   }
 
   return String(value);
+}
+
+/** Canvas preview prefers runtime value, then configured defaultValue. */
+function resolveConfigPreviewValue(field: FormField): string | string[] | undefined {
+  if (field.value != null && field.value !== '') {
+    return normalizeConfigFieldValue(field.value);
+  }
+
+  const configured = field.defaultValue;
+  if (configured == null || configured === '') {
+    return undefined;
+  }
+
+  // Keep Current User token out of the canvas as a raw sentinel string.
+  if (isCurrentUserDefaultValue(configured)) {
+    return 'Current logged-in user';
+  }
+
+  if (typeof configured === 'string' || typeof configured === 'number') {
+    return String(configured);
+  }
+
+  if (Array.isArray(configured)) {
+    return configured.map((item) =>
+      isCurrentUserDefaultValue(item) ? 'Current logged-in user' : String(item),
+    );
+  }
+
+  // Range / measurement objects — section preview already JSON-parses string values.
+  return JSON.stringify(configured);
 }
 
 /** Convert FormField 12-col width to a CSS percentage used by section layout. */

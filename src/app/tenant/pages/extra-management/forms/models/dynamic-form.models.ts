@@ -879,13 +879,15 @@ export function stripFieldId(field: FormFieldConfig): Omit<FormFieldConfig, 'id'
   id?: string;
   condition?: FieldCondition;
   optionSource?: FormFieldConfig['optionSource'];
+  defaultValue?: unknown;
 } {
   const {
     fieldTypeName: _fieldTypeName,
     isEditable: _isEditable,
     isShow: _isShow,
     validations: _validations,
-    defaultValue: _defaultValue,
+    value: _previewValue,
+    defaultValue,
     options,
     condition,
     optionSource,
@@ -906,12 +908,19 @@ export function stripFieldId(field: FormFieldConfig): Omit<FormFieldConfig, 'id'
             : String(opt.label ?? opt.value),
         );
 
+  const hasDefaultValue =
+    defaultValue !== undefined &&
+    defaultValue !== null &&
+    !(typeof defaultValue === 'string' && defaultValue === '') &&
+    !(Array.isArray(defaultValue) && defaultValue.length === 0);
+
   return {
     ...rest,
     ...(id ? { id } : {}),
     ...(condition ? { condition } : {}),
     ...(optionSource ? { optionSource } : {}),
     ...(normalizedOptions ? { options: normalizedOptions } : {}),
+    ...(hasDefaultValue ? { defaultValue } : {}),
   };
 }
 
