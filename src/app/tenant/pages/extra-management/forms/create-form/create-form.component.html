@@ -131,38 +131,35 @@
             </button>
           </div>
 
-          <nav
-            class="grid grid-cols-4 border-b border-[#b2b2b2] bg-white"
-            aria-label="Form builder tabs"
-          >
+          <nav class="flex flex-wrap items-center justify-between gap-1 border-b border-[#b2b2b2] bg-white px-1 sm:px-2" aria-label="Form builder tabs">
             <button
               type="button"
-              class="min-w-0 px-1 py-3 text-center text-[11px] font-medium leading-snug tracking-[0.32px] transition focus:outline-none sm:px-2 sm:text-xs"
-              [ngClass]="builderActiveTab() === 'fields' ? 'border-b-2 border-[#FF9015] text-[#FF9015]' : 'border-b-2 border-transparent text-slate-500 hover:bg-slate-100'"
+              class="flex-1 px-2 py-3 text-center text-sm font-medium transition focus:outline-none sm:px-3 sm:py-4"
+              [ngClass]="builderActiveTab() === 'fields' ? 'border-b border-[#FF9015] text-[16px] font-medium tracking-[0.32px] text-[#FF9015]' : 'text-slate-500 hover:bg-slate-100'"
               (click)="onBuilderActiveTabChange('fields')"
             >
               Input Fields
             </button>
             <button
               type="button"
-              class="min-w-0 px-1 py-3 text-center text-[11px] font-medium leading-snug tracking-[0.32px] transition focus:outline-none sm:px-2 sm:text-xs"
-              [ngClass]="builderActiveTab() === 'settings' ? 'border-b-2 border-[#FF9015] text-[#FF9015]' : 'border-b-2 border-transparent text-slate-500 hover:bg-slate-100'"
+              class="flex-1 px-2 py-3 text-center text-sm font-medium transition focus:outline-none sm:px-3 sm:py-4"
+              [ngClass]="builderActiveTab() === 'settings' ? 'border-b border-[#FF9015] text-[16px] font-medium tracking-[0.32px] text-[#FF9015]' : 'text-slate-500 hover:bg-slate-100'"
               (click)="onBuilderActiveTabChange('settings')"
             >
               Input Customization
             </button>
             <button
               type="button"
-              class="min-w-0 px-1 py-3 text-center text-[11px] font-medium leading-snug tracking-[0.32px] transition focus:outline-none sm:px-2 sm:text-xs"
-              [ngClass]="builderActiveTab() === 'logic' ? 'border-b-2 border-[#FF9015] text-[#FF9015]' : 'border-b-2 border-transparent text-slate-500 hover:bg-slate-100'"
+              class="flex-1 px-2 py-3 text-center text-sm font-medium transition focus:outline-none sm:px-3 sm:py-4"
+              [ngClass]="builderActiveTab() === 'logic' ? 'border-b border-[#FF9015] text-[16px] font-medium tracking-[0.32px] text-[#FF9015]' : 'text-slate-500 hover:bg-slate-100'"
               (click)="onBuilderActiveTabChange('logic')"
             >
               Automation Rules
             </button>
             <button
               type="button"
-              class="min-w-0 px-1 py-3 text-center text-[11px] font-medium leading-snug tracking-[0.32px] transition focus:outline-none sm:px-2 sm:text-xs"
-              [ngClass]="builderActiveTab() === 'versions' ? 'border-b-2 border-[#FF9015] text-[#FF9015]' : 'border-b-2 border-transparent text-slate-500 hover:bg-slate-100'"
+              class="flex-1 px-2 py-3 text-center text-sm font-medium transition focus:outline-none sm:px-3 sm:py-4"
+              [ngClass]="builderActiveTab() === 'versions' ? 'border-b border-[#FF9015] text-[16px] font-medium tracking-[0.32px] text-[#FF9015]' : 'text-slate-500 hover:bg-slate-100'"
               (click)="onBuilderActiveTabChange('versions')"
             >
               Versions
