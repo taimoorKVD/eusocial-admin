@@ -24,9 +24,57 @@ export const CONDITION_ACTIONS = [
   'optional',
   'enable',
   'disable',
+  'setValue',
 ] as const;
 
 export type ConditionActionType = (typeof CONDITION_ACTIONS)[number];
+
+export const VALUE_SOURCE_KINDS = [
+  'fixed',
+  'field',
+  'relatedData',
+  'expression',
+] as const;
+
+export type ValueSourceKind = (typeof VALUE_SOURCE_KINDS)[number];
+
+export const EXPRESSION_OPS = [
+  'multiply',
+  'add',
+  'subtract',
+  'divide',
+] as const;
+
+export type ExpressionOp = (typeof EXPRESSION_OPS)[number];
+
+export interface FixedValueSource {
+  kind: 'fixed';
+  value?: unknown;
+}
+
+export interface FieldValueSource {
+  kind: 'field';
+  fieldId: string;
+}
+
+export interface RelatedDataValueSource {
+  kind: 'relatedData';
+  sourceFieldId: string;
+  property: string;
+}
+
+export interface ExpressionValueSource {
+  kind: 'expression';
+  op: ExpressionOp;
+  left: ValueSource;
+  right: ValueSource;
+}
+
+export type ValueSource =
+  | FixedValueSource
+  | FieldValueSource
+  | RelatedDataValueSource
+  | ExpressionValueSource;
 
 export interface ConditionPredicate {
   fieldId: string;
@@ -41,6 +89,8 @@ export interface ConditionGroup {
 
 export interface ConditionAction {
   type: ConditionActionType;
+  /** Present when `type === 'setValue'`. */
+  source?: ValueSource;
 }
 
 /**
@@ -78,6 +128,18 @@ export interface ConditionalLogicFieldLike {
   isReadonly?: boolean;
   readonly?: boolean;
   options?: unknown[];
+  selectionType?: 'single' | 'multi' | string;
+  unitMode?: string;
+  unit?: string;
+  optionSource?: {
+    type?: string;
+    endpoint?: string;
+    response?: {
+      labelKey?: string;
+      valueKey?: string;
+      dataPath?: string;
+    };
+  } | null;
   condition?: FieldCondition | null;
 }
 
@@ -105,6 +167,21 @@ export const CONDITION_ACTION_LABELS: Record<ConditionActionType, string> = {
   optional: 'Make Optional',
   enable: 'Enable Field',
   disable: 'Disable Field',
+  setValue: 'Set Value',
+};
+
+export const VALUE_SOURCE_KIND_LABELS: Record<ValueSourceKind, string> = {
+  fixed: 'Fixed Value',
+  field: 'Form Field',
+  relatedData: 'Related Data',
+  expression: 'Calculation',
+};
+
+export const EXPRESSION_OP_LABELS: Record<ExpressionOp, string> = {
+  multiply: 'Multiply (×)',
+  add: 'Add (+)',
+  subtract: 'Subtract (−)',
+  divide: 'Divide (÷)',
 };
 
 export const OPERATORS_WITHOUT_VALUE: ReadonlySet<ConditionOperator> = new Set([
@@ -112,4 +189,23 @@ export const OPERATORS_WITHOUT_VALUE: ReadonlySet<ConditionOperator> = new Set([
   'isNotEmpty',
   'checked',
   'unchecked',
+]);
+
+/** Field types that can receive an automatic setValue result. */
+export const SET_VALUE_COMPATIBLE_TYPES: ReadonlySet<string> = new Set([
+  'text',
+  'email',
+  'textarea',
+  'number',
+  'price',
+  'length',
+  'mass',
+  'volume',
+  'temperature',
+  'date',
+  'time',
+  'select',
+  'radio',
+  'barcode',
+  'qr-code',
 ]);

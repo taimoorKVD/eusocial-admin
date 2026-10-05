@@ -15,16 +15,32 @@ import {
   CONDITION_OPERATORS,
   ConditionActionType,
   ConditionOperator,
+  EXPRESSION_OP_LABELS,
+  EXPRESSION_OPS,
+  ExpressionOp,
   FieldConditionalLogic,
+  VALUE_SOURCE_KIND_LABELS,
+  VALUE_SOURCE_KINDS,
+  ValueSource,
+  ValueSourceKind,
   cloneConditionalLogic,
+  collectValueSourceFieldIds,
+  createDefaultValueSource,
   createEmptyConditionalLogic,
+  filterRelatedPropertiesForTargetKind,
   getPrimaryActionType,
   getPrimaryPredicate,
+  getPrimarySetValueSource,
   getValidConditionalSourceFields,
+  isCompatibleSetValueSourceField,
+  normalizeValueSource,
   operatorRequiresValue,
+  resolveSetValueFieldKind,
   serializeConditionalLogic,
   setPrimaryActionType,
   setPrimaryPredicate,
+  setPrimarySetValueSource,
+  supportsSetValueFieldType,
   wouldCreateCircularDependency,
 } from '../../../shared/conditional-logic';
 import { FormField, FieldOption, OptionSource, RangeFieldType, RangeTimeFormat } from '../models/form-field.model';
@@ -47,6 +63,7 @@ import {
   sanitizeImageFieldConfig,
 } from '../utils/image-field.utils';
 import { FormImageUploadService } from '../services/form-image-upload.service';
+import { normalizeOptionSource } from '../utils/option-source.utils';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import {
@@ -192,6 +209,9 @@ export class FieldSettingsComponent {
   private loadingModuleSlug: string | null = null;
   private apiLoadingCount = 0;
   private readonly moduleDataBySlug = new Map<string, ModuleDataCache>();
+  private readonly relatedPropertyCache = new Map<string, ModuleColumnOption[]>();
+  private readonly relatedRecordsCache = new Map<string, Record<string, unknown>[]>();
+  private readonly relatedPropertyLoading = new Set<string>();
 
   optionsMode: SelectOptionsMode = 'static';
   availableModules: FormModuleListItem[] = [];
@@ -1224,10 +1244,28 @@ export class FieldSettingsComponent {
     label: CONDITION_OPERATOR_LABELS[value],
   }));
 
-  readonly conditionActions = CONDITION_ACTIONS.map(value => ({
+  readonly valueSourceKinds = VALUE_SOURCE_KINDS.map(value => ({
     value,
-    label: CONDITION_ACTION_LABELS[value],
+    label: VALUE_SOURCE_KIND_LABELS[value],
   }));
+
+  readonly expressionOps = EXPRESSION_OPS.map(value => ({
+    value,
+    label: EXPRESSION_OP_LABELS[value],
+  }));
+
+  get conditionActions(): Array<{ value: ConditionActionType; label: string }> {
+    const actions = CONDITION_ACTIONS.map(value => ({
+      value,
+      label: CONDITION_ACTION_LABELS[value],
+    }));
+
+    if (!supportsSetValueFieldType(this._field?.type)) {
+      return actions.filter(action => action.value !== 'setValue');
+    }
+
+    return actions;
+  }
 
   get conditionEnabled(): boolean {
     return this.conditionEditor.enabled;
@@ -1317,6 +1355,9 @@ export class FieldSettingsComponent {
         : [{ type: 'show' }],
     };
     this._field.condition = this.conditionEditor;
+    if (enabled && getPrimaryActionType(this.conditionEditor) === 'setValue') {
+      this.prefetchSetValueRelatedProperties();
+    }
     this.onChange();
   }
 
@@ -1371,9 +1412,477 @@ export class FieldSettingsComponent {
       return;
     }
 
+    if (type === this.conditionAction) {
+      return;
+    }
+
+    if (type === 'setValue' && !supportsSetValueFieldType(this._field.type)) {
+      this.toastr.warning('Set Value is not available for this field type.');
+      return;
+    }
+
     this.conditionEditor = setPrimaryActionType(this.conditionEditor, type);
     this._field.condition = this.conditionEditor;
+
+    if (type === 'setValue') {
+      this.prefetchSetValueRelatedProperties();
+    }
+
     this.onChange();
+  }
+
+  get conditionUsesSetValue(): boolean {
+    return this.conditionAction === 'setValue';
+  }
+
+  get setValueSource(): ValueSource {
+    return (
+      getPrimarySetValueSource(this.conditionEditor) ??
+      createDefaultValueSource('relatedData')
+    );
+  }
+
+  get setValueSourceKind(): ValueSourceKind {
+    return this.setValueSource.kind;
+  }
+
+  get setValueFixedValue(): unknown {
+    const source = this.setValueSource;
+    return source.kind === 'fixed' ? (source.value ?? '') : '';
+  }
+
+  get setValueFieldId(): string {
+    const source = this.setValueSource;
+    return source.kind === 'field' ? source.fieldId : '';
+  }
+
+  get setValueRelatedSourceFieldId(): string {
+    const source = this.setValueSource;
+    return source.kind === 'relatedData' ? source.sourceFieldId : '';
+  }
+
+  get setValueRelatedProperty(): string {
+    const source = this.setValueSource;
+    return source.kind === 'relatedData' ? source.property : '';
+  }
+
+  get setValueExpressionOp(): ExpressionOp {
+    const source = this.setValueSource;
+    return source.kind === 'expression' ? source.op : 'multiply';
+  }
+
+  get setValueExpressionLeft(): ValueSource {
+    const source = this.setValueSource;
+    return source.kind === 'expression'
+      ? source.left
+      : createDefaultValueSource('relatedData');
+  }
+
+  get setValueExpressionRight(): ValueSource {
+    const source = this.setValueSource;
+    return source.kind === 'expression'
+      ? source.right
+      : createDefaultValueSource('field');
+  }
+
+  get setValueExpressionLeftKind(): ValueSourceKind {
+    return this.setValueExpressionLeft.kind;
+  }
+
+  get setValueExpressionRightKind(): ValueSourceKind {
+    return this.setValueExpressionRight.kind;
+  }
+
+  get setValueExpressionLeftFixedValue(): unknown {
+    const source = this.setValueExpressionLeft;
+    return source.kind === 'fixed' ? (source.value ?? '') : '';
+  }
+
+  get setValueExpressionRightFixedValue(): unknown {
+    const source = this.setValueExpressionRight;
+    return source.kind === 'fixed' ? (source.value ?? '') : '';
+  }
+
+  get setValueExpressionLeftFieldId(): string {
+    const source = this.setValueExpressionLeft;
+    return source.kind === 'field' ? source.fieldId : '';
+  }
+
+  get setValueExpressionRightFieldId(): string {
+    const source = this.setValueExpressionRight;
+    return source.kind === 'field' ? source.fieldId : '';
+  }
+
+  get setValueExpressionLeftRelatedSourceFieldId(): string {
+    const source = this.setValueExpressionLeft;
+    return source.kind === 'relatedData' ? source.sourceFieldId : '';
+  }
+
+  get setValueExpressionRightRelatedSourceFieldId(): string {
+    const source = this.setValueExpressionRight;
+    return source.kind === 'relatedData' ? source.sourceFieldId : '';
+  }
+
+  get setValueExpressionLeftRelatedProperty(): string {
+    const source = this.setValueExpressionLeft;
+    return source.kind === 'relatedData' ? source.property : '';
+  }
+
+  get setValueExpressionRightRelatedProperty(): string {
+    const source = this.setValueExpressionRight;
+    return source.kind === 'relatedData' ? source.property : '';
+  }
+
+  get dynamicConditionSourceFields(): FormField[] {
+    return this.schemaSignal().filter(field => {
+      if (field.id === this._field?.id || field.type !== 'select') {
+        return false;
+      }
+      const source = normalizeOptionSource(field.optionSource);
+      return source?.type === 'dynamic' && !!source.endpoint;
+    });
+  }
+
+  get setValueFormFields(): FormField[] {
+    if (!this._field) {
+      return [];
+    }
+
+    return this.schemaSignal().filter(field => {
+      if (field.id === this._field.id) {
+        return false;
+      }
+      if (!isCompatibleSetValueSourceField(this._field, field)) {
+        return false;
+      }
+      if (
+        wouldCreateCircularDependency(this._field.id, field.id, this.schemaSignal())
+      ) {
+        return false;
+      }
+      return true;
+    });
+  }
+
+  relatedPropertiesFor(sourceFieldId: string | null | undefined): ModuleColumnOption[] {
+    if (!sourceFieldId) {
+      return [];
+    }
+    const columns = this.relatedPropertyCache.get(sourceFieldId) ?? [];
+    const records = this.relatedRecordsCache.get(sourceFieldId) ?? [];
+    const targetKind = resolveSetValueFieldKind(this._field);
+    return filterRelatedPropertiesForTargetKind(columns, records, targetKind);
+  }
+
+  isRelatedPropertiesLoading(sourceFieldId: string | null | undefined): boolean {
+    return !!sourceFieldId && this.relatedPropertyLoading.has(sourceFieldId);
+  }
+
+  onSetValueSourceKindChange(kind: ValueSourceKind): void {
+    if (!this._field || !this.isFieldEditable || !this.conditionUsesSetValue) {
+      return;
+    }
+
+    if (kind === this.setValueSourceKind) {
+      return;
+    }
+
+    this.patchSetValueSource(createDefaultValueSource(kind));
+  }
+
+  onSetValueFixedValueChange(value: unknown): void {
+    if (!this._field || !this.isFieldEditable || !this.conditionUsesSetValue) {
+      return;
+    }
+
+    this.patchSetValueSource({ kind: 'fixed', value });
+  }
+
+  onSetValueFieldChange(fieldId: string): void {
+    if (!this._field || !this.isFieldEditable || !this.conditionUsesSetValue) {
+      return;
+    }
+
+    if (
+      fieldId &&
+      wouldCreateCircularDependency(this._field.id, fieldId, this.schemaSignal())
+    ) {
+      this.toastr.warning('This field would create a circular dependency.');
+      return;
+    }
+
+    this.patchSetValueSource({ kind: 'field', fieldId });
+  }
+
+  onSetValueRelatedSourceChange(sourceFieldId: string): void {
+    if (!this._field || !this.isFieldEditable || !this.conditionUsesSetValue) {
+      return;
+    }
+
+    this.patchSetValueSource({
+      kind: 'relatedData',
+      sourceFieldId,
+      property: '',
+    });
+
+    if (sourceFieldId) {
+      this.loadRelatedProperties(sourceFieldId);
+    }
+  }
+
+  onSetValueRelatedPropertyChange(property: string): void {
+    if (!this._field || !this.isFieldEditable || !this.conditionUsesSetValue) {
+      return;
+    }
+
+    const current = this.setValueSource;
+    const sourceFieldId =
+      current.kind === 'relatedData' ? current.sourceFieldId : '';
+
+    this.patchSetValueSource({
+      kind: 'relatedData',
+      sourceFieldId,
+      property,
+    });
+  }
+
+  onSetValueExpressionOpChange(op: ExpressionOp): void {
+    if (!this._field || !this.isFieldEditable || !this.conditionUsesSetValue) {
+      return;
+    }
+
+    const current = this.setValueSource;
+    if (current.kind !== 'expression') {
+      return;
+    }
+
+    this.patchSetValueSource({
+      ...current,
+      op,
+    });
+  }
+
+  onSetValueExpressionSideKindChange(
+    side: 'left' | 'right',
+    kind: ValueSourceKind,
+  ): void {
+    if (!this._field || !this.isFieldEditable || !this.conditionUsesSetValue) {
+      return;
+    }
+
+    if (kind === 'expression') {
+      return;
+    }
+
+    const current = this.setValueSource;
+    if (current.kind !== 'expression') {
+      return;
+    }
+
+    const nextSide = createDefaultValueSource(kind);
+    this.patchSetValueSource({
+      ...current,
+      left: side === 'left' ? nextSide : current.left,
+      right: side === 'right' ? nextSide : current.right,
+    });
+  }
+
+  onSetValueExpressionSideFieldChange(side: 'left' | 'right', fieldId: string): void {
+    if (!this._field || !this.isFieldEditable || !this.conditionUsesSetValue) {
+      return;
+    }
+
+    if (
+      fieldId &&
+      wouldCreateCircularDependency(this._field.id, fieldId, this.schemaSignal())
+    ) {
+      this.toastr.warning('This field would create a circular dependency.');
+      return;
+    }
+
+    const current = this.setValueSource;
+    if (current.kind !== 'expression') {
+      return;
+    }
+
+    const nextSide: ValueSource = { kind: 'field', fieldId };
+    this.patchSetValueSource({
+      ...current,
+      left: side === 'left' ? nextSide : current.left,
+      right: side === 'right' ? nextSide : current.right,
+    });
+  }
+
+  onSetValueExpressionSideFixedChange(side: 'left' | 'right', value: unknown): void {
+    if (!this._field || !this.isFieldEditable || !this.conditionUsesSetValue) {
+      return;
+    }
+
+    const current = this.setValueSource;
+    if (current.kind !== 'expression') {
+      return;
+    }
+
+    const nextSide: ValueSource = { kind: 'fixed', value };
+    this.patchSetValueSource({
+      ...current,
+      left: side === 'left' ? nextSide : current.left,
+      right: side === 'right' ? nextSide : current.right,
+    });
+  }
+
+  onSetValueExpressionSideRelatedSourceChange(
+    side: 'left' | 'right',
+    sourceFieldId: string,
+  ): void {
+    if (!this._field || !this.isFieldEditable || !this.conditionUsesSetValue) {
+      return;
+    }
+
+    const current = this.setValueSource;
+    if (current.kind !== 'expression') {
+      return;
+    }
+
+    const nextSide: ValueSource = {
+      kind: 'relatedData',
+      sourceFieldId,
+      property: '',
+    };
+    this.patchSetValueSource({
+      ...current,
+      left: side === 'left' ? nextSide : current.left,
+      right: side === 'right' ? nextSide : current.right,
+    });
+
+    if (sourceFieldId) {
+      this.loadRelatedProperties(sourceFieldId);
+    }
+  }
+
+  onSetValueExpressionSideRelatedPropertyChange(
+    side: 'left' | 'right',
+    property: string,
+  ): void {
+    if (!this._field || !this.isFieldEditable || !this.conditionUsesSetValue) {
+      return;
+    }
+
+    const current = this.setValueSource;
+    if (current.kind !== 'expression') {
+      return;
+    }
+
+    const existing = side === 'left' ? current.left : current.right;
+    const sourceFieldId =
+      existing.kind === 'relatedData' ? existing.sourceFieldId : '';
+
+    const nextSide: ValueSource = {
+      kind: 'relatedData',
+      sourceFieldId,
+      property,
+    };
+    this.patchSetValueSource({
+      ...current,
+      left: side === 'left' ? nextSide : current.left,
+      right: side === 'right' ? nextSide : current.right,
+    });
+  }
+
+  operandSourceKinds(
+    _side: 'left' | 'right',
+  ): Array<{ value: ValueSourceKind; label: string }> {
+    return this.valueSourceKinds.filter(option => option.value !== 'expression');
+  }
+
+  private patchSetValueSource(source: ValueSource): void {
+    if (!this._field) {
+      return;
+    }
+
+    const nextSource = normalizeValueSource(source);
+    const currentSource = getPrimarySetValueSource(this.conditionEditor);
+    if (
+      currentSource &&
+      JSON.stringify(currentSource) === JSON.stringify(nextSource)
+    ) {
+      return;
+    }
+
+    this.conditionEditor = setPrimarySetValueSource(this.conditionEditor, nextSource);
+    this._field.condition = this.conditionEditor;
+    this.onChange();
+  }
+
+  private prefetchSetValueRelatedProperties(): void {
+    const source = getPrimarySetValueSource(this.conditionEditor);
+    if (!source) {
+      return;
+    }
+
+    for (const fieldId of collectValueSourceFieldIds(source)) {
+      const field = this.schemaSignal().find(item => item.id === fieldId);
+      if (!field) {
+        continue;
+      }
+      const optionSource = normalizeOptionSource(field.optionSource);
+      if (optionSource?.type === 'dynamic' && optionSource.endpoint) {
+        this.loadRelatedProperties(fieldId);
+      }
+    }
+
+    // Also prefetch explicit relatedData endpoints from expression sides.
+    const visit = (value: ValueSource | null | undefined): void => {
+      if (!value) {
+        return;
+      }
+      if (value.kind === 'relatedData' && value.sourceFieldId) {
+        this.loadRelatedProperties(value.sourceFieldId);
+      }
+      if (value.kind === 'expression') {
+        visit(value.left);
+        visit(value.right);
+      }
+    };
+    visit(source);
+  }
+
+  private loadRelatedProperties(sourceFieldId: string): void {
+    if (!sourceFieldId) {
+      return;
+    }
+    if (
+      this.relatedPropertyCache.has(sourceFieldId) ||
+      this.relatedPropertyLoading.has(sourceFieldId)
+    ) {
+      return;
+    }
+
+    const field = this.schemaSignal().find(item => item.id === sourceFieldId);
+    if (!field) {
+      return;
+    }
+
+    const optionSource = normalizeOptionSource(field.optionSource);
+    const endpoint = optionSource?.endpoint?.trim() || '';
+    if (!endpoint) {
+      this.relatedPropertyCache.set(sourceFieldId, []);
+      return;
+    }
+
+    this.relatedPropertyLoading.add(sourceFieldId);
+    this.dynamicModuleOptionsService.getModuleData(endpoint).subscribe({
+      next: data => {
+        this.relatedPropertyLoading.delete(sourceFieldId);
+        this.relatedPropertyCache.set(sourceFieldId, data.columns || []);
+        this.relatedRecordsCache.set(sourceFieldId, data.records || []);
+      },
+      error: () => {
+        this.relatedPropertyLoading.delete(sourceFieldId);
+        this.relatedPropertyCache.set(sourceFieldId, []);
+        this.relatedRecordsCache.set(sourceFieldId, []);
+      },
+    });
   }
 
   get dynamicOptionsCount(): number {
@@ -1952,6 +2461,9 @@ export class FieldSettingsComponent {
     this.conditionEditor =
       cloneConditionalLogic(value.condition) ?? createEmptyConditionalLogic();
     this.ensureConditionSourceIsValid(false);
+    if (getPrimaryActionType(this.conditionEditor) === 'setValue') {
+      this.prefetchSetValueRelatedProperties();
+    }
   }
 
   private ensureConditionSourceIsValid(emit: boolean): void {

@@ -9,7 +9,14 @@ import {
   FieldCondition,
   FieldConditionalLogic,
   LegacyFieldCondition,
+  ValueSource,
 } from './conditional-logic.types';
+import {
+  collectSetValueDependencyFieldIds,
+  createDefaultValueSource,
+  normalizeValueSource,
+  pruneActionsForDeletedFields,
+} from './conditional-logic.set-value';
 
 const OPERATOR_SET = new Set<string>(CONDITION_OPERATORS);
 const ACTION_SET = new Set<string>(CONDITION_ACTIONS);
@@ -143,11 +150,18 @@ export function normalizeActionType(raw: unknown): ConditionActionType {
     enable_field: 'enable',
     disable: 'disable',
     disable_field: 'disable',
+    set_value: 'setValue',
+    setvalue: 'setValue',
+    set: 'setValue',
   };
 
   const mapped = aliases[normalized];
   if (mapped && ACTION_SET.has(mapped)) {
     return mapped;
+  }
+
+  if (ACTION_SET.has(String(raw))) {
+    return raw as ConditionActionType;
   }
 
   return 'show';
@@ -192,19 +206,26 @@ function normalizeActions(raw: unknown): ConditionAction[] {
     return [{ type: 'show' }];
   }
 
-  const actions = raw
-    .map(item => {
-      if (typeof item === 'string') {
-        return { type: normalizeActionType(item) };
-      }
+  const actions: ConditionAction[] = [];
 
-      if (item && typeof item === 'object' && 'type' in item) {
-        return { type: normalizeActionType((item as ConditionAction).type) };
-      }
+  for (const item of raw) {
+    if (typeof item === 'string') {
+      actions.push({ type: normalizeActionType(item) });
+      continue;
+    }
 
-      return null;
-    })
-    .filter((item): item is ConditionAction => item !== null);
+    if (item && typeof item === 'object' && 'type' in item) {
+      const type = normalizeActionType((item as ConditionAction).type);
+      if (type === 'setValue') {
+        actions.push({
+          type,
+          source: normalizeValueSource((item as ConditionAction).source),
+        });
+      } else {
+        actions.push({ type });
+      }
+    }
+  }
 
   return actions.length ? actions : [{ type: 'show' }];
 }
@@ -254,7 +275,8 @@ export function cloneConditionalLogic(
   return JSON.parse(JSON.stringify(normalized)) as FieldConditionalLogic;
 }
 
-export function collectSourceFieldIds(
+/** Field ids referenced only by the WHEN / condition group (not setValue sources). */
+export function collectWhenFieldIds(
   logic: FieldConditionalLogic | ConditionGroup | null | undefined
 ): string[] {
   if (!logic) {
@@ -266,13 +288,29 @@ export function collectSourceFieldIds(
 
   for (const rule of group.rules) {
     if (isConditionGroup(rule)) {
-      ids.push(...collectSourceFieldIds(rule));
+      ids.push(...collectWhenFieldIds(rule));
       continue;
     }
 
     if (rule.fieldId) {
       ids.push(rule.fieldId);
     }
+  }
+
+  return ids;
+}
+
+export function collectSourceFieldIds(
+  logic: FieldConditionalLogic | ConditionGroup | null | undefined
+): string[] {
+  if (!logic) {
+    return [];
+  }
+
+  const ids = collectWhenFieldIds(logic);
+
+  if ('actions' in logic) {
+    ids.push(...collectSetValueDependencyFieldIds(logic));
   }
 
   return ids;
@@ -343,13 +381,44 @@ export function getPrimaryActionType(
   return logic?.actions?.[0]?.type ?? 'show';
 }
 
+export function getPrimaryAction(
+  logic: FieldConditionalLogic | null | undefined
+): ConditionAction {
+  return logic?.actions?.[0] ?? { type: 'show' };
+}
+
 export function setPrimaryActionType(
   logic: FieldConditionalLogic,
   type: ConditionActionType
 ): FieldConditionalLogic {
+  const current = getPrimaryAction(logic);
+  const nextAction: ConditionAction =
+    type === 'setValue'
+      ? {
+          type,
+          source:
+            current.type === 'setValue'
+              ? normalizeValueSource(current.source)
+              : createDefaultValueSource('relatedData'),
+        }
+      : { type };
+
   return {
     ...logic,
-    actions: [{ type }, ...(logic.actions?.slice(1) ?? [])],
+    actions: [nextAction, ...(logic.actions?.slice(1) ?? [])],
+  };
+}
+
+export function setPrimarySetValueSource(
+  logic: FieldConditionalLogic,
+  source: ValueSource
+): FieldConditionalLogic {
+  return {
+    ...logic,
+    actions: [
+      { type: 'setValue', source: normalizeValueSource(source) },
+      ...(logic.actions?.slice(1) ?? []),
+    ],
   };
 }
 
@@ -374,6 +443,7 @@ export function pruneConditionalLogicForDeletedFields(
     ...logic,
     enabled: lostSource ? false : logic.enabled,
     when: pruneGroup(logic.when, deleted),
+    actions: pruneActionsForDeletedFields(logic.actions, deleted),
   };
 
   return serializeConditionalLogic(next);

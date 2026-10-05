@@ -1047,7 +1047,9 @@
     <div class="flex items-center justify-between gap-3">
       <div>
         <p class="text-sm font-medium text-slate-800">Conditional Logic</p>
-        <p class="text-xs text-slate-500">Show, hide, or change this field based on another field.</p>
+        <p class="text-xs text-slate-500">
+          Show, hide, require, or automatically set this field based on another field.
+        </p>
       </div>
       <label class="inline-flex items-center gap-2 text-xs font-medium text-slate-600">
         <input
@@ -1132,6 +1134,243 @@
           }
         </select>
       </div>
+
+      @if (conditionUsesSetValue) {
+        <div class="space-y-3 rounded-md border border-dashed border-slate-200 bg-white px-3 py-3">
+          <div>
+            <label class="mb-1.5 block text-xs font-medium text-slate-600">Set Value From</label>
+            <select
+              class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+              [ngModel]="setValueSourceKind"
+              (ngModelChange)="onSetValueSourceKindChange($event)"
+              [disabled]="!isFieldEditable"
+            >
+              @for (kind of valueSourceKinds; track kind.value) {
+                <option [value]="kind.value">{{ kind.label }}</option>
+              }
+            </select>
+          </div>
+
+          @if (setValueSourceKind === 'fixed') {
+            <div>
+              <label class="mb-1.5 block text-xs font-medium text-slate-600">Value</label>
+              <input
+                type="text"
+                class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                [ngModel]="setValueFixedValue"
+                (ngModelChange)="onSetValueFixedValueChange($event)"
+                [disabled]="!isFieldEditable"
+                placeholder="Enter a value"
+              />
+            </div>
+          }
+
+          @if (setValueSourceKind === 'field') {
+            <div>
+              <label class="mb-1.5 block text-xs font-medium text-slate-600">Field</label>
+              <select
+                class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                [ngModel]="setValueFieldId"
+                (ngModelChange)="onSetValueFieldChange($event)"
+                [disabled]="!isFieldEditable"
+              >
+                <option value="">Select a field</option>
+                @for (source of setValueFormFields; track source.id) {
+                  <option [value]="source.id">{{ source.label }}</option>
+                }
+              </select>
+            </div>
+          }
+
+          @if (setValueSourceKind === 'relatedData') {
+            <div class="space-y-3">
+              <div>
+                <label class="mb-1.5 block text-xs font-medium text-slate-600">Source</label>
+                <select
+                  class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                  [ngModel]="setValueRelatedSourceFieldId"
+                  (ngModelChange)="onSetValueRelatedSourceChange($event)"
+                  [disabled]="!isFieldEditable"
+                >
+                  <option value="">Select source</option>
+                  @for (source of dynamicConditionSourceFields; track source.id) {
+                    <option [value]="source.id">{{ source.label }}</option>
+                  }
+                </select>
+                @if (!dynamicConditionSourceFields.length) {
+                  <p class="mt-1 text-[11px] text-slate-400">
+                    Add a dynamic Select field (e.g. Items) to use related data.
+                  </p>
+                }
+              </div>
+
+              <div>
+                <label class="mb-1.5 block text-xs font-medium text-slate-600">Property</label>
+                <select
+                  class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                  [ngModel]="setValueRelatedProperty"
+                  (ngModelChange)="onSetValueRelatedPropertyChange($event)"
+                  [disabled]="!isFieldEditable || !setValueRelatedSourceFieldId"
+                >
+                  <option value="">Select property</option>
+                  @for (column of relatedPropertiesFor(setValueRelatedSourceFieldId); track column.id) {
+                    <option [value]="column.id">{{ column.label }}</option>
+                  }
+                </select>
+                @if (isRelatedPropertiesLoading(setValueRelatedSourceFieldId)) {
+                  <p class="mt-1 text-[11px] text-slate-400">Loading properties…</p>
+                }
+              </div>
+            </div>
+          }
+
+          @if (setValueSourceKind === 'expression') {
+            <div class="space-y-3">
+              <div class="space-y-2 rounded-md border border-slate-100 bg-slate-50 px-3 py-3">
+                <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Left</p>
+                <select
+                  class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                  [ngModel]="setValueExpressionLeftKind"
+                  (ngModelChange)="onSetValueExpressionSideKindChange('left', $event)"
+                  [disabled]="!isFieldEditable"
+                >
+                  @for (kind of operandSourceKinds('left'); track kind.value) {
+                    <option [value]="kind.value">{{ kind.label }}</option>
+                  }
+                </select>
+
+                @if (setValueExpressionLeftKind === 'fixed') {
+                  <input
+                    type="text"
+                    class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                    [ngModel]="setValueExpressionLeftFixedValue"
+                    (ngModelChange)="onSetValueExpressionSideFixedChange('left', $event)"
+                    [disabled]="!isFieldEditable"
+                    placeholder="Enter a value"
+                  />
+                }
+
+                @if (setValueExpressionLeftKind === 'field') {
+                  <select
+                    class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                    [ngModel]="setValueExpressionLeftFieldId"
+                    (ngModelChange)="onSetValueExpressionSideFieldChange('left', $event)"
+                    [disabled]="!isFieldEditable"
+                  >
+                    <option value="">Select a field</option>
+                    @for (source of setValueFormFields; track source.id) {
+                      <option [value]="source.id">{{ source.label }}</option>
+                    }
+                  </select>
+                }
+
+                @if (setValueExpressionLeftKind === 'relatedData') {
+                  <select
+                    class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                    [ngModel]="setValueExpressionLeftRelatedSourceFieldId"
+                    (ngModelChange)="onSetValueExpressionSideRelatedSourceChange('left', $event)"
+                    [disabled]="!isFieldEditable"
+                  >
+                    <option value="">Select source</option>
+                    @for (source of dynamicConditionSourceFields; track source.id) {
+                      <option [value]="source.id">{{ source.label }}</option>
+                    }
+                  </select>
+                  <select
+                    class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                    [ngModel]="setValueExpressionLeftRelatedProperty"
+                    (ngModelChange)="onSetValueExpressionSideRelatedPropertyChange('left', $event)"
+                    [disabled]="!isFieldEditable || !setValueExpressionLeftRelatedSourceFieldId"
+                  >
+                    <option value="">Select property</option>
+                    @for (column of relatedPropertiesFor(setValueExpressionLeftRelatedSourceFieldId); track column.id) {
+                      <option [value]="column.id">{{ column.label }}</option>
+                    }
+                  </select>
+                }
+              </div>
+
+              <div>
+                <label class="mb-1.5 block text-xs font-medium text-slate-600">Operator</label>
+                <select
+                  class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                  [ngModel]="setValueExpressionOp"
+                  (ngModelChange)="onSetValueExpressionOpChange($event)"
+                  [disabled]="!isFieldEditable"
+                >
+                  @for (op of expressionOps; track op.value) {
+                    <option [value]="op.value">{{ op.label }}</option>
+                  }
+                </select>
+              </div>
+
+              <div class="space-y-2 rounded-md border border-slate-100 bg-slate-50 px-3 py-3">
+                <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Right</p>
+                <select
+                  class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                  [ngModel]="setValueExpressionRightKind"
+                  (ngModelChange)="onSetValueExpressionSideKindChange('right', $event)"
+                  [disabled]="!isFieldEditable"
+                >
+                  @for (kind of operandSourceKinds('right'); track kind.value) {
+                    <option [value]="kind.value">{{ kind.label }}</option>
+                  }
+                </select>
+
+                @if (setValueExpressionRightKind === 'fixed') {
+                  <input
+                    type="text"
+                    class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                    [ngModel]="setValueExpressionRightFixedValue"
+                    (ngModelChange)="onSetValueExpressionSideFixedChange('right', $event)"
+                    [disabled]="!isFieldEditable"
+                    placeholder="Enter a value"
+                  />
+                }
+
+                @if (setValueExpressionRightKind === 'field') {
+                  <select
+                    class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                    [ngModel]="setValueExpressionRightFieldId"
+                    (ngModelChange)="onSetValueExpressionSideFieldChange('right', $event)"
+                    [disabled]="!isFieldEditable"
+                  >
+                    <option value="">Select a field</option>
+                    @for (source of setValueFormFields; track source.id) {
+                      <option [value]="source.id">{{ source.label }}</option>
+                    }
+                  </select>
+                }
+
+                @if (setValueExpressionRightKind === 'relatedData') {
+                  <select
+                    class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                    [ngModel]="setValueExpressionRightRelatedSourceFieldId"
+                    (ngModelChange)="onSetValueExpressionSideRelatedSourceChange('right', $event)"
+                    [disabled]="!isFieldEditable"
+                  >
+                    <option value="">Select source</option>
+                    @for (source of dynamicConditionSourceFields; track source.id) {
+                      <option [value]="source.id">{{ source.label }}</option>
+                    }
+                  </select>
+                  <select
+                    class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                    [ngModel]="setValueExpressionRightRelatedProperty"
+                    (ngModelChange)="onSetValueExpressionSideRelatedPropertyChange('right', $event)"
+                    [disabled]="!isFieldEditable || !setValueExpressionRightRelatedSourceFieldId"
+                  >
+                    <option value="">Select property</option>
+                    @for (column of relatedPropertiesFor(setValueExpressionRightRelatedSourceFieldId); track column.id) {
+                      <option [value]="column.id">{{ column.label }}</option>
+                    }
+                  </select>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      }
     }
   </div>
 

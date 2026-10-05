@@ -249,6 +249,9 @@ export function resolveConditionalEffects(
       case 'disable':
         disabled = matched ? true : schemaDisabled;
         break;
+      case 'setValue':
+        // Value application is handled by the form runtime (emitEvent: false).
+        break;
     }
   }
 
