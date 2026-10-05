@@ -275,7 +275,8 @@ export function cloneConditionalLogic(
   return JSON.parse(JSON.stringify(normalized)) as FieldConditionalLogic;
 }
 
-export function collectSourceFieldIds(
+/** Field ids referenced only by the WHEN / condition group (not setValue sources). */
+export function collectWhenFieldIds(
   logic: FieldConditionalLogic | ConditionGroup | null | undefined
 ): string[] {
   if (!logic) {
@@ -287,7 +288,7 @@ export function collectSourceFieldIds(
 
   for (const rule of group.rules) {
     if (isConditionGroup(rule)) {
-      ids.push(...collectSourceFieldIds(rule));
+      ids.push(...collectWhenFieldIds(rule));
       continue;
     }
 
@@ -295,6 +296,18 @@ export function collectSourceFieldIds(
       ids.push(rule.fieldId);
     }
   }
+
+  return ids;
+}
+
+export function collectSourceFieldIds(
+  logic: FieldConditionalLogic | ConditionGroup | null | undefined
+): string[] {
+  if (!logic) {
+    return [];
+  }
+
+  const ids = collectWhenFieldIds(logic);
 
   if ('actions' in logic) {
     ids.push(...collectSetValueDependencyFieldIds(logic));

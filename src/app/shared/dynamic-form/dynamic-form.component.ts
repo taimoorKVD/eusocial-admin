@@ -28,6 +28,7 @@ import {
   ConditionalFieldEffects,
   buildValuesByFieldId,
   collectValueSourceFieldIds,
+  collectWhenFieldIds,
   conditionalEffectsEqual,
   evaluateConditionGroup,
   extractRelatedRecordsFromResponse,
@@ -1840,17 +1841,10 @@ export class DynamicFormComponent implements OnDestroy {
       return;
     }
 
-    const whenSourceConfigured = logic.when.rules.some(rule => {
-      if ('fieldId' in rule) {
-        return !!rule.fieldId;
-      }
-      return false;
-    });
-    if (!whenSourceConfigured) {
-      return;
-    }
-
-    if (!evaluateConditionGroup(logic.when, valuesByFieldId)) {
+    // Empty WHEN (fieldId "") is common for Set Value–only rules from Field Settings.
+    // Treat unconfigured WHEN as always matched; evaluate only when a source is set.
+    const whenConfigured = collectWhenFieldIds(logic).some(Boolean);
+    if (whenConfigured && !evaluateConditionGroup(logic.when, valuesByFieldId)) {
       return;
     }
 
