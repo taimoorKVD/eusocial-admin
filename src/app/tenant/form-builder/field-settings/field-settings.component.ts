@@ -131,7 +131,17 @@ export class FieldSettingsComponent {
   @Input() fieldUsedInLogicRules = false;
 
   @Input() set schema(value: FormField[] | null | undefined) {
-    this.schemaSignal.set(value ?? []);
+    const next = value ?? [];
+    const current = this.schemaSignal();
+    // Avoid signal writes on identical schema identity churn from parent computeds.
+    if (
+      current.length === next.length &&
+      current.every((field, index) => field === next[index])
+    ) {
+      return;
+    }
+
+    this.schemaSignal.set(next);
     this.ensureConditionSourceIsValid(false);
   }
 
@@ -155,18 +165,17 @@ export class FieldSettingsComponent {
 
     if (!isSameField) {
       this.overlayService.close();
-    }
-
-    if (this.skipFieldReinitialize && isSameField) {
       this.skipFieldReinitialize = false;
       this.assignField(value);
+      this.initializeSelectOptionsState(this._field);
       return;
     }
 
-    const preservedModuleSlug = isSameField ? this.selectedModuleSlug : '';
-
+    // Same field echoed from parent after onChange(). Only refresh local model —
+    // never re-run select option normalize/sync/load. Re-init here re-triggers
+    // Value <select> ngModel and dynamic option sync → NG0103 in Form Template.
+    this.skipFieldReinitialize = false;
     this.assignField(value);
-    this.initializeSelectOptionsState(this._field, preservedModuleSlug);
   }
 
   get field(): FormField | undefined {
@@ -216,6 +225,11 @@ export class FieldSettingsComponent {
     if (!this._field || !this.isFieldEditable) {
       return;
     }
+
+    // Parent rebinds `[field]` with a new object. Skip select option re-init on
+    // that echo so static normalize / dynamic sync cannot emit again in the same
+    // refresh cycle (NG0103 in Form Template Select customization).
+    this.skipFieldReinitialize = true;
 
     this.update.emit({
       ...this._field,
@@ -287,6 +301,20 @@ export class FieldSettingsComponent {
     }
 
     this._field.allowDecimal = allow === true;
+    this.onChange();
+  }
+
+  onReadonlyChange(readonly: boolean): void {
+    if (!this._field || !this.isFieldEditable) {
+      return;
+    }
+
+    const next = readonly === true;
+    if (this._field.isReadonly === next) {
+      return;
+    }
+
+    this._field.isReadonly = next;
     this.onChange();
   }
 
@@ -795,18 +823,34 @@ export class FieldSettingsComponent {
     if (!this._field || !this.isFieldEditable || !this.supportsConfiguredValue) {
       return;
     }
-    this._field.defaultValue = value ?? '';
+
+    // Native <select> always yields strings — restore option typing when possible.
+    let next: unknown = value ?? '';
+    if (typeof next === 'string' && next !== '' && next !== this.currentUserDefaultToken) {
+      const matched =
+        this.staticValueOptions.find((option) => String(option.value) === next) ??
+        this.configuredDynamicValueOptions.find((option) => String(option.value) === next);
+      if (matched) {
+        next = matched.value;
+      }
+    }
+
+    if (this.configuredValuesEqual(this._field.defaultValue, next)) {
+      return;
+    }
+    this._field.defaultValue = next;
     this.onChange();
   }
-
-  compareConfiguredOptionValues = (a: unknown, b: unknown): boolean =>
-    String(a ?? '') === String(b ?? '');
 
   onConfiguredValueTextChange(value: string | number): void {
     if (!this._field || !this.isFieldEditable || !this.supportsConfiguredValue) {
       return;
     }
-    this._field.defaultValue = value == null ? '' : value;
+    const next = value == null ? '' : value;
+    if (this.configuredValuesEqual(this._field.defaultValue, next)) {
+      return;
+    }
+    this._field.defaultValue = next;
     this.onChange();
   }
 
@@ -833,6 +877,10 @@ export class FieldSettingsComponent {
         : [...current, optionValue]
       : current.filter((item) => String(item) !== String(optionValue));
 
+    if (this.configuredValuesEqual(this._field.defaultValue, next)) {
+      return;
+    }
+
     this._field.defaultValue = next;
     this.onChange();
   }
@@ -851,10 +899,21 @@ export class FieldSettingsComponent {
       nextSide = nextSide.trim() === '' || !Number.isFinite(parsed) ? null : parsed;
     }
 
-    this._field.defaultValue = {
+    const next = {
       ...current,
       [side]: nextSide,
     };
+
+    const nextDefault =
+      (next.from == null || next.from === '') && (next.to == null || next.to === '')
+        ? ''
+        : next;
+
+    if (this.configuredValuesEqual(this._field.defaultValue, nextDefault)) {
+      return;
+    }
+
+    this._field.defaultValue = nextDefault;
     this.onChange();
   }
 
@@ -870,15 +929,55 @@ export class FieldSettingsComponent {
 
     const text = String(raw ?? '').trim();
     const amount = text === '' ? null : Number(text);
+    const unit =
+      current.unit ??
+      normalizeMeasurementUnitCode(this._field.type, this._field.unit) ??
+      getDefaultUnitCode(this._field.type);
 
-    this._field.defaultValue = {
-      value: amount != null && Number.isFinite(amount) ? amount : null,
-      unit:
-        current.unit ??
-        normalizeMeasurementUnitCode(this._field.type, this._field.unit) ??
-        getDefaultUnitCode(this._field.type),
-    };
+    const nextDefault =
+      amount == null || !Number.isFinite(amount)
+        ? ''
+        : {
+            value: amount,
+            unit,
+          };
+
+    if (this.configuredValuesEqual(this._field.defaultValue, nextDefault)) {
+      return;
+    }
+
+    this._field.defaultValue = nextDefault;
     this.onChange();
+  }
+
+  /** Prevent Value ngModel echo writes from re-emitting identical configuration. */
+  private configuredValuesEqual(left: unknown, right: unknown): boolean {
+    if (Object.is(left, right)) {
+      return true;
+    }
+
+    if (left == null || left === '' || right == null || right === '') {
+      const leftEmpty = left == null || left === '';
+      const rightEmpty = right == null || right === '';
+      return leftEmpty && rightEmpty;
+    }
+
+    if (Array.isArray(left) || Array.isArray(right)) {
+      if (!Array.isArray(left) || !Array.isArray(right) || left.length !== right.length) {
+        return false;
+      }
+      return left.every((item, index) => String(item) === String(right[index]));
+    }
+
+    if (typeof left === 'object' || typeof right === 'object') {
+      try {
+        return JSON.stringify(left) === JSON.stringify(right);
+      } catch {
+        return false;
+      }
+    }
+
+    return String(left) === String(right);
   }
 
   get rangeStepValue(): number {
@@ -1928,7 +2027,10 @@ export class FieldSettingsComponent {
     this.availableDynamicOptions = [];
 
     if (field.type === 'select') {
-      this._field.options = normalizeStaticSelectFieldOptions(this._field.options);
+      const normalized = normalizeStaticSelectFieldOptions(this._field.options);
+      if (!this.selectOptionsSemanticallyEqual(this._field.options, normalized)) {
+        this._field.options = normalized;
+      }
     }
   }
 
@@ -2111,10 +2213,10 @@ export class FieldSettingsComponent {
     }
 
     if (preserveSelection) {
-      const before = JSON.stringify(this._field.options ?? []);
+      const before = this._field.options ?? [];
       this.syncSelectedDynamicOptionsWithAvailable();
-      const after = JSON.stringify(this._field.options ?? []);
-      if (before !== after) {
+      const after = this._field.options ?? [];
+      if (!this.selectOptionsSemanticallyEqual(before, after)) {
         this.skipFieldReinitialize = true;
         this.onChange();
       }
@@ -2159,6 +2261,40 @@ export class FieldSettingsComponent {
     }
 
     this._field.options = next;
+  }
+
+  /** Compare select options by value/label only (ignore optional id churn). */
+  private selectOptionsSemanticallyEqual(
+    left: FormField['options'] | undefined,
+    right: FormField['options'] | undefined,
+  ): boolean {
+    const leftList = left ?? [];
+    const rightList = right ?? [];
+    if (leftList.length !== rightList.length) {
+      return false;
+    }
+
+    for (let index = 0; index < leftList.length; index += 1) {
+      const leftValue = this.readOptionValue(leftList[index]);
+      const rightValue = this.readOptionValue(rightList[index]);
+      if (String(leftValue ?? '') !== String(rightValue ?? '')) {
+        return false;
+      }
+
+      const leftLabel =
+        typeof leftList[index] === 'string' || typeof leftList[index] === 'number'
+          ? String(leftList[index])
+          : normalizeFieldOption(leftList[index])?.label ?? '';
+      const rightLabel =
+        typeof rightList[index] === 'string' || typeof rightList[index] === 'number'
+          ? String(rightList[index])
+          : normalizeFieldOption(rightList[index])?.label ?? '';
+      if (String(leftLabel ?? '') !== String(rightLabel ?? '')) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   private resolveEmittedOptionSource(): OptionSource | undefined {

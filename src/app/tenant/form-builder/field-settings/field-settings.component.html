@@ -55,14 +55,14 @@
     </div>
 
     <div class="flex items-center gap-2">
-      <input
-        id="field-is-readonly"
-        type="checkbox"
-        [(ngModel)]="field.isReadonly"
-        (change)="onChange()"
-        [disabled]="!isFieldEditable"
-        class="field-settings-checkbox"
-      />
+        <input
+          id="field-is-readonly"
+          type="checkbox"
+          [ngModel]="field.isReadonly === true"
+          (ngModelChange)="onReadonlyChange($event)"
+          [disabled]="!isFieldEditable"
+          class="field-settings-checkbox"
+        />
       <label for="field-is-readonly" class="text-sm text-slate-700">Readonly field</label>
     </div>
 
@@ -140,16 +140,16 @@
 
     <!-- Static / radio / checkbox option-based -->
     <ng-container *ngIf="isStaticOptionValueField">
+      <!-- Native select: Forms ngModel CVA re-emits when option lists recreate (NG0103). -->
       <select
         *ngIf="isSelectField && selectionType !== 'multi' && optionsMode === 'static'"
-        [ngModel]="configuredDefaultValue"
-        (ngModelChange)="onConfiguredDefaultValueChange($event)"
-        [compareWith]="compareConfiguredOptionValues"
+        [value]="configuredValueText"
+        (change)="onConfiguredDefaultValueChange($any($event.target).value)"
         [disabled]="!isFieldEditable"
         class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100"
       >
-        <option [ngValue]="''">Select value</option>
-        <option *ngFor="let opt of staticValueOptions" [ngValue]="opt.value">{{ opt.label }}</option>
+        <option value="">Select value</option>
+        <option *ngFor="let opt of staticValueOptions" [value]="opt.value">{{ opt.label }}</option>
       </select>
 
       <div *ngIf="isSelectField && selectionType === 'multi' && optionsMode === 'static'" class="space-y-1.5">
@@ -178,8 +178,8 @@
             name="field-configured-value-radio"
             class="field-settings-checkbox"
             [value]="opt.value"
-            [ngModel]="configuredDefaultValue"
-            (ngModelChange)="onConfiguredDefaultValueChange($event)"
+            [checked]="isConfiguredMultiValueSelected(opt.value)"
+            (change)="onConfiguredDefaultValueChange(opt.value)"
             [disabled]="!isFieldEditable"
           />
           <span>{{ opt.label }}</span>
@@ -207,17 +207,16 @@
     <ng-container *ngIf="isSelectField && optionsMode === 'dynamic'">
       <select
         *ngIf="selectionType !== 'multi'"
-        [ngModel]="configuredDefaultValue"
-        (ngModelChange)="onConfiguredDefaultValueChange($event)"
-        [compareWith]="compareConfiguredOptionValues"
+        [value]="configuredValueText"
+        (change)="onConfiguredDefaultValueChange($any($event.target).value)"
         [disabled]="!isFieldEditable || !selectedModuleSlug"
         class="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-[#0054AC] focus:outline-none focus:ring-1 focus:ring-[#0054AC] disabled:cursor-not-allowed disabled:bg-slate-100"
       >
-        <option [ngValue]="''">Select value</option>
-        <option *ngIf="supportsCurrentUserValue" [ngValue]="currentUserDefaultToken">
+        <option value="">Select value</option>
+        <option *ngIf="supportsCurrentUserValue" [value]="currentUserDefaultToken">
           Current logged-in user
         </option>
-        <option *ngFor="let opt of configuredDynamicValueOptions" [ngValue]="opt.value">
+        <option *ngFor="let opt of configuredDynamicValueOptions" [value]="opt.value">
           {{ opt.label }}
         </option>
       </select>
