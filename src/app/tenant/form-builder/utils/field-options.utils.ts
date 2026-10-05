@@ -100,6 +100,41 @@ export function normalizeStaticSelectFieldOptions(
   }));
 }
 
+/**
+ * Persist dynamic select selections as configured `valueKey` values.
+ * Accepts bare ids or FieldOption objects and returns only the value list.
+ */
+export function toDynamicSelectOptionIds(
+  options: unknown[] | undefined | null
+): Array<string | number> {
+  if (!Array.isArray(options)) {
+    return [];
+  }
+
+  const ids: Array<string | number> = [];
+
+  for (const option of options) {
+    if (typeof option === 'number') {
+      ids.push(option);
+      continue;
+    }
+
+    if (typeof option === 'string') {
+      if (option !== '') {
+        ids.push(option);
+      }
+      continue;
+    }
+
+    const normalized = normalizeFieldOption(option);
+    if (normalized?.value != null && normalized.value !== '') {
+      ids.push(normalized.value);
+    }
+  }
+
+  return ids;
+}
+
 export function normalizeCheckboxFieldOptions(
   options: unknown[] | undefined | null
 ): FieldOption[] {

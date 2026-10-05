@@ -95,10 +95,14 @@ export function remapDynamicFormValuesByFieldId(
 }
 
 export function getOptionValue(
-  option: string | DynamicFieldOption,
+  option: string | number | DynamicFieldOption,
   index = 0,
 ): string | number {
-  return typeof option === 'string' ? option : (option.value ?? index);
+  if (typeof option === 'string' || typeof option === 'number') {
+    return option;
+  }
+
+  return option.value ?? index;
 }
 
 export function getInitialFieldValue(field: DynamicField): unknown {
@@ -160,6 +164,7 @@ export function getInitialFieldValue(field: DynamicField): unknown {
     case 'length':
     case 'mass':
     case 'volume':
+    case 'temperature':
       return normalizeMeasurementValue(field.defaultValue ?? field.value, field.type, {
         unitMode: normalizeMeasurementUnitMode(field.unitMode),
         unit: field.unit,

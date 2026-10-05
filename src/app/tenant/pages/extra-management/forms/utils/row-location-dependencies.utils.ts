@@ -95,11 +95,17 @@ export function isDependentLocationSelectLocked(field: FormFieldConfig): boolean
 }
 
 export function getSelectOptionLabel(option: FormSelectOption): string {
-  return typeof option === 'string' ? option : String(option.label ?? option.value ?? '');
+  if (typeof option === 'string' || typeof option === 'number') {
+    return String(option);
+  }
+  return String(option.label ?? option.value ?? '');
 }
 
 export function getSelectOptionValue(option: FormSelectOption): string {
-  return typeof option === 'string' ? option : String(option.value ?? option.label ?? '');
+  if (typeof option === 'string' || typeof option === 'number') {
+    return String(option);
+  }
+  return String(option.value ?? option.label ?? '');
 }
 
 /** Map location API/cache records to id-based select options (matches app-dynamic-form). */

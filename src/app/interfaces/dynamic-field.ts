@@ -24,6 +24,7 @@ export type DynamicFieldType =
   | 'length'
   | 'mass'
   | 'volume'
+  | 'temperature'
   | 'barcode'
   | 'qr-code';
 
@@ -58,7 +59,7 @@ export interface DynamicField {
   radio?: any;
   isShow?: boolean;
   isReadonly?: boolean;
-  options?: (string | DynamicFieldOption)[];
+  options?: (string | number | DynamicFieldOption)[];
   optionSource?: DynamicFieldOptionSource;
   /** Select field only. Defaults to `single` when missing. */
   selectionType?: DynamicSelectSelectionType;
@@ -89,7 +90,7 @@ export interface DynamicField {
   condition?: FieldCondition;
 
   /**
-   * Measurement fields (price / length / mass / volume).
+   * Measurement fields (price / length / mass / volume / temperature).
    */
   unitMode?: MeasurementUnitMode;
   unit?: string;

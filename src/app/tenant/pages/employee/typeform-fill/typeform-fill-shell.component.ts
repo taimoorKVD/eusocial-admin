@@ -972,7 +972,7 @@ export class TypeformFillShellComponent implements AfterViewInit, OnDestroy {
   }
 
   private shouldContinueOnEnter(field: DynamicField): boolean {
-    return ['text', 'email', 'number', 'date', 'time', 'price', 'length', 'mass', 'volume'].includes(
+    return ['text', 'email', 'number', 'date', 'time', 'price', 'length', 'mass', 'volume', 'temperature'].includes(
       field.type,
     );
   }
@@ -1304,7 +1304,8 @@ export class TypeformFillShellComponent implements AfterViewInit, OnDestroy {
       field.type === 'price' ||
       field.type === 'length' ||
       field.type === 'mass' ||
-      field.type === 'volume'
+      field.type === 'volume' ||
+      field.type === 'temperature'
     ) {
       return "I didn't get a valid number. Please try again.";
     }
@@ -1322,7 +1323,8 @@ export class TypeformFillShellComponent implements AfterViewInit, OnDestroy {
       field.type === 'price' ||
       field.type === 'length' ||
       field.type === 'mass' ||
-      field.type === 'volume'
+      field.type === 'volume' ||
+      field.type === 'temperature'
     ) {
       return "I didn't get a valid number. Please try again.";
     }

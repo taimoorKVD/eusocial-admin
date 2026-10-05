@@ -47,11 +47,21 @@ import {
 import { getLocationFieldDeleteBlockReason } from '../../../../form-builder/utils/location-field-dependencies.utils';
 import { FormEditorCoreModule } from '../../../../forms/form-editor-core.module';
 import { FormBuilderTab } from '../../../../forms/components/form-builder-workspace/form-builder-workspace.component';
+import { FormLogicRule } from '../../../../forms/logic-rules/logic-rule.models';
+import {
+  findLogicRulesUsingField,
+  normalizeLogicRules,
+  pruneLogicRulesForDeletedFields,
+} from '../../../../forms/logic-rules/logic-rule.utils';
 import { SectionFieldPreviewComponent } from '../components/section-field-preview/section-field-preview.component';
 import {
   mapBuilderFieldToConfig,
   mapConfigFieldToBuilder,
 } from '../utils/field-builder-adapter.utils';
+import {
+  hydrateFormTemplateDynamicSelectField,
+  hydrateFormTemplateDynamicSelectOptions,
+} from '../utils/hydrate-dynamic-select-options.utils';
 import {
   clearDependentLocationOptions,
   getConfigFieldLocationKind,
@@ -284,6 +294,32 @@ export class CreateFormComponent implements OnInit {
     ...this.builderSchema(),
   ]);
 
+  /** All form fields across sections + current builder drafts — for Logic Rules. */
+  readonly logicSchemaFields = computed(() => {
+    const fromSections = this.sections().flatMap((section) =>
+      section.rows.flatMap((row) =>
+        row.fields.map((field) => mapConfigFieldToBuilder(field)),
+      ),
+    );
+    const draftFields = this.builderSchema();
+    const draftIds = new Set(draftFields.map((field) => field.id));
+    const merged = [
+      ...fromSections.filter((field) => !draftIds.has(field.id)),
+      ...draftFields,
+    ];
+    const rowLive = this.rowBuilderFields();
+    if (!rowLive.length) {
+      return merged;
+    }
+    const rowIds = new Set(rowLive.map((field) => field.id));
+    return [
+      ...merged.filter((field) => !rowIds.has(field.id)),
+      ...rowLive,
+    ];
+  });
+
+  readonly logicRules = signal<FormLogicRule[]>([]);
+
   /** Section + row context for the open Add Field editor. */
   readonly builderRowContext = computed(() => {
     const target = this.pendingFieldTarget();
@@ -315,6 +351,14 @@ export class CreateFormComponent implements OnInit {
       this.rowBuilderFields().find((field) => field.id === id) ??
       null
     );
+  });
+
+  readonly isDraftFieldUsedInLogicRules = computed(() => {
+    const field = this.selectedBuilderField();
+    if (!field) {
+      return false;
+    }
+    return findLogicRulesUsingField(this.logicRules(), field.id).length > 0;
   });
 
   readonly canSaveDraftField = computed(() => {
@@ -805,11 +849,19 @@ export class CreateFormComponent implements OnInit {
     const payload = template.payload ?? ({} as DynamicFormPayload);
 
     this.formName.set(payload.formName?.trim() || template.formName || '');
-    this.sections.set(this.deserializeSections(payload.sections ?? []));
+    const sections = this.deserializeSections(payload.sections ?? []);
     this.applyFrequencyToForm(payload);
+    this.logicRules.set(normalizeLogicRules(payload.conditionalRules));
     this.loadedSchema = payload;
     this.applyLoadedMeta();
-    this.wireRowLocationDependencies();
+
+    // Resolve saved dynamic Select IDs → labels for canvas display (payload stays IDs).
+    hydrateFormTemplateDynamicSelectOptions(this.formStorageService, sections)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((hydratedSections) => {
+        this.sections.set(hydratedSections);
+        this.wireRowLocationDependencies();
+      });
   }
 
   private deserializeSections(
@@ -1537,6 +1589,16 @@ export class CreateFormComponent implements OnInit {
   confirmRemoveSection(): void {
     const section = this.sectionPendingRemoval();
     if (!section) return;
+
+    const deletedIds = section.rows.flatMap((row) =>
+      row.fields.map((field) => field.id),
+    );
+    if (deletedIds.length) {
+      this.logicRules.set(
+        pruneLogicRulesForDeletedFields(this.logicRules(), deletedIds),
+      );
+    }
+
     this.sections.update((list) => list.filter((item) => item.id !== section.id));
     this.sectionPendingRemoval.set(null);
   }
@@ -1549,9 +1611,17 @@ export class CreateFormComponent implements OnInit {
   }
 
   removeSectionRow(section: CustomFormSection, rowId: string): void {
+    const row = section.rows.find((item) => item.id === rowId);
+    const deletedIds = (row?.fields ?? []).map((field) => field.id);
+    if (deletedIds.length) {
+      this.logicRules.set(
+        pruneLogicRulesForDeletedFields(this.logicRules(), deletedIds),
+      );
+    }
+
     this.updateSection({
       ...section,
-      rows: section.rows.filter((row) => row.id !== rowId),
+      rows: section.rows.filter((item) => item.id !== rowId),
     });
   }
 
@@ -1567,6 +1637,10 @@ export class CreateFormComponent implements OnInit {
     if (blockReason) {
       return;
     }
+
+    this.logicRules.set(
+      pruneLogicRulesForDeletedFields(this.logicRules(), [fieldId]),
+    );
 
     this.updateSection({
       ...section,
@@ -1753,9 +1827,10 @@ export class CreateFormComponent implements OnInit {
       const result = duplicateFormField(field, this.rowBuilderFields());
       this.rowBuilderFields.set(result.schema);
       if (result.duplicate) {
-        this.appendRowFieldToSections(
-          mapBuilderFieldToConfig(result.duplicate, { preserveId: true }),
-        );
+        const mapped = mapBuilderFieldToConfig(result.duplicate, { preserveId: true });
+        hydrateFormTemplateDynamicSelectField(this.formStorageService, mapped)
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe((hydrated) => this.appendRowFieldToSections(hydrated));
         this.onSelectField(result.duplicate);
       }
       return;
@@ -1784,6 +1859,10 @@ export class CreateFormComponent implements OnInit {
       return;
     }
 
+    this.logicRules.set(
+      pruneLogicRulesForDeletedFields(this.logicRules(), [field.id]),
+    );
+
     if (this.isExistingRowField(field.id)) {
       this.rowBuilderFields.update((fields) => removeFormField(field, fields));
       this.builderSchema.update((fields) => clearStaleConditionalLogic(fields, [field.id]));
@@ -1808,6 +1887,10 @@ export class CreateFormComponent implements OnInit {
     }
   }
 
+  onLogicRulesChange(rules: FormLogicRule[]): void {
+    this.logicRules.set(normalizeLogicRules(rules));
+  }
+
   onDeleteSelectedDraft(): void {
     const field = this.selectedBuilderField();
     if (field) {
@@ -1818,9 +1901,10 @@ export class CreateFormComponent implements OnInit {
   onUpdateField(updated: FormField): void {
     if (this.isExistingRowField(updated.id)) {
       this.rowBuilderFields.update((fields) => updateFormField(updated, fields));
-      this.updateRowFieldInSections(
-        mapBuilderFieldToConfig(updated, { preserveId: true }),
-      );
+      const mapped = mapBuilderFieldToConfig(updated, { preserveId: true });
+      hydrateFormTemplateDynamicSelectField(this.formStorageService, mapped)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe((hydrated) => this.updateRowFieldInSections(hydrated));
       return;
     }
 
@@ -1846,9 +1930,10 @@ export class CreateFormComponent implements OnInit {
     if (!fieldsToAdd.length) return;
 
     for (const field of fieldsToAdd) {
-      this.appendFieldToPendingTarget(
-        mapBuilderFieldToConfig(field, { preserveId: true }),
-      );
+      const mapped = mapBuilderFieldToConfig(field, { preserveId: true });
+      hydrateFormTemplateDynamicSelectField(this.formStorageService, mapped)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe((hydrated) => this.appendFieldToPendingTarget(hydrated));
     }
 
     // closeFieldBuilder also refreshes row location dependencies for the target row.
@@ -2470,9 +2555,15 @@ export class CreateFormComponent implements OnInit {
   }
 
   private buildPayload() {
-    return buildDynamicFormPayload(this.formName(), this.sections(), this.meta(), {
-      users: this.userOptions(),
-      jobPositions: this.jobPositionOptions(),
-    });
+    return buildDynamicFormPayload(
+      this.formName(),
+      this.sections(),
+      this.meta(),
+      {
+        users: this.userOptions(),
+        jobPositions: this.jobPositionOptions(),
+      },
+      this.logicRules(),
+    );
   }
 }

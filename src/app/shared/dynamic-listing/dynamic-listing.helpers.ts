@@ -310,12 +310,21 @@ export function saveVisibleColumnIds(storageKey: string, fieldIds: string[]): vo
   localStorage.setItem(storageKey, JSON.stringify(fieldIds));
 }
 
-export function getOptionLabel(option: string | DynamicFieldOption): string {
-  return typeof option === 'string' ? option : option.label;
+export function getOptionLabel(option: string | number | DynamicFieldOption): string {
+  if (typeof option === 'string' || typeof option === 'number') {
+    return String(option);
+  }
+  return option.label;
 }
 
-export function getOptionValue(option: string | DynamicFieldOption, index = 0): string | number {
-  return typeof option === 'string' ? option : (option.value ?? index);
+export function getOptionValue(
+  option: string | number | DynamicFieldOption,
+  index = 0,
+): string | number {
+  if (typeof option === 'string' || typeof option === 'number') {
+    return option;
+  }
+  return option.value ?? index;
 }
 
 function snakeToCamel(value: string): string {
@@ -533,10 +542,16 @@ export function formatListingCellValue(
     return value
       .map((item) => {
         const option = field.options?.find((opt) =>
-          typeof opt === 'string' ? opt === item : opt.value === item,
+          typeof opt === 'string' || typeof opt === 'number'
+            ? String(opt) === String(item)
+            : String(opt.value) === String(item),
         );
 
-        return typeof option === 'string' ? option : (option?.label ?? item);
+        if (typeof option === 'string' || typeof option === 'number') {
+          return String(option);
+        }
+
+        return option?.label ?? String(item);
       })
       .filter(Boolean) as string[];
   }
@@ -675,6 +690,7 @@ function mapDynamicFieldToFilterType(field: DynamicField): string {
     case 'length':
     case 'mass':
     case 'volume':
+    case 'temperature':
       return 'number';
     case 'email':
       return 'email';

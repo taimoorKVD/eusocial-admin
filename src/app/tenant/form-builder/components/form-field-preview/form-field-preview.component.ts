@@ -190,7 +190,9 @@ export class FormFieldPreviewComponent implements OnChanges {
     this.displayOptions = this.normalizeStaticOptions(this.field.options);
   }
 
-  private normalizeStaticOptions(options: Array<string | FieldOption> | undefined): FieldOption[] {
+  private normalizeStaticOptions(
+    options: Array<string | number | FieldOption> | undefined,
+  ): FieldOption[] {
     if (this.isCheckboxField) {
       return normalizeCheckboxFieldOptions(options);
     }

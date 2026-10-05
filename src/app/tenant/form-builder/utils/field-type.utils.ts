@@ -24,6 +24,7 @@ const FIELD_TYPE_MAP: Record<string, FieldType> = {
   length: 'length',
   mass: 'mass',
   volume: 'volume',
+  temperature: 'temperature',
   barcode: 'barcode',
   'qr-code': 'qr-code',
 };

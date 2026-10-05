@@ -22,6 +22,7 @@ import {
   createFieldFromTemplate,
   toFieldName,
 } from '../../../../form-builder/utils/form-field.factory';
+import { isCurrentUserDefaultValue } from '../../../../form-builder/utils/field-default-value.utils';
 import {
   isMultiSelectionTypeHiddenForModule,
   resolveBuilderLocationKind,
@@ -67,6 +68,7 @@ function toFormFieldType(type: string): FormField['type'] {
     case 'length':
     case 'mass':
     case 'volume':
+    case 'temperature':
     case 'barcode':
     case 'qr-code':
     case 'number':
@@ -116,7 +118,7 @@ export function mapConfigFieldToBuilder(field: FormFieldConfig): FormField {
     name: field.name,
     placeholder: field.placeholder ?? '',
     required: field.required,
-    isReadonly: field.readonly === true,
+    isReadonly: field.readonly === true || (field as { isReadonly?: boolean }).isReadonly === true,
     isEditable: field.isDefault ? false : field.isEditable !== false,
     isShow: field.isShow !== false,
     options: builderOptions,
@@ -177,9 +179,16 @@ export function mapBuilderFieldToConfig(
   options: MapBuilderFieldToConfigOptions = {},
 ): FormFieldConfig {
   const type = resolveConfigType(field, options.selectedType);
-  const optionLabels = (field.options ?? [])
-    .map((opt) => (typeof opt === 'string' ? opt : String(opt.label ?? opt.value)))
-    .filter((opt) => opt.trim().length > 0);
+  const isDynamic = field.optionSource?.type === 'dynamic';
+  const mappedOptions = isDynamic
+    ? mapDynamicOptionsForTemplateDisplay(field.options)
+    : (field.options ?? [])
+        .map((opt) =>
+          typeof opt === 'string' || typeof opt === 'number'
+            ? String(opt)
+            : String(opt.label ?? opt.value),
+        )
+        .filter((opt) => opt.trim().length > 0);
 
   return {
     id: options.preserveId !== false && field.id ? field.id : createId('field'),
@@ -189,10 +198,10 @@ export function mapBuilderFieldToConfig(
     placeholder: field.placeholder?.trim() || undefined,
     required: !!field.required,
     readonly: field.isReadonly || undefined,
-    options: optionLabels.length ? optionLabels : undefined,
+    options: mappedOptions.length ? mappedOptions : undefined,
     width: mapBuilderWidthToPercent(field.width),
     isDefault: false,
-    value: normalizeConfigFieldValue(field.value),
+    value: resolveConfigPreviewValue(field),
     optionSource: cloneOptionSource(field.optionSource),
     selectionType: type === 'select' ? resolveBuilderSelectionType(field) : undefined,
     fieldTypeName: field.fieldTypeName ?? type,
@@ -256,22 +265,52 @@ export function mapBuilderFieldToConfig(
 
 function mapConfigOptionsToBuilder(
   field: FormFieldConfig,
-): Array<string | FieldOption> {
+): Array<string | number | FieldOption> {
   const rawOptions = field.options ?? [];
 
   if (field.optionSource?.type === 'dynamic') {
-    return rawOptions.map((opt) =>
-      typeof opt === 'string'
-        ? { label: opt, value: opt }
-        : { label: String(opt.label), value: opt.value },
-    );
+    // Prefer label+value objects when already hydrated; bare IDs are resolved in Field Settings.
+    return rawOptions.map((opt) => {
+      if (typeof opt === 'string' || typeof opt === 'number') {
+        return opt;
+      }
+      return { label: String(opt.label), value: opt.value };
+    });
   }
 
   return rawOptions.map((opt) =>
-    typeof opt === 'string'
-      ? { label: opt, value: opt }
+    typeof opt === 'string' || typeof opt === 'number'
+      ? opt
       : { label: String(opt.label), value: opt.value },
   );
+}
+
+/**
+ * Form Template canvas needs labels for display. Keep `{ label, value }` when present;
+ * bare IDs are hydrated after load. Payload save still strips to valueKey IDs.
+ */
+function mapDynamicOptionsForTemplateDisplay(
+  options: FormField['options'] | undefined,
+): Array<string | number | { label: string; value: string | number }> {
+  const mapped: Array<string | number | { label: string; value: string | number }> = [];
+
+  for (const opt of options ?? []) {
+    if (typeof opt === 'string' || typeof opt === 'number') {
+      mapped.push(opt);
+      continue;
+    }
+
+    if (opt?.value == null || opt.value === '') {
+      continue;
+    }
+
+    mapped.push({
+      label: String(opt.label ?? opt.value),
+      value: opt.value,
+    });
+  }
+
+  return mapped;
 }
 
 function resolveConfigType(field: FormField, selectedType?: string): FieldType {
@@ -297,6 +336,7 @@ function resolveConfigType(field: FormField, selectedType?: string): FieldType {
     'length',
     'mass',
     'volume',
+    'temperature',
     'barcode',
     'qr-code',
   ];
@@ -365,6 +405,36 @@ function normalizeConfigFieldValue(
   }
 
   return String(value);
+}
+
+/** Canvas preview prefers runtime value, then configured defaultValue. */
+function resolveConfigPreviewValue(field: FormField): string | string[] | undefined {
+  if (field.value != null && field.value !== '') {
+    return normalizeConfigFieldValue(field.value);
+  }
+
+  const configured = field.defaultValue;
+  if (configured == null || configured === '') {
+    return undefined;
+  }
+
+  // Keep Current User token out of the canvas as a raw sentinel string.
+  if (isCurrentUserDefaultValue(configured)) {
+    return 'Current logged-in user';
+  }
+
+  if (typeof configured === 'string' || typeof configured === 'number') {
+    return String(configured);
+  }
+
+  if (Array.isArray(configured)) {
+    return configured.map((item) =>
+      isCurrentUserDefaultValue(item) ? 'Current logged-in user' : String(item),
+    );
+  }
+
+  // Range / measurement objects — section preview already JSON-parses string values.
+  return JSON.stringify(configured);
 }
 
 /** Convert FormField 12-col width to a CSS percentage used by section layout. */

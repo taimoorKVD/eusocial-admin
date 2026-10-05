@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { forkJoin, Observable, of } from 'rxjs';
 import { map, switchMap } from 'rxjs/operators';
 import { loadDynamicDropdownOptions } from '../../../shared/dynamic-listing/dynamic-field-options.loader';
@@ -21,6 +21,7 @@ import { DynamicField, DynamicFieldType } from '../../../interfaces/dynamic-fiel
 import { FieldOption, FieldType, FormField } from '../../form-builder/models/form-field.model';
 import { FieldOptionsService } from '../../form-builder/services/field-options.service';
 import { normalizeCheckboxFieldOptions, normalizeStaticSelectFieldOptions } from '../../form-builder/utils/field-options.utils';
+import { resolveConfiguredDefaultValue } from '../../form-builder/utils/field-default-value.utils';
 import { toFieldName } from '../../form-builder/utils/form-field.factory';
 import { normalizeFieldTypeName } from '../../form-builder/utils/field-type.utils';
 import { resolveBuilderLocationKind } from '../../form-builder/utils/location-field-dependencies.utils';
@@ -29,6 +30,7 @@ import {
   sanitizeImageFieldConfig,
 } from '../../form-builder/utils/image-field.utils';
 import { FormStorageService } from './form-storage.service';
+import { TenantSessionService } from '../../../services/tenant-session.service';
 
 const SUPPORTED_TYPES = new Set<DynamicFieldType>([
   'text',
@@ -48,6 +50,7 @@ const SUPPORTED_TYPES = new Set<DynamicFieldType>([
   'length',
   'mass',
   'volume',
+  'temperature',
   'barcode',
   'qr-code',
 ]);
@@ -56,6 +59,8 @@ const SUPPORTED_TYPES = new Set<DynamicFieldType>([
   providedIn: 'root',
 })
 export class DynamicFormFieldMapperService {
+  private readonly tenantSession = inject(TenantSessionService);
+
   constructor(
     private fieldOptionsService: FieldOptionsService,
     private formStorageService: FormStorageService,
@@ -107,12 +112,16 @@ export class DynamicFormFieldMapperService {
     const imageConfig =
       type === 'image' ? sanitizeImageFieldConfig(field as FormField & Record<string, unknown>) : null;
 
+    const sessionUser = this.tenantSession.getUser() as Record<string, unknown> | null;
+    const resolvedDefault = resolveConfiguredDefaultValue(field, sessionUser);
+
     return {
       id: field.id,
       name: field.name || toFieldName(field.label),
       type,
       label: field.label,
-      value: field.value ?? field.defaultValue ?? undefined,
+      value: field.value ?? resolvedDefault ?? undefined,
+      defaultValue: resolvedDefault,
       required: field.required,
       placeholder: field.placeholder,
       width: field.width ?? 12,
@@ -199,7 +208,7 @@ export class DynamicFormFieldMapperService {
 
   private normalizeOptions(
     field: FormField,
-    options: Array<string | FieldOption>
+    options: Array<string | number | FieldOption>
   ): FieldOption[] {
     if (field.type === 'checkbox') {
       return normalizeCheckboxFieldOptions(options);

@@ -55,6 +55,7 @@
             <ng-container *ngSwitchCase="'length'">Collect a length or distance with unit.</ng-container>
             <ng-container *ngSwitchCase="'mass'">Collect a weight or mass with unit.</ng-container>
             <ng-container *ngSwitchCase="'volume'">Collect a volume or capacity with unit.</ng-container>
+            <ng-container *ngSwitchCase="'temperature'">Collect a temperature with unit.</ng-container>
             <ng-container *ngSwitchCase="'barcode'">Scan or enter a barcode value.</ng-container>
             <ng-container *ngSwitchCase="'qr-code'">Scan or enter a QR code value.</ng-container>
           </ng-container>
@@ -127,6 +128,10 @@
           <svg *ngSwitchCase="'volume'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
             <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5h7.5L18 9.75v7.5A2.25 2.25 0 0 1 15.75 19.5h-7.5A2.25 2.25 0 0 1 6 17.25v-7.5L8.25 4.5Z" />
             <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 12h10.5" />
+          </svg>
+          <svg *ngSwitchCase="'temperature'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5.25a3 3 0 0 1 6 0v7.268a4.5 4.5 0 1 1-6 0V5.25Z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 12.75v3" />
           </svg>
           <svg *ngSwitchCase="'barcode'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
             <path stroke-linecap="round" stroke-linejoin="round"

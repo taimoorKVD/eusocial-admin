@@ -51,21 +51,23 @@ export function shouldFetchSelectOptionsFromApi(field: DynamicField): boolean {
 export function normalizeStaticSelectOptions(fields: DynamicField[]): void {
   for (const field of fields) {
     if (field.type === 'select' && !field.optionSource && Array.isArray(field.options)) {
-      field.options = field.options.map((option) =>
-        typeof option === 'string'
-          ? {
-              name: option,
-              label: option,
-              value: option,
-              id: option,
-            }
-          : {
-            name: option.label,
-            label: option.label,
-            value: option.value,
-            id: option.value,
-          }
-      );
+      field.options = field.options.map((option) => {
+        if (typeof option === 'string' || typeof option === 'number') {
+          return {
+            name: String(option),
+            label: String(option),
+            value: option,
+            id: option,
+          };
+        }
+
+        return {
+          name: option.label,
+          label: option.label,
+          value: option.value,
+          id: option.value,
+        };
+      });
     }
   }
 }

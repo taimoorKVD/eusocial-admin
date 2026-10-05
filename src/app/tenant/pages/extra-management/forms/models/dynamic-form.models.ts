@@ -3,6 +3,8 @@ import {
   OptionSource,
   SelectSelectionType,
 } from '../../../../form-builder/models/form-field.model';
+import { FormLogicRule } from '../../../../forms/logic-rules/logic-rule.models';
+import { normalizeLogicRules } from '../../../../forms/logic-rules/logic-rule.utils';
 
 export type FieldType =
   | 'text'
@@ -24,12 +26,14 @@ export type FieldType =
   | 'length'
   | 'mass'
   | 'volume'
+  | 'temperature'
   | 'barcode'
   | 'qr-code';
 
-/** Select option — string label, or label+value (id) for location dependencies. */
+/** Select option — label, record value/id, or label+value for location dependencies. */
 export type FormSelectOption =
   | string
+  | number
   | {
       label: string;
       value: string | number;
@@ -805,6 +809,11 @@ export interface DynamicFormPayload {
     type: 'custom';
     rows: Array<{ fields: Omit<FormFieldConfig, 'id'>[] }>;
   }>;
+  /**
+   * Form-level Logic Rules (automation intent). Separate from per-field
+   * Conditional Logic stored on each field's `condition`.
+   */
+  conditionalRules?: FormLogicRule[];
 }
 
 export interface SavedDynamicForm {
@@ -836,6 +845,7 @@ export const FIELD_TYPE_OPTIONS: { label: string; value: FieldType }[] = [
   { label: 'Length / Distance', value: 'length' },
   { label: 'Weight / Mass', value: 'mass' },
   { label: 'Volume / Capacity', value: 'volume' },
+  { label: 'Temperature', value: 'temperature' },
   { label: 'Barcode', value: 'barcode' },
   { label: 'QR Code', value: 'qr-code' },
 ];
@@ -868,29 +878,49 @@ export function createCustomSection(name: string): CustomFormSection {
 export function stripFieldId(field: FormFieldConfig): Omit<FormFieldConfig, 'id'> & {
   id?: string;
   condition?: FieldCondition;
+  optionSource?: FormFieldConfig['optionSource'];
+  defaultValue?: unknown;
 } {
   const {
-    optionSource: _optionSource,
     fieldTypeName: _fieldTypeName,
     isEditable: _isEditable,
     isShow: _isShow,
     validations: _validations,
-    defaultValue: _defaultValue,
+    value: _previewValue,
+    defaultValue,
     options,
     condition,
+    optionSource,
     id,
     ...rest
   } = field;
 
-  const normalizedOptions = options?.map((opt) =>
-    typeof opt === 'string' ? opt : String(opt.label ?? opt.value),
-  );
+  const normalizedOptions =
+    optionSource?.type === 'dynamic'
+      ? options?.length
+        ? options.map((opt) =>
+            typeof opt === 'string' || typeof opt === 'number' ? opt : opt.value,
+          )
+        : undefined
+      : options?.map((opt) =>
+          typeof opt === 'string' || typeof opt === 'number'
+            ? opt
+            : String(opt.label ?? opt.value),
+        );
+
+  const hasDefaultValue =
+    defaultValue !== undefined &&
+    defaultValue !== null &&
+    !(typeof defaultValue === 'string' && defaultValue === '') &&
+    !(Array.isArray(defaultValue) && defaultValue.length === 0);
 
   return {
     ...rest,
     ...(id ? { id } : {}),
     ...(condition ? { condition } : {}),
+    ...(optionSource ? { optionSource } : {}),
     ...(normalizedOptions ? { options: normalizedOptions } : {}),
+    ...(hasDefaultValue ? { defaultValue } : {}),
   };
 }
 
@@ -932,6 +962,7 @@ export function buildDynamicFormPayload(
   sections: FormSection[],
   meta: FormMetaConfig,
   options: AssignReportOptions = {},
+  conditionalRules: FormLogicRule[] = [],
 ): DynamicFormPayload {
   const assignJobPositionIds = resolveSelectedIds(meta.assignJobPosition, options.jobPositions);
   const assignUserIds = resolveSelectedIds(meta.assignUsers, options.users);
@@ -985,5 +1016,6 @@ export function buildDynamicFormPayload(
         fields: row.fields.map(stripFieldId),
       })),
     })),
+    conditionalRules: normalizeLogicRules(conditionalRules),
   };
 }

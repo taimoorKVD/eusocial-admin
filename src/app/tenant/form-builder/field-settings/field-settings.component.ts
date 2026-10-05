@@ -30,6 +30,10 @@ import {
 import { FormField, FieldOption, OptionSource, RangeFieldType, RangeTimeFormat } from '../models/form-field.model';
 import { ImageFile } from '../models/image-file.model';
 import { normalizeFieldOption, normalizeStaticSelectFieldOptions } from '../utils/field-options.utils';
+import {
+  CURRENT_USER_DEFAULT_TOKEN,
+  supportsCurrentUserDefault,
+} from '../utils/field-default-value.utils';
 import { buildPlaceholderFromLabel, supportsPlaceholderAutoGeneration } from '../utils/form-field.factory';
 import {
   cloneImageFiles,
@@ -58,6 +62,7 @@ import {
   DEFAULT_RANGE_STEP,
   normalizeRangeTimeFormat,
   normalizeRangeType,
+  normalizeRangeValue,
   resetRangeTypeSpecificConfig,
   sanitizeDateBounds,
   sanitizeRangeBounds,
@@ -72,6 +77,9 @@ import {
   normalizeMeasurementUnitCode,
   normalizeMeasurementUnitMode,
 } from '../../../shared/dynamic-form/measurement-units';
+import {
+  normalizeMeasurementValue,
+} from '../../../shared/dynamic-form/measurement-field.utils';
 import {
   getLocationFieldDeleteBlockReason,
   isDynamicSelectOptionsHiddenForModule,
@@ -116,8 +124,24 @@ export class FieldSettingsComponent {
    */
   @Input() enforceUniqueDynamicModules = false;
 
+  /**
+   * When true, the current field is referenced by one or more form-level Logic Rules.
+   * Parents compute this (Form Template only).
+   */
+  @Input() fieldUsedInLogicRules = false;
+
   @Input() set schema(value: FormField[] | null | undefined) {
-    this.schemaSignal.set(value ?? []);
+    const next = value ?? [];
+    const current = this.schemaSignal();
+    // Avoid signal writes on identical schema identity churn from parent computeds.
+    if (
+      current.length === next.length &&
+      current.every((field, index) => field === next[index])
+    ) {
+      return;
+    }
+
+    this.schemaSignal.set(next);
     this.ensureConditionSourceIsValid(false);
   }
 
@@ -141,18 +165,17 @@ export class FieldSettingsComponent {
 
     if (!isSameField) {
       this.overlayService.close();
-    }
-
-    if (this.skipFieldReinitialize && isSameField) {
       this.skipFieldReinitialize = false;
       this.assignField(value);
+      this.initializeSelectOptionsState(this._field);
       return;
     }
 
-    const preservedModuleSlug = isSameField ? this.selectedModuleSlug : '';
-
+    // Same field echoed from parent after onChange(). Only refresh local model —
+    // never re-run select option normalize/sync/load. Re-init here re-triggers
+    // Value <select> ngModel and dynamic option sync → NG0103 in Form Template.
+    this.skipFieldReinitialize = false;
     this.assignField(value);
-    this.initializeSelectOptionsState(this._field, preservedModuleSlug);
   }
 
   get field(): FormField | undefined {
@@ -203,10 +226,16 @@ export class FieldSettingsComponent {
       return;
     }
 
+    // Parent rebinds `[field]` with a new object. Skip select option re-init on
+    // that echo so static normalize / dynamic sync cannot emit again in the same
+    // refresh cycle (NG0103 in Form Template Select customization).
+    this.skipFieldReinitialize = true;
+
     this.update.emit({
       ...this._field,
       isShow: this._field.isShow !== false,
       isReadonly: this._field.isReadonly === true,
+      defaultValue: this._field.defaultValue,
       options: [...(this._field.options || [])],
       optionSource: this.resolveEmittedOptionSource(),
       referenceImages:
@@ -272,6 +301,20 @@ export class FieldSettingsComponent {
     }
 
     this._field.allowDecimal = allow === true;
+    this.onChange();
+  }
+
+  onReadonlyChange(readonly: boolean): void {
+    if (!this._field || !this.isFieldEditable) {
+      return;
+    }
+
+    const next = readonly === true;
+    if (this._field.isReadonly === next) {
+      return;
+    }
+
+    this._field.isReadonly = next;
     this.onChange();
   }
 
@@ -638,6 +681,8 @@ export class FieldSettingsComponent {
         return 'Mass Unit';
       case 'volume':
         return 'Volume Unit';
+      case 'temperature':
+        return 'Temperature Unit';
       default:
         return 'Unit';
     }
@@ -665,6 +710,274 @@ export class FieldSettingsComponent {
 
   get isTimeRange(): boolean {
     return this.isRangeField && this.rangeTypeValue === 'time';
+  }
+
+  get isTextareaField(): boolean {
+    return this._field?.type === 'textarea';
+  }
+
+  get isRadioField(): boolean {
+    return this._field?.type === 'radio';
+  }
+
+  get isCheckboxField(): boolean {
+    return this._field?.type === 'checkbox';
+  }
+
+  get isTextLikeValueField(): boolean {
+    const type = this._field?.type;
+    return (
+      type === 'text' ||
+      type === 'email' ||
+      type === 'barcode' ||
+      type === 'qr-code'
+    );
+  }
+
+  get supportsConfiguredValue(): boolean {
+    if (!this._field) {
+      return false;
+    }
+    // Image / signature / file have no Value configuration (file may appear via fieldTypeName).
+    const type = String(this._field.type);
+    const typeName = String(this._field.fieldTypeName ?? '').toLowerCase();
+    return !(
+      type === 'image' ||
+      type === 'signature' ||
+      type === 'file' ||
+      typeName === 'file' ||
+      typeName === 'image' ||
+      typeName === 'signature'
+    );
+  }
+
+  get isStaticOptionValueField(): boolean {
+    return (
+      (this.isSelectField && this.optionsMode === 'static') ||
+      this.isRadioField ||
+      this.isCheckboxField
+    );
+  }
+
+  get supportsCurrentUserValue(): boolean {
+    return !!this._field && supportsCurrentUserDefault(this._field);
+  }
+
+  readonly currentUserDefaultToken = CURRENT_USER_DEFAULT_TOKEN;
+
+  get configuredDefaultValue(): unknown {
+    return this._field?.defaultValue ?? '';
+  }
+
+  get configuredValueText(): string {
+    const value = this._field?.defaultValue;
+    if (value == null || value === '') {
+      return '';
+    }
+    if (typeof value === 'object') {
+      return '';
+    }
+    return String(value);
+  }
+
+  get staticValueOptions(): Array<{ label: string; value: string | number }> {
+    return (this._field?.options || [])
+      .map((option, index) => {
+        if (typeof option === 'string' || typeof option === 'number') {
+          return { label: String(option), value: option };
+        }
+        const normalized = normalizeFieldOption(option);
+        if (!normalized) {
+          return null;
+        }
+        return {
+          label: normalized.label,
+          value: normalized.value ?? index,
+        };
+      })
+      .filter((option): option is { label: string; value: string | number } => !!option);
+  }
+
+  get configuredRangeFrom(): string {
+    const range = normalizeRangeValue(this._field?.defaultValue);
+    return range.from == null || range.from === '' ? '' : String(range.from);
+  }
+
+  get configuredRangeTo(): string {
+    const range = normalizeRangeValue(this._field?.defaultValue);
+    return range.to == null || range.to === '' ? '' : String(range.to);
+  }
+
+  get configuredMeasurementAmount(): string {
+    if (!this._field || !isMeasurementFieldType(this._field.type)) {
+      return '';
+    }
+    const current = normalizeMeasurementValue(this._field.defaultValue, this._field.type, {
+      unitMode: normalizeMeasurementUnitMode(this._field.unitMode),
+      unit: this._field.unit,
+    });
+    return current.value == null ? '' : String(current.value);
+  }
+
+  onConfiguredDefaultValueChange(value: unknown): void {
+    if (!this._field || !this.isFieldEditable || !this.supportsConfiguredValue) {
+      return;
+    }
+
+    // Native <select> always yields strings — restore option typing when possible.
+    let next: unknown = value ?? '';
+    if (typeof next === 'string' && next !== '' && next !== this.currentUserDefaultToken) {
+      const matched =
+        this.staticValueOptions.find((option) => String(option.value) === next) ??
+        this.configuredDynamicValueOptions.find((option) => String(option.value) === next);
+      if (matched) {
+        next = matched.value;
+      }
+    }
+
+    if (this.configuredValuesEqual(this._field.defaultValue, next)) {
+      return;
+    }
+    this._field.defaultValue = next;
+    this.onChange();
+  }
+
+  onConfiguredValueTextChange(value: string | number): void {
+    if (!this._field || !this.isFieldEditable || !this.supportsConfiguredValue) {
+      return;
+    }
+    const next = value == null ? '' : value;
+    if (this.configuredValuesEqual(this._field.defaultValue, next)) {
+      return;
+    }
+    this._field.defaultValue = next;
+    this.onChange();
+  }
+
+  isConfiguredMultiValueSelected(optionValue: string | number): boolean {
+    const current = this._field?.defaultValue;
+    if (!Array.isArray(current)) {
+      return String(current ?? '') === String(optionValue);
+    }
+    return current.some((item) => String(item) === String(optionValue));
+  }
+
+  toggleConfiguredMultiValue(optionValue: string | number, checked: boolean): void {
+    if (!this._field || !this.isFieldEditable || !this.supportsConfiguredValue) {
+      return;
+    }
+
+    const current = Array.isArray(this._field.defaultValue)
+      ? [...this._field.defaultValue]
+      : [];
+
+    const next = checked
+      ? current.some((item) => String(item) === String(optionValue))
+        ? current
+        : [...current, optionValue]
+      : current.filter((item) => String(item) !== String(optionValue));
+
+    if (this.configuredValuesEqual(this._field.defaultValue, next)) {
+      return;
+    }
+
+    this._field.defaultValue = next;
+    this.onChange();
+  }
+
+  onConfiguredRangeSideChange(side: 'from' | 'to', raw: string | number): void {
+    if (!this._field || !this.isFieldEditable || !this.isRangeField) {
+      return;
+    }
+
+    const current = normalizeRangeValue(this._field.defaultValue);
+    let nextSide: string | number | null =
+      raw === '' || raw == null ? null : raw;
+
+    if (this.isNumberRange && typeof nextSide === 'string') {
+      const parsed = Number(nextSide);
+      nextSide = nextSide.trim() === '' || !Number.isFinite(parsed) ? null : parsed;
+    }
+
+    const next = {
+      ...current,
+      [side]: nextSide,
+    };
+
+    const nextDefault =
+      (next.from == null || next.from === '') && (next.to == null || next.to === '')
+        ? ''
+        : next;
+
+    if (this.configuredValuesEqual(this._field.defaultValue, nextDefault)) {
+      return;
+    }
+
+    this._field.defaultValue = nextDefault;
+    this.onChange();
+  }
+
+  onConfiguredMeasurementAmountChange(raw: string | number): void {
+    if (!this._field || !this.isFieldEditable || !isMeasurementFieldType(this._field.type)) {
+      return;
+    }
+
+    const current = normalizeMeasurementValue(this._field.defaultValue, this._field.type, {
+      unitMode: normalizeMeasurementUnitMode(this._field.unitMode),
+      unit: this._field.unit,
+    });
+
+    const text = String(raw ?? '').trim();
+    const amount = text === '' ? null : Number(text);
+    const unit =
+      current.unit ??
+      normalizeMeasurementUnitCode(this._field.type, this._field.unit) ??
+      getDefaultUnitCode(this._field.type);
+
+    const nextDefault =
+      amount == null || !Number.isFinite(amount)
+        ? ''
+        : {
+            value: amount,
+            unit,
+          };
+
+    if (this.configuredValuesEqual(this._field.defaultValue, nextDefault)) {
+      return;
+    }
+
+    this._field.defaultValue = nextDefault;
+    this.onChange();
+  }
+
+  /** Prevent Value ngModel echo writes from re-emitting identical configuration. */
+  private configuredValuesEqual(left: unknown, right: unknown): boolean {
+    if (Object.is(left, right)) {
+      return true;
+    }
+
+    if (left == null || left === '' || right == null || right === '') {
+      const leftEmpty = left == null || left === '';
+      const rightEmpty = right == null || right === '';
+      return leftEmpty && rightEmpty;
+    }
+
+    if (Array.isArray(left) || Array.isArray(right)) {
+      if (!Array.isArray(left) || !Array.isArray(right) || left.length !== right.length) {
+        return false;
+      }
+      return left.every((item, index) => String(item) === String(right[index]));
+    }
+
+    if (typeof left === 'object' || typeof right === 'object') {
+      try {
+        return JSON.stringify(left) === JSON.stringify(right);
+      } catch {
+        return false;
+      }
+    }
+
+    return String(left) === String(right);
   }
 
   get rangeStepValue(): number {
@@ -965,8 +1278,8 @@ export class FieldSettingsComponent {
 
     return source.options
       .map((option, index) => {
-        if (typeof option === 'string') {
-          return { label: option, value: option };
+        if (typeof option === 'string' || typeof option === 'number') {
+          return { label: String(option), value: option };
         }
 
         const normalized = normalizeFieldOption(option);
@@ -1087,6 +1400,37 @@ export class FieldSettingsComponent {
         .toLowerCase()
         .includes(query),
     );
+  }
+
+  /** Value picker: prefer selected dynamic options; fall back to loaded module options. */
+  get configuredDynamicValueOptions(): FieldOption[] {
+    const selected = (this._field?.options || [])
+      .map((option, index) => {
+        if (typeof option === 'string' || typeof option === 'number') {
+          const match = this.availableDynamicOptions.find(
+            (item) => String(item.value) === String(option),
+          );
+          return {
+            label: match?.label ?? String(option),
+            value: match?.value ?? option,
+          } as FieldOption;
+        }
+        const normalized = normalizeFieldOption(option);
+        if (!normalized) {
+          return null;
+        }
+        return {
+          label: normalized.label,
+          value: normalized.value ?? index,
+        } as FieldOption;
+      })
+      .filter((option): option is FieldOption => !!option);
+
+    if (selected.length) {
+      return selected;
+    }
+
+    return this.availableDynamicOptions;
   }
 
   onDynamicOptionsSearch(event: Event): void {
@@ -1310,20 +1654,45 @@ export class FieldSettingsComponent {
     }
     if (count === 1) {
       const first = this._field?.options?.[0];
-      const label =
-        typeof first === 'string'
-          ? first
-          : normalizeFieldOption(first)?.label ?? '1 option selected';
-      return label;
+      return this.resolveDynamicOptionLabel(first) || '1 option selected';
     }
     return `${count} options selected`;
   }
 
-  private readOptionValue(option: string | FieldOption): string | number | null {
+  private readOptionValue(option: string | number | FieldOption): string | number | null {
     if (typeof option === 'string' || typeof option === 'number') {
       return option;
     }
     return normalizeFieldOption(option)?.value ?? null;
+  }
+
+  /** Resolve a saved dynamic option valueKey id to its display label. */
+  private resolveDynamicOptionLabel(
+    option: string | number | FieldOption | undefined,
+  ): string {
+    if (option == null) {
+      return '';
+    }
+
+    const value = this.readOptionValue(option);
+    if (value != null && value !== '') {
+      const match = this.availableDynamicOptions.find(
+        (item) => String(item.value) === String(value),
+      );
+      if (match?.label) {
+        return match.label;
+      }
+    }
+
+    if (typeof option === 'string') {
+      return option;
+    }
+
+    if (typeof option === 'number') {
+      return String(option);
+    }
+
+    return normalizeFieldOption(option)?.label ?? '';
   }
 
   onMaxRatingChange(value: number): void {
@@ -1353,6 +1722,10 @@ export class FieldSettingsComponent {
       .map(option => {
         if (typeof option === 'string') {
           return option;
+        }
+
+        if (typeof option === 'number') {
+          return String(option);
         }
 
         return normalizeFieldOption(option)?.label ?? '';
@@ -1425,6 +1798,21 @@ export class FieldSettingsComponent {
 
   isDeleteModalOpen = false;
 
+  get deleteModalTitle(): string {
+    return this.fieldUsedInLogicRules ? 'Delete Field & Rules' : 'Remove Field';
+  }
+
+  get deleteModalMessage(): string {
+    if (this.fieldUsedInLogicRules) {
+      return 'This field is used in one or more logic rules. Deleting this field will also remove the related logic rules.';
+    }
+    return 'Remove this field from the form?';
+  }
+
+  get deleteConfirmText(): string {
+    return this.fieldUsedInLogicRules ? 'Delete Field & Rules' : 'Remove';
+  }
+
   onDeleteClick(): void {
     if (!this.isFieldEditable) {
       return;
@@ -1466,7 +1854,10 @@ export class FieldSettingsComponent {
   private assignField(value: FormField): void {
     this._field = {
       ...value,
-      defaultValue: value.defaultValue ?? value.value ?? '',
+      defaultValue:
+        value.defaultValue !== undefined && value.defaultValue !== null
+          ? value.defaultValue
+          : '',
       width: value.width ?? 12,
       validations: value.validations || {},
       condition: serializeConditionalLogic(value.condition),
@@ -1636,7 +2027,10 @@ export class FieldSettingsComponent {
     this.availableDynamicOptions = [];
 
     if (field.type === 'select') {
-      this._field.options = normalizeStaticSelectFieldOptions(this._field.options);
+      const normalized = normalizeStaticSelectFieldOptions(this._field.options);
+      if (!this.selectOptionsSemanticallyEqual(this._field.options, normalized)) {
+        this._field.options = normalized;
+      }
     }
   }
 
@@ -1665,12 +2059,20 @@ export class FieldSettingsComponent {
     this.moduleColumns = data.columns;
     this.selectedDisplayColumn =
       data.displayLabelKey || DYNAMIC_SELECT_LABEL_KEY;
-    this.availableDynamicOptions = data.options?.length
-      ? [...data.options]
-      : this.dynamicModuleOptionsService.buildOptionsFromRecords(
-          data.records,
-          this.selectedDisplayColumn,
-        );
+    this.availableDynamicOptions =
+      this.dynamicModuleOptionsService.buildOptionsFromRecords(
+        data.records,
+        this.selectedDisplayColumn,
+        this.resolveDynamicValueKey(),
+      );
+  }
+
+  /** Configured option value property from optionSource.response.valueKey. */
+  private resolveDynamicValueKey(): string {
+    const configured = String(
+      this._field?.optionSource?.response?.valueKey ?? '',
+    ).trim();
+    return configured || 'id';
   }
 
   private resolveOptionsMode(field: FormField): SelectOptionsMode {
@@ -1811,10 +2213,10 @@ export class FieldSettingsComponent {
     }
 
     if (preserveSelection) {
-      const before = JSON.stringify(this._field.options ?? []);
+      const before = this._field.options ?? [];
       this.syncSelectedDynamicOptionsWithAvailable();
-      const after = JSON.stringify(this._field.options ?? []);
-      if (before !== after) {
+      const after = this._field.options ?? [];
+      if (!this.selectOptionsSemanticallyEqual(before, after)) {
         this.skipFieldReinitialize = true;
         this.onChange();
       }
@@ -1830,7 +2232,8 @@ export class FieldSettingsComponent {
 
   /**
    * Keep previously saved selections that still exist in the module,
-   * and refresh their labels from the current `name` values.
+   * refreshing labels from the current valueKey/labelKey mapping.
+   * In-memory options keep `{ label, value }` for UI; save paths strip to IDs.
    */
   private syncSelectedDynamicOptionsWithAvailable(): void {
     if (!this._field) {
@@ -1860,6 +2263,40 @@ export class FieldSettingsComponent {
     this._field.options = next;
   }
 
+  /** Compare select options by value/label only (ignore optional id churn). */
+  private selectOptionsSemanticallyEqual(
+    left: FormField['options'] | undefined,
+    right: FormField['options'] | undefined,
+  ): boolean {
+    const leftList = left ?? [];
+    const rightList = right ?? [];
+    if (leftList.length !== rightList.length) {
+      return false;
+    }
+
+    for (let index = 0; index < leftList.length; index += 1) {
+      const leftValue = this.readOptionValue(leftList[index]);
+      const rightValue = this.readOptionValue(rightList[index]);
+      if (String(leftValue ?? '') !== String(rightValue ?? '')) {
+        return false;
+      }
+
+      const leftLabel =
+        typeof leftList[index] === 'string' || typeof leftList[index] === 'number'
+          ? String(leftList[index])
+          : normalizeFieldOption(leftList[index])?.label ?? '';
+      const rightLabel =
+        typeof rightList[index] === 'string' || typeof rightList[index] === 'number'
+          ? String(rightList[index])
+          : normalizeFieldOption(rightList[index])?.label ?? '';
+      if (String(leftLabel ?? '') !== String(rightLabel ?? '')) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   private resolveEmittedOptionSource(): OptionSource | undefined {
     if (this.optionsMode === 'dynamic') {
       return this.buildDynamicOptionSource();
@@ -1878,7 +2315,7 @@ export class FieldSettingsComponent {
       endpoint: this.selectedModuleSlug,
       response: {
         labelKey: this.selectedDisplayColumn || DYNAMIC_SELECT_LABEL_KEY,
-        valueKey: 'id',
+        valueKey: this.resolveDynamicValueKey(),
         dataPath: 'data',
       },
     };

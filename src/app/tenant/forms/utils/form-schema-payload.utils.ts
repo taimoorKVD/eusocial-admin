@@ -3,6 +3,7 @@ import {
   normalizeFieldOrder,
   toFieldName,
 } from '../../form-builder/utils/form-field.factory';
+import { toDynamicSelectOptionIds } from '../../form-builder/utils/field-options.utils';
 import {
   resolveCharacterLimit,
   supportsCharacterLimit,
@@ -49,11 +50,13 @@ export function buildFormSchemaPayload(fields: FormField[]) {
           field.type === 'price' ||
           field.type === 'length' ||
           field.type === 'mass' ||
-          field.type === 'volume'
+          field.type === 'volume' ||
+          field.type === 'temperature'
             ? field.type === 'price' ||
               field.type === 'length' ||
               field.type === 'mass' ||
-              field.type === 'volume'
+              field.type === 'volume' ||
+              field.type === 'temperature'
               ? true
               : field.allowDecimal === true
             : undefined,
@@ -86,7 +89,10 @@ export function buildFormSchemaPayload(fields: FormField[]) {
           grid_width_desktop: 6,
         },
         defaultValue: field.defaultValue ?? field.value ?? null,
-        options: field.options || [],
+        options:
+          field.optionSource?.type === 'dynamic'
+            ? toDynamicSelectOptionIds(field.options)
+            : field.options || [],
         validations: field.validations || {},
         sortOrder: index + 1,
         width: field.width ?? 12,

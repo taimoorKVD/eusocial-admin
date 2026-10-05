@@ -1,0 +1,462 @@
+<div class="space-y-5 font-ibm">
+  @if (!editorOpen) {
+    <div class="flex items-start justify-between gap-3">
+      <div class="min-w-0 space-y-1">
+        <h3 class="text-sm font-semibold text-slate-800">Logic Rules</h3>
+        <p class="text-xs leading-relaxed text-slate-500">
+          Create rules that define what should happen based on submitted form information.
+        </p>
+      </div>
+      @if (localRules.length) {
+        <button
+          type="button"
+          class="shrink-0 rounded-md border border-[#FF9015] px-3 py-2 text-xs font-medium text-[#FF9015] transition hover:bg-[#FF9015] hover:text-white"
+          (click)="openCreateEditor()"
+        >
+          + Add Logic Rule
+        </button>
+      }
+    </div>
+
+    @if (!localRules.length) {
+      <div
+        class="flex flex-col items-center rounded-lg border border-dashed border-slate-300 bg-slate-50 px-5 py-12 text-center"
+      >
+        <div
+          class="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-white text-[#FF9015] shadow-sm ring-1 ring-slate-200"
+          aria-hidden="true"
+        >
+          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M9.75 3.75v1.5m4.5-1.5v1.5M5.25 9h13.5m-12 3.75h.008v.008H6.75v-.008Zm3 0h.008v.008H9.75v-.008Zm3 0h.008v.008H12.75v-.008Zm3 0h.008v.008H15.75v-.008Zm-9 3h.008v.008H6.75v-.008Zm3 0h.008v.008H9.75v-.008Zm3 0h.008v.008H12.75v-.008Zm3 0h.008v.008H15.75v-.008ZM4.5 19.5h15a1.5 1.5 0 0 0 1.5-1.5V7.5A1.5 1.5 0 0 0 19.5 6h-15A1.5 1.5 0 0 0 3 7.5v10.5A1.5 1.5 0 0 0 4.5 19.5Z"
+            />
+          </svg>
+        </div>
+        <p class="text-sm font-medium text-slate-700">No logic rules yet</p>
+        <p class="mt-1.5 max-w-xs text-xs leading-relaxed text-slate-500">
+          Create rules that define what should happen based on submitted form information.
+        </p>
+        <button
+          type="button"
+          class="mt-6 inline-flex items-center gap-1.5 rounded-md bg-[#FF9015] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#e8800f]"
+          (click)="openCreateEditor()"
+        >
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+          </svg>
+          Add Logic Rule
+        </button>
+      </div>
+    } @else {
+      <div class="space-y-4">
+        @for (rule of localRules; track trackByRuleId($index, rule)) {
+          <article class="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+            <div class="flex items-start justify-between gap-3 border-b border-slate-100 px-4 py-3.5">
+              <div class="min-w-0 space-y-1.5">
+                <div class="flex flex-wrap items-center gap-2">
+                  <h4 class="truncate text-sm font-semibold text-slate-800">
+                    {{ rule.name || 'Untitled Rule' }}
+                  </h4>
+                  <span
+                    class="rounded-full px-2 py-0.5 text-[10px] font-medium"
+                    [ngClass]="
+                      rule.enabled
+                        ? 'bg-emerald-50 text-emerald-700'
+                        : 'bg-slate-100 text-slate-500'
+                    "
+                  >
+                    {{ rule.enabled ? 'Enabled' : 'Disabled' }}
+                  </span>
+                </div>
+                <label class="inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-slate-600">
+                  <input
+                    type="checkbox"
+                    class="h-4 w-4 shrink-0 cursor-pointer rounded border border-slate-300 bg-white accent-[#ea580c] transition hover:border-[#ea580c] focus:outline-none focus:ring-[3px] focus:ring-[rgb(234_88_12_/_0.12)] disabled:cursor-not-allowed disabled:opacity-50"
+                    [checked]="rule.enabled"
+                    (change)="toggleRuleEnabled(rule, $any($event.target).checked)"
+                  />
+                  {{ rule.enabled ? 'Rule is active' : 'Rule is inactive' }}
+                </label>
+              </div>
+
+              <div class="flex shrink-0 flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  class="rounded-md border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+                  (click)="openEditEditor(rule)"
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  class="rounded-md border border-red-200 px-2.5 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-50"
+                  (click)="requestDelete(rule)"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+
+            <div class="space-y-3 bg-slate-50/70 px-4 py-4">
+              <div class="rounded-md border border-slate-100 bg-white px-3.5 py-3">
+                <p class="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-[#FF9015]">
+                  When
+                </p>
+                <p class="break-words text-xs leading-relaxed text-slate-700">
+                  {{ ruleSummary(rule).when }}
+                </p>
+              </div>
+
+              <div class="rounded-md border border-slate-100 bg-white px-3.5 py-3">
+                <p class="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                  Then
+                </p>
+                <p class="break-words text-xs leading-relaxed text-slate-700">
+                  {{ ruleSummary(rule).then }}
+                </p>
+              </div>
+            </div>
+          </article>
+        }
+      </div>
+    }
+  } @else if (editingRule) {
+    <div class="space-y-6">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <button
+          type="button"
+          class="inline-flex items-center gap-1 text-xs font-medium text-slate-500 transition hover:text-slate-700"
+          (click)="closeEditor()"
+        >
+          <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+          </svg>
+          Back to rules
+        </button>
+        <h3 class="text-sm font-semibold text-slate-800">
+          {{ isNewRule ? 'Add Logic Rule' : 'Edit Logic Rule' }}
+        </h3>
+      </div>
+
+      <div class="space-y-2">
+        <label class="block text-xs font-medium text-slate-600" for="logic-rule-name">
+          Rule Name
+        </label>
+        <input
+          id="logic-rule-name"
+          type="text"
+          class="w-full rounded-md border border-slate-200 bg-white px-3 py-2.5 text-sm leading-5 text-slate-700 transition hover:border-orange-300 hover:bg-[#fffaf5] focus:border-[#ea580c] focus:bg-white focus:outline-none focus:ring-[3px] focus:ring-[rgb(234_88_12_/_0.12)] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+          [(ngModel)]="editingRule.name"
+          placeholder="e.g. Low Stock Alert"
+        />
+      </div>
+
+      <!-- WHEN -->
+      <section class="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+        <div class="flex items-center gap-2 border-b border-slate-100 bg-[#FFF8F1] px-4 py-3">
+          <span
+            class="inline-flex h-6 items-center rounded bg-[#FF9015]/15 px-2 text-[11px] font-bold tracking-wide text-[#FF9015]"
+          >
+            WHEN
+          </span>
+          <span class="text-xs text-slate-500">Match conditions</span>
+        </div>
+
+        <div class="space-y-5 px-4 py-4">
+          <div>
+            <p class="mb-2 text-xs font-medium text-slate-600">Match</p>
+            <div class="flex flex-wrap gap-x-5 gap-y-2 rounded-md border border-slate-100 bg-slate-50 px-3 py-3">
+              <label class="inline-flex items-center gap-2.5 text-sm text-slate-700">
+                <input
+                  type="radio"
+                  name="logic-match-mode"
+                  class="h-4 w-4 shrink-0 cursor-pointer rounded-full border border-slate-300 bg-white accent-[#ea580c] transition hover:border-[#ea580c] focus:outline-none focus:ring-[3px] focus:ring-[rgb(234_88_12_/_0.12)] disabled:cursor-not-allowed disabled:opacity-50"
+                  [checked]="editingRule.conditions.match === 'all'"
+                  (change)="setMatchMode('all')"
+                />
+                All conditions
+              </label>
+              <label class="inline-flex items-center gap-2.5 text-sm text-slate-700">
+                <input
+                  type="radio"
+                  name="logic-match-mode"
+                  class="h-4 w-4 shrink-0 cursor-pointer rounded-full border border-slate-300 bg-white accent-[#ea580c] transition hover:border-[#ea580c] focus:outline-none focus:ring-[3px] focus:ring-[rgb(234_88_12_/_0.12)] disabled:cursor-not-allowed disabled:opacity-50"
+                  [checked]="editingRule.conditions.match === 'any'"
+                  (change)="setMatchMode('any')"
+                />
+                Any condition
+              </label>
+            </div>
+          </div>
+
+          <div class="space-y-4">
+            @for (condition of editingRule.conditions.items; track trackByConditionId($index, condition)) {
+              <div class="space-y-3 rounded-md border border-slate-100 bg-slate-50 px-3.5 py-4">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                    Condition {{ $index + 1 }}
+                  </span>
+                  @if (editingRule.conditions.items.length > 1) {
+                    <button
+                      type="button"
+                      class="text-xs font-medium text-red-500 transition hover:text-red-600"
+                      (click)="removeCondition(condition.id)"
+                    >
+                      Remove
+                    </button>
+                  }
+                </div>
+
+                <!-- Field / Operator / Compare With (+ Value) on one wrapping row -->
+                <div class="flex flex-wrap gap-3">
+                  <div class="min-w-[9rem] flex-1 space-y-1.5">
+                    <label class="block text-xs font-medium text-slate-600">Field</label>
+                    <select
+                      class="logic-rules-select w-full cursor-pointer appearance-none rounded-md border border-slate-200 bg-white px-3 py-2.5 pr-9 text-sm leading-5 text-slate-700 transition hover:border-orange-300 hover:bg-[#fffaf5] focus:border-[#ea580c] focus:bg-white focus:outline-none focus:ring-[3px] focus:ring-[rgb(234_88_12_/_0.12)] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                      [ngModel]="condition.fieldId"
+                      (ngModelChange)="onConditionFieldChange(condition, $event)"
+                    >
+                      <option value="">Select Field</option>
+                      @for (field of eligibleFields; track field.id) {
+                        <option [value]="field.id">{{ field.label }}</option>
+                      }
+                    </select>
+                  </div>
+
+                  <div class="min-w-[9rem] flex-1 space-y-1.5">
+                    <label class="block text-xs font-medium text-slate-600">Operator</label>
+                    <select
+                      class="logic-rules-select w-full cursor-pointer appearance-none rounded-md border border-slate-200 bg-white px-3 py-2.5 pr-9 text-sm leading-5 text-slate-700 transition hover:border-orange-300 hover:bg-[#fffaf5] focus:border-[#ea580c] focus:bg-white focus:outline-none focus:ring-[3px] focus:ring-[rgb(234_88_12_/_0.12)] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                      [ngModel]="condition.operator"
+                      (ngModelChange)="onConditionOperatorChange(condition, $event)"
+                      [disabled]="!condition.fieldId"
+                    >
+                      @for (op of operatorsFor(condition); track op) {
+                        <option [value]="op">{{ operatorLabel(op, condition) }}</option>
+                      }
+                    </select>
+                  </div>
+
+                  @if (needsValue(condition)) {
+                    <div class="min-w-[9rem] flex-1 space-y-1.5">
+                      <label class="block text-xs font-medium text-slate-600">
+                        Compare With
+                      </label>
+                      <select
+                        class="logic-rules-select w-full cursor-pointer appearance-none rounded-md border border-slate-200 bg-white px-3 py-2.5 pr-9 text-sm leading-5 text-slate-700 transition hover:border-orange-300 hover:bg-[#fffaf5] focus:border-[#ea580c] focus:bg-white focus:outline-none focus:ring-[3px] focus:ring-[rgb(234_88_12_/_0.12)] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                        [ngModel]="condition.comparison.type"
+                        (ngModelChange)="onComparisonTypeChange(condition, $event)"
+                        [disabled]="!condition.fieldId"
+                      >
+                        @for (option of comparisonOptionsFor(condition); track option.value) {
+                          <option [value]="option.value">{{ option.label }}</option>
+                        }
+                      </select>
+                    </div>
+                  }
+
+                  @if (needsValue(condition) && condition.fieldId && condition.comparison.type === 'fixed') {
+                    <div class="min-w-[9rem] flex-1 space-y-1.5">
+                      <label class="block text-xs font-medium text-slate-600">Value</label>
+                      <input
+                        [type]="fixedValueInputType(condition)"
+                        class="w-full rounded-md border border-slate-200 bg-white px-3 py-2.5 text-sm leading-5 text-slate-700 transition hover:border-orange-300 hover:bg-[#fffaf5] focus:border-[#ea580c] focus:bg-white focus:outline-none focus:ring-[3px] focus:ring-[rgb(234_88_12_/_0.12)] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                        [ngModel]="condition.comparison.value"
+                        (ngModelChange)="onFixedValueChange(condition, $event)"
+                        placeholder="Enter value"
+                      />
+                    </div>
+                  }
+
+                  @if (needsValue(condition) && condition.fieldId && condition.comparison.type === 'field') {
+                    <div class="min-w-[9rem] flex-1 space-y-1.5">
+                      <label class="block text-xs font-medium text-slate-600">
+                        Form Field
+                      </label>
+                      <select
+                        class="logic-rules-select w-full cursor-pointer appearance-none rounded-md border border-slate-200 bg-white px-3 py-2.5 pr-9 text-sm leading-5 text-slate-700 transition hover:border-orange-300 hover:bg-[#fffaf5] focus:border-[#ea580c] focus:bg-white focus:outline-none focus:ring-[3px] focus:ring-[rgb(234_88_12_/_0.12)] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                        [ngModel]="condition.comparison.fieldId"
+                        (ngModelChange)="onCompareFieldChange(condition, $event)"
+                      >
+                        <option value="">Select Field</option>
+                        @for (field of compatibleFieldsFor(condition); track field.id) {
+                          <option [value]="field.id">{{ field.label }}</option>
+                        }
+                      </select>
+                      @if (!compatibleFieldsFor(condition).length) {
+                        <p class="text-[11px] text-slate-400">
+                          No compatible form fields available for comparison.
+                        </p>
+                      }
+                    </div>
+                  }
+                </div>
+
+                @if (needsValue(condition) && condition.fieldId && condition.comparison.type === 'relatedData') {
+                  <div class="space-y-3.5 rounded-md border border-dashed border-slate-200 bg-white px-3.5 py-3.5">
+                    <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                      Related Data
+                    </p>
+
+                    @if (!hasRelatedDataSources()) {
+                      <p class="text-xs leading-relaxed text-slate-500">
+                        No dynamic dropdown fields are configured on this form. Add a dynamic
+                        select (e.g. Items) to use related data.
+                      </p>
+                    } @else {
+                      <div class="flex flex-wrap gap-3">
+                        <div class="min-w-[9rem] flex-1 space-y-1.5">
+                          <label class="block text-xs font-medium text-slate-600">
+                            Source
+                          </label>
+                          <select
+                            class="logic-rules-select w-full cursor-pointer appearance-none rounded-md border border-slate-200 bg-white px-3 py-2.5 pr-9 text-sm leading-5 text-slate-700 transition hover:border-orange-300 hover:bg-[#fffaf5] focus:border-[#ea580c] focus:bg-white focus:outline-none focus:ring-[3px] focus:ring-[rgb(234_88_12_/_0.12)] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                            [ngModel]="condition.comparison.sourceFieldId"
+                            (ngModelChange)="onRelatedSourceChange(condition, $event)"
+                          >
+                            <option value="">Select Source</option>
+                            @for (field of dynamicSourceFields; track field.id) {
+                              <option [value]="field.id">{{ field.label }}</option>
+                            }
+                          </select>
+                        </div>
+
+                        <div class="min-w-[9rem] flex-1 space-y-1.5">
+                          <label class="block text-xs font-medium text-slate-600">
+                            Property
+                          </label>
+                          <select
+                            class="logic-rules-select w-full cursor-pointer appearance-none rounded-md border border-slate-200 bg-white px-3 py-2.5 pr-9 text-sm leading-5 text-slate-700 transition hover:border-orange-300 hover:bg-[#fffaf5] focus:border-[#ea580c] focus:bg-white focus:outline-none focus:ring-[3px] focus:ring-[rgb(234_88_12_/_0.12)] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                            [ngModel]="condition.comparison.property"
+                            (ngModelChange)="onRelatedPropertyChange(condition, $event)"
+                            [disabled]="!condition.comparison.sourceFieldId"
+                          >
+                            <option value="">Select Property</option>
+                            @for (
+                              column of relatedPropertiesFor(condition.comparison.sourceFieldId);
+                              track column.id
+                            ) {
+                              <option [value]="column.id">{{ column.label }}</option>
+                            }
+                          </select>
+                          @if (isRelatedPropertiesLoading(condition.comparison.sourceFieldId)) {
+                            <p class="text-[11px] text-slate-400">Loading properties…</p>
+                          } @else if (
+                            condition.comparison.sourceFieldId &&
+                            !relatedPropertiesFor(condition.comparison.sourceFieldId).length
+                          ) {
+                            <p class="text-[11px] text-slate-400">
+                              No properties available for this source.
+                            </p>
+                          }
+                        </div>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+
+          <button
+            type="button"
+            class="inline-flex items-center gap-1.5 text-xs font-semibold text-[#FF9015] transition hover:text-[#e8800f]"
+            (click)="addCondition()"
+          >
+            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            Add Condition
+          </button>
+        </div>
+      </section>
+
+      <!-- THEN -->
+      <section class="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+        <div class="flex items-center gap-2 border-b border-slate-100 bg-[#F7FADF] px-4 py-3">
+          <span
+            class="inline-flex h-6 items-center rounded bg-[#D0DD28]/40 px-2 text-[11px] font-bold tracking-wide text-slate-700"
+          >
+            THEN
+          </span>
+          <span class="text-xs text-slate-500">Run these actions</span>
+        </div>
+
+        <div class="space-y-4 px-4 py-4">
+          <div class="space-y-3">
+            @for (action of editingRule.actions; track trackByActionId($index, action)) {
+              <div class="flex flex-wrap items-end gap-2.5">
+                <div class="min-w-0 flex-1 space-y-1.5">
+                  <label class="block text-xs font-medium text-slate-600">
+                    Action {{ $index + 1 }}
+                  </label>
+                  <select
+                    class="logic-rules-select w-full cursor-pointer appearance-none rounded-md border border-slate-200 bg-white px-3 py-2.5 pr-9 text-sm leading-5 text-slate-700 transition hover:border-orange-300 hover:bg-[#fffaf5] focus:border-[#ea580c] focus:bg-white focus:outline-none focus:ring-[3px] focus:ring-[rgb(234_88_12_/_0.12)] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                    [ngModel]="action.type"
+                    (ngModelChange)="onActionTypeChange(action, $event)"
+                  >
+                    @for (option of actionOptions; track option.value) {
+                      <option [value]="option.value">{{ option.label }}</option>
+                    }
+                  </select>
+                </div>
+                @if (editingRule.actions.length > 1) {
+                  <button
+                    type="button"
+                    class="mb-0.5 shrink-0 rounded-md border border-red-200 px-2.5 py-2.5 text-xs text-red-600 transition hover:bg-red-50"
+                    (click)="removeAction(action.id)"
+                    aria-label="Remove action"
+                  >
+                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                }
+              </div>
+            }
+          </div>
+
+          <button
+            type="button"
+            class="inline-flex items-center gap-1.5 text-xs font-semibold text-[#FF9015] transition hover:text-[#e8800f]"
+            (click)="addAction()"
+          >
+            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            Add Action
+          </button>
+        </div>
+      </section>
+
+      <div class="flex flex-wrap items-center justify-end gap-2.5 border-t border-slate-100 pt-4">
+        <button
+          type="button"
+          class="rounded-md border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+          (click)="closeEditor()"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="rounded-md bg-[#D0DD28] px-4 py-2.5 text-sm font-semibold text-slate-800 transition hover:brightness-95"
+          (click)="saveEditor()"
+        >
+          {{ isNewRule ? 'Save Rule' : 'Update Rule' }}
+        </button>
+      </div>
+    </div>
+  }
+</div>
+
+<app-confirm-modal
+  [isOpen]="deleteModalOpen"
+  title="Delete Logic Rule"
+  [message]="deleteModalMessage"
+  confirmText="Delete"
+  cancelText="Cancel"
+  (confirmed)="confirmDelete()"
+  (closed)="closeDeleteModal()"
+></app-confirm-modal>
