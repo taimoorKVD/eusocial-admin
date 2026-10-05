@@ -27,9 +27,23 @@ import {
 import {
   ConditionalFieldEffects,
   buildValuesByFieldId,
+  collectValueSourceFieldIds,
   conditionalEffectsEqual,
+  evaluateConditionGroup,
+  extractRelatedRecordsFromResponse,
+  getPrimarySetValueSource,
+  hasSetValueAction,
+  normalizeConditionalLogic,
+  normalizeRelatedEndpointKey,
+  normalizeValueSource,
+  RelatedRecordLookup,
   resolveAllConditionalEffects,
+  resolveSetValueFromAction,
+  setValuesEqual,
+  supportsSetValueFieldType,
 } from '../conditional-logic';
+import { DynamicModuleOptionsService } from '../../tenant/form-builder/services/dynamic-module-options.service';
+import { FormStorageService } from '../../tenant/forms/services/form-storage.service';
 import {
   getDynamicFieldErrorMessage,
   shouldShowDynamicFieldError,
@@ -165,6 +179,8 @@ export class DynamicFormComponent implements OnDestroy {
   private readonly overlayService = inject(DropdownOverlayService);
   private readonly locationCache = inject(LocationCacheService);
   private readonly formImageUploadService = inject(FormImageUploadService);
+  private readonly dynamicModuleOptions = inject(DynamicModuleOptionsService);
+  private readonly formStorage = inject(FormStorageService);
   private readonly toastr = inject(ToastrService);
 
   readonly selectDropdownGroup = 'dynamic-form-select';
@@ -256,6 +272,8 @@ export class DynamicFormComponent implements OnDestroy {
   readonly conditionalEffects = signal<Record<string, ConditionalFieldEffects>>({});
   private fieldsSchemaKey = '';
   private applyingConditionalState = false;
+  private readonly relatedRecordsByEndpoint = new Map<string, Record<string, unknown>[]>();
+  private readonly relatedRecordsLoading = new Set<string>();
 
   /** Resolved Country/State/City fields for the current schema. */
   private locationFields: Partial<Record<LocationKind, DynamicField>> = {};
@@ -1660,6 +1678,7 @@ export class DynamicFormComponent implements OnDestroy {
       this.signatureUploading.set({});
       this.subscribeToFormChanges();
       this.setupLocationDependencies(sorted);
+      this.prefetchRelatedRecordsForSetValue(sorted);
       this.refreshConditionalEffects();
       this.emitNormalizedValue();
       this.formReady.set(true);
@@ -1763,8 +1782,14 @@ export class DynamicFormComponent implements OnDestroy {
 
     try {
       const effects = this.conditionalEffects();
+      const fields = this.sortedFields();
+      const valuesByFieldId = buildValuesByFieldId(fields, this.form.getRawValue());
+      const fieldsById = new Map(fields.map(field => [field.id, field]));
+      const lookup: RelatedRecordLookup = {
+        recordsByEndpoint: this.relatedRecordsByEndpoint,
+      };
 
-      for (const field of this.sortedFields()) {
+      for (const field of fields) {
         const control = this.form.get(field.name);
         if (!control) {
           continue;
@@ -1791,9 +1816,249 @@ export class DynamicFormComponent implements OnDestroy {
           control.enable({ emitEvent: false });
         }
       }
+
+      for (const field of fields) {
+        this.applySetValueAction(field, valuesByFieldId, fieldsById, lookup);
+      }
     } finally {
       this.applyingConditionalState = false;
     }
+  }
+
+  private applySetValueAction(
+    field: DynamicField,
+    valuesByFieldId: Record<string, unknown>,
+    fieldsById: Map<string, DynamicField>,
+    lookup: RelatedRecordLookup,
+  ): void {
+    if (!supportsSetValueFieldType(field.type)) {
+      return;
+    }
+
+    const logic = normalizeConditionalLogic(field.condition);
+    if (!logic?.enabled || !hasSetValueAction(logic)) {
+      return;
+    }
+
+    const whenSourceConfigured = logic.when.rules.some(rule => {
+      if ('fieldId' in rule) {
+        return !!rule.fieldId;
+      }
+      return false;
+    });
+    if (!whenSourceConfigured) {
+      return;
+    }
+
+    if (!evaluateConditionGroup(logic.when, valuesByFieldId)) {
+      return;
+    }
+
+    const action = logic.actions.find(item => item.type === 'setValue');
+    const source = getPrimarySetValueSource(logic);
+    if (source && this.needsRelatedRecords(source, fieldsById)) {
+      this.ensureRelatedRecordsLoaded(source, fieldsById);
+    }
+
+    let nextValue = resolveSetValueFromAction(
+      field,
+      action,
+      valuesByFieldId,
+      fieldsById,
+      lookup,
+    );
+
+    if (nextValue === undefined) {
+      return;
+    }
+
+    if (isMeasurementFieldType(field.type)) {
+      nextValue = normalizeMeasurementValue(nextValue, field.type, {
+        unitMode: normalizeMeasurementUnitMode(field.unitMode),
+        unit: field.unit,
+      });
+    } else if (field.type === 'time') {
+      nextValue = normalizeTimeFieldValue(nextValue);
+    }
+
+    const control = this.form.get(field.name);
+    if (!control) {
+      return;
+    }
+
+    if (setValuesEqual(control.value, nextValue)) {
+      return;
+    }
+
+    control.setValue(nextValue, { emitEvent: false });
+    valuesByFieldId[field.id] = nextValue;
+  }
+
+  private needsRelatedRecords(
+    source: ReturnType<typeof normalizeValueSource>,
+    fieldsById: Map<string, DynamicField>,
+  ): boolean {
+    const visit = (value: ReturnType<typeof normalizeValueSource>): boolean => {
+      if (value.kind === 'relatedData') {
+        const sourceField = fieldsById.get(value.sourceFieldId);
+        const endpoint = String(sourceField?.optionSource?.endpoint ?? '').trim();
+        if (!endpoint) {
+          return false;
+        }
+        const key = normalizeRelatedEndpointKey(endpoint);
+        const records =
+          this.relatedRecordsByEndpoint.get(endpoint) ??
+          this.relatedRecordsByEndpoint.get(key);
+        return !records?.length;
+      }
+      if (value.kind === 'expression') {
+        return (
+          visit(normalizeValueSource(value.left)) ||
+          visit(normalizeValueSource(value.right))
+        );
+      }
+      return false;
+    };
+
+    return visit(normalizeValueSource(source));
+  }
+
+  private ensureRelatedRecordsLoaded(
+    source: ReturnType<typeof normalizeValueSource>,
+    fieldsById: Map<string, DynamicField>,
+  ): void {
+    const endpoints = new Set<string>();
+    const visit = (value: ReturnType<typeof normalizeValueSource>): void => {
+      if (value.kind === 'relatedData') {
+        const sourceField = fieldsById.get(value.sourceFieldId);
+        const endpoint = String(sourceField?.optionSource?.endpoint ?? '').trim();
+        if (endpoint) {
+          endpoints.add(endpoint);
+        }
+      }
+      if (value.kind === 'expression') {
+        visit(normalizeValueSource(value.left));
+        visit(normalizeValueSource(value.right));
+      }
+    };
+    visit(normalizeValueSource(source));
+    this.loadRelatedRecordsForEndpoints(endpoints);
+  }
+
+  private prefetchRelatedRecordsForSetValue(fields: DynamicField[]): void {
+    const endpoints = new Set<string>();
+
+    for (const field of fields) {
+      const logic = normalizeConditionalLogic(field.condition);
+      if (!logic?.enabled || !hasSetValueAction(logic)) {
+        continue;
+      }
+
+      const source = getPrimarySetValueSource(logic);
+      if (!source) {
+        continue;
+      }
+
+      for (const fieldId of collectValueSourceFieldIds(source)) {
+        const sourceField = fields.find(item => item.id === fieldId);
+        const endpoint = String(sourceField?.optionSource?.endpoint ?? '').trim();
+        if (endpoint) {
+          endpoints.add(endpoint);
+        }
+      }
+
+      const visit = (value: ReturnType<typeof normalizeValueSource>): void => {
+        if (value.kind === 'relatedData') {
+          const sourceField = fields.find(item => item.id === value.sourceFieldId);
+          const endpoint = String(sourceField?.optionSource?.endpoint ?? '').trim();
+          if (endpoint) {
+            endpoints.add(endpoint);
+          }
+        }
+        if (value.kind === 'expression') {
+          visit(normalizeValueSource(value.left));
+          visit(normalizeValueSource(value.right));
+        }
+      };
+      visit(normalizeValueSource(source));
+    }
+
+    this.loadRelatedRecordsForEndpoints(endpoints);
+  }
+
+  private loadRelatedRecordsForEndpoints(endpoints: Iterable<string>): void {
+    for (const endpoint of endpoints) {
+      const normalized = normalizeRelatedEndpointKey(endpoint);
+      if (
+        (this.relatedRecordsByEndpoint.has(endpoint) &&
+          (this.relatedRecordsByEndpoint.get(endpoint)?.length ?? 0) > 0) ||
+        (this.relatedRecordsByEndpoint.has(normalized) &&
+          (this.relatedRecordsByEndpoint.get(normalized)?.length ?? 0) > 0) ||
+        this.relatedRecordsLoading.has(endpoint) ||
+        this.relatedRecordsLoading.has(normalized)
+      ) {
+        continue;
+      }
+
+      this.relatedRecordsLoading.add(endpoint);
+      this.relatedRecordsLoading.add(normalized);
+
+      // Prefer the same endpoint loader used by dynamic Select options.
+      this.formStorage.getEndpointApi<unknown>(endpoint).subscribe({
+        next: response => {
+          const records = extractRelatedRecordsFromResponse(response);
+          this.storeRelatedRecords(endpoint, records);
+
+          if (!records.length) {
+            this.dynamicModuleOptions.getModuleData(endpoint).subscribe({
+              next: data => {
+                this.storeRelatedRecords(endpoint, data.records || []);
+                this.refreshSetValueAfterRelatedLoad();
+              },
+              error: () => {
+                this.relatedRecordsLoading.delete(endpoint);
+                this.relatedRecordsLoading.delete(normalized);
+              },
+            });
+            return;
+          }
+
+          this.refreshSetValueAfterRelatedLoad();
+        },
+        error: () => {
+          this.dynamicModuleOptions.getModuleData(endpoint).subscribe({
+            next: data => {
+              this.storeRelatedRecords(endpoint, data.records || []);
+              this.refreshSetValueAfterRelatedLoad();
+            },
+            error: () => {
+              this.relatedRecordsLoading.delete(endpoint);
+              this.relatedRecordsLoading.delete(normalized);
+              // Do not permanently cache empty failures — allow retry later.
+            },
+          });
+        },
+      });
+    }
+  }
+
+  private storeRelatedRecords(
+    endpoint: string,
+    records: Record<string, unknown>[],
+  ): void {
+    const normalized = normalizeRelatedEndpointKey(endpoint);
+    this.relatedRecordsLoading.delete(endpoint);
+    this.relatedRecordsLoading.delete(normalized);
+    this.relatedRecordsByEndpoint.set(endpoint, records);
+    this.relatedRecordsByEndpoint.set(normalized, records);
+  }
+
+  private refreshSetValueAfterRelatedLoad(): void {
+    if (!this.formReady() || !this.form) {
+      return;
+    }
+    this.refreshConditionalEffects();
+    this.emitNormalizedValue();
   }
 
   private emitNormalizedValue(): void {
