@@ -2,10 +2,307 @@
   display: block;
 }
 
-/* Custom select chevron — data-URI background is awkward in Tailwind utilities. */
-.logic-rules-select {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m19.5 8.25-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 0.65rem center;
-  background-size: 1rem;
+.logic-rules-input {
+  width: 100%;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  background: #fff;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: #334155;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background-color 0.15s ease;
+
+  &:hover {
+    border-color: #fdba74;
+    background-color: #fffaf5;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: #ea580c;
+    background-color: #fff;
+    box-shadow: 0 0 0 3px rgb(234 88 12 / 12%);
+  }
+}
+
+.logic-select {
+  position: relative;
+  width: 100%;
+}
+
+.logic-select__trigger {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  background: #fff;
+  padding: 0.625rem 0.75rem;
+  text-align: left;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: #334155;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
+
+  &:hover:not(:disabled) {
+    border-color: #fdba74;
+    background-color: #fffaf5;
+  }
+
+  &[aria-expanded='true'] {
+    border-color: #ea580c;
+    background-color: #fff;
+    box-shadow: 0 0 0 3px rgb(234 88 12 / 12%);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    background-color: #f1f5f9;
+    color: #94a3b8;
+  }
+}
+
+.logic-select__menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  left: 0;
+  z-index: 80;
+  max-height: 14rem;
+  overflow-y: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  background: #fff;
+  box-shadow: 0 10px 20px rgb(0 0 0 / 10%);
+}
+
+.logic-select__option {
+  display: block;
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  text-align: left;
+  font-size: 0.875rem;
+  color: #334155;
+  background: #fff;
+
+  &:hover {
+    background: #fffaf5;
+    color: #ea580c;
+  }
+
+  &--selected {
+    background: #fff7ed;
+    color: #c2410c;
+    font-weight: 600;
+  }
+}
+
+.logic-rules-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgb(15 23 42 / 42%);
+  backdrop-filter: blur(2px);
+}
+
+.logic-rules-modal__panel {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 72rem;
+  max-height: min(92vh, 56rem);
+  overflow: hidden;
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow:
+    0 25px 50px -12px rgb(0 0 0 / 25%),
+    0 8px 16px -8px rgb(0 0 0 / 12%);
+}
+
+.logic-rules-modal__header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem 1rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.logic-rules-modal__body {
+  min-height: 0;
+  flex: 1;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.logic-rules-modal__footer {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.625rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.logic-rules-section {
+  overflow: visible;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  background: #fff;
+}
+
+.logic-rules-section__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  padding: 1rem 1.1rem;
+  border-bottom: 1px solid #f1f5f9;
+
+  &--when {
+    background: #fff8f1;
+  }
+
+  &--if {
+    background: #f0f9ff;
+  }
+
+  &--then {
+    background: #f7fadf;
+  }
+}
+
+.logic-rules-keyword {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  min-width: 3.5rem;
+  padding: 0.35rem 0.55rem;
+  border-radius: 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1;
+
+  &--when {
+    background: #ff9015;
+    color: #fff;
+  }
+
+  &--if {
+    background: #0ea5e9;
+    color: #fff;
+  }
+
+  &--then {
+    background: #c5d31f;
+    color: #1e293b;
+  }
+}
+
+.logic-rules-trigger {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  border: 1px solid #fed7aa;
+  border-radius: 0.85rem;
+  background: #fffaf5;
+  padding: 0.95rem 1rem;
+}
+
+.logic-rules-trigger__icon {
+  display: inline-flex;
+  height: 2.25rem;
+  width: 2.25rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.65rem;
+  background: #fff;
+  color: #ea580c;
+  border: 1px solid #fed7aa;
+}
+
+.logic-rules-sentence {
+  border: 1px solid #e2e8f0;
+  border-radius: 0.9rem;
+  background: #f8fafc;
+  padding: 1rem;
+}
+
+.logic-rules-sentence__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.75rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.35rem;
+  background: #0ea5e9;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+
+  &--then {
+    background: #c5d31f;
+    color: #1e293b;
+  }
+}
+
+.logic-rules-sentence__row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: end;
+  }
+}
+
+.logic-rules-sentence__part {
+  min-width: 0;
+}
+
+.logic-rules-sentence__label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+}
+
+@media (max-width: 640px) {
+  .logic-rules-modal {
+    padding: 0;
+    align-items: stretch;
+  }
+
+  .logic-rules-modal__panel {
+    max-height: 100vh;
+    border-radius: 0;
+  }
 }

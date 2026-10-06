@@ -13,6 +13,7 @@ import {
   DynamicModuleOptionsService,
   ModuleColumnOption,
 } from '../../form-builder/services/dynamic-module-options.service';
+import { DropdownOverlayService } from '../../../shared/directives/dropdown-panel/dropdown-overlay.service';
 import { ConditionOperator } from '../../../shared/conditional-logic';
 import {
   FormLogicRule,
@@ -29,15 +30,21 @@ import {
   createEmptyLogicAction,
   createEmptyLogicCondition,
   createEmptyLogicRule,
+  filterRelatedPropertiesForLogicField,
+  fixedOptionLabelForValue,
   getCompatibleCompareFields,
   getDynamicSourceEndpoint,
   getDynamicSourceFields,
+  getFixedComparisonControlKind,
+  getFixedComparisonOptions,
   getLogicEligibleFields,
   getOperatorLabel,
   getOperatorsForFieldType,
+  isFixedOptionValueSelected,
+  LogicFixedComparisonControlKind,
+  LogicFixedValueOption,
   normalizeLogicRules,
   operatorNeedsComparisonValue,
-  resolveLogicFieldKind,
   summarizeRuleCard,
 } from '../logic-rules/logic-rule.utils';
 
@@ -56,6 +63,25 @@ export class LogicRulesPanelComponent implements OnChanges {
   readonly actionOptions = LOGIC_ACTION_OPTIONS;
   readonly comparisonOptions = LOGIC_COMPARISON_OPTIONS;
 
+  /** Friendlier labels for the builder UI only (values unchanged). */
+  readonly friendlyActionOptions: ReadonlyArray<{
+    value: LogicActionType;
+    label: string;
+  }> = [
+    { value: 'purchaseRequest', label: 'Create a Purchase Request' },
+    { value: 'sendNotification', label: 'Send a Notification' },
+    { value: 'maintenanceRequest', label: 'Create a Maintenance Request' },
+  ];
+
+  readonly friendlyComparisonOptions: ReadonlyArray<{
+    value: LogicComparisonType;
+    label: string;
+  }> = [
+    { value: 'fixed', label: 'a specific value' },
+    { value: 'field', label: 'another answer on this form' },
+    { value: 'relatedData', label: 'a detail from a related item' },
+  ];
+
   localRules: FormLogicRule[] = [];
   editorOpen = false;
   editingRule: FormLogicRule | null = null;
@@ -65,10 +91,18 @@ export class LogicRulesPanelComponent implements OnChanges {
   pendingDeleteRule: FormLogicRule | null = null;
 
   relatedPropertyCache = new Map<string, ModuleColumnOption[]>();
+  relatedRecordsCache = new Map<string, Record<string, unknown>[]>();
   relatedPropertyLoading = new Set<string>();
+  readonly dropdownGroup = 'logic-rules-panel';
+
+  readonly booleanFixedOptions: ReadonlyArray<LogicFixedValueOption> = [
+    { label: 'True', value: 'true' },
+    { label: 'False', value: 'false' },
+  ];
 
   constructor(
     private readonly dynamicModuleOptions: DynamicModuleOptionsService,
+    private readonly overlayService: DropdownOverlayService,
     private readonly cdr: ChangeDetectorRef,
   ) {}
 
@@ -150,9 +184,98 @@ export class LogicRulesPanelComponent implements OnChanges {
   }
 
   closeEditor(): void {
+    this.overlayService.close();
     this.editorOpen = false;
     this.editingRule = null;
     this.isNewRule = false;
+  }
+
+  fieldLabelById(fieldId: string | undefined | null): string {
+    if (!fieldId) {
+      return '';
+    }
+    return this.schema.find((item) => item.id === fieldId)?.label?.trim() || '';
+  }
+
+  comparisonTypeLabel(type: LogicComparisonType | undefined): string {
+    if (!type) {
+      return '';
+    }
+    return (
+      LOGIC_COMPARISON_OPTIONS.find((option) => option.value === type)?.label || ''
+    );
+  }
+
+  friendlyComparisonTypeLabel(type: LogicComparisonType | undefined): string {
+    if (!type) {
+      return '';
+    }
+    return (
+      this.friendlyComparisonOptions.find((option) => option.value === type)
+        ?.label || this.comparisonTypeLabel(type)
+    );
+  }
+
+  actionTypeLabel(type: LogicActionType | undefined): string {
+    return this.actionOptions.find((option) => option.value === type)?.label || '';
+  }
+
+  friendlyActionTypeLabel(type: LogicActionType | undefined): string {
+    return (
+      this.friendlyActionOptions.find((option) => option.value === type)?.label ||
+      this.actionTypeLabel(type)
+    );
+  }
+
+  relatedPropertyLabelFor(
+    sourceFieldId: string | undefined,
+    property: string | undefined,
+  ): string {
+    if (!property) {
+      return '';
+    }
+    return this.resolveRelatedPropertyLabel(sourceFieldId, property) || property;
+  }
+
+  selectConditionField(condition: LogicConditionItem, fieldId: string): void {
+    this.onConditionFieldChange(condition, fieldId);
+    this.overlayService.close();
+  }
+
+  selectConditionOperator(
+    condition: LogicConditionItem,
+    operator: ConditionOperator,
+  ): void {
+    this.onConditionOperatorChange(condition, operator);
+    this.overlayService.close();
+  }
+
+  selectComparisonType(
+    condition: LogicConditionItem,
+    type: LogicComparisonType,
+  ): void {
+    this.onComparisonTypeChange(condition, type);
+    this.overlayService.close();
+  }
+
+  selectCompareField(condition: LogicConditionItem, fieldId: string): void {
+    this.onCompareFieldChange(condition, fieldId);
+    this.overlayService.close();
+  }
+
+  selectRelatedSource(condition: LogicConditionItem, sourceFieldId: string): void {
+    this.onRelatedSourceChange(condition, sourceFieldId);
+    this.overlayService.close();
+  }
+
+  selectRelatedProperty(condition: LogicConditionItem, property: string): void {
+    this.onRelatedPropertyChange(condition, property);
+    this.overlayService.close();
+  }
+
+  selectActionType(action: LogicRuleAction, type: LogicActionType): void {
+    this.onActionTypeChange(action, type);
+    this.overlayService.close();
   }
 
   toggleRuleEnabled(rule: FormLogicRule, enabled: boolean): void {
@@ -255,13 +378,11 @@ export class LogicRulesPanelComponent implements OnChanges {
       ? condition.operator
       : (operators[0] ?? 'equals');
 
+    // Field type drives comparison UI — always reset incompatible prior value/config.
     this.patchCondition(condition.id, {
       fieldId,
       operator,
-      comparison: this.resetComparisonForOperator(
-        condition.comparison,
-        operator,
-      ),
+      comparison: this.createComparisonForOperator(operator),
     });
   }
 
@@ -269,12 +390,22 @@ export class LogicRulesPanelComponent implements OnChanges {
     condition: LogicConditionItem,
     operator: ConditionOperator,
   ): void {
+    const next = this.resetComparisonForOperator(
+      condition.comparison,
+      operator,
+    );
+    // Operator change may switch between single vs multi option semantics —
+    // normalize fixed values that no longer fit the control.
+    if (next.type === 'fixed' && operatorNeedsComparisonValue(operator)) {
+      next.value = this.normalizeFixedValueForField(
+        condition.fieldId,
+        next.value,
+        operator,
+      );
+    }
     this.patchCondition(condition.id, {
       operator,
-      comparison: this.resetComparisonForOperator(
-        condition.comparison,
-        operator,
-      ),
+      comparison: next,
     });
   }
 
@@ -282,10 +413,31 @@ export class LogicRulesPanelComponent implements OnChanges {
     condition: LogicConditionItem,
     type: LogicComparisonType,
   ): void {
+    let fieldId =
+      type === 'field' ? condition.comparison.fieldId : undefined;
+    if (type === 'field' && fieldId) {
+      const compatibleIds = new Set(
+        this.compatibleFieldsFor(condition).map((field) => field.id),
+      );
+      if (!compatibleIds.has(fieldId)) {
+        fieldId = undefined;
+      }
+    }
+
+    let fixedValue: unknown =
+      type === 'fixed' ? (condition.comparison.value ?? '') : undefined;
+    if (type === 'fixed') {
+      fixedValue = this.normalizeFixedValueForField(
+        condition.fieldId,
+        fixedValue,
+        condition.operator,
+      );
+    }
+
     const nextComparison = {
       type,
-      value: type === 'fixed' ? (condition.comparison.value ?? '') : undefined,
-      fieldId: type === 'field' ? condition.comparison.fieldId : undefined,
+      value: fixedValue,
+      fieldId,
       sourceFieldId:
         type === 'relatedData'
           ? condition.comparison.sourceFieldId ||
@@ -302,10 +454,39 @@ export class LogicRulesPanelComponent implements OnChanges {
     }
   }
 
-  onFixedValueChange(condition: LogicConditionItem, value: string): void {
+  onFixedValueChange(condition: LogicConditionItem, value: unknown): void {
     this.patchCondition(condition.id, {
       comparison: { ...condition.comparison, type: 'fixed', value },
     });
+  }
+
+  selectFixedOption(
+    condition: LogicConditionItem,
+    value: string | number | '',
+  ): void {
+    this.onFixedValueChange(condition, value === '' ? '' : value);
+    this.overlayService.close();
+  }
+
+  toggleFixedMultiOption(
+    condition: LogicConditionItem,
+    optionValue: string | number,
+    checked: boolean,
+  ): void {
+    const current = Array.isArray(condition.comparison.value)
+      ? [...condition.comparison.value]
+      : condition.comparison.value != null &&
+          condition.comparison.value !== ''
+        ? [condition.comparison.value]
+        : [];
+
+    const next = checked
+      ? current.some((item) => String(item) === String(optionValue))
+        ? current
+        : [...current, optionValue]
+      : current.filter((item) => String(item) !== String(optionValue));
+
+    this.onFixedValueChange(condition, next);
   }
 
   onCompareFieldChange(condition: LogicConditionItem, fieldId: string): void {
@@ -399,9 +580,57 @@ export class LogicRulesPanelComponent implements OnChanges {
     return operatorNeedsComparisonValue(condition.operator);
   }
 
+  conditionField(condition: LogicConditionItem): FormField | null {
+    if (!condition.fieldId) {
+      return null;
+    }
+    return this.schema.find((item) => item.id === condition.fieldId) ?? null;
+  }
+
+  fixedComparisonControlKind(
+    condition: LogicConditionItem,
+  ): LogicFixedComparisonControlKind {
+    return getFixedComparisonControlKind(this.conditionField(condition));
+  }
+
+  fixedValueOptions(condition: LogicConditionItem): LogicFixedValueOption[] {
+    const kind = this.fixedComparisonControlKind(condition);
+    if (kind === 'boolean') {
+      return [...this.booleanFixedOptions];
+    }
+    return getFixedComparisonOptions(this.conditionField(condition));
+  }
+
+  fixedValueLabel(condition: LogicConditionItem): string {
+    const kind = this.fixedComparisonControlKind(condition);
+    if (kind === 'boolean') {
+      const stored = condition.comparison.value;
+      if (stored === true || String(stored) === 'true') {
+        return 'True';
+      }
+      if (stored === false || String(stored) === 'false') {
+        return 'False';
+      }
+      return '';
+    }
+    return fixedOptionLabelForValue(
+      this.conditionField(condition),
+      condition.comparison.value,
+    );
+  }
+
+  isFixedOptionSelected(
+    condition: LogicConditionItem,
+    optionValue: string | number,
+  ): boolean {
+    return isFixedOptionValueSelected(
+      condition.comparison.value,
+      optionValue,
+    );
+  }
+
   fixedValueInputType(condition: LogicConditionItem): string {
-    const field = this.schema.find((item) => item.id === condition.fieldId);
-    const kind = resolveLogicFieldKind(field);
+    const kind = this.fixedComparisonControlKind(condition);
     if (kind === 'numeric') {
       return 'number';
     }
@@ -414,11 +643,38 @@ export class LogicRulesPanelComponent implements OnChanges {
     return 'text';
   }
 
-  relatedPropertiesFor(sourceFieldId: string | undefined): ModuleColumnOption[] {
+  relatedPropertiesFor(
+    sourceFieldId: string | undefined,
+    condition?: LogicConditionItem,
+  ): ModuleColumnOption[] {
     if (!sourceFieldId) {
       return [];
     }
-    return this.relatedPropertyCache.get(sourceFieldId) ?? [];
+    const columns = this.relatedPropertyCache.get(sourceFieldId) ?? [];
+    const records = this.relatedRecordsCache.get(sourceFieldId) ?? [];
+    const targetField = condition
+      ? this.conditionField(condition)
+      : null;
+    const filtered = filterRelatedPropertiesForLogicField(
+      columns,
+      records,
+      targetField,
+    );
+
+    // Keep a previously saved property visible while editing, even if samples
+    // have not loaded yet or inference excluded it.
+    const selected = condition?.comparison.property?.trim();
+    if (
+      selected &&
+      !filtered.some((column) => column.id === selected)
+    ) {
+      const fromAll = columns.find((column) => column.id === selected);
+      if (fromAll) {
+        return [fromAll, ...filtered];
+      }
+    }
+
+    return filtered;
   }
 
   isRelatedPropertiesLoading(sourceFieldId: string | undefined): boolean {
@@ -431,13 +687,55 @@ export class LogicRulesPanelComponent implements OnChanges {
 
   comparisonOptionsFor(
     _condition: LogicConditionItem,
-  ): typeof LOGIC_COMPARISON_OPTIONS {
+  ): ReadonlyArray<{ value: LogicComparisonType; label: string }> {
     if (this.hasRelatedDataSources()) {
-      return LOGIC_COMPARISON_OPTIONS;
+      return this.friendlyComparisonOptions;
     }
-    return LOGIC_COMPARISON_OPTIONS.filter(
+    return this.friendlyComparisonOptions.filter(
       (option) => option.value !== 'relatedData',
     );
+  }
+
+  private createComparisonForOperator(
+    operator: ConditionOperator,
+  ): LogicConditionItem['comparison'] {
+    if (!operatorNeedsComparisonValue(operator)) {
+      return { type: 'fixed' };
+    }
+    return { type: 'fixed', value: '' };
+  }
+
+  private normalizeFixedValueForField(
+    fieldId: string,
+    value: unknown,
+    operator: ConditionOperator,
+  ): unknown {
+    const field = this.schema.find((item) => item.id === fieldId) ?? null;
+    const control = getFixedComparisonControlKind(field);
+
+    if (control === 'options-multi') {
+      if (Array.isArray(value)) {
+        return value;
+      }
+      if (value === null || value === undefined || value === '') {
+        return [];
+      }
+      return [value];
+    }
+
+    if (control === 'options' || control === 'boolean') {
+      if (Array.isArray(value)) {
+        return value.length ? value[0] : '';
+      }
+      return value ?? '';
+    }
+
+    if (Array.isArray(value)) {
+      return value.length ? value[0] : '';
+    }
+
+    void operator;
+    return value ?? '';
   }
 
   private patchCondition(
@@ -520,6 +818,7 @@ export class LogicRulesPanelComponent implements OnChanges {
     const endpoint = getDynamicSourceEndpoint(field);
     if (!endpoint) {
       this.relatedPropertyCache.set(sourceFieldId, []);
+      this.relatedRecordsCache.set(sourceFieldId, []);
       return;
     }
 
@@ -528,11 +827,13 @@ export class LogicRulesPanelComponent implements OnChanges {
       next: (data) => {
         this.relatedPropertyLoading.delete(sourceFieldId);
         this.relatedPropertyCache.set(sourceFieldId, data.columns || []);
+        this.relatedRecordsCache.set(sourceFieldId, data.records || []);
         this.cdr.markForCheck();
       },
       error: () => {
         this.relatedPropertyLoading.delete(sourceFieldId);
         this.relatedPropertyCache.set(sourceFieldId, []);
+        this.relatedRecordsCache.set(sourceFieldId, []);
         this.cdr.markForCheck();
       },
     });
