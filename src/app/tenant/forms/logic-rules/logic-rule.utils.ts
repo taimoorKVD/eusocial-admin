@@ -1,9 +1,12 @@
 import {
   CONDITION_OPERATOR_LABELS,
   ConditionOperator,
+  filterRelatedPropertiesForTargetKind,
   OPERATORS_WITHOUT_VALUE,
+  SetValueFieldKind,
 } from '../../../shared/conditional-logic';
 import { FormField } from '../../form-builder/models/form-field.model';
+import { normalizeFieldOption } from '../../form-builder/utils/field-options.utils';
 import { normalizeOptionSource } from '../../form-builder/utils/option-source.utils';
 import {
   FormLogicRule,
@@ -15,6 +18,21 @@ import {
   LOGIC_OPERATOR_LABELS,
   LogicRuleAction,
 } from './logic-rule.models';
+
+export type LogicFixedValueOption = {
+  label: string;
+  value: string | number;
+};
+
+/** UI control kind for Automation Rule "Specific Value" compares. */
+export type LogicFixedComparisonControlKind =
+  | 'options'
+  | 'options-multi'
+  | 'boolean'
+  | 'numeric'
+  | 'date'
+  | 'time'
+  | 'text';
 
 export function createLogicRuleId(): string {
   return `logic_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
@@ -273,9 +291,148 @@ export function resolveLogicFieldKind(
     case 'text':
     case 'email':
     case 'textarea':
+    case 'barcode':
+    case 'qr-code':
+      return 'text';
     default:
       return 'text';
   }
+}
+
+/**
+ * Normalize static/dynamic field options for Specific Value compares.
+ * Uses option value (not only label) so saved rules restore correctly.
+ */
+export function getFixedComparisonOptions(
+  field: FormField | null | undefined,
+): LogicFixedValueOption[] {
+  if (!field?.options?.length) {
+    return [];
+  }
+
+  return field.options
+    .map((option, index) => {
+      if (typeof option === 'string' || typeof option === 'number') {
+        return { label: String(option), value: option };
+      }
+
+      const normalized = normalizeFieldOption(option);
+      if (!normalized) {
+        return null;
+      }
+
+      return {
+        label: normalized.label,
+        value: normalized.value ?? index,
+      };
+    })
+    .filter((option): option is LogicFixedValueOption => !!option);
+}
+
+export function getFixedComparisonControlKind(
+  field: FormField | null | undefined,
+): LogicFixedComparisonControlKind {
+  const kind = resolveLogicFieldKind(field);
+  const options = getFixedComparisonOptions(field);
+
+  if (kind === 'select' && options.length > 0) {
+    if (field?.type === 'select' && field.selectionType === 'multi') {
+      return 'options-multi';
+    }
+    return 'options';
+  }
+
+  if (kind === 'boolean') {
+    return 'boolean';
+  }
+  if (kind === 'numeric') {
+    return 'numeric';
+  }
+  if (kind === 'date') {
+    return 'date';
+  }
+  if (kind === 'time') {
+    return 'time';
+  }
+  return 'text';
+}
+
+export function logicFieldKindsCompatible(
+  sourceKind: LogicFieldKind,
+  otherKind: LogicFieldKind,
+): boolean {
+  if (sourceKind === 'numeric') {
+    return otherKind === 'numeric';
+  }
+  if (sourceKind === 'date') {
+    return otherKind === 'date';
+  }
+  if (sourceKind === 'time') {
+    return otherKind === 'time';
+  }
+  if (sourceKind === 'boolean') {
+    return otherKind === 'boolean';
+  }
+  if (sourceKind === 'select') {
+    // Radio/Select should only compare to other option-based fields.
+    return otherKind === 'select';
+  }
+  // Text-like fields may compare to text or select option values.
+  return otherKind === 'text' || otherKind === 'select';
+}
+
+/**
+ * Filter related-data properties using the same kind rules as setValue /
+ * Form Field compares (WHEN field is the source of truth).
+ */
+export function filterRelatedPropertiesForLogicField(
+  columns: Array<{ id: string; label: string }>,
+  records: Record<string, unknown>[],
+  targetField: FormField | null | undefined,
+): Array<{ id: string; label: string }> {
+  const kind = resolveLogicFieldKind(targetField) as SetValueFieldKind;
+  return filterRelatedPropertiesForTargetKind(columns, records, kind);
+}
+
+export function isFixedOptionValueSelected(
+  stored: unknown,
+  optionValue: string | number,
+): boolean {
+  if (Array.isArray(stored)) {
+    return stored.some(
+      (item) => String(item) === String(optionValue),
+    );
+  }
+  if (stored === null || stored === undefined || stored === '') {
+    return false;
+  }
+  return String(stored) === String(optionValue);
+}
+
+export function fixedOptionLabelForValue(
+  field: FormField | null | undefined,
+  stored: unknown,
+): string {
+  if (Array.isArray(stored)) {
+    const labels = stored
+      .map((item) => {
+        const match = getFixedComparisonOptions(field).find(
+          (option) => String(option.value) === String(item),
+        );
+        return match?.label ?? String(item);
+      })
+      .filter(Boolean);
+    return labels.join(', ');
+  }
+
+  if (stored === null || stored === undefined || stored === '') {
+    return '';
+  }
+
+  const match = getFixedComparisonOptions(field).find(
+    (option) => String(option.value) === String(stored),
+  );
+  return match?.label ?? String(stored);
 }
 
 export function getOperatorsForFieldType(
@@ -293,7 +450,7 @@ export function getOperatorsForFieldType(
         'lessThanOrEqual',
       ];
     case 'boolean':
-      return ['checked', 'unchecked'];
+      return ['checked', 'unchecked', 'equals', 'notEquals'];
     case 'select':
       return ['equals', 'notEquals', 'isEmpty', 'isNotEmpty'];
     case 'date':
@@ -360,23 +517,7 @@ export function getCompatibleCompareFields(
     if (sourceField && field.id === sourceField.id) {
       return false;
     }
-    const otherKind = resolveLogicFieldKind(field);
-    if (kind === 'numeric') {
-      return otherKind === 'numeric';
-    }
-    if (kind === 'date') {
-      return otherKind === 'date';
-    }
-    if (kind === 'time') {
-      return otherKind === 'time';
-    }
-    if (kind === 'boolean') {
-      return otherKind === 'boolean';
-    }
-    if (kind === 'select') {
-      return otherKind === 'select' || otherKind === 'text';
-    }
-    return otherKind === 'text' || otherKind === 'select';
+    return logicFieldKindsCompatible(kind, resolveLogicFieldKind(field));
   });
 }
 

@@ -17,6 +17,47 @@ export function operatorRequiresValue(operator: ConditionOperator): boolean {
   return !OPERATORS_WITHOUT_VALUE.has(operator);
 }
 
+/**
+ * Measurement / price FormControls store `{ value, unit }` (also amount/quantity).
+ * Form Template section preview stores the same shape as a JSON string because
+ * `FormFieldConfig.value` is `string | string[]`. Condition rules store primitives
+ * (e.g. `"6"`). Unwrap so comparisons use the amount in both runtimes.
+ */
+function unwrapComparableValue(value: unknown): unknown {
+  if (value === null || value === undefined) {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (trimmed.startsWith('{')) {
+      try {
+        return unwrapComparableValue(JSON.parse(trimmed));
+      } catch {
+        return value;
+      }
+    }
+    return value;
+  }
+
+  if (typeof value !== 'object' || Array.isArray(value)) {
+    return value;
+  }
+
+  const record = value as Record<string, unknown>;
+  if (
+    Object.prototype.hasOwnProperty.call(record, 'value') ||
+    Object.prototype.hasOwnProperty.call(record, 'amount') ||
+    Object.prototype.hasOwnProperty.call(record, 'quantity')
+  ) {
+    return unwrapComparableValue(
+      record['value'] ?? record['amount'] ?? record['quantity'],
+    );
+  }
+
+  return value;
+}
+
 export function isEmptyValue(value: unknown): boolean {
   if (value === null || value === undefined) {
     return true;
@@ -34,27 +75,37 @@ export function isEmptyValue(value: unknown): boolean {
     return false;
   }
 
+  if (typeof value === 'object') {
+    const unwrapped = unwrapComparableValue(value);
+    if (unwrapped !== value) {
+      return isEmptyValue(unwrapped);
+    }
+  }
+
   return false;
 }
 
 function stringifyValue(value: unknown): string {
-  if (value === null || value === undefined) {
+  const comparable = unwrapComparableValue(value);
+  if (comparable === null || comparable === undefined) {
     return '';
   }
 
-  return String(value);
+  return String(comparable);
 }
 
 function toNumber(value: unknown): number | null {
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return value;
+  const comparable = unwrapComparableValue(value);
+
+  if (typeof comparable === 'number' && Number.isFinite(comparable)) {
+    return comparable;
   }
 
-  if (typeof value === 'boolean') {
-    return value ? 1 : 0;
+  if (typeof comparable === 'boolean') {
+    return comparable ? 1 : 0;
   }
 
-  const parsed = Number(stringifyValue(value).trim());
+  const parsed = Number(stringifyValue(comparable).trim());
   return Number.isFinite(parsed) ? parsed : null;
 }
 

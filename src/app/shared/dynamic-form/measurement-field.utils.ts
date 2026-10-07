@@ -54,15 +54,7 @@ export function normalizeMeasurementValue(
     };
   }
 
-  if (typeof raw === 'number' || typeof raw === 'string') {
-    const numeric = typeof raw === 'number' ? raw : Number(String(raw).trim());
-    return {
-      value: Number.isFinite(numeric) ? numeric : null,
-      unit: configuredUnit,
-    };
-  }
-
-  if (typeof raw === 'object') {
+  if (typeof raw === 'object' && !Array.isArray(raw)) {
     const record = raw as Record<string, unknown>;
     const amountRaw = record['value'] ?? record['amount'] ?? record['quantity'];
     const unitRaw = record['unit'] ?? record['currency'] ?? options?.unit;
@@ -79,6 +71,39 @@ export function normalizeMeasurementValue(
         : normalizeMeasurementUnitCode(type, unitRaw as string) ?? configuredUnit;
 
     return { value: numeric, unit };
+  }
+
+  if (typeof raw === 'string') {
+    const trimmed = raw.trim();
+    if (!trimmed) {
+      return {
+        value: null,
+        unit: configuredUnit,
+      };
+    }
+
+    // Form Template (section preview) stores { value, unit } as a JSON string —
+    // same pattern as range fields. Prefer structured JSON before numeric parse.
+    if (trimmed.startsWith('{')) {
+      try {
+        return normalizeMeasurementValue(JSON.parse(trimmed), type, options);
+      } catch {
+        // fall through to numeric parse
+      }
+    }
+
+    const numeric = Number(trimmed);
+    return {
+      value: Number.isFinite(numeric) ? numeric : null,
+      unit: configuredUnit,
+    };
+  }
+
+  if (typeof raw === 'number') {
+    return {
+      value: Number.isFinite(raw) ? raw : null,
+      unit: configuredUnit,
+    };
   }
 
   return createEmptyMeasurementValue(type, configuredUnit);
