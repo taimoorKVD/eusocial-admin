@@ -19,10 +19,24 @@ export function operatorRequiresValue(operator: ConditionOperator): boolean {
 
 /**
  * Measurement / price FormControls store `{ value, unit }` (also amount/quantity).
- * Condition rules store primitives (e.g. `"6"`). Unwrap so comparisons use the amount.
+ * Form Template section preview stores the same shape as a JSON string because
+ * `FormFieldConfig.value` is `string | string[]`. Condition rules store primitives
+ * (e.g. `"6"`). Unwrap so comparisons use the amount in both runtimes.
  */
 function unwrapComparableValue(value: unknown): unknown {
   if (value === null || value === undefined) {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (trimmed.startsWith('{')) {
+      try {
+        return unwrapComparableValue(JSON.parse(trimmed));
+      } catch {
+        return value;
+      }
+    }
     return value;
   }
 
