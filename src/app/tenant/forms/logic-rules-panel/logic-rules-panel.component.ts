@@ -5,6 +5,7 @@ import {
   EventEmitter,
   Input,
   OnChanges,
+  OnDestroy,
   Output,
   SimpleChanges,
 } from '@angular/core';
@@ -55,7 +56,7 @@ import {
   styleUrl: './logic-rules-panel.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class LogicRulesPanelComponent implements OnChanges {
+export class LogicRulesPanelComponent implements OnChanges, OnDestroy {
   @Input() schema: FormField[] = [];
   @Input() rules: FormLogicRule[] = [];
   @Output() rulesChange = new EventEmitter<FormLogicRule[]>();
@@ -87,6 +88,10 @@ export class LogicRulesPanelComponent implements OnChanges {
   editingRule: FormLogicRule | null = null;
   isNewRule = false;
 
+  /** UI-only state driving the drawer leave animation before unmount. */
+  editorClosing = false;
+  private editorCloseTimer: ReturnType<typeof setTimeout> | null = null;
+
   deleteModalOpen = false;
   pendingDeleteRule: FormLogicRule | null = null;
 
@@ -105,6 +110,17 @@ export class LogicRulesPanelComponent implements OnChanges {
     private readonly overlayService: DropdownOverlayService,
     private readonly cdr: ChangeDetectorRef,
   ) {}
+
+  ngOnDestroy(): void {
+    this.clearEditorCloseTimer();
+  }
+
+  private clearEditorCloseTimer(): void {
+    if (this.editorCloseTimer) {
+      clearTimeout(this.editorCloseTimer);
+      this.editorCloseTimer = null;
+    }
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['rules']) {
@@ -170,6 +186,8 @@ export class LogicRulesPanelComponent implements OnChanges {
   }
 
   openCreateEditor(): void {
+    this.clearEditorCloseTimer();
+    this.editorClosing = false;
     this.isNewRule = true;
     this.editingRule = createEmptyLogicRule('');
     this.editorOpen = true;
@@ -177,6 +195,8 @@ export class LogicRulesPanelComponent implements OnChanges {
   }
 
   openEditEditor(rule: FormLogicRule): void {
+    this.clearEditorCloseTimer();
+    this.editorClosing = false;
     this.isNewRule = false;
     this.editingRule = cloneLogicRule(rule);
     this.editorOpen = true;
@@ -185,9 +205,21 @@ export class LogicRulesPanelComponent implements OnChanges {
 
   closeEditor(): void {
     this.overlayService.close();
-    this.editorOpen = false;
-    this.editingRule = null;
-    this.isNewRule = false;
+    if (!this.editorOpen || this.editorClosing) {
+      return;
+    }
+    // Play the leave animation first, then unmount. Rule data is untouched.
+    this.editorClosing = true;
+    this.cdr.markForCheck();
+    this.clearEditorCloseTimer();
+    this.editorCloseTimer = setTimeout(() => {
+      this.editorCloseTimer = null;
+      this.editorClosing = false;
+      this.editorOpen = false;
+      this.editingRule = null;
+      this.isNewRule = false;
+      this.cdr.markForCheck();
+    }, 220);
   }
 
   fieldLabelById(fieldId: string | undefined | null): string {
