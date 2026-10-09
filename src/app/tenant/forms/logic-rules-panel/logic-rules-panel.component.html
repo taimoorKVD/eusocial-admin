@@ -1,6 +1,6 @@
 <div class="logic-rules font-ibm">
   <div class="flex items-start justify-between gap-3">
-    <div class="min-w-0 space-y-0.5">
+    <div class="min-w-0 space-y-1">
       <h3 class="text-sm font-semibold text-slate-800">Automation Rules</h3>
       <p class="text-xs leading-relaxed text-slate-500">
         Set up automatic actions that run after this form is submitted.
@@ -9,7 +9,7 @@
     @if (localRules.length) {
       <button
         type="button"
-        class="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-[#FF9015] px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-[#e8800f]"
+        class="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-[#FF9015] px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-[#e8800f] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF9015]/40 focus-visible:ring-offset-1"
         (click)="openCreateEditor()"
       >
         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -21,16 +21,19 @@
   </div>
 
   @if (!localRules.length) {
-    <div
-      class="mt-4 flex flex-col items-center rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center"
-    >
-      <p class="text-sm font-medium text-slate-700">No automation rules yet</p>
+    <div class="mt-4 flex flex-col items-center rounded-xl border border-dashed border-slate-200 bg-slate-50 px-5 py-10 text-center">
+      <div class="flex h-11 w-11 items-center justify-center rounded-full bg-white text-slate-400 shadow-sm ring-1 ring-slate-100">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+        </svg>
+      </div>
+      <p class="mt-3 text-sm font-semibold text-slate-700">No automation rules yet</p>
       <p class="mt-1 max-w-sm text-xs leading-relaxed text-slate-500">
         Create a simple rule like: when the form is submitted, if stock is low, then create a purchase request.
       </p>
       <button
         type="button"
-        class="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-[#FF9015] px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#e8800f]"
+        class="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-[#FF9015] px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#e8800f] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF9015]/40 focus-visible:ring-offset-1"
         (click)="openCreateEditor()"
       >
         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -40,66 +43,69 @@
       </button>
     </div>
   } @else {
-    <div class="mt-4 space-y-2.5">
+    <div class="mt-4 space-y-3">
       @for (rule of localRules; track trackByRuleId($index, rule)) {
-        <article class="rounded-xl border border-slate-200 bg-white">
-          <div class="flex items-start justify-between gap-3 px-3.5 py-3">
-            <div class="min-w-0">
+        <article class="rule-card">
+          <div class="flex items-start justify-between gap-3 px-4 pt-3.5">
+            <div class="min-w-0 flex-1">
               <div class="flex flex-wrap items-center gap-2">
                 <h4 class="truncate text-sm font-semibold text-slate-800">
                   {{ rule.name || 'Untitled Rule' }}
                 </h4>
                 <span
-                  class="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
-                  [ngClass]="
-                    rule.enabled
-                      ? 'bg-emerald-50 text-emerald-700'
-                      : 'bg-slate-100 text-slate-500'
-                  "
+                  class="rule-status"
+                  [ngClass]="rule.enabled ? 'rule-status--on' : 'rule-status--off'"
                 >
-                  {{ rule.enabled ? 'On' : 'Off' }}
+                  {{ rule.enabled ? 'Enabled' : 'Disabled' }}
                 </span>
               </div>
-              <label class="mt-1.5 inline-flex cursor-pointer items-center gap-2 text-xs text-slate-500">
-                <input
-                  type="checkbox"
-                  class="h-4 w-4 shrink-0 cursor-pointer rounded border border-slate-300 bg-white accent-[#ea580c] transition hover:border-[#ea580c] focus:outline-none focus:ring-[3px] focus:ring-[rgb(234_88_12_/_0.12)] disabled:cursor-not-allowed disabled:opacity-50"
-                  [checked]="rule.enabled"
-                  (change)="toggleRuleEnabled(rule, $any($event.target).checked)"
-                />
-                {{ rule.enabled ? 'Enabled' : 'Disabled' }}
-              </label>
+              <div class="mt-2 flex items-center gap-2">
+                <label class="rule-switch" [attr.aria-label]="rule.enabled ? 'Disable rule' : 'Enable rule'">
+                  <input
+                    type="checkbox"
+                    class="sr-only"
+                    [checked]="rule.enabled"
+                    (change)="toggleRuleEnabled(rule, $any($event.target).checked)"
+                  />
+                  <span class="rule-switch__track" aria-hidden="true"></span>
+                </label>
+                <span class="text-[11px] text-slate-500">
+                  {{ rule.enabled ? 'Rule is active' : 'Rule is paused' }}
+                </span>
+              </div>
             </div>
-            <div class="flex shrink-0 items-center gap-1.5">
+            <div class="flex shrink-0 items-center gap-1">
               <button
                 type="button"
-                class="rounded-md border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-[#fffaf5] hover:text-[#ea580c]"
+                class="icon-btn"
+                title="Edit rule"
+                aria-label="Edit rule"
                 (click)="openEditEditor(rule)"
               >
-                Edit
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125" />
+                </svg>
               </button>
               <button
                 type="button"
-                class="rounded-md border border-red-100 px-2.5 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-50"
+                class="icon-btn icon-btn--danger"
+                title="Delete rule"
+                aria-label="Delete rule"
                 (click)="requestDelete(rule)"
               >
-                Delete
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                </svg>
               </button>
             </div>
           </div>
-          <div class="space-y-1.5 border-t border-slate-100 bg-slate-50/80 px-3.5 py-2.5">
-            <p class="min-w-0 text-xs leading-relaxed text-slate-600">
-              <span class="font-semibold text-[#FF9015]">WHEN</span>
-              form is submitted
+          <div class="mt-3 space-y-1.5 border-t border-slate-100 bg-slate-50/70 px-4 py-3">
+            <p class="summary-line">
+              <span class="summary-key summary-key--when">WHEN</span>
+              Form is submitted
             </p>
-            <p class="min-w-0 text-xs leading-relaxed text-slate-600">
-              <span class="font-semibold text-sky-700">IF</span>
-              {{ ruleSummary(rule).when }}
-            </p>
-            <p class="min-w-0 text-xs leading-relaxed text-slate-600">
-              <span class="font-semibold text-[#8a9a10]">THEN</span>
-              {{ ruleSummary(rule).then }}
-            </p>
+            <p class="summary-line summary-line--if">{{ ruleSummary(rule).when }}</p>
+            <p class="summary-line summary-line--then">{{ ruleSummary(rule).then }}</p>
           </div>
         </article>
       }
@@ -107,28 +113,46 @@
   }
 </div>
 
-@if (editorOpen && editingRule) {
+@if (editorOpen && editingRule; as rule) {
   <div
-    class="logic-rules-modal"
+    class="logic-drawer"
+    [class.logic-drawer--closing]="editorClosing"
     role="dialog"
     aria-modal="true"
-    aria-labelledby="logic-rule-modal-title"
+    aria-labelledby="logic-rule-drawer-title"
     (click)="closeEditor()"
   >
-    <div class="logic-rules-modal__panel" (click)="$event.stopPropagation()">
-      <header class="logic-rules-modal__header">
-        <div class="min-w-0">
-          <h2 id="logic-rule-modal-title" class="text-lg font-semibold text-slate-800">
-            {{ isNewRule ? 'Create Automation Rule' : 'Edit Automation Rule' }}
-          </h2>
-          <p class="mt-1 text-sm leading-relaxed text-slate-500">
-            Set up an automatic action that happens when specific conditions are met.
-          </p>
+    <div
+      class="logic-drawer__panel"
+      [class.logic-drawer__panel--closing]="editorClosing"
+      (click)="$event.stopPropagation()"
+    >
+      <header class="logic-drawer__header">
+        <div class="flex min-w-0 items-start gap-3">
+          <span class="logic-drawer__icon" aria-hidden="true">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+            </svg>
+          </span>
+          <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-2">
+              <h2 id="logic-rule-drawer-title" class="text-base font-semibold text-slate-800">
+                Automation Rules
+              </h2>
+              <span class="logic-drawer__pill">
+                {{ isNewRule ? 'New rule' : 'Editing' }}
+              </span>
+            </div>
+            <p class="mt-1 text-xs leading-relaxed text-slate-500">
+              Set up an automatic action that happens when specific conditions are met.
+            </p>
+          </div>
         </div>
         <button
           type="button"
-          class="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+          class="icon-btn shrink-0"
           aria-label="Close"
+          title="Close"
           (click)="closeEditor()"
         >
           <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -137,35 +161,56 @@
         </button>
       </header>
 
-      <div class="logic-rules-modal__body">
-        <div class="space-y-1.5">
-          <label class="block text-xs font-semibold text-slate-700" for="logic-rule-name">
-            Give this rule a name
-          </label>
-          <input
-            id="logic-rule-name"
-            type="text"
-            class="logic-rules-input"
-            [(ngModel)]="editingRule.name"
-            placeholder="e.g. Low stock — create purchase request"
-          />
-          <p class="text-[11px] text-slate-400">A short name helps you find this rule later.</p>
+      <div class="logic-drawer__body">
+        <!-- Rule name -->
+        <div class="logic-card">
+          <div class="logic-field">
+            <label class="logic-label" for="logic-rule-name">Rule name</label>
+            <input
+              id="logic-rule-name"
+              type="text"
+              class="logic-rules-input"
+              [(ngModel)]="rule.name"
+              placeholder="e.g. Low stock — create purchase request"
+            />
+            <p class="logic-help">A short name helps you find this rule later.</p>
+          </div>
+        </div>
+
+        <!-- Overview -->
+        <div class="drawer-overview">
+          <div class="drawer-overview__item">
+            <span class="drawer-overview__label">Status</span>
+            <span class="drawer-overview__value">{{ rule.enabled ? 'Enabled' : 'Disabled' }}</span>
+          </div>
+          <div class="drawer-overview__item">
+            <span class="drawer-overview__label">Conditions</span>
+            <span class="drawer-overview__value">{{ rule.conditions.items.length }}</span>
+          </div>
+          <div class="drawer-overview__item">
+            <span class="drawer-overview__label">Logic</span>
+            <span class="drawer-overview__value">{{ rule.conditions.match === 'all' ? 'ALL' : 'ANY' }}</span>
+          </div>
+          <div class="drawer-overview__item">
+            <span class="drawer-overview__label">Actions</span>
+            <span class="drawer-overview__value">{{ rule.actions.length }}</span>
+          </div>
         </div>
 
         <!-- WHEN -->
-        <section class="logic-rules-section">
-          <div class="logic-rules-section__head logic-rules-section__head--when">
-            <span class="logic-rules-keyword logic-rules-keyword--when">WHEN</span>
+        <section class="logic-section">
+          <div class="logic-section__head logic-section__head--when">
+            <span class="logic-keyword logic-keyword--when">WHEN</span>
             <div class="min-w-0">
-              <h3 class="text-base font-semibold text-slate-800">Something happens</h3>
+              <h3 class="text-sm font-semibold text-slate-800">Something happens</h3>
               <p class="mt-0.5 text-xs leading-relaxed text-slate-500">
                 Choose what should trigger this automation.
               </p>
             </div>
           </div>
           <div class="p-4">
-            <div class="logic-rules-trigger">
-              <div class="logic-rules-trigger__icon" aria-hidden="true">
+            <div class="logic-trigger">
+              <div class="logic-trigger__icon" aria-hidden="true">
                 <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
                 </svg>
@@ -173,7 +218,7 @@
               <div class="min-w-0">
                 <p class="text-sm font-semibold text-slate-800">This form is submitted</p>
                 <p class="mt-0.5 text-xs leading-relaxed text-slate-500">
-                  After someone fills out and submits this form, the checks below will run automatically.
+                  After someone fills out and submits this form, the checks below run automatically.
                 </p>
               </div>
             </div>
@@ -181,75 +226,69 @@
         </section>
 
         <!-- IF -->
-        <section class="logic-rules-section">
-          <div class="logic-rules-section__head logic-rules-section__head--if">
-            <span class="logic-rules-keyword logic-rules-keyword--if">IF</span>
+        <section class="logic-section">
+          <div class="logic-section__head logic-section__head--if">
+            <span class="logic-keyword logic-keyword--if">IF</span>
             <div class="min-w-0">
-              <h3 class="text-base font-semibold text-slate-800">A condition is true</h3>
+              <h3 class="text-sm font-semibold text-slate-800">A condition is true</h3>
               <p class="mt-0.5 text-xs leading-relaxed text-slate-500">
-                Add a condition that must be true.
+                Add one or more conditions that must be true.
               </p>
             </div>
           </div>
 
           <div class="space-y-4 p-4">
-            @if (editingRule.conditions.items.length > 1) {
-              <div class="grid gap-2 sm:grid-cols-2">
-                <label
-                  class="flex cursor-pointer items-start gap-2.5 rounded-xl border px-3 py-2.5 text-sm text-slate-700"
-                  [ngClass]="
-                    editingRule.conditions.match === 'all'
-                      ? 'border-[#ea580c] bg-[#fff7ed]'
-                      : 'border-slate-200 bg-white'
-                  "
-                >
-                  <input
-                    type="radio"
-                    name="logic-match-mode"
-                    class="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-[#ea580c]"
-                    [checked]="editingRule.conditions.match === 'all'"
-                    (change)="setMatchMode('all')"
-                  />
-                  <span>
-                    <span class="block font-medium">ALL of these are true</span>
-                    <span class="block text-[11px] text-slate-500">Every condition below must match.</span>
-                  </span>
-                </label>
-                <label
-                  class="flex cursor-pointer items-start gap-2.5 rounded-xl border px-3 py-2.5 text-sm text-slate-700"
-                  [ngClass]="
-                    editingRule.conditions.match === 'any'
-                      ? 'border-[#ea580c] bg-[#fff7ed]'
-                      : 'border-slate-200 bg-white'
-                  "
-                >
-                  <input
-                    type="radio"
-                    name="logic-match-mode"
-                    class="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-[#ea580c]"
-                    [checked]="editingRule.conditions.match === 'any'"
-                    (change)="setMatchMode('any')"
-                  />
-                  <span>
-                    <span class="block font-medium">ANY of these are true</span>
-                    <span class="block text-[11px] text-slate-500">At least one condition below must match.</span>
-                  </span>
-                </label>
+            @if (rule.conditions.items.length > 1) {
+              <div class="logic-match">
+                <span class="logic-match__label">Match</span>
+                <div class="logic-segment" role="radiogroup" aria-label="Condition match mode">
+                  <label
+                    class="logic-segment__option"
+                    [class.logic-segment__option--active]="rule.conditions.match === 'all'"
+                  >
+                    <input
+                      type="radio"
+                      name="logic-match-mode"
+                      class="sr-only"
+                      [checked]="rule.conditions.match === 'all'"
+                      (change)="setMatchMode('all')"
+                    />
+                    ALL
+                  </label>
+                  <label
+                    class="logic-segment__option"
+                    [class.logic-segment__option--active]="rule.conditions.match === 'any'"
+                  >
+                    <input
+                      type="radio"
+                      name="logic-match-mode"
+                      class="sr-only"
+                      [checked]="rule.conditions.match === 'any'"
+                      (change)="setMatchMode('any')"
+                    />
+                    ANY
+                  </label>
+                </div>
+                <span class="logic-match__hint">
+                  {{ rule.conditions.match === 'all'
+                    ? 'Every condition below must match.'
+                    : 'At least one condition below must match.' }}
+                </span>
               </div>
             }
 
             <div class="space-y-3">
-              @for (condition of editingRule.conditions.items; track trackByConditionId($index, condition)) {
-                <div class="logic-rules-sentence">
-                  <div class="mb-3 flex items-center justify-between gap-2">
-                    <div class="flex items-center gap-2">
-                      <span class="logic-rules-sentence__badge">IF</span>
-                      @if (editingRule.conditions.items.length > 1) {
+              @for (condition of rule.conditions.items; track trackByConditionId($index, condition)) {
+                <div class="logic-cond">
+                  <div class="logic-cond__head">
+                    <div class="flex min-w-0 items-center gap-2">
+                      <span class="logic-badge">IF</span>
+                      @if (rule.conditions.items.length > 1) {
                         <span class="text-xs font-medium text-slate-500">
                           Condition {{ $index + 1 }}
                           @if ($index > 0) {
                             <span class="text-slate-400">
-                              · {{ editingRule.conditions.match === 'all' ? 'and' : 'or' }}
+                              · {{ rule.conditions.match === 'all' ? 'and' : 'or' }}
                             </span>
                           }
                         </span>
@@ -257,21 +296,26 @@
                         <span class="text-xs text-slate-500">Read this like a sentence</span>
                       }
                     </div>
-                    @if (editingRule.conditions.items.length > 1) {
+                    @if (rule.conditions.items.length > 1) {
                       <button
                         type="button"
-                        class="inline-flex items-center gap-1 text-xs font-medium text-red-500 hover:text-red-600"
+                        class="logic-remove"
+                        title="Remove condition"
+                        aria-label="Remove condition"
                         (click)="removeCondition(condition.id)"
                       >
+                        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                        </svg>
                         Remove
                       </button>
                     }
                   </div>
 
-                  <!-- Sentence row: [Field] [is less than] [value] -->
-                  <div class="logic-rules-sentence__row">
-                    <div class="logic-rules-sentence__part min-w-0 flex-1">
-                      <label class="logic-rules-sentence__label">Answer</label>
+                  <!-- Sentence row: [Field] [operator] [comparison] -->
+                  <div class="logic-cond__grid">
+                    <div class="min-w-0">
+                      <label class="logic-label">Answer</label>
                       <div
                         class="logic-select"
                         appDropdownPanel
@@ -288,7 +332,7 @@
                           <span class="truncate" [class.text-slate-400]="!condition.fieldId">
                             {{ fieldLabelById(condition.fieldId) || 'Choose an answer…' }}
                           </span>
-                          <svg class="h-4 w-4 shrink-0 text-slate-400" [class.rotate-180]="fieldDropdown.isOpen" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <svg class="h-4 w-4 shrink-0 text-slate-400 transition-transform" [class.rotate-180]="fieldDropdown.isOpen" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
                           </svg>
                         </button>
@@ -312,8 +356,8 @@
                       </div>
                     </div>
 
-                    <div class="logic-rules-sentence__part min-w-0 flex-1">
-                      <label class="logic-rules-sentence__label">Check</label>
+                    <div class="min-w-0">
+                      <label class="logic-label">Check</label>
                       <div
                         class="logic-select"
                         appDropdownPanel
@@ -331,7 +375,7 @@
                           <span class="truncate" [class.text-slate-400]="!condition.fieldId">
                             {{ condition.fieldId ? operatorLabel(condition.operator, condition) : 'Choose a check…' }}
                           </span>
-                          <svg class="h-4 w-4 shrink-0 text-slate-400" [class.rotate-180]="operatorDropdown.isOpen" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <svg class="h-4 w-4 shrink-0 text-slate-400 transition-transform" [class.rotate-180]="operatorDropdown.isOpen" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
                           </svg>
                         </button>
@@ -353,8 +397,8 @@
                     </div>
 
                     @if (needsValue(condition)) {
-                      <div class="logic-rules-sentence__part min-w-0 flex-1">
-                        <label class="logic-rules-sentence__label">Compared to</label>
+                      <div class="min-w-0">
+                        <label class="logic-label">Compared to</label>
                         <div
                           class="logic-select"
                           appDropdownPanel
@@ -372,7 +416,7 @@
                             <span class="truncate" [class.text-slate-400]="!condition.fieldId">
                               {{ friendlyComparisonTypeLabel(condition.comparison.type) || 'Choose…' }}
                             </span>
-                            <svg class="h-4 w-4 shrink-0 text-slate-400" [class.rotate-180]="compareTypeDropdown.isOpen" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <svg class="h-4 w-4 shrink-0 text-slate-400 transition-transform" [class.rotate-180]="compareTypeDropdown.isOpen" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                               <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
                             </svg>
                           </button>
@@ -396,8 +440,8 @@
                   </div>
 
                   @if (needsValue(condition) && condition.fieldId && condition.comparison.type === 'fixed') {
-                    <div class="mt-3 space-y-1.5">
-                      <label class="block text-xs font-medium text-slate-600">Enter the value</label>
+                    <div class="mt-3">
+                      <label class="logic-label">Enter the value</label>
 
                       @if (
                         fixedComparisonControlKind(condition) === 'options' ||
@@ -416,13 +460,10 @@
                             (click)="fixedOptionDropdown.toggle($event)"
                             [attr.aria-expanded]="fixedOptionDropdown.isOpen"
                           >
-                            <span
-                              class="truncate"
-                              [class.text-slate-400]="!fixedValueLabel(condition)"
-                            >
+                            <span class="truncate" [class.text-slate-400]="!fixedValueLabel(condition)">
                               {{ fixedValueLabel(condition) || 'Choose a value…' }}
                             </span>
-                            <svg class="h-4 w-4 shrink-0 text-slate-400" [class.rotate-180]="fixedOptionDropdown.isOpen" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <svg class="h-4 w-4 shrink-0 text-slate-400 transition-transform" [class.rotate-180]="fixedOptionDropdown.isOpen" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                               <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
                             </svg>
                           </button>
@@ -449,12 +490,12 @@
                           }
                         </div>
                       } @else if (fixedComparisonControlKind(condition) === 'options-multi') {
-                        <div class="max-h-44 space-y-1.5 overflow-y-auto rounded-lg border border-slate-200 bg-white px-3 py-2.5">
+                        <div class="logic-multi">
                           @for (option of fixedValueOptions(condition); track option.value) {
-                            <label class="flex cursor-pointer items-center gap-2.5 text-sm text-slate-700">
+                            <label class="logic-check">
                               <input
                                 type="checkbox"
-                                class="h-4 w-4 shrink-0 cursor-pointer rounded border border-slate-300 bg-white accent-[#ea580c]"
+                                class="logic-check__input"
                                 [checked]="isFixedOptionSelected(condition, option.value)"
                                 (change)="toggleFixedMultiOption(condition, option.value, $any($event.target).checked)"
                               />
@@ -462,7 +503,7 @@
                             </label>
                           }
                           @if (!fixedValueOptions(condition).length) {
-                            <p class="text-[11px] text-slate-400">No options configured for this field.</p>
+                            <p class="logic-help">No options configured for this field.</p>
                           }
                         </div>
                       } @else {
@@ -486,8 +527,8 @@
                   }
 
                   @if (needsValue(condition) && condition.fieldId && condition.comparison.type === 'field') {
-                    <div class="mt-3 space-y-1.5">
-                      <label class="block text-xs font-medium text-slate-600">Which other answer?</label>
+                    <div class="mt-3">
+                      <label class="logic-label">Which other answer?</label>
                       <div
                         class="logic-select"
                         appDropdownPanel
@@ -504,7 +545,7 @@
                           <span class="truncate" [class.text-slate-400]="!condition.comparison.fieldId">
                             {{ fieldLabelById(condition.comparison.fieldId) || 'Choose an answer…' }}
                           </span>
-                          <svg class="h-4 w-4 shrink-0 text-slate-400" [class.rotate-180]="compareFieldDropdown.isOpen" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <svg class="h-4 w-4 shrink-0 text-slate-400 transition-transform" [class.rotate-180]="compareFieldDropdown.isOpen" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
                           </svg>
                         </button>
@@ -527,13 +568,13 @@
                         }
                       </div>
                       @if (!compatibleFieldsFor(condition).length) {
-                        <p class="text-[11px] text-slate-400">No other matching answers are available on this form.</p>
+                        <p class="logic-help">No other matching answers are available on this form.</p>
                       }
                     </div>
                   }
 
                   @if (needsValue(condition) && condition.fieldId && condition.comparison.type === 'relatedData') {
-                    <div class="mt-3 space-y-3 rounded-xl border border-dashed border-orange-200 bg-white p-3.5">
+                    <div class="logic-nested">
                       <p class="text-xs font-semibold text-slate-700">Use details from a related item</p>
                       @if (!hasRelatedDataSources()) {
                         <p class="text-xs leading-relaxed text-slate-500">
@@ -541,8 +582,8 @@
                         </p>
                       } @else {
                         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                          <div class="space-y-1.5">
-                            <label class="block text-xs font-medium text-slate-600">From which item?</label>
+                          <div class="min-w-0">
+                            <label class="logic-label">From which item?</label>
                             <div
                               class="logic-select"
                               appDropdownPanel
@@ -559,7 +600,7 @@
                                 <span class="truncate" [class.text-slate-400]="!condition.comparison.sourceFieldId">
                                   {{ fieldLabelById(condition.comparison.sourceFieldId) || 'Choose an item…' }}
                                 </span>
-                                <svg class="h-4 w-4 shrink-0 text-slate-400" [class.rotate-180]="relatedSourceDropdown.isOpen" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <svg class="h-4 w-4 shrink-0 text-slate-400 transition-transform" [class.rotate-180]="relatedSourceDropdown.isOpen" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                   <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
                                 </svg>
                               </button>
@@ -582,8 +623,8 @@
                               }
                             </div>
                           </div>
-                          <div class="space-y-1.5">
-                            <label class="block text-xs font-medium text-slate-600">Which detail?</label>
+                          <div class="min-w-0">
+                            <label class="logic-label">Which detail?</label>
                             <div
                               class="logic-select"
                               appDropdownPanel
@@ -601,7 +642,7 @@
                                 <span class="truncate" [class.text-slate-400]="!condition.comparison.property">
                                   {{ relatedPropertyLabelFor(condition.comparison.sourceFieldId, condition.comparison.property) || 'Choose a detail…' }}
                                 </span>
-                                <svg class="h-4 w-4 shrink-0 text-slate-400" [class.rotate-180]="relatedPropertyDropdown.isOpen" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <svg class="h-4 w-4 shrink-0 text-slate-400 transition-transform" [class.rotate-180]="relatedPropertyDropdown.isOpen" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                   <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
                                 </svg>
                               </button>
@@ -624,12 +665,12 @@
                               }
                             </div>
                             @if (isRelatedPropertiesLoading(condition.comparison.sourceFieldId)) {
-                              <p class="text-[11px] text-slate-400">Loading details…</p>
+                              <p class="logic-help">Loading details…</p>
                             } @else if (
                               condition.comparison.sourceFieldId &&
                               !relatedPropertiesFor(condition.comparison.sourceFieldId, condition).length
                             ) {
-                              <p class="text-[11px] text-slate-400">No compatible details available for this comparison.</p>
+                              <p class="logic-help">No compatible details available for this comparison.</p>
                             }
                           </div>
                         </div>
@@ -642,23 +683,23 @@
 
             <button
               type="button"
-              class="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-orange-200 bg-[#fffaf5] px-3 py-2 text-xs font-semibold text-[#FF9015] transition hover:border-[#FF9015]"
+              class="logic-add logic-add--if"
               (click)="addCondition()"
             >
-              <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
               </svg>
-              + Add another condition
+              Add condition
             </button>
           </div>
         </section>
 
         <!-- THEN -->
-        <section class="logic-rules-section">
-          <div class="logic-rules-section__head logic-rules-section__head--then">
-            <span class="logic-rules-keyword logic-rules-keyword--then">THEN</span>
+        <section class="logic-section">
+          <div class="logic-section__head logic-section__head--then">
+            <span class="logic-keyword logic-keyword--then">THEN</span>
             <div class="min-w-0">
-              <h3 class="text-base font-semibold text-slate-800">Do something automatically</h3>
+              <h3 class="text-sm font-semibold text-slate-800">Do something automatically</h3>
               <p class="mt-0.5 text-xs leading-relaxed text-slate-500">
                 Choose what should happen automatically.
               </p>
@@ -666,60 +707,82 @@
           </div>
 
           <div class="space-y-3 p-4">
-            @for (action of editingRule.actions; track trackByActionId($index, action)) {
-              <div class="logic-rules-sentence">
-                <div class="mb-3 flex items-center justify-between gap-2">
-                  <div class="flex items-center gap-2">
-                    <span class="logic-rules-sentence__badge logic-rules-sentence__badge--then">THEN</span>
-                    @if (editingRule.actions.length > 1) {
+            @for (action of rule.actions; track trackByActionId($index, action)) {
+              <div class="logic-action">
+                <div class="logic-action__head">
+                  <div class="flex min-w-0 items-center gap-2">
+                    <span class="logic-badge logic-badge--then">THEN</span>
+                    @if (rule.actions.length > 1) {
                       <span class="text-xs font-medium text-slate-500">Action {{ $index + 1 }}</span>
                     } @else {
                       <span class="text-xs text-slate-500">What should happen</span>
                     }
                   </div>
-                  @if (editingRule.actions.length > 1) {
+                  @if (rule.actions.length > 1) {
                     <button
                       type="button"
-                      class="inline-flex items-center gap-1 text-xs font-medium text-red-500 hover:text-red-600"
+                      class="logic-remove"
+                      title="Remove action"
+                      aria-label="Remove action"
                       (click)="removeAction(action.id)"
                     >
+                      <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                      </svg>
                       Remove
                     </button>
                   }
                 </div>
 
-                <div class="logic-select max-w-xl">
-                  <div
-                    appDropdownPanel
-                    #actionDropdown="dropdownPanel"
-                    [dropdownId]="'action-' + action.id"
-                    [dropdownGroup]="dropdownGroup"
-                  >
-                    <button
-                      type="button"
-                      class="logic-select__trigger"
-                      (click)="actionDropdown.toggle($event)"
-                      [attr.aria-expanded]="actionDropdown.isOpen"
-                    >
-                      <span class="truncate">{{ friendlyActionTypeLabel(action.type) }}</span>
-                      <svg class="h-4 w-4 shrink-0 text-slate-400" [class.rotate-180]="actionDropdown.isOpen" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                <div class="flex items-center gap-3">
+                  <span class="logic-action__icon" aria-hidden="true">
+                    @if (action.type === 'sendNotification') {
+                      <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
                       </svg>
-                    </button>
-                    @if (actionDropdown.isOpen) {
-                      <div class="logic-select__menu">
-                        @for (option of friendlyActionOptions; track option.value) {
-                          <button
-                            type="button"
-                            class="logic-select__option"
-                            [class.logic-select__option--selected]="action.type === option.value"
-                            (click)="selectActionType(action, option.value)"
-                          >
-                            {{ option.label }}
-                          </button>
-                        }
-                      </div>
+                    } @else if (action.type === 'maintenanceRequest') {
+                      <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 1 1-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 0 0 4.486-6.336l-3.276 3.277a3.004 3.004 0 0 1-2.25-2.25l3.276-3.276a4.5 4.5 0 0 0-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437 1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008Z" />
+                      </svg>
+                    } @else {
+                      <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
+                      </svg>
                     }
+                  </span>
+                  <div class="logic-select flex-1">
+                    <div
+                      appDropdownPanel
+                      #actionDropdown="dropdownPanel"
+                      [dropdownId]="'action-' + action.id"
+                      [dropdownGroup]="dropdownGroup"
+                    >
+                      <button
+                        type="button"
+                        class="logic-select__trigger"
+                        (click)="actionDropdown.toggle($event)"
+                        [attr.aria-expanded]="actionDropdown.isOpen"
+                      >
+                        <span class="truncate">{{ friendlyActionTypeLabel(action.type) }}</span>
+                        <svg class="h-4 w-4 shrink-0 text-slate-400 transition-transform" [class.rotate-180]="actionDropdown.isOpen" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                        </svg>
+                      </button>
+                      @if (actionDropdown.isOpen) {
+                        <div class="logic-select__menu">
+                          @for (option of friendlyActionOptions; track option.value) {
+                            <button
+                              type="button"
+                              class="logic-select__option"
+                              [class.logic-select__option--selected]="action.type === option.value"
+                              (click)="selectActionType(action, option.value)"
+                            >
+                              {{ option.label }}
+                            </button>
+                          }
+                        </div>
+                      }
+                    </div>
                   </div>
                 </div>
               </div>
@@ -727,29 +790,29 @@
 
             <button
               type="button"
-              class="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-[#d7e26a] bg-[#F7FADF] px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-[#c5d31f]"
+              class="logic-add logic-add--then"
               (click)="addAction()"
             >
-              <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
               </svg>
-              + Add what should happen
+              Add action
             </button>
           </div>
         </section>
       </div>
 
-      <footer class="logic-rules-modal__footer">
+      <footer class="logic-drawer__footer">
         <button
           type="button"
-          class="rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+          class="logic-btn logic-btn--ghost"
           (click)="closeEditor()"
         >
           Cancel
         </button>
         <button
           type="button"
-          class="rounded-lg bg-[#D0DD28] px-5 py-2.5 text-sm font-semibold text-slate-800 shadow-sm transition hover:brightness-95"
+          class="logic-btn logic-btn--primary"
           (click)="saveEditor()"
         >
           {{ isNewRule ? 'Save Rule' : 'Update Rule' }}
