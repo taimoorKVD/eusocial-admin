@@ -305,9 +305,52 @@ export class LogicRulesPanelComponent implements OnChanges, OnDestroy {
     this.overlayService.close();
   }
 
-  selectActionType(action: LogicRuleAction, type: LogicActionType): void {
-    this.onActionTypeChange(action, type);
-    this.overlayService.close();
+  get selectedActionOptions(): ReadonlyArray<{
+    value: LogicActionType;
+    label: string;
+  }> {
+    return this.friendlyActionOptions.filter((option) =>
+      this.isActionTypeSelected(option.value),
+    );
+  }
+
+  isActionTypeSelected(type: LogicActionType): boolean {
+    return !!this.editingRule?.actions.some((action) => action.type === type);
+  }
+
+  toggleActionType(type: LogicActionType, event?: Event): void {
+    event?.stopPropagation();
+    if (!this.editingRule) {
+      return;
+    }
+
+    if (this.isActionTypeSelected(type)) {
+      const toRemove = this.editingRule.actions.filter(
+        (action) => action.type === type,
+      );
+      for (const action of toRemove) {
+        this.removeAction(action.id);
+      }
+      return;
+    }
+
+    this.editingRule = {
+      ...this.editingRule,
+      actions: [...this.editingRule.actions, createEmptyLogicAction(type)],
+    };
+  }
+
+  removeSelectedActionType(type: LogicActionType, event: Event): void {
+    event.stopPropagation();
+    if (!this.editingRule) {
+      return;
+    }
+    const toRemove = this.editingRule.actions.filter(
+      (action) => action.type === type,
+    );
+    for (const action of toRemove) {
+      this.removeAction(action.id);
+    }
   }
 
   toggleRuleEnabled(rule: FormLogicRule, enabled: boolean): void {
@@ -555,37 +598,14 @@ export class LogicRulesPanelComponent implements OnChanges, OnDestroy {
     });
   }
 
-  addAction(): void {
-    if (!this.editingRule) {
-      return;
-    }
-    this.editingRule = {
-      ...this.editingRule,
-      actions: [...this.editingRule.actions, createEmptyLogicAction()],
-    };
-  }
-
   removeAction(actionId: string): void {
     if (!this.editingRule) {
       return;
     }
-    const actions = this.editingRule.actions.filter(
-      (action) => action.id !== actionId,
-    );
     this.editingRule = {
       ...this.editingRule,
-      actions: actions.length ? actions : [createEmptyLogicAction()],
-    };
-  }
-
-  onActionTypeChange(action: LogicRuleAction, type: LogicActionType): void {
-    if (!this.editingRule) {
-      return;
-    }
-    this.editingRule = {
-      ...this.editingRule,
-      actions: this.editingRule.actions.map((item) =>
-        item.id === action.id ? { ...item, type } : item,
+      actions: this.editingRule.actions.filter(
+        (action) => action.id !== actionId,
       ),
     };
   }
