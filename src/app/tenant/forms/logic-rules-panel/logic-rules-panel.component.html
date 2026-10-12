@@ -707,97 +707,72 @@
           </div>
 
           <div class="space-y-3 p-4">
-            @for (action of rule.actions; track trackByActionId($index, action)) {
-              <div class="logic-action">
-                <div class="logic-action__head">
-                  <div class="flex min-w-0 items-center gap-2">
-                    <span class="logic-badge logic-badge--then">THEN</span>
-                    @if (rule.actions.length > 1) {
-                      <span class="text-xs font-medium text-slate-500">Action {{ $index + 1 }}</span>
+            <div>
+              <label class="logic-label">Actions</label>
+              <div
+                class="logic-select multi-select-dropdown"
+                appDropdownPanel
+                #actionsMultiSelect="dropdownPanel"
+                dropdownId="actions-multi"
+                [dropdownGroup]="dropdownGroup"
+              >
+                <button
+                  type="button"
+                  class="logic-select__trigger min-h-[42px]"
+                  (click)="actionsMultiSelect.toggle($event)"
+                  [attr.aria-expanded]="actionsMultiSelect.isOpen"
+                >
+                  <div class="flex min-w-0 flex-1 flex-wrap gap-1">
+                    @if (!selectedActionOptions.length) {
+                      <span class="truncate text-slate-400">Select actions…</span>
                     } @else {
-                      <span class="text-xs text-slate-500">What should happen</span>
+                      @for (option of selectedActionOptions; track option.value) {
+                        <span
+                          class="inline-flex max-w-full items-center gap-1 rounded border border-[#ffd9b3] bg-[#fff5eb] px-1.5 py-0.5 text-xs font-medium text-[#FF9015]"
+                        >
+                          <span class="truncate">{{ option.label }}</span>
+                          <button
+                            type="button"
+                            class="ml-0.5 shrink-0 text-sm font-semibold leading-none text-[#FF9015] hover:text-[#e07800]"
+                            aria-label="Remove action"
+                            (click)="removeSelectedActionType(option.value, $event)"
+                          >×</button>
+                        </span>
+                      }
                     }
                   </div>
-                  @if (rule.actions.length > 1) {
-                    <button
-                      type="button"
-                      class="logic-remove"
-                      title="Remove action"
-                      aria-label="Remove action"
-                      (click)="removeAction(action.id)"
-                    >
-                      <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                      </svg>
-                      Remove
-                    </button>
-                  }
-                </div>
-
-                <div class="flex items-center gap-3">
-                  <span class="logic-action__icon" aria-hidden="true">
-                    @if (action.type === 'sendNotification') {
-                      <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
-                      </svg>
-                    } @else if (action.type === 'maintenanceRequest') {
-                      <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 1 1-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 0 0 4.486-6.336l-3.276 3.277a3.004 3.004 0 0 1-2.25-2.25l3.276-3.276a4.5 4.5 0 0 0-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437 1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008Z" />
-                      </svg>
-                    } @else {
-                      <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
-                      </svg>
-                    }
-                  </span>
-                  <div class="logic-select flex-1">
-                    <div
-                      appDropdownPanel
-                      #actionDropdown="dropdownPanel"
-                      [dropdownId]="'action-' + action.id"
-                      [dropdownGroup]="dropdownGroup"
-                    >
+                  <svg
+                    class="h-4 w-4 shrink-0 text-slate-400 transition-transform"
+                    [class.rotate-180]="actionsMultiSelect.isOpen"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                  </svg>
+                </button>
+                @if (actionsMultiSelect.isOpen) {
+                  <div class="logic-select__menu" (click)="$event.stopPropagation()">
+                    @for (option of friendlyActionOptions; track option.value) {
                       <button
                         type="button"
-                        class="logic-select__trigger"
-                        (click)="actionDropdown.toggle($event)"
-                        [attr.aria-expanded]="actionDropdown.isOpen"
+                        class="logic-select__option flex items-center gap-2"
+                        [class.logic-select__option--selected]="isActionTypeSelected(option.value)"
+                        (click)="toggleActionType(option.value, $event)"
                       >
-                        <span class="truncate">{{ friendlyActionTypeLabel(action.type) }}</span>
-                        <svg class="h-4 w-4 shrink-0 text-slate-400 transition-transform" [class.rotate-180]="actionDropdown.isOpen" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                          <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-                        </svg>
+                        @if (isActionTypeSelected(option.value)) {
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="shrink-0 text-[#FF9015]" aria-hidden="true">
+                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/>
+                          </svg>
+                        }
+                        <span>{{ option.label }}</span>
                       </button>
-                      @if (actionDropdown.isOpen) {
-                        <div class="logic-select__menu">
-                          @for (option of friendlyActionOptions; track option.value) {
-                            <button
-                              type="button"
-                              class="logic-select__option"
-                              [class.logic-select__option--selected]="action.type === option.value"
-                              (click)="selectActionType(action, option.value)"
-                            >
-                              {{ option.label }}
-                            </button>
-                          }
-                        </div>
-                      }
-                    </div>
+                    }
                   </div>
-                </div>
+                }
               </div>
-            }
-
-            <button
-              type="button"
-              class="logic-add logic-add--then"
-              (click)="addAction()"
-            >
-              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-              </svg>
-              Add action
-            </button>
+            </div>
           </div>
         </section>
       </div>
