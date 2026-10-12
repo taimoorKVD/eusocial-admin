@@ -13,6 +13,7 @@ import {
   LogicActionType,
   LogicComparisonType,
   LogicConditionItem,
+  LogicConditionJoin,
   LogicConditionMatch,
   LOGIC_ACTION_OPTIONS,
   LOGIC_OPERATOR_LABELS,
@@ -38,13 +39,37 @@ export function createLogicRuleId(): string {
   return `logic_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 }
 
-export function createEmptyLogicCondition(): LogicConditionItem {
+export function createEmptyLogicCondition(
+  join?: LogicConditionJoin,
+): LogicConditionItem {
   return {
     id: createLogicRuleId(),
     fieldId: '',
     operator: 'equals',
     comparison: { type: 'fixed', value: '' },
+    ...(join ? { join } : {}),
   };
+}
+
+export function joinFromMatch(match: LogicConditionMatch): LogicConditionJoin {
+  return match === 'any' ? 'or' : 'and';
+}
+
+export function matchFromJoins(
+  items: LogicConditionItem[],
+  fallback: LogicConditionMatch = 'all',
+): LogicConditionMatch {
+  const joins = items.slice(1).map((item) => item.join ?? 'and');
+  if (!joins.length) {
+    return fallback;
+  }
+  if (joins.every((join) => join === 'and')) {
+    return 'all';
+  }
+  if (joins.every((join) => join === 'or')) {
+    return 'any';
+  }
+  return fallback;
 }
 
 export function createEmptyLogicAction(
@@ -97,9 +122,15 @@ function normalizeLogicRule(raw: unknown): FormLogicRule | null {
       ? conditionsObj['rules']
       : [];
 
+  const defaultJoin = joinFromMatch(match);
   const items = itemsRaw
-    .map((item) => normalizeLogicCondition(item))
-    .filter((item): item is LogicConditionItem => item != null);
+    .map((item) => normalizeLogicCondition(item, defaultJoin))
+    .filter((item): item is LogicConditionItem => item != null)
+    .map((item, index) =>
+      index === 0 ? { ...item, join: undefined } : { ...item, join: item.join ?? defaultJoin },
+    );
+
+  const normalizedItems = items.length ? items : [createEmptyLogicCondition()];
 
   const actionsRaw = Array.isArray(record['actions']) ? record['actions'] : [];
   const actions = actionsRaw
@@ -111,14 +142,17 @@ function normalizeLogicRule(raw: unknown): FormLogicRule | null {
     name: String(record['name'] ?? '').trim() || 'Untitled Rule',
     enabled: record['enabled'] !== false,
     conditions: {
-      match,
-      items: items.length ? items : [createEmptyLogicCondition()],
+      match: matchFromJoins(normalizedItems, match),
+      items: normalizedItems,
     },
     actions: actions.length ? actions : [createEmptyLogicAction()],
   };
 }
 
-function normalizeLogicCondition(raw: unknown): LogicConditionItem | null {
+function normalizeLogicCondition(
+  raw: unknown,
+  fallbackJoin: LogicConditionJoin = 'and',
+): LogicConditionItem | null {
   if (!raw || typeof raw !== 'object') {
     return null;
   }
@@ -137,6 +171,10 @@ function normalizeLogicCondition(raw: unknown): LogicConditionItem | null {
     id: String(record['id'] ?? createLogicRuleId()),
     fieldId: String(record['fieldId'] ?? ''),
     operator: normalizeOperator(record['operator']),
+    join: normalizeConditionJoin(
+      record['join'] ?? record['connector'],
+      fallbackJoin,
+    ),
     comparison: {
       type,
       value: comparisonObj['value'] ?? record['value'],
@@ -151,6 +189,22 @@ function normalizeLogicCondition(raw: unknown): LogicConditionItem | null {
         : undefined,
     },
   };
+}
+
+function normalizeConditionJoin(
+  raw: unknown,
+  fallback: LogicConditionJoin,
+): LogicConditionJoin {
+  const value = String(raw ?? '')
+    .trim()
+    .toLowerCase();
+  if (value === 'or' || value === 'any') {
+    return 'or';
+  }
+  if (value === 'and' || value === 'all') {
+    return 'and';
+  }
+  return fallback;
 }
 
 function normalizeLogicAction(raw: unknown): LogicRuleAction | null {
@@ -638,10 +692,18 @@ export function summarizeConditions(
   if (!items.length) {
     return 'No conditions configured';
   }
-  const joiner = rule.conditions.match === 'any' ? ' OR ' : ' AND ';
   return items
-    .map((item) => summarizeCondition(item, schema, resolvePropertyLabel))
-    .join(joiner);
+    .map((item, index) => {
+      const summary = summarizeCondition(item, schema, resolvePropertyLabel);
+      if (index === 0) {
+        return summary;
+      }
+      const joiner = (item.join ?? joinFromMatch(rule.conditions.match)) === 'or'
+        ? ' OR '
+        : ' AND ';
+      return `${joiner.trim()} ${summary}`;
+    })
+    .join(' ');
 }
 
 export function summarizeActions(rule: FormLogicRule): string {
