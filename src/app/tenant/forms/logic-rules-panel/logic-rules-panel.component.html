@@ -142,6 +142,12 @@
               <span class="logic-drawer__pill">
                 {{ isNewRule ? 'New rule' : 'Editing' }}
               </span>
+              <span
+                class="rule-status"
+                [ngClass]="rule.enabled ? 'rule-status--on' : 'rule-status--off'"
+              >
+                {{ rule.enabled ? 'Enabled' : 'Disabled' }}
+              </span>
             </div>
             <p class="mt-1 text-xs leading-relaxed text-slate-500">
               Set up an automatic action that happens when specific conditions are met.
@@ -174,26 +180,6 @@
               placeholder="e.g. Low stock — create purchase request"
             />
             <p class="logic-help">A short name helps you find this rule later.</p>
-          </div>
-        </div>
-
-        <!-- Overview -->
-        <div class="drawer-overview">
-          <div class="drawer-overview__item">
-            <span class="drawer-overview__label">Status</span>
-            <span class="drawer-overview__value">{{ rule.enabled ? 'Enabled' : 'Disabled' }}</span>
-          </div>
-          <div class="drawer-overview__item">
-            <span class="drawer-overview__label">Conditions</span>
-            <span class="drawer-overview__value">{{ rule.conditions.items.length }}</span>
-          </div>
-          <div class="drawer-overview__item">
-            <span class="drawer-overview__label">Logic</span>
-            <span class="drawer-overview__value">{{ rule.conditions.match === 'all' ? 'ALL' : 'ANY' }}</span>
-          </div>
-          <div class="drawer-overview__item">
-            <span class="drawer-overview__label">Actions</span>
-            <span class="drawer-overview__value">{{ rule.actions.length }}</span>
           </div>
         </div>
 
