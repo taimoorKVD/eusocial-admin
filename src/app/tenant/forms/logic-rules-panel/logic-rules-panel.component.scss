@@ -512,25 +512,45 @@
   border: 1px solid #fed7aa;
 }
 
-/* Match mode */
-.logic-match {
+/* Match mode connector between conditions */
+.logic-connector {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 0.75rem;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.15rem 0;
 }
 
-.logic-match__label {
-  font-size: 0.7rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: #64748b;
+.logic-connector__rail {
+  width: 1px;
+  height: 0.85rem;
+  flex-shrink: 0;
+  background: #cbd5e1;
 }
 
-.logic-match__hint {
-  font-size: 0.6875rem;
-  color: #94a3b8;
+.logic-connector__select {
+  width: auto;
+  min-width: 5.5rem;
+}
+
+.logic-connector__trigger {
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.75rem;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+  background: #f5faff;
+
+  &:hover:not(:disabled) {
+    border-color: #93c5fd;
+    background: #eff6ff;
+  }
+
+  &[aria-expanded='true'] {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgb(59 130 246 / 12%);
+  }
 }
 
 .logic-segment {

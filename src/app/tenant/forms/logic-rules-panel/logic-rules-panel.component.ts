@@ -21,6 +21,7 @@ import {
   LogicActionType,
   LogicComparisonType,
   LogicConditionItem,
+  LogicConditionJoin,
   LogicConditionMatch,
   LOGIC_ACTION_OPTIONS,
   LOGIC_COMPARISON_OPTIONS,
@@ -42,8 +43,10 @@ import {
   getOperatorLabel,
   getOperatorsForFieldType,
   isFixedOptionValueSelected,
+  joinFromMatch,
   LogicFixedComparisonControlKind,
   LogicFixedValueOption,
+  matchFromJoins,
   normalizeLogicRules,
   operatorNeedsComparisonValue,
   summarizeRuleCard,
@@ -405,24 +408,61 @@ export class LogicRulesPanelComponent implements OnChanges, OnDestroy {
     if (!this.editingRule) {
       return;
     }
+    const join = joinFromMatch(match);
+    const items = this.editingRule.conditions.items.map((item, index) =>
+      index === 0 ? { ...item, join: undefined } : { ...item, join },
+    );
     this.editingRule = {
       ...this.editingRule,
-      conditions: { ...this.editingRule.conditions, match },
+      conditions: { ...this.editingRule.conditions, match, items },
     };
+  }
+
+  conditionJoin(condition: LogicConditionItem): LogicConditionJoin {
+    return (
+      condition.join ?? joinFromMatch(this.editingRule?.conditions.match ?? 'all')
+    );
+  }
+
+  setConditionJoin(conditionId: string, join: LogicConditionJoin): void {
+    if (!this.editingRule) {
+      return;
+    }
+    const items = this.editingRule.conditions.items.map((item, index) => {
+      if (item.id !== conditionId || index === 0) {
+        return item;
+      }
+      return { ...item, join };
+    });
+    this.editingRule = {
+      ...this.editingRule,
+      conditions: {
+        ...this.editingRule.conditions,
+        items,
+        match: matchFromJoins(items, this.editingRule.conditions.match),
+      },
+    };
+  }
+
+  selectConditionJoin(conditionId: string, join: LogicConditionJoin): void {
+    this.setConditionJoin(conditionId, join);
+    this.overlayService.close();
   }
 
   addCondition(): void {
     if (!this.editingRule) {
       return;
     }
+    const items = [
+      ...this.editingRule.conditions.items,
+      createEmptyLogicCondition('and'),
+    ];
     this.editingRule = {
       ...this.editingRule,
       conditions: {
         ...this.editingRule.conditions,
-        items: [
-          ...this.editingRule.conditions.items,
-          createEmptyLogicCondition(),
-        ],
+        items,
+        match: matchFromJoins(items, this.editingRule.conditions.match),
       },
     };
   }
@@ -431,14 +471,19 @@ export class LogicRulesPanelComponent implements OnChanges, OnDestroy {
     if (!this.editingRule) {
       return;
     }
-    const items = this.editingRule.conditions.items.filter(
+    const filtered = this.editingRule.conditions.items.filter(
       (item) => item.id !== conditionId,
+    );
+    const items = (filtered.length ? filtered : [createEmptyLogicCondition()]).map(
+      (item, index) =>
+        index === 0 ? { ...item, join: undefined } : { ...item, join: item.join ?? 'and' },
     );
     this.editingRule = {
       ...this.editingRule,
       conditions: {
         ...this.editingRule.conditions,
-        items: items.length ? items : [createEmptyLogicCondition()],
+        items,
+        match: matchFromJoins(items, this.editingRule.conditions.match),
       },
     };
   }

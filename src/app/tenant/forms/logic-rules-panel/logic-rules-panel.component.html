@@ -232,46 +232,7 @@
           </div>
 
           <div class="space-y-4 p-4">
-            @if (rule.conditions.items.length > 1) {
-              <div class="logic-match">
-                <span class="logic-match__label">Match</span>
-                <div class="logic-segment" role="radiogroup" aria-label="Condition match mode">
-                  <label
-                    class="logic-segment__option"
-                    [class.logic-segment__option--active]="rule.conditions.match === 'all'"
-                  >
-                    <input
-                      type="radio"
-                      name="logic-match-mode"
-                      class="sr-only"
-                      [checked]="rule.conditions.match === 'all'"
-                      (change)="setMatchMode('all')"
-                    />
-                    ALL
-                  </label>
-                  <label
-                    class="logic-segment__option"
-                    [class.logic-segment__option--active]="rule.conditions.match === 'any'"
-                  >
-                    <input
-                      type="radio"
-                      name="logic-match-mode"
-                      class="sr-only"
-                      [checked]="rule.conditions.match === 'any'"
-                      (change)="setMatchMode('any')"
-                    />
-                    ANY
-                  </label>
-                </div>
-                <span class="logic-match__hint">
-                  {{ rule.conditions.match === 'all'
-                    ? 'Every condition below must match.'
-                    : 'At least one condition below must match.' }}
-                </span>
-              </div>
-            }
-
-            <div class="space-y-3">
+            <div class="space-y-2">
               @for (condition of rule.conditions.items; track trackByConditionId($index, condition)) {
                 <div class="logic-cond">
                   <div class="logic-cond__head">
@@ -280,11 +241,6 @@
                       @if (rule.conditions.items.length > 1) {
                         <span class="text-xs font-medium text-slate-500">
                           Condition {{ $index + 1 }}
-                          @if ($index > 0) {
-                            <span class="text-slate-400">
-                              · {{ rule.conditions.match === 'all' ? 'and' : 'or' }}
-                            </span>
-                          }
                         </span>
                       } @else {
                         <span class="text-xs text-slate-500">Read this like a sentence</span>
@@ -672,6 +628,97 @@
                     </div>
                   }
                 </div>
+
+                @if (!$last) {
+                  @let nextCondition = rule.conditions.items[$index + 1];
+                  <div class="logic-connector" aria-label="How these conditions are combined">
+                    <span class="logic-connector__rail" aria-hidden="true"></span>
+                    <div
+                      class="logic-select logic-connector__select"
+                      appDropdownPanel
+                      #matchConnectorDropdown="dropdownPanel"
+                      [dropdownId]="'cond-join-' + nextCondition.id"
+                      [dropdownGroup]="dropdownGroup"
+                    >
+                      <button
+                        type="button"
+                        class="logic-select__trigger logic-connector__trigger"
+                        (click)="matchConnectorDropdown.toggle($event)"
+                        [attr.aria-expanded]="matchConnectorDropdown.isOpen"
+                        [attr.aria-label]="
+                          conditionJoin(nextCondition) === 'and'
+                            ? 'AND — both conditions must match'
+                            : 'OR — either condition can match'
+                        "
+                      >
+                        <span class="font-semibold tracking-wide">
+                          {{ conditionJoin(nextCondition) === 'and' ? 'AND' : 'OR' }}
+                        </span>
+                        <svg
+                          class="h-3.5 w-3.5 shrink-0 text-slate-400 transition-transform"
+                          [class.rotate-180]="matchConnectorDropdown.isOpen"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          aria-hidden="true"
+                        >
+                          <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                        </svg>
+                      </button>
+                      @if (matchConnectorDropdown.isOpen) {
+                        <div class="logic-select__menu">
+                          <button
+                            type="button"
+                            class="logic-select__option"
+                            [class.logic-select__option--selected]="conditionJoin(nextCondition) === 'and'"
+                            (click)="selectConditionJoin(nextCondition.id, 'and')"
+                          >
+                            <span class="font-semibold">AND</span>
+                            <span class="mt-0.5 block text-xs font-normal text-slate-500">
+                              Both conditions must match.
+                            </span>
+                          </button>
+                          <button
+                            type="button"
+                            class="logic-select__option"
+                            [class.logic-select__option--selected]="conditionJoin(nextCondition) === 'or'"
+                            (click)="selectConditionJoin(nextCondition.id, 'or')"
+                          >
+                            <span class="font-semibold">OR</span>
+                            <span class="mt-0.5 block text-xs font-normal text-slate-500">
+                              Either condition can match.
+                            </span>
+                          </button>
+                        </div>
+                      }
+                    </div>
+                    <span class="logic-connector__rail" aria-hidden="true"></span>
+                    @if ($index === 0) {
+                      <span
+                        class="app-tooltip-trigger relative inline-flex shrink-0 cursor-pointer"
+                        tabindex="0"
+                        role="button"
+                        aria-label="How AND and OR work"
+                      >
+                        <svg
+                          class="h-3.5 w-3.5 text-slate-400"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          aria-hidden="true"
+                        >
+                          <circle cx="12" cy="12" r="10" />
+                          <path stroke-linecap="round" d="M12 16v-4M12 8h.01" />
+                        </svg>
+                        <span role="tooltip" class="app-tooltip app-tooltip--below-end font-ibm">
+                          AND: both linked conditions must match. OR: either linked condition can match. Each connector can be set independently.
+                        </span>
+                      </span>
+                    }
+                  </div>
+                }
               }
             </div>
 

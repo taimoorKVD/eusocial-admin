@@ -2,6 +2,9 @@ import { ConditionOperator } from '../../../shared/conditional-logic';
 
 export type LogicConditionMatch = 'all' | 'any';
 
+/** How this condition combines with the previous one (ignored on the first condition). */
+export type LogicConditionJoin = 'and' | 'or';
+
 export type LogicComparisonType = 'fixed' | 'field' | 'relatedData';
 
 export type LogicActionType =
@@ -22,6 +25,11 @@ export interface LogicConditionItem {
   fieldId: string;
   operator: ConditionOperator;
   comparison: LogicConditionComparison;
+  /**
+   * Connector before this condition (between previous and this).
+   * Omitted / ignored for the first condition.
+   */
+  join?: LogicConditionJoin;
 }
 
 export interface LogicRuleAction {
