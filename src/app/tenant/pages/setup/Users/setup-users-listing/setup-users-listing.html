@@ -22,32 +22,48 @@
   <app-eu-loader></app-eu-loader>
 }
 
-<div class="p-4">
+<div class="p-4 sm:p-6 font-ibm">
+  <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <div class="min-w-0">
+      <h1 class="m-0 text-[1.75rem] font-bold leading-tight text-[#161616]">Users</h1>
+      <p class="mt-1 text-sm text-[#6F6F6F]">
+        Manage team members, roles, and account details.
+      </p>
+    </div>
 
-  <app-top-header
-    [title]="'Users'"
-    [buttonLabel]="'Create User'"
-    [showButton]="canCreate"
-    (buttonClick)="goToCreate()">
-  </app-top-header>
+    @if (canCreate) {
+      <button
+        type="button"
+        class="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-[#FF9015] px-3.5 py-2.5 text-sm font-semibold text-[#161616] shadow-sm transition hover:bg-[#e8800f] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF9015]/40"
+        (click)="goToCreate()"
+      >
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+        </svg>
+        Create User
+      </button>
+    }
+  </div>
 
   @if (hasFilterFields()) {
-    <app-global-filter
-      [fields]="filterFields()"
-      (search)="onFilterSearch($event)"
-      (clear)="onFilterClear()">
-    </app-global-filter>
+    <div class="mb-4">
+      <app-global-filter
+        [fields]="filterFields()"
+        [autoSearch]="true"
+        (search)="onFilterSearch($event)"
+        (clear)="onFilterClear()"
+      ></app-global-filter>
+    </div>
   }
 
   @if (hasFormFields() && canDelete && bulkSelection.hasSelection()) {
-    <div class="mt-5 flex items-center justify-between gap-3 rounded bg-white px-4 py-3 shadow">
-      <span class="text-sm font-ibm text-gray-500">
+    <div class="mb-3 flex items-center justify-between gap-3 rounded-xl border border-[#FEE2E2] bg-white px-4 py-3 shadow-sm">
+      <span class="text-sm text-[#6F6F6F]">
         Selected: {{ bulkSelection.count() }}
       </span>
-
       <button
         type="button"
-        class="inline-flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-sm font-medium text-red-500 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-40 font-ibm"
+        class="inline-flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-sm font-medium text-red-500 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-40"
         [disabled]="!bulkSelection.hasSelection()"
         (click)="openBulkDeleteConfirm()"
       >
@@ -57,8 +73,9 @@
   }
 
   @if (hasFormFields()) {
-    <div class="mt-5">
+    <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
       <app-dynamic-listing
+        appearance="modern"
         [fields]="formFields()"
         [records]="displayUsers()"
         [storageKey]="columnStorageKey"
@@ -73,47 +90,47 @@
         (editRecord)="goToEdit($event)"
         (deleteRecord)="deleteUser($event)"
       ></app-dynamic-listing>
+
+      @if (showPagination()) {
+        <div class="flex flex-col gap-3 border-t border-[#EEF2F7] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+            <span class="text-sm text-[#6F6F6F]">
+              Page {{ page() }} of {{ lastPage() }}
+            </span>
+            <app-page-size-select
+              [total]="total()"
+              [value]="pageSizeValue()"
+              [disabled]="loading()"
+              (valueChange)="onPageSizeChange($event)"
+            ></app-page-size-select>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              class="rounded-lg border border-[#ea580c]/30 bg-[#ea580c]/10 px-3 py-1.5 text-sm font-medium text-[#ea580c] transition hover:bg-[#ea580c]/20 disabled:cursor-not-allowed disabled:opacity-40"
+              [disabled]="page() === 1"
+              (click)="prevPage()"
+            >
+              ← Prev
+            </button>
+            <button
+              type="button"
+              class="rounded-lg border border-[#ea580c]/30 bg-[#ea580c]/10 px-3 py-1.5 text-sm font-medium text-[#ea580c] transition hover:bg-[#ea580c]/20 disabled:cursor-not-allowed disabled:opacity-40"
+              [disabled]="page() === lastPage()"
+              (click)="nextPage()"
+            >
+              Next →
+            </button>
+          </div>
+        </div>
+      }
     </div>
   }
 
   @if (showEmptyConfigMessage()) {
-    <p class="text-sm text-gray-500 font-ibm mt-5">
+    <p class="mt-5 text-sm text-[#6F6F6F]">
       No form fields configured for users listing.
     </p>
   }
-
-  @if (showPagination()) {
-    <div class="flex flex-col gap-3 px-4 py-3 border border-gray-200 border-t-0 rounded-b bg-white sm:flex-row sm:items-center sm:justify-between">
-      <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-        <span class="text-sm text-gray-500 font-ibm">
-          Page {{ page() }} of {{ lastPage() }}
-        </span>
-        <app-page-size-select
-          [total]="total()"
-          [value]="pageSizeValue()"
-          [disabled]="loading()"
-          (valueChange)="onPageSizeChange($event)"
-        ></app-page-size-select>
-      </div>
-
-      <div class="flex items-center gap-2">
-        <button
-          class="px-3 py-1.5 rounded-lg text-sm font-medium border border-[#ea580c]/30 bg-[#ea580c]/10 text-[#ea580c] hover:bg-[#ea580c]/20 transition disabled:opacity-40 disabled:cursor-not-allowed font-ibm"
-          [disabled]="page() === 1"
-          (click)="prevPage()"
-        >
-          ← Prev
-        </button>
-
-        <button
-          class="px-3 py-1.5 rounded-lg text-sm font-medium border border-[#ea580c]/30 bg-[#ea580c]/10 text-[#ea580c] hover:bg-[#ea580c]/20 transition disabled:opacity-40 disabled:cursor-not-allowed font-ibm"
-          [disabled]="page() === lastPage()"
-          (click)="nextPage()"
-        >
-          Next →
-        </button>
-      </div>
-    </div>
-  }
-
 </div>

@@ -45,8 +45,8 @@ export class SetupJobPositionListingComponent {
       key: 'name',
       label: 'Name',
       type: 'text',
-      placeholder: 'Search by name...'
-    }
+      placeholder: 'Search job positions',
+    },
   ];
   private defaultLimit = environment.limit;
 
