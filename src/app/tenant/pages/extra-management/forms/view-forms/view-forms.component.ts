@@ -16,6 +16,7 @@ import {
   SavedDynamicForm,
   formatAssignReportModeLabel,
   formatFrequencySummary,
+  resolveFrequencyScheduleTimes,
 } from '../models/dynamic-form.models';
 import { TenantPermissionService } from '../../../../../services/tenant-permission.service';
 import { TenantUserService } from '../../../../../services/tenant-user.service';
@@ -24,13 +25,17 @@ import { FormStorageService } from '../../../../forms/services/form-storage.serv
 import { PERMISSIONS } from '../../../../../constants/permissions';
 
 const FORM_FILTER_FIELDS: GlobalFilterField[] = [
-  { key: 'name', label: 'Form Name', placeholder: 'Search by form name', type: 'text' },
+  { key: 'name', label: 'Form Name', placeholder: 'Search forms', type: 'text' },
 ];
+
+type ListingStatus = TenantFormStatusFilter | 'draft';
 
 interface StatusFilterOption {
   label: string;
-  value: TenantFormStatusFilter;
+  value: ListingStatus;
 }
+
+type SortOptionValue = 'lastEdited' | 'name';
 
 @Component({
   selector: 'app-view-forms',
@@ -43,8 +48,12 @@ export class ViewFormsComponent implements OnInit {
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
     const target = event.target as HTMLElement;
-    if (!target.closest('.status-filter-dropdown')) {
-      this.statusDropdownOpen.set(false);
+    if (!target.closest('.forms-listing__actions-menu')) {
+      this.openActionsId.set(null);
+    }
+    if (!target.closest('[data-forms-filter-dropdown]')) {
+      this.assignedDropdownOpen.set(false);
+      this.sortDropdownOpen.set(false);
     }
   }
 
@@ -78,7 +87,13 @@ export class ViewFormsComponent implements OnInit {
 
   readonly statusFilters: StatusFilterOption[] = [
     { label: 'Active', value: 'active' },
+    { label: 'Drafts', value: 'draft' },
     { label: 'Archived', value: 'archived' },
+  ];
+
+  readonly sortOptions: ReadonlyArray<{ label: string; value: SortOptionValue }> = [
+    { label: 'Last edited', value: 'lastEdited' },
+    { label: 'Name', value: 'name' },
   ];
 
   readonly forms = signal<SavedDynamicForm[]>([]);
@@ -93,18 +108,98 @@ export class ViewFormsComponent implements OnInit {
   readonly pageSize = signal(environment.limit || 15);
   readonly pageSizeValue = computed(() => this.pageSize());
   readonly filterFields = signal<GlobalFilterField[]>([]);
-  readonly hasFilterFields = computed(() => this.filterFields().length > 0);
-  /** Always sent to the listing API as `status`. */
+  /** API status for active/archived requests. */
   readonly statusFilter = signal<TenantFormStatusFilter>('active');
-  readonly statusDropdownOpen = signal(false);
-  readonly isArchivedView = computed(() => this.statusFilter() === 'archived');
-  readonly statusFilterLabel = computed(
+  /** UI tab status, including Drafts (local-only; no API status yet). */
+  readonly listingStatus = signal<ListingStatus>('active');
+  readonly statusCounts = signal<Record<ListingStatus, number>>({
+    active: 0,
+    draft: 0,
+    archived: 0,
+  });
+  readonly searchQuery = signal('');
+  readonly assignedTo = signal('anyone');
+  readonly sortBy = signal<SortOptionValue>('lastEdited');
+  readonly assignedDropdownOpen = signal(false);
+  readonly sortDropdownOpen = signal(false);
+  readonly openActionsId = signal<string | null>(null);
+  readonly isArchivedView = computed(() => this.listingStatus() === 'archived');
+  readonly isDraftView = computed(() => this.listingStatus() === 'draft');
+  readonly assignedToOptions = computed(() => {
+    const positions = this.jobPositionOptions().map((item) => ({
+      value: `position:${item.id}`,
+      label: item.name,
+    }));
+    const users = this.userOptions()
+      .filter((item) => !!item.name.trim())
+      .map((item) => ({
+        value: `user:${item.id}`,
+        label: item.name,
+      }));
+    return [...positions, ...users];
+  });
+  readonly assignedToLabel = computed(() => {
+    const value = this.assignedTo();
+    if (value === 'anyone') {
+      return 'Anyone';
+    }
+    return (
+      this.assignedToOptions().find((option) => option.value === value)?.label ?? 'Anyone'
+    );
+  });
+  readonly sortLabel = computed(
     () =>
-      this.statusFilters.find((option) => option.value === this.statusFilter())?.label ??
-      'Active',
+      this.sortOptions.find((option) => option.value === this.sortBy())?.label ??
+      'Last edited',
   );
+  readonly displayedForms = computed(() => {
+    let list = [...this.forms()];
+    const assigned = this.assignedTo();
+    if (assigned !== 'anyone') {
+      const selected = this.assignedToOptions().find((option) => option.value === assigned);
+      const selectedName = selected?.label?.trim().toLowerCase() ?? '';
+      if (selectedName) {
+        list = list.filter((form) =>
+          this.assigneeSummary(form).names.some(
+            (name) => name.trim().toLowerCase() === selectedName,
+          ),
+        );
+      }
+    }
+    if (this.sortBy() === 'name') {
+      list.sort((a, b) =>
+        (a.formName || '').localeCompare(b.formName || '', undefined, {
+          sensitivity: 'base',
+        }),
+      );
+    } else {
+      list.sort(
+        (a, b) =>
+          new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime(),
+      );
+    }
+    return list;
+  });
+  readonly emptyListMessage = computed(() => {
+    if (this.isDraftView()) {
+      return 'No draft forms found';
+    }
+    return this.isArchivedView() ? 'No archived forms found' : 'No forms created yet';
+  });
+  readonly listSummaryLabel = computed(() => {
+    const count = this.total();
+    const noun = count === 1 ? 'form' : 'forms';
+    if (this.isDraftView()) {
+      return `${count} draft ${noun}`;
+    }
+    return this.isArchivedView()
+      ? `${count} archived ${noun}`
+      : `${count} active ${noun}`;
+  });
 
-  readonly showPagination = computed(() => !this.loading() && this.forms().length > 0);
+  readonly showPagination = computed(
+    () => !this.loading() && this.forms().length > 0 && this.lastPage() > 1,
+  );
 
   readonly showCreateButton = computed(() => this.canCreate && !this.isArchivedView());
   readonly showDeleteActions = computed(() => this.canDelete && !this.isArchivedView());
@@ -152,12 +247,18 @@ export class ViewFormsComponent implements OnInit {
   private pendingDeleteId: number | null = null;
   private pendingRestoreId: number | null = null;
   private filters: Record<string, unknown> = {};
+  private searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
   ngOnInit(): void {
     this.filterFields.set(FORM_FILTER_FIELDS);
     this.loadJobPositions();
     this.loadUsers();
     this.loadForms(this.page());
+    this.destroyRef.onDestroy(() => {
+      if (this.searchDebounceTimer) {
+        clearTimeout(this.searchDebounceTimer);
+      }
+    });
   }
 
   private loadJobPositions(): void {
@@ -239,7 +340,11 @@ export class ViewFormsComponent implements OnInit {
     const payload = form.payload;
     const users = this.resolveIdNames(payload?.assign?.users, this.userOptions());
     const positions = this.resolveIdNames(payload?.assign?.jobPosition, this.jobPositionOptions());
-    return this.partySummary(users, positions, payload?.assign?.mode);
+    const summary = this.partySummary(users, positions, payload?.assign?.mode);
+    return {
+      ...summary,
+      modeLabel: this.assignModeDisplay(payload?.assign?.mode, summary.modeLabel),
+    };
   }
 
   reportingSummary(form: SavedDynamicForm): { names: string[]; modeLabel: string } {
@@ -250,7 +355,174 @@ export class ViewFormsComponent implements OnInit {
   }
 
   frequencyLabel(form: SavedDynamicForm): string {
-    return formatFrequencySummary(form.payload?.frequency);
+    const label = formatFrequencySummary(form.payload?.frequency);
+    return label === 'Daily' ? 'Every day' : label;
+  }
+
+  scheduleTimesLabel(form: SavedDynamicForm): string {
+    const frequency = form.payload?.frequency;
+    if (!frequency) {
+      return '';
+    }
+    if (frequency.type === 'atOnce' && frequency.time?.trim()) {
+      return frequency.time.trim();
+    }
+    // Times live on the recurring config (`times` / legacy `time`), which is
+    // what resolveFrequencyScheduleTimes reads from its first argument.
+    const times = resolveFrequencyScheduleTimes(frequency.recurring).filter(
+      (slot) => !!slot?.trim(),
+    );
+    return times.length ? times.join(' · ') : '';
+  }
+
+  formStructureLabel(form: SavedDynamicForm): string {
+    const sections = Array.isArray(form.payload?.sections) ? form.payload.sections : [];
+    const sectionCount = form.sectionCount || sections.length;
+    const fieldCount = sections.reduce((total, section) => {
+      const rows = Array.isArray(section?.rows) ? section.rows : [];
+      return (
+        total +
+        rows.reduce(
+          (rowTotal, row) =>
+            rowTotal + (Array.isArray(row?.fields) ? row.fields.length : 0),
+          0,
+        )
+      );
+    }, 0);
+    const sectionLabel = `${sectionCount} section${sectionCount === 1 ? '' : 's'}`;
+    const fieldLabel = `${fieldCount} field${fieldCount === 1 ? '' : 's'}`;
+    return `${sectionLabel} · ${fieldLabel}`;
+  }
+
+  primaryPartyName(names: string[]): string {
+    return names[0] ?? '';
+  }
+
+  extraPartyCount(names: string[]): number {
+    return Math.max(0, names.length - 1);
+  }
+
+  editedDateParts(value: string | null | undefined): { dayMonth: string; year: string } {
+    if (!value) {
+      return { dayMonth: '—', year: '' };
+    }
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+      return { dayMonth: value, year: '' };
+    }
+    return {
+      dayMonth: new Intl.DateTimeFormat('en-US', {
+        month: 'short',
+        day: 'numeric',
+      }).format(parsed),
+      year: String(parsed.getFullYear()),
+    };
+  }
+
+  statusCount(status: ListingStatus): number {
+    return this.statusCounts()[status] ?? 0;
+  }
+
+  isActionsOpen(form: SavedDynamicForm): boolean {
+    return !!form.id && this.openActionsId() === String(form.id);
+  }
+
+  toggleActionsMenu(form: SavedDynamicForm, event: Event): void {
+    event.stopPropagation();
+    const id = form.id != null ? String(form.id) : null;
+    if (!id) {
+      return;
+    }
+    this.openActionsId.update((current) => (current === id ? null : id));
+  }
+
+  closeActionsMenu(): void {
+    this.openActionsId.set(null);
+  }
+
+  onSearchInput(event: Event): void {
+    const value = String((event.target as HTMLInputElement | null)?.value ?? '');
+    this.searchQuery.set(value);
+    if (this.searchDebounceTimer) {
+      clearTimeout(this.searchDebounceTimer);
+    }
+    this.searchDebounceTimer = setTimeout(() => this.applySearch(), 300);
+  }
+
+  applySearch(): void {
+    if (this.searchDebounceTimer) {
+      clearTimeout(this.searchDebounceTimer);
+      this.searchDebounceTimer = null;
+    }
+    const trimmed = this.searchQuery().trim();
+    if (trimmed) {
+      this.onFilterSearch({ name: trimmed });
+      return;
+    }
+    if (Object.keys(this.filters).length > 0 || this.searchQuery() !== '') {
+      this.onFilterClear();
+    }
+  }
+
+  toggleAssignedDropdown(event: Event): void {
+    event.stopPropagation();
+    this.sortDropdownOpen.set(false);
+    this.assignedDropdownOpen.update((open) => !open);
+  }
+
+  toggleSortDropdown(event: Event): void {
+    event.stopPropagation();
+    this.assignedDropdownOpen.set(false);
+    this.sortDropdownOpen.update((open) => !open);
+  }
+
+  selectAssignedTo(value: string): void {
+    this.assignedTo.set(value);
+    this.assignedDropdownOpen.set(false);
+  }
+
+  selectSort(value: SortOptionValue): void {
+    this.sortBy.set(value);
+    this.sortDropdownOpen.set(false);
+  }
+
+  onListingStatusChange(value: ListingStatus): void {
+    if (this.listingStatus() === value) {
+      return;
+    }
+    this.listingStatus.set(value);
+    this.selectedIds.set([]);
+    this.openActionsId.set(null);
+    this.assignedDropdownOpen.set(false);
+    this.sortDropdownOpen.set(false);
+    this.page.set(1);
+
+    if (value === 'draft') {
+      this.forms.set([]);
+      this.total.set(0);
+      this.lastPage.set(1);
+      this.statusCounts.update((counts) => ({ ...counts, draft: 0 }));
+      return;
+    }
+
+    this.statusFilter.set(value);
+    this.loadForms(1);
+  }
+
+  private assignModeDisplay(
+    mode: unknown,
+    fallback: string,
+  ): string {
+    const raw = String(mode ?? '')
+      .trim()
+      .toLowerCase();
+    if (raw === 'individual') {
+      return 'One form per person';
+    }
+    if (raw === 'shared') {
+      return 'One shared form';
+    }
+    return fallback;
   }
 
   private loadForms(page: number): void {
@@ -279,6 +551,11 @@ export class ViewFormsComponent implements OnInit {
           this.page.set(res.page);
           this.lastPage.set(res.lastPage);
           this.total.set(res.total);
+          const status = this.statusFilter();
+          this.statusCounts.update((counts) => ({
+            ...counts,
+            [status]: res.total,
+          }));
         },
         error: () => {
           this.forms.set([]);
@@ -286,22 +563,6 @@ export class ViewFormsComponent implements OnInit {
           this.selectedIds.set([]);
         },
       });
-  }
-
-  onStatusFilterChange(value: TenantFormStatusFilter): void {
-    if (this.statusFilter() === value) {
-      this.statusDropdownOpen.set(false);
-      return;
-    }
-    this.statusFilter.set(value);
-    this.statusDropdownOpen.set(false);
-    this.selectedIds.set([]);
-    this.page.set(1);
-    this.loadForms(1);
-  }
-
-  toggleStatusDropdown(): void {
-    this.statusDropdownOpen.update((open) => !open);
   }
 
   prevPage(): void {
@@ -329,18 +590,28 @@ export class ViewFormsComponent implements OnInit {
   }
 
   onFilterSearch(filters: Record<string, unknown>): void {
+    if (this.isDraftView()) {
+      return;
+    }
     const allowedKeys = this.getAllowedFilterKeys();
     this.filters = pruneFiltersByAllowedKeys(filters, allowedKeys);
+    const name = this.filters['name'];
+    this.searchQuery.set(typeof name === 'string' ? name : this.searchQuery());
     this.selectedIds.set([]);
+    this.openActionsId.set(null);
     this.page.set(1);
     this.loadForms(this.page());
   }
 
   onFilterClear(): void {
     this.filters = {};
+    this.searchQuery.set('');
     this.selectedIds.set([]);
+    this.openActionsId.set(null);
     this.page.set(1);
-    this.loadForms(this.page());
+    if (!this.isDraftView()) {
+      this.loadForms(this.page());
+    }
   }
 
   private getAllowedFilterKeys(): Set<string> {
