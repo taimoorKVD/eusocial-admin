@@ -1,35 +1,13 @@
-<div class="global-filter bg-white rounded-xl shadow-sm border border-gray-100">
-  <!-- Header -->
-  <div class="flex items-center gap-2 px-5 py-3 border-b border-gray-100 bg-gray-50/60">
-    <svg
-      class="w-4 h-4 text-[#ea580c] shrink-0"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      stroke-width="2"
-    >
-      <path
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.04a2.25 2.25 0 0 1-.659 1.591l-5.432 5.432a2.25 2.25 0 0 0-.659 1.591v2.927a2.25 2.25 0 0 1-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 0 0-.659-1.591L3.659 7.409A2.25 2.25 0 0 1 3 5.818V4.774c0-.54.384-1.006.917-1.096A41.033 41.033 0 0 1 12 3Z"
-      />
-    </svg>
-    <span class="text-sm font-medium text-gray-700 font-ibm">Filters</span>
-    @if (fields().length) {
-      <span class="text-xs text-gray-400 font-ibm">
-        ({{ fields().length }} field{{ fields().length === 1 ? '' : 's' }})
-      </span>
-    }
-  </div>
-
-  <div class="p-5">
-    <!-- Dynamic field grid -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+<div class="global-filter font-ibm">
+  <div class="global-filter__body">
+    <div class="global-filter__fields">
       @for (field of fields(); track field.key) {
-        <div class="min-w-0 flex flex-col gap-1.5">
-          <label class="text-[11px] font-medium text-[#6F6F6F] font-ibm uppercase tracking-wide">
-            {{ field.label }}
-          </label>
+        <div class="global-filter__field">
+          @if (fields().length > 1 || field.type !== 'text') {
+            <label class="global-filter__label">
+              {{ field.label }}
+            </label>
+          }
 
           @switch (field.type) {
             @case ('select') {
@@ -43,20 +21,26 @@
                 <button
                   type="button"
                   (click)="onSelectDropdownOpen(field, !filterDropdown.isOpen); filterDropdown.toggle($event)"
-                  class="global-filter__control w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-sm text-gray-700 font-ibm focus:outline-none focus:ring-2 focus:ring-[#ea580c]/30 focus:border-[#ea580c] focus:bg-white transition-all duration-150 text-left flex items-center justify-between gap-2"
-                  [class.border-[#ea580c]]="filterDropdown.isOpen"
+                  class="global-filter__control"
+                  [class.global-filter__control--open]="filterDropdown.isOpen"
                   [attr.aria-expanded]="filterDropdown.isOpen"
                 >
-                  <span class="truncate" [class.text-gray-700]="!filters()[field.key]">
-                    {{ getSelectDisplayLabel(field) }}
-                  </span>
+                  <span
+                  class="truncate"
+                  [ngClass]="{
+                    'text-[#9CA3AF]': !filters()[field.key]
+                  }"
+                >
+                  {{ getSelectDisplayLabel(field) }}
+                </span>
                   <svg
-                    class="w-4 h-4 text-gray-400 shrink-0 transition-transform duration-150"
+                    class="h-4 w-4 shrink-0 text-[#9CA3AF] transition-transform duration-150"
                     [class.rotate-180]="filterDropdown.isOpen"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
                     stroke-width="2"
+                    aria-hidden="true"
                   >
                     <path
                       stroke-linecap="round"
@@ -67,16 +51,14 @@
                 </button>
 
                 @if (filterDropdown.isOpen) {
-                  <div
-                    class="absolute z-30 mt-1.5 w-full rounded-lg border border-gray-200 bg-white shadow-lg overflow-hidden"
-                  >
-                    <div class="p-2 border-b border-gray-100">
+                  <div class="global-filter__menu">
+                    <div class="border-b border-[#F3F4F6] p-2">
                       <input
                         type="text"
                         [value]="optionSearch()[field.key] || ''"
                         (input)="onOptionSearch(field, $event)"
                         [placeholder]="'Search ' + field.label"
-                        class="w-full px-3 py-2 rounded-md border border-gray-200 text-sm text-gray-700 font-ibm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#ea580c]/30 focus:border-[#ea580c]"
+                        class="global-filter__menu-search"
                       />
                     </div>
 
@@ -85,14 +67,14 @@
 
                     <div class="max-h-52 overflow-y-auto p-1">
                       @if (field.loading) {
-                        <div class="px-3 py-2 text-sm text-gray-500 font-ibm">
+                        <div class="px-3 py-2 text-sm text-[#6F6F6F]">
                           Loading options...
                         </div>
                       } @else {
                         <button
                           type="button"
                           (click)="selectOption(field)"
-                          class="w-full text-left px-3 py-2 rounded-md text-sm font-ibm text-gray-600 hover:bg-gray-100 transition-colors"
+                          class="global-filter__option"
                         >
                           All
                         </button>
@@ -101,9 +83,8 @@
                           <button
                             type="button"
                             (click)="selectOption(field, option)"
-                            class="w-full text-left px-3 py-2 rounded-md text-sm font-ibm text-[#000000] hover:bg-[#FFF3E7] transition-colors"
-                            [class.bg-[#FFF3E7]]="filters()[field.key] == option.id"
-                            [class.text-[#000000]]="filters()[field.key] == option.id"
+                            class="global-filter__option"
+                            [class.global-filter__option--selected]="filters()[field.key] == option.id"
                           >
                             {{ option.name }}
                           </button>
@@ -113,14 +94,14 @@
                           <button
                             type="button"
                             (click)="loadMoreOptions(field, $event)"
-                            class="w-full text-left px-3 py-2 rounded-md text-sm font-ibm text-[#ea580c] hover:bg-[#FFF3E7] transition-colors"
+                            class="global-filter__option global-filter__option--more"
                           >
                             Load More
                           </button>
                         }
 
                         @if (filteredOptions.length === 0) {
-                          <div class="px-3 py-2 text-sm text-gray-500 font-ibm">
+                          <div class="px-3 py-2 text-sm text-[#6F6F6F]">
                             No results found
                           </div>
                         }
@@ -134,14 +115,14 @@
             @case ('radio') {
               <div class="flex flex-col gap-2">
                 @for (option of field.options; track getOptionValue(option)) {
-                  <label class="flex items-center gap-2 text-sm text-gray-700 font-ibm cursor-pointer">
+                  <label class="flex cursor-pointer items-center gap-2 text-sm text-[#374151]">
                     <input
                       type="radio"
                       [name]="field.key"
                       [value]="getOptionValue(option)"
                       [ngModel]="filters()[field.key]"
                       (ngModelChange)="setFilterValue(field.key, $event)"
-                      class="accent-[#ea580c]"
+                      class="accent-[#FF9015]"
                     />
                     <span>{{ getOptionLabel(option) }}</span>
                   </label>
@@ -150,86 +131,76 @@
             }
 
             @case ('checkbox') {
-              <!-- @if (field.key === 'availability_days') { -->
-                <div class="availability-days-row">
-                  @for (option of field.options; track getOptionValue(option)) {
-                    <label
-                      class="availability-days-option"
-                      [class.availability-days-option--selected]="isChecked(field.key, option)"
-                    >
-                      <input
-                        type="checkbox"
-                        class="availability-days-option__input"
-                        [name]="field.key"
-                        [value]="getOptionValue(option)"
-                        [checked]="isChecked(field.key, option)"
-                        (change)="onCheckboxChange(field.key, option, $event)"
-                      />
-                      <span class="availability-days-option__label">
-                        {{ getOptionLabel(option) }}
-                      </span>
-                    </label>
-                  }
-                </div>
-              <!-- } @else {
-                <div class="flex flex-col gap-2">
-                  @for (option of field.options; track getOptionValue(option)) {
-                    <label class="flex items-center gap-2 text-sm text-gray-700 font-ibm cursor-pointer">
-                      <input
-                        type="checkbox"
-                        [name]="field.key"
-                        [value]="getOptionValue(option)"
-                        [checked]="isChecked(field.key, option)"
-                        (change)="onCheckboxChange(field.key, option, $event)"
-                        class="accent-[#ea580c]"
-                      />
-                      <span>{{ getOptionLabel(option) }}</span>
-                    </label>
-                  }
-                </div>
-              } -->
+              <div class="availability-days-row">
+                @for (option of field.options; track getOptionValue(option)) {
+                  <label
+                    class="availability-days-option"
+                    [class.availability-days-option--selected]="isChecked(field.key, option)"
+                  >
+                    <input
+                      type="checkbox"
+                      class="availability-days-option__input"
+                      [name]="field.key"
+                      [value]="getOptionValue(option)"
+                      [checked]="isChecked(field.key, option)"
+                      (change)="onCheckboxChange(field.key, option, $event)"
+                    />
+                    <span class="availability-days-option__label">
+                      {{ getOptionLabel(option) }}
+                    </span>
+                  </label>
+                }
+              </div>
             }
 
             @default {
-              <input
-                [type]="field.type || 'text'"
-                [ngModel]="filters()[field.key]"
-                (ngModelChange)="setFilterValue(field.key, $event)"
-                (input)="onInputChange(field, $event)"
-                (keyup.enter)="onSearch()"
-                [placeholder]="field.placeholder || 'Enter ' + field.label"
-                [attr.inputmode]="field.type === 'number' ? 'numeric' : null"
-                [attr.pattern]="field.type === 'number' ? '[0-9]*' : null"
-                class="global-filter__control w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-sm text-gray-700 font-ibm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#ea580c]/30 focus:border-[#ea580c] focus:bg-white transition-all duration-150"
-              />
+              <div class="global-filter__text-wrap">
+                <svg
+                  class="global-filter__text-icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  aria-hidden="true"
+                >
+                  <circle cx="11" cy="11" r="7" />
+                  <path stroke-linecap="round" d="m20 20-3.5-3.5" />
+                </svg>
+                <input
+                  [type]="field.type || 'text'"
+                  [ngModel]="filters()[field.key]"
+                  (ngModelChange)="setFilterValue(field.key, $event)"
+                  (input)="onInputChange(field, $event)"
+                  (keyup.enter)="onSearch()"
+                  [placeholder]="field.placeholder || 'Enter ' + field.label"
+                  [attr.aria-label]="field.label"
+                  [attr.inputmode]="field.type === 'number' ? 'numeric' : null"
+                  [attr.pattern]="field.type === 'number' ? '[0-9]*' : null"
+                  class="global-filter__control global-filter__control--text"
+                />
+              </div>
             }
           }
         </div>
       }
     </div>
 
-    <!-- Action buttons -->
-    <div
-      class="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3 mt-5 pt-4 border-t border-gray-100"
-    >
+    <div class="global-filter__actions">
       <button
         type="button"
         (click)="onClear()"
         [disabled]="!hasFilters()"
-        class="btn btn--delete w-full sm:w-auto  disabled:opacity-40 disabled:cursor-not-allowed"
+        class="global-filter__btn global-filter__btn--ghost"
       >
-        <!-- <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-        </svg> -->
         Clear
       </button>
 
       <button
         type="button"
         (click)="onSearch()"
-        class="btn btn--cancel inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-lg bg-[#ea580c] hover:bg-[#ea580c] active:bg-[#ea580c] text-white text-sm font-medium font-ibm shadow-sm transition-all duration-150 w-full sm:w-auto"
+        class="global-filter__btn global-filter__btn--primary"
       >
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
           <path
             stroke-linecap="round"
             stroke-linejoin="round"
@@ -239,25 +210,20 @@
         Search
       </button>
     </div>
-
-    <!-- Active filter chips -->
-    @if (hasFilters()) {
-      <div class="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-gray-100">
-        <span class="text-[11px] text-gray-400 font-ibm uppercase tracking-wide shrink-0">
-          Active:
-        </span>
-
-        @for (field of activeFields(); track field.key) {
-          <span
-            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 text-[#ea580c] text-xs font-medium font-ibm border border-blue-100"
-          >
-            <span class="text-gray-500">{{ field.label }}:</span>
-            <span>{{
-              field.type === 'select' ? getSelectedOptionLabel(field) : filters()[field.key]
-            }}</span>
-          </span>
-        }
-      </div>
-    }
   </div>
+
+  @if (hasFilters()) {
+    <div class="global-filter__chips">
+      <span class="global-filter__chips-label">Active</span>
+
+      @for (field of activeFields(); track field.key) {
+        <span class="global-filter__chip">
+          <span class="text-[#6F6F6F]">{{ field.label }}:</span>
+          <span>{{
+            field.type === 'select' ? getSelectedOptionLabel(field) : filters()[field.key]
+          }}</span>
+        </span>
+      }
+    </div>
+  }
 </div>

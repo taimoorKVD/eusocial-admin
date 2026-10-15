@@ -1,4 +1,4 @@
-<div class="p-6">
+<div class="forms-page p-4 sm:p-6 font-ibm">
   @if (loading() || deleting() || restoring()) {
     <app-eu-loader></app-eu-loader>
   }
@@ -33,78 +33,151 @@
     (closed)="closeRestoreConfirmModal()"
   ></app-confirm-modal>
 
-  <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-    <h2 class="m-0 text-[20px] font-semibold font-ibm text-gray-900">Forms</h2>
+  <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <div class="min-w-0">
+      <h1 class="m-0 text-[1.75rem] font-bold leading-tight text-[#161616]">Forms</h1>
+      <p class="mt-1 text-sm text-[#6F6F6F]">
+        Checklists your team fills out, who gets them, and when.
+      </p>
+    </div>
 
-    <div class="flex flex-wrap items-center gap-3 sm:justify-end">
-      <div class="relative inline-flex min-w-[9.5rem] status-filter-dropdown">
-        <label class="sr-only" id="form-templates-status-filter-label">Template status</label>
+    @if (showCreateButton()) {
+      <button
+        type="button"
+        class="forms-page__create inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-[#FF9015] px-3.5 py-2.5 text-sm font-semibold text-[#161616] shadow-sm transition hover:bg-[#e8800f] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF9015]/40"
+        (click)="goToCreate()"
+      >
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+        </svg>
+        Create form
+      </button>
+    }
+  </div>
+
+  <div class="forms-listing__toolbar mb-4">
+    <div
+      class="forms-listing__tabs"
+      role="tablist"
+      aria-label="Template status"
+    >
+      @for (filter of statusFilters; track filter.value) {
         <button
           type="button"
-          id="form-templates-status-filter"
-          class="flex w-full min-h-[40px] items-center justify-between rounded-lg border border-[#E0E0E0] bg-white px-3.5 py-2 text-sm font-medium text-[#161616] shadow-sm outline-none transition hover:border-[#FF9015] focus:border-[#FF9015] focus:ring-2 focus:ring-[#FF9015]/20 font-ibm"
-          aria-labelledby="form-templates-status-filter-label"
-          [attr.aria-expanded]="statusDropdownOpen()"
-          (click)="$event.stopPropagation(); toggleStatusDropdown()"
+          role="tab"
+          class="forms-listing__tab"
+          [class.forms-listing__tab--active]="listingStatus() === filter.value"
+          [attr.aria-selected]="listingStatus() === filter.value"
+          (click)="onListingStatusChange(filter.value)"
         >
-          <span>{{ statusFilterLabel() }}</span>
-          <svg width="12" height="8" viewBox="0 0 12 8" fill="none" class="ml-2 shrink-0">
-            <path d="M1 1.5L6 6.5L11 1.5" stroke="#161616" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
+          <span class="forms-listing__tab-label">{{ filter.label }}</span>
+          <span class="forms-listing__tab-count">{{ statusCount(filter.value) }}</span>
         </button>
-        @if (statusDropdownOpen()) {
-          <div
-            class="absolute right-0 top-full z-50 mt-1 min-w-full bg-white border border-[#E0E0E0] rounded-lg shadow-lg"
-            (click)="$event.stopPropagation()"
-          >
-            <ul class="max-h-48 overflow-y-auto py-1">
-              @for (filter of statusFilters; track filter.value) {
-                <li>
-                  <button
-                    type="button"
-                    class="w-full text-left px-4 py-2 text-sm font-ibm flex items-center gap-2 cursor-pointer"
-                    [class]="statusFilter() === filter.value ? 'bg-[#fff5eb] text-[#FF9015]' : 'hover:bg-[#FF9015] hover:text-white text-[#525252]'"
-                    (click)="onStatusFilterChange(filter.value)"
-                  >
-                    @if (statusFilter() === filter.value) {
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="text-[#FF9015] shrink-0">
-                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/>
-                      </svg>
-                    }
-                    {{ filter.label }}
-                  </button>
-                </li>
-              }
-            </ul>
-          </div>
-        }
-      </div>
+      }
+    </div>
 
-      @if (showCreateButton()) {
-        <button type="button" class="btn btn--cancel" (click)="goToCreate()">
-          + Create Form
-        </button>
+    <div class="forms-listing__search">
+      <svg
+        class="forms-listing__search-icon"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        aria-hidden="true"
+      >
+        <circle cx="11" cy="11" r="7" />
+        <path stroke-linecap="round" d="m20 20-3.5-3.5" />
+      </svg>
+      <input
+        type="search"
+        class="forms-listing__search-input"
+        placeholder="Search forms"
+        [value]="searchQuery()"
+        (input)="onSearchInput($event)"
+        (keydown.enter)="applySearch()"
+        aria-label="Search forms"
+      />
+    </div>
+
+    <div class="forms-listing__assigned forms-listing__dropdown" data-forms-filter-dropdown>
+      <button
+        type="button"
+        class="forms-listing__assigned-trigger"
+        [attr.aria-expanded]="assignedDropdownOpen()"
+        (click)="toggleAssignedDropdown($event)"
+      >
+        <span class="truncate">
+          <span class="forms-listing__assigned-label">Assigned to:</span>
+          <span class="forms-listing__assigned-value">{{ assignedToLabel() }}</span>
+        </span>
+        <svg class="h-3.5 w-3.5 shrink-0 text-[#9CA3AF]" viewBox="0 0 12 8" fill="none" aria-hidden="true">
+          <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      @if (assignedDropdownOpen()) {
+        <div class="forms-listing__dropdown-menu" (click)="$event.stopPropagation()">
+          <button
+            type="button"
+            class="forms-listing__dropdown-option"
+            [class.forms-listing__dropdown-option--selected]="assignedTo() === 'anyone'"
+            (click)="selectAssignedTo('anyone')"
+          >
+            Anyone
+          </button>
+          @for (option of assignedToOptions(); track option.value) {
+            <button
+              type="button"
+              class="forms-listing__dropdown-option"
+              [class.forms-listing__dropdown-option--selected]="assignedTo() === option.value"
+              (click)="selectAssignedTo(option.value)"
+            >
+              {{ option.label }}
+            </button>
+          }
+        </div>
+      }
+    </div>
+
+    <div class="forms-listing__sort forms-listing__dropdown" data-forms-filter-dropdown>
+      <button
+        type="button"
+        class="forms-listing__sort-trigger"
+        [attr.aria-expanded]="sortDropdownOpen()"
+        (click)="toggleSortDropdown($event)"
+      >
+        <span>
+          <span class="forms-listing__sort-label">Sort:</span>
+          <span class="forms-listing__sort-value">{{ sortLabel() }}</span>
+        </span>
+        <svg class="h-3.5 w-3.5 shrink-0 text-[#9CA3AF]" viewBox="0 0 12 8" fill="none" aria-hidden="true">
+          <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      @if (sortDropdownOpen()) {
+        <div class="forms-listing__dropdown-menu forms-listing__dropdown-menu--end" (click)="$event.stopPropagation()">
+          @for (option of sortOptions; track option.value) {
+            <button
+              type="button"
+              class="forms-listing__dropdown-option"
+              [class.forms-listing__dropdown-option--selected]="sortBy() === option.value"
+              (click)="selectSort(option.value)"
+            >
+              {{ option.label }}
+            </button>
+          }
+        </div>
       }
     </div>
   </div>
 
-  @if (hasFilterFields()) {
-    <app-global-filter
-      [fields]="filterFields()"
-      (search)="onFilterSearch($event)"
-      (clear)="onFilterClear()">
-    </app-global-filter>
-  }
-
   @if (hasForms() && showDeleteActions() && selectedCount() > 0) {
-    <div class="mt-5 flex items-center justify-between gap-3 rounded bg-white px-4 py-3 shadow">
-      <span class="text-sm font-ibm text-gray-500">
+    <div class="mb-3 flex items-center justify-between gap-3 rounded-xl border border-[#FEE2E2] bg-white px-4 py-3 shadow-sm">
+      <span class="text-sm text-[#6F6F6F]">
         Selected: {{ selectedCount() }}
       </span>
-
       <button
         type="button"
-        class="inline-flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-sm font-medium text-red-500 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-40 font-ibm"
+        class="inline-flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-sm font-medium text-red-500 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-40"
         [disabled]="!hasSelection()"
         (click)="openBulkDeleteConfirm()"
       >
@@ -113,210 +186,293 @@
     </div>
   }
 
-  <div class="forms-listing__shell bg-white rounded shadow mt-5">
+  <div class="forms-listing__shell">
     <div class="forms-listing__scroll">
-    <table class="forms-listing__table w-full text-left text-sm font-ibm">
-      <thead class="bg-gray-200 text-gray-700">
-        <tr>
-          @if (showDeleteActions()) {
-            <th class="forms-listing__col forms-listing__col--check px-4 py-3">
-              <input
-                type="checkbox"
-                class="h-4 w-4 rounded border-gray-300 text-[#ea580c] focus:ring-[#ea580c]"
-                [checked]="isAllSelected()"
-                [indeterminate]="isIndeterminate()"
-                [disabled]="visibleDeletableForms().length === 0"
-                (change)="toggleSelectAll()"
-              />
-            </th>
-          }
-          <th class="forms-listing__col forms-listing__col--name px-4 py-3">Form Name</th>
-          <th class="forms-listing__col forms-listing__col--freq px-4 py-3">Frequency</th>
-          <th class="forms-listing__col forms-listing__col--party px-4 py-3">Assignee</th>
-          <th class="forms-listing__col forms-listing__col--party px-4 py-3">Reporting</th>
-          <th class="forms-listing__col forms-listing__col--created px-4 py-3">Created At</th>
-          @if (showRowActions()) {
-            <th class="forms-listing__col forms-listing__col--actions px-4 py-3 text-right">Actions</th>
-          }
-        </tr>
-      </thead>
-
-      <tbody>
-        @for (form of forms(); track form.id) {
-          <tr class="border-b hover:bg-gray-50" [class.bg-orange-50]="isSelected(form)">
+      <table class="forms-listing__table w-full text-left text-sm">
+        <thead>
+          <tr>
             @if (showDeleteActions()) {
-              <td class="forms-listing__cell forms-listing__cell--check px-4 py-3">
+              <th class="forms-listing__col forms-listing__col--check">
                 <input
                   type="checkbox"
-                  class="h-4 w-4 rounded border-gray-300 text-[#ea580c] focus:ring-[#ea580c]"
-                  [checked]="isSelected(form)"
-                  [disabled]="!isFormDeletable(form)"
-                  (change)="toggleSelect(form)"
+                  class="forms-listing__checkbox"
+                  [checked]="isAllSelected()"
+                  [indeterminate]="isIndeterminate()"
+                  [disabled]="visibleDeletableForms().length === 0"
+                  (change)="toggleSelectAll()"
+                  aria-label="Select all forms"
                 />
-              </td>
+              </th>
             }
-            <td class="forms-listing__cell forms-listing__cell--name px-4 py-3 align-top">
-              <span class="forms-listing__name font-ibm" [attr.title]="form.formName">{{ form.formName }}</span>
-            </td>
-            <td class="forms-listing__cell forms-listing__cell--freq px-4 py-3 align-top">
-              <span class="forms-listing__freq font-ibm" [attr.title]="frequencyLabel(form)">{{ frequencyLabel(form) }}</span>
-            </td>
-            <td class="forms-listing__cell forms-listing__cell--party px-4 py-3 align-top">
-              @let assignee = assigneeSummary(form);
-              <div class="forms-listing__party">
-                @if (assignee.names.length) {
-                  <div class="forms-listing__chips">
-                    @for (name of assignee.names; track name) {
-                      <span class="forms-listing__chip forms-listing__chip--assign font-ibm" [attr.title]="name">{{ name }}</span>
-                    }
-                  </div>
-                  <span class="forms-listing__mode font-ibm">{{ assignee.modeLabel }}</span>
-                } @else {
-                  <span class="forms-listing__empty font-ibm">—</span>
-                }
-              </div>
-            </td>
-            <td class="forms-listing__cell forms-listing__cell--party px-4 py-3 align-top">
-              @let reporting = reportingSummary(form);
-              <div class="forms-listing__party">
-                @if (reporting.names.length) {
-                  <div class="forms-listing__chips">
-                    @for (name of reporting.names; track name) {
-                      <span class="forms-listing__chip forms-listing__chip--report font-ibm" [attr.title]="name">{{ name }}</span>
-                    }
-                  </div>
-                  <span class="forms-listing__mode font-ibm">{{ reporting.modeLabel }}</span>
-                } @else {
-                  <span class="forms-listing__empty font-ibm">—</span>
-                }
-              </div>
-            </td>
-            <td class="forms-listing__cell forms-listing__cell--created px-4 py-3 align-top text-[#525252]">
-              {{ form.createdAt | date: 'medium' }}
-            </td>
+            <th class="forms-listing__col forms-listing__col--name">Form</th>
+            <th class="forms-listing__col forms-listing__col--freq">Schedule</th>
+            <th class="forms-listing__col forms-listing__col--party">Filled out by</th>
+            <th class="forms-listing__col forms-listing__col--party">Results go to</th>
+            <th class="forms-listing__col forms-listing__col--created">Edited</th>
             @if (showRowActions()) {
-              <td class="forms-listing__cell forms-listing__cell--actions px-4 py-3 text-right">
-                <div class="forms-listing__actions">
-                @if (canView) {
-                  <button
-                    type="button"
-                    class="inline-flex items-center justify-center rounded-md p-1.5 text-[#2563EB] transition-colors hover:bg-blue-50"
-                    aria-label="Preview Form Template"
-                    title="Preview Form Template"
-                    (click)="previewForm(form)"
-                  >
-                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2Z" />
-                    </svg>
-                  </button>
-                }
-                @if (isArchivedView() && canView) {
-                  <button
-                    type="button"
-                    class="inline-flex items-center justify-center rounded-md p-1.5 text-gray-600 transition-colors hover:bg-gray-100"
-                    aria-label="View form"
-                    (click)="goToView(form)"
-                  >
-                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"></path>
-                      <circle cx="12" cy="12" r="3"></circle>
-                    </svg>
-                  </button>
-                }
-                @if (!isArchivedView() && canEdit) {
-                  <button
-                    type="button"
-                    class="inline-flex items-center justify-center rounded-md p-1.5 text-[#ea580c] transition-colors hover:bg-orange-50"
-                    aria-label="Edit form"
-                    (click)="goToEdit(form)"
-                  >
-                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5Z"></path>
-                    </svg>
-                  </button>
-                }
-                @if (isArchivedView() && canRestore) {
-                  <button
-                    type="button"
-                    class="inline-flex items-center justify-center rounded-md p-1.5 text-emerald-600 transition-colors hover:bg-emerald-50"
-                    aria-label="Restore form"
-                    (click)="restoreForm(form)"
-                  >
-                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
-                      <path d="M3 3v5h5"></path>
-                    </svg>
-                  </button>
-                }
-                @if (!isArchivedView() && canDelete) {
-                  <button
-                    type="button"
-                    class="inline-flex items-center justify-center rounded-md p-1.5 text-red-500 transition-colors hover:bg-red-50"
-                    aria-label="Delete form"
-                    (click)="deleteForm(form)"
-                  >
-                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                      <path d="M3 6h18"></path>
-                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
-                      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                    </svg>
-                  </button>
-                }
-                </div>
-              </td>
+              <th class="forms-listing__col forms-listing__col--actions">
+                <span class="sr-only">Actions</span>
+              </th>
             }
           </tr>
-        }
-      </tbody>
-    </table>
+        </thead>
+
+        <tbody>
+          @for (form of displayedForms(); track form.id) {
+            <tr
+              class="forms-listing__row"
+              [class.forms-listing__row--selected]="isSelected(form)"
+            >
+              @if (showDeleteActions()) {
+                <td class="forms-listing__cell forms-listing__cell--check">
+                  <input
+                    type="checkbox"
+                    class="forms-listing__checkbox"
+                    [checked]="isSelected(form)"
+                    [disabled]="!isFormDeletable(form)"
+                    (change)="toggleSelect(form)"
+                    [attr.aria-label]="'Select ' + form.formName"
+                  />
+                </td>
+              }
+              <td class="forms-listing__cell forms-listing__cell--name">
+                <button
+                  type="button"
+                  class="forms-listing__name"
+                  [attr.title]="form.formName"
+                  (click)="!isArchivedView() && canEdit ? goToEdit(form) : goToView(form)"
+                >
+                  {{ form.formName || 'Untitled form' }}
+                </button>
+                <p class="forms-listing__meta">{{ formStructureLabel(form) }}</p>
+              </td>
+              <td class="forms-listing__cell forms-listing__cell--freq">
+                <p class="forms-listing__schedule-primary" [attr.title]="frequencyLabel(form)">
+                  {{ frequencyLabel(form) }}
+                </p>
+                @if (scheduleTimesLabel(form)) {
+                  <p class="forms-listing__schedule-times" [attr.title]="scheduleTimesLabel(form)">
+                    {{ scheduleTimesLabel(form) }}
+                  </p>
+                }
+              </td>
+              <td class="forms-listing__cell forms-listing__cell--party">
+                @let assignee = assigneeSummary(form);
+                <div class="forms-listing__party">
+                  @if (assignee.names.length) {
+                    <div class="forms-listing__chips">
+                      <span
+                        class="forms-listing__chip forms-listing__chip--assign"
+                        [attr.title]="primaryPartyName(assignee.names)"
+                      >
+                        {{ primaryPartyName(assignee.names) }}
+                      </span>
+                      @if (extraPartyCount(assignee.names) > 0) {
+                        <span
+                          class="forms-listing__chip-more"
+                          [attr.title]="assignee.names.slice(1).join(', ')"
+                        >
+                          +{{ extraPartyCount(assignee.names) }}
+                        </span>
+                      }
+                    </div>
+                    <span class="forms-listing__mode">{{ assignee.modeLabel }}</span>
+                  } @else {
+                    <span class="forms-listing__empty">—</span>
+                  }
+                </div>
+              </td>
+              <td class="forms-listing__cell forms-listing__cell--party">
+                @let reporting = reportingSummary(form);
+                <div class="forms-listing__party">
+                  @if (reporting.names.length) {
+                    <div class="forms-listing__chips">
+                      <span
+                        class="forms-listing__chip forms-listing__chip--report"
+                        [attr.title]="primaryPartyName(reporting.names)"
+                      >
+                        {{ primaryPartyName(reporting.names) }}
+                      </span>
+                      @if (extraPartyCount(reporting.names) > 0) {
+                        <span
+                          class="forms-listing__chip-more"
+                          [attr.title]="reporting.names.slice(1).join(', ')"
+                        >
+                          +{{ extraPartyCount(reporting.names) }}
+                        </span>
+                      }
+                    </div>
+                  } @else {
+                    <span class="forms-listing__empty">—</span>
+                  }
+                </div>
+              </td>
+              <td class="forms-listing__cell forms-listing__cell--created">
+                @let edited = editedDateParts(form.createdAt);
+                <div class="forms-listing__edited">
+                  <span class="forms-listing__edited-day">{{ edited.dayMonth }}</span>
+                  @if (edited.year) {
+                    <span class="forms-listing__edited-year">{{ edited.year }}</span>
+                  }
+                </div>
+              </td>
+              @if (showRowActions()) {
+                <td class="forms-listing__cell forms-listing__cell--actions">
+                  <div class="forms-listing__actions">
+                    @if (canView) {
+                      <button
+                        type="button"
+                        class="forms-listing__icon-btn forms-listing__icon-btn--preview"
+                        aria-label="Preview Form Template"
+                        title="Preview Form Template"
+                        (click)="previewForm(form)"
+                      >
+                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"></path>
+                          <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                      </button>
+                    }
+
+                    <div class="forms-listing__actions-menu relative">
+                      <button
+                        type="button"
+                        class="forms-listing__icon-btn"
+                        aria-label="Open actions"
+                        [attr.aria-expanded]="isActionsOpen(form)"
+                        (click)="toggleActionsMenu(form, $event)"
+                      >
+                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                          <circle cx="5" cy="12" r="1.6" />
+                          <circle cx="12" cy="12" r="1.6" />
+                          <circle cx="19" cy="12" r="1.6" />
+                        </svg>
+                      </button>
+
+                      @if (isActionsOpen(form)) {
+                        <div
+                          class="forms-listing__menu"
+                          role="menu"
+                          (click)="$event.stopPropagation()"
+                        >
+                          @if (!isArchivedView() && canEdit) {
+                            <button type="button" class="forms-listing__menu-item" role="menuitem" (click)="closeActionsMenu(); goToEdit(form)">
+                              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5Z"></path>
+                              </svg>
+                              Edit form
+                            </button>
+                          }
+                          @if (isArchivedView() && canView) {
+                            <button type="button" class="forms-listing__menu-item" role="menuitem" (click)="closeActionsMenu(); goToView(form)">
+                              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                              </svg>
+                              View form
+                            </button>
+                          }
+                          @if (isArchivedView() && canRestore) {
+                            <button type="button" class="forms-listing__menu-item" role="menuitem" (click)="closeActionsMenu(); restoreForm(form)">
+                              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                                <path d="M3 3v5h5"></path>
+                              </svg>
+                              Restore
+                            </button>
+                          }
+                          @if (!isArchivedView() && canDelete) {
+                            <div class="forms-listing__menu-divider" role="separator"></div>
+                            <button
+                              type="button"
+                              class="forms-listing__menu-item forms-listing__menu-item--danger"
+                              role="menuitem"
+                              (click)="closeActionsMenu(); deleteForm(form)"
+                            >
+                              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <path d="M3 6h18"></path>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
+                                <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                              </svg>
+                              Delete
+                            </button>
+                          }
+                        </div>
+                      }
+                    </div>
+                  </div>
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
     </div>
 
     @if (!loading() && !hasForms()) {
-      <div class="text-center py-10">
-        <p class="text-gray-400 text-sm font-ibm">
-          {{ isArchivedView() ? 'No archived forms found' : 'No forms created yet' }}
+      <div class="px-6 py-12 text-center">
+        <p class="text-sm text-[#9CA3AF]">
+          {{ emptyListMessage() }}
         </p>
-        @if (!isArchivedView() && canCreate) {
-          <button type="button" class="create-link font-ibm" (click)="goToCreate()">
+        @if (!isArchivedView() && !isDraftView() && canCreate) {
+          <button type="button" class="create-link" (click)="goToCreate()">
             Create your first form
           </button>
         }
       </div>
+    } @else if (!loading() && hasForms() && !displayedForms().length) {
+      <div class="px-6 py-12 text-center">
+        <p class="text-sm text-[#9CA3AF]">No forms match the current filters.</p>
+      </div>
+    }
+
+    @if (!loading() && hasForms()) {
+      <div class="forms-listing__footer">
+        <div class="forms-listing__footer-summary">
+          <p class="forms-listing__footer-count">{{ listSummaryLabel() }}</p>
+          @if (!showPagination()) {
+            <p class="forms-listing__footer-hint">
+              Page controls appear when there are more than {{ pageSize() }} forms.
+            </p>
+          }
+        </div>
+
+        @if (showPagination()) {
+          <div class="forms-listing__pagination">
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+              <span class="text-sm text-[#6F6F6F]">
+                Page {{ page() }} of {{ lastPage() }}
+              </span>
+              <app-page-size-select
+                [total]="total()"
+                [value]="pageSizeValue()"
+                [disabled]="loading()"
+                (valueChange)="onPageSizeChange($event)"
+              ></app-page-size-select>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <button
+                type="button"
+                class="forms-listing__page-btn"
+                [disabled]="page() === 1"
+                (click)="prevPage()"
+              >
+                ← Prev
+              </button>
+              <button
+                type="button"
+                class="forms-listing__page-btn"
+                [disabled]="page() === lastPage()"
+                (click)="nextPage()"
+              >
+                Next →
+              </button>
+            </div>
+          </div>
+        }
+      </div>
     }
   </div>
-
-  @if (showPagination()) {
-    <div class="flex flex-col gap-3 px-4 py-3 border border-gray-200 border-t-0 rounded-b bg-white sm:flex-row sm:items-center sm:justify-between">
-      <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-        <span class="text-sm text-gray-500 font-ibm">
-          Page {{ page() }} of {{ lastPage() }}
-        </span>
-        <app-page-size-select
-          [total]="total()"
-          [value]="pageSizeValue()"
-          [disabled]="loading()"
-          (valueChange)="onPageSizeChange($event)"
-        ></app-page-size-select>
-      </div>
-
-      <div class="flex items-center gap-2">
-        <button
-          class="px-3 py-1.5 rounded-lg text-sm font-medium border border-[#ea580c]/30 bg-[#ea580c]/10 text-[#ea580c] hover:bg-[#ea580c]/20 transition disabled:opacity-40 disabled:cursor-not-allowed font-ibm"
-          [disabled]="page() === 1"
-          (click)="prevPage()"
-        >
-          ← Prev
-        </button>
-
-        <button
-          class="px-3 py-1.5 rounded-lg text-sm font-medium border border-[#ea580c]/30 bg-[#ea580c]/10 text-[#ea580c] hover:bg-[#ea580c]/20 transition disabled:opacity-40 disabled:cursor-not-allowed font-ibm"
-          [disabled]="page() === lastPage()"
-          (click)="nextPage()"
-        >
-          Next →
-        </button>
-      </div>
-    </div>
-  }
 </div>
