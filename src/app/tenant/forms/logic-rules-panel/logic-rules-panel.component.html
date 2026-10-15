@@ -1,4 +1,4 @@
-<div class="logic-rules font-ibm">
+<div class="block font-ibm">
   <div class="flex items-start justify-between gap-3">
     <div class="min-w-0 space-y-1">
       <h3 class="text-sm font-semibold text-slate-800">Automation Rules</h3>
@@ -45,7 +45,7 @@
   } @else {
     <div class="mt-4 space-y-3">
       @for (rule of localRules; track trackByRuleId($index, rule)) {
-        <article class="rule-card">
+        <article class="rounded-2xl border border-gray-200 bg-white transition hover:border-gray-300 hover:shadow-sm">
           <div class="flex items-start justify-between gap-3 px-4 pt-3.5">
             <div class="min-w-0 flex-1">
               <div class="flex flex-wrap items-center gap-2">
@@ -53,21 +53,21 @@
                   {{ rule.name || 'Untitled Rule' }}
                 </h4>
                 <span
-                  class="rule-status"
-                  [ngClass]="rule.enabled ? 'rule-status--on' : 'rule-status--off'"
+                  class="inline-flex items-center rounded-full px-2 py-[0.1rem] text-[0.625rem] font-bold uppercase tracking-wide"
+                  [ngClass]="rule.enabled ? 'bg-[#f7fee7] text-[#3f6212]' : 'bg-gray-100 text-gray-500'"
                 >
                   {{ rule.enabled ? 'Enabled' : 'Disabled' }}
                 </span>
               </div>
               <div class="mt-2 flex items-center gap-2">
-                <label class="rule-switch" [attr.aria-label]="rule.enabled ? 'Disable rule' : 'Enable rule'">
+                <label class="relative inline-flex cursor-pointer" [attr.aria-label]="rule.enabled ? 'Disable rule' : 'Enable rule'">
                   <input
                     type="checkbox"
-                    class="sr-only"
+                    class="peer sr-only"
                     [checked]="rule.enabled"
                     (change)="toggleRuleEnabled(rule, $any($event.target).checked)"
                   />
-                  <span class="rule-switch__track" aria-hidden="true"></span>
+                  <span class="relative inline-block h-[1.4rem] w-10 rounded-full bg-gray-300 transition after:absolute after:left-[0.15rem] after:top-[0.15rem] after:h-[1.1rem] after:w-[1.1rem] after:rounded-full after:bg-white after:shadow after:transition peer-checked:bg-[#161616] peer-checked:after:translate-x-[1.1rem] peer-focus-visible:shadow-[0_0_0_3px_rgba(22,22,22,0.15)]" aria-hidden="true"></span>
                 </label>
                 <span class="text-[11px] text-slate-500">
                   {{ rule.enabled ? 'Rule is active' : 'Rule is paused' }}
@@ -77,7 +77,7 @@
             <div class="flex shrink-0 items-center gap-1">
               <button
                 type="button"
-                class="icon-btn"
+                class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-transparent bg-transparent text-gray-500 transition hover:bg-gray-100 hover:text-[#161616] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(148,163,184,0.25)]"
                 title="Edit rule"
                 aria-label="Edit rule"
                 (click)="openEditEditor(rule)"
@@ -88,7 +88,7 @@
               </button>
               <button
                 type="button"
-                class="icon-btn icon-btn--danger"
+                class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-transparent bg-transparent text-red-600 transition hover:bg-red-50 hover:text-red-700 focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(148,163,184,0.25)]"
                 title="Delete rule"
                 aria-label="Delete rule"
                 (click)="requestDelete(rule)"
@@ -100,12 +100,12 @@
             </div>
           </div>
           <div class="mt-3 space-y-1.5 border-t border-slate-100 bg-slate-50/70 px-4 py-3">
-            <p class="summary-line">
-              <span class="summary-key summary-key--when">WHEN</span>
+            <p class="text-xs leading-snug [overflow-wrap:anywhere]">
+              <span class="mr-[0.35rem] inline-flex items-center font-extrabold tracking-wide text-[#161616]">WHEN</span>
               Form is submitted
             </p>
-            <p class="summary-line summary-line--if">{{ ruleSummary(rule).when }}</p>
-            <p class="summary-line summary-line--then">{{ ruleSummary(rule).then }}</p>
+            <p class="text-xs leading-snug text-gray-700 [overflow-wrap:anywhere]">{{ ruleSummary(rule).when }}</p>
+            <p class="text-xs leading-snug text-[#3f6212] [overflow-wrap:anywhere]">{{ ruleSummary(rule).then }}</p>
           </div>
         </article>
       }
@@ -115,48 +115,35 @@
 
 @if (editorOpen && editingRule; as rule) {
   <div
-    class="logic-drawer"
-    [class.logic-drawer--closing]="editorClosing"
+    class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/45 p-4 backdrop-blur-[2px] max-sm:items-end max-sm:p-2"
+    [class.pointer-events-none]="editorClosing"
+    [class.logic-anim-overlay-in]="!editorClosing"
+    [class.logic-anim-overlay-out]="editorClosing"
     role="dialog"
     aria-modal="true"
     aria-labelledby="logic-rule-drawer-title"
     (click)="closeEditor()"
   >
     <div
-      class="logic-drawer__panel"
-      [class.logic-drawer__panel--closing]="editorClosing"
+      class="flex max-h-[min(92vh,52rem)] w-full max-w-[40rem] flex-col rounded-[1.25rem] border border-gray-200 bg-white shadow-[0_24px_48px_-16px_rgba(15,23,42,0.35)] max-sm:max-h-[94vh] max-sm:max-w-full max-sm:rounded-t-[1.1rem] max-sm:rounded-b-xl"
+      [class.logic-anim-modal-in]="!editorClosing"
+      [class.logic-anim-modal-out]="editorClosing"
       (click)="$event.stopPropagation()"
     >
-      <header class="logic-drawer__header">
-        <div class="flex min-w-0 items-start gap-3">
-          <span class="logic-drawer__icon" aria-hidden="true">
-            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+      <header class="relative z-30 flex shrink-0 items-center justify-between gap-4 bg-white px-6 pb-3 pt-5 max-sm:px-[1.1rem] max-sm:pb-2 max-sm:pt-4">
+        <div class="flex min-w-0 items-center gap-3">
+          <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[0.55rem] bg-[#d9f99d] text-[#161616]" aria-hidden="true">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
             </svg>
           </span>
-          <div class="min-w-0">
-            <div class="flex flex-wrap items-center gap-2">
-              <h2 id="logic-rule-drawer-title" class="text-base font-semibold text-slate-800">
-                Automation Rules
-              </h2>
-              <span class="logic-drawer__pill">
-                {{ isNewRule ? 'New rule' : 'Editing' }}
-              </span>
-              <span
-                class="rule-status"
-                [ngClass]="rule.enabled ? 'rule-status--on' : 'rule-status--off'"
-              >
-                {{ rule.enabled ? 'Enabled' : 'Disabled' }}
-              </span>
-            </div>
-            <p class="mt-1 text-xs leading-relaxed text-slate-500">
-              Set up an automatic action that happens when specific conditions are met.
-            </p>
-          </div>
+          <h2 id="logic-rule-drawer-title" class="truncate text-lg font-bold text-[#161616]">
+            {{ isNewRule ? 'New automation' : 'Edit automation' }}
+          </h2>
         </div>
         <button
           type="button"
-          class="icon-btn shrink-0"
+          class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-transparent bg-transparent text-gray-500 transition hover:bg-gray-100 hover:text-[#161616] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(148,163,184,0.25)]"
           aria-label="Close"
           title="Close"
           (click)="closeEditor()"
@@ -167,89 +154,80 @@
         </button>
       </header>
 
-      <div class="logic-drawer__body">
-        <!-- Rule name -->
-        <div class="logic-card">
-          <div class="logic-field">
-            <label class="logic-label" for="logic-rule-name">Rule name</label>
-            <input
-              id="logic-rule-name"
-              type="text"
-              class="logic-rules-input"
-              [(ngModel)]="rule.name"
-              placeholder="e.g. Low stock — create purchase request"
-            />
-            <p class="logic-help">A short name helps you find this rule later.</p>
-          </div>
+      <div class="relative z-40 flex min-h-0 flex-1 flex-col gap-5 overflow-x-hidden overflow-y-auto bg-white px-6 pb-5 pt-2 max-sm:px-[1.1rem] max-sm:pb-4 max-sm:pt-[0.35rem]">
+        <!-- Automation name -->
+        <div class="flex flex-col">
+          <label class="mb-[0.4rem] block text-[0.8125rem] font-medium text-gray-600" for="logic-rule-name">Automation name</label>
+          <input
+            id="logic-rule-name"
+            type="text"
+            class="w-full rounded-xl border border-gray-200 bg-white px-[0.85rem] py-[0.7rem] text-sm leading-5 text-[#161616] transition placeholder:text-gray-400 hover:border-gray-300 focus:border-[#ff9015] focus:outline-none focus:shadow-[0_0_0_3px_rgba(255,144,21,0.15)]"
+            [(ngModel)]="rule.name"
+            placeholder="Low stock → create purchase request"
+          />
         </div>
 
-        <!-- WHEN -->
-        <section class="logic-section">
-          <div class="logic-section__head logic-section__head--when">
-            <span class="logic-keyword logic-keyword--when">WHEN</span>
+        <div class="flex flex-col gap-5">
+          <!-- WHEN -->
+          <section class="grid grid-cols-[3.5rem_minmax(0,1fr)] items-stretch gap-[0.85rem] max-sm:grid-cols-[3.1rem_minmax(0,1fr)] max-sm:gap-[0.65rem]">
+            <div class="relative flex min-h-full flex-col items-center" aria-hidden="true">
+              <span class="inline-flex min-w-[3.25rem] shrink-0 items-center justify-center rounded-[0.4rem] bg-[#161616] px-[0.45rem] py-[0.3rem] text-[0.6875rem] font-extrabold leading-none tracking-wide text-white">WHEN</span>
+              <span class="mt-[0.35rem] min-h-6 w-px flex-1 bg-gray-300"></span>
+            </div>
             <div class="min-w-0">
-              <div class="flex items-center gap-1.5">
-                <h3 class="text-sm font-semibold text-slate-800">Something happens</h3>
-                <span
-                  class="app-tooltip-trigger relative inline-flex shrink-0 cursor-pointer"
-                  tabindex="0"
-                  role="button"
-                  aria-label="When this form is submitted"
-                >
-                  <svg
-                    class="h-4 w-4 text-slate-400"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    aria-hidden="true"
-                  >
-                    <circle cx="12" cy="12" r="10" />
-                    <path stroke-linecap="round" d="M12 16v-4M12 8h.01" />
-                  </svg>
-                  <span role="tooltip" class="app-tooltip app-tooltip--below-end font-ibm">
-                    After someone fills out and submits this form, the checks below run automatically.
-                  </span>
-                </span>
+              <div class="flex items-center justify-between gap-3 rounded-[0.85rem] border border-gray-200 bg-white px-4 py-[0.9rem]">
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-1.5">
+                    <p class="m-0 text-sm font-bold text-[#161616]">Form is submitted</p>
+                    <span
+                      class="app-tooltip-trigger relative inline-flex shrink-0 cursor-pointer"
+                      tabindex="0"
+                      role="button"
+                      aria-label="When this form is submitted"
+                    >
+                      <svg
+                        class="h-4 w-4 text-gray-400"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        aria-hidden="true"
+                      >
+                        <circle cx="12" cy="12" r="10" />
+                        <path stroke-linecap="round" d="M12 16v-4M12 8h.01" />
+                      </svg>
+                      <span role="tooltip" class="app-tooltip app-tooltip--below-end font-ibm">
+                        After someone fills out and submits this form, the checks below run automatically.
+                      </span>
+                    </span>
+                  </div>
+                  <p class="m-0 mt-0.5 text-xs text-gray-500">Trigger</p>
+                </div>
+                <svg class="h-4 w-4 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                </svg>
               </div>
-              <p class="mt-0.5 text-xs leading-relaxed text-slate-500">
-                Choose what should trigger this automation.
-              </p>
             </div>
-          </div>
-        </section>
+          </section>
 
-        <!-- IF -->
-        <section class="logic-section">
-          <div class="logic-section__head logic-section__head--if">
-            <span class="logic-keyword logic-keyword--if">IF</span>
-            <div class="min-w-0">
-              <h3 class="text-sm font-semibold text-slate-800">A condition is true</h3>
-              <p class="mt-0.5 text-xs leading-relaxed text-slate-500">
-                Add one or more conditions that must be true.
-              </p>
+          <!-- IF -->
+          <section class="grid grid-cols-[3.5rem_minmax(0,1fr)] items-stretch gap-[0.85rem] max-sm:grid-cols-[3.1rem_minmax(0,1fr)] max-sm:gap-[0.65rem]">
+            <div class="relative flex min-h-full flex-col items-center" aria-hidden="true">
+              <span class="inline-flex min-w-[3.25rem] shrink-0 items-center justify-center rounded-[0.4rem] bg-[#161616] px-[0.45rem] py-[0.3rem] text-[0.6875rem] font-extrabold leading-none tracking-wide text-white">IF</span>
+              <span class="mt-[0.35rem] min-h-6 w-px flex-1 bg-gray-300"></span>
             </div>
-          </div>
-
-          <div class="space-y-4 p-4">
-            <div class="space-y-2">
+            <div class="min-w-0 space-y-3">
+              <div class="space-y-2">
               @for (condition of rule.conditions.items; track trackByConditionId($index, condition)) {
-                <div class="logic-cond">
-                  <div class="logic-cond__head">
-                    <div class="flex min-w-0 items-center gap-2">
-                      <span class="logic-badge">IF</span>
-                      @if (rule.conditions.items.length > 1) {
-                        <span class="text-xs font-medium text-slate-500">
-                          Condition {{ $index + 1 }}
-                        </span>
-                      } @else {
-                        <span class="text-xs text-slate-500">Read this like a sentence</span>
-                      }
-                    </div>
-                    @if (rule.conditions.items.length > 1) {
+                <div>
+                  @if (rule.conditions.items.length > 1) {
+                    <div class="mb-2 flex items-center justify-between gap-2">
+                      <span class="text-xs font-medium text-gray-500">
+                        Condition {{ $index + 1 }}
+                      </span>
                       <button
                         type="button"
-                        class="logic-remove"
+                        class="inline-flex items-center gap-[0.3rem] rounded-[0.4rem] px-2 py-1 text-xs font-medium text-red-600 transition hover:bg-red-50 hover:text-red-700 focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(248,113,113,0.25)]"
                         title="Remove condition"
                         aria-label="Remove condition"
                         (click)="removeCondition(condition.id)"
@@ -259,15 +237,15 @@
                         </svg>
                         Remove
                       </button>
-                    }
-                  </div>
+                    </div>
+                  }
 
                   <!-- Sentence row: [Field] [operator] [comparison] -->
-                  <div class="logic-cond__grid">
+                  <div class="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:items-stretch">
                     <div class="min-w-0">
-                      <label class="logic-label">Answer</label>
+                      <label class="sr-only">Answer</label>
                       <div
-                        class="logic-select"
+                        class="relative w-full"
                         appDropdownPanel
                         #fieldDropdown="dropdownPanel"
                         [dropdownId]="'cond-field-' + condition.id"
@@ -275,7 +253,7 @@
                       >
                         <button
                           type="button"
-                          class="logic-select__trigger"
+                          class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl border border-gray-200 bg-white px-[0.85rem] py-[0.7rem] text-left text-sm leading-5 text-[#161616] transition hover:border-gray-300 hover:bg-[#fafafa] focus-visible:border-[#ff9015] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] aria-expanded:border-[#ff9015] aria-expanded:bg-white aria-expanded:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
                           (click)="fieldDropdown.toggle($event)"
                           [attr.aria-expanded]="fieldDropdown.isOpen"
                         >
@@ -287,15 +265,15 @@
                           </svg>
                         </button>
                         @if (fieldDropdown.isOpen) {
-                          <div class="logic-select__menu">
-                            <button type="button" class="logic-select__option" (click)="selectConditionField(condition, '')">
+                          <div class="absolute left-0 right-0 top-[calc(100%+4px)] z-[200] max-h-64 overflow-y-auto rounded-[0.85rem] border border-gray-200 bg-white p-[0.35rem] shadow-[0_16px_32px_-12px_rgba(15,23,42,0.22)]">
+                            <button type="button" class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50" (click)="selectConditionField(condition, '')">
                               Choose an answer…
                             </button>
                             @for (field of eligibleFields; track field.id) {
                               <button
                                 type="button"
-                                class="logic-select__option"
-                                [class.logic-select__option--selected]="condition.fieldId === field.id"
+                                class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                [class.bg-[#f7fee7]]="condition.fieldId === field.id" [class.font-semibold]="condition.fieldId === field.id" [class.text-[#3f6212]]="condition.fieldId === field.id"
                                 (click)="selectConditionField(condition, field.id)"
                               >
                                 {{ field.label }}
@@ -307,9 +285,9 @@
                     </div>
 
                     <div class="min-w-0">
-                      <label class="logic-label">Check</label>
+                      <label class="sr-only">Check</label>
                       <div
-                        class="logic-select"
+                        class="relative w-full"
                         appDropdownPanel
                         #operatorDropdown="dropdownPanel"
                         [dropdownId]="'cond-op-' + condition.id"
@@ -317,7 +295,7 @@
                       >
                         <button
                           type="button"
-                          class="logic-select__trigger"
+                          class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl border border-gray-200 bg-white px-[0.85rem] py-[0.7rem] text-left text-sm leading-5 text-[#161616] transition hover:border-gray-300 hover:bg-[#fafafa] focus-visible:border-[#ff9015] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] aria-expanded:border-[#ff9015] aria-expanded:bg-white aria-expanded:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
                           (click)="condition.fieldId && operatorDropdown.toggle($event)"
                           [disabled]="!condition.fieldId"
                           [attr.aria-expanded]="operatorDropdown.isOpen"
@@ -330,12 +308,12 @@
                           </svg>
                         </button>
                         @if (operatorDropdown.isOpen) {
-                          <div class="logic-select__menu">
+                          <div class="absolute left-0 right-0 top-[calc(100%+4px)] z-[200] max-h-64 overflow-y-auto rounded-[0.85rem] border border-gray-200 bg-white p-[0.35rem] shadow-[0_16px_32px_-12px_rgba(15,23,42,0.22)]">
                             @for (op of operatorsFor(condition); track op) {
                               <button
                                 type="button"
-                                class="logic-select__option"
-                                [class.logic-select__option--selected]="condition.operator === op"
+                                class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                [class.bg-[#f7fee7]]="condition.operator === op" [class.font-semibold]="condition.operator === op" [class.text-[#3f6212]]="condition.operator === op"
                                 (click)="selectConditionOperator(condition, op)"
                               >
                                 {{ operatorLabel(op, condition) }}
@@ -348,9 +326,9 @@
 
                     @if (needsValue(condition)) {
                       <div class="min-w-0">
-                        <label class="logic-label">Compared to</label>
+                        <label class="sr-only">Compared to</label>
                         <div
-                          class="logic-select"
+                          class="relative w-full"
                           appDropdownPanel
                           #compareTypeDropdown="dropdownPanel"
                           [dropdownId]="'cond-cmp-' + condition.id"
@@ -358,7 +336,7 @@
                         >
                           <button
                             type="button"
-                            class="logic-select__trigger"
+                            class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl border border-gray-200 bg-white px-[0.85rem] py-[0.7rem] text-left text-sm leading-5 text-[#161616] transition hover:border-gray-300 hover:bg-[#fafafa] focus-visible:border-[#ff9015] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] aria-expanded:border-[#ff9015] aria-expanded:bg-white aria-expanded:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
                             (click)="condition.fieldId && compareTypeDropdown.toggle($event)"
                             [disabled]="!condition.fieldId"
                             [attr.aria-expanded]="compareTypeDropdown.isOpen"
@@ -371,12 +349,12 @@
                             </svg>
                           </button>
                           @if (compareTypeDropdown.isOpen) {
-                            <div class="logic-select__menu">
+                            <div class="absolute left-0 right-0 top-[calc(100%+4px)] z-[200] max-h-64 overflow-y-auto rounded-[0.85rem] border border-gray-200 bg-white p-[0.35rem] shadow-[0_16px_32px_-12px_rgba(15,23,42,0.22)]">
                               @for (option of comparisonOptionsFor(condition); track option.value) {
                                 <button
                                   type="button"
-                                  class="logic-select__option"
-                                  [class.logic-select__option--selected]="condition.comparison.type === option.value"
+                                  class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                  [class.bg-[#f7fee7]]="condition.comparison.type === option.value" [class.font-semibold]="condition.comparison.type === option.value" [class.text-[#3f6212]]="condition.comparison.type === option.value"
                                   (click)="selectComparisonType(condition, option.value)"
                                 >
                                   {{ option.label }}
@@ -391,14 +369,14 @@
 
                   @if (needsValue(condition) && condition.fieldId && condition.comparison.type === 'fixed') {
                     <div class="mt-3">
-                      <label class="logic-label">Enter the value</label>
+                      <label class="mb-[0.4rem] block text-[0.8125rem] font-medium text-gray-600">Enter the value</label>
 
                       @if (
                         fixedComparisonControlKind(condition) === 'options' ||
                         fixedComparisonControlKind(condition) === 'boolean'
                       ) {
                         <div
-                          class="logic-select"
+                          class="relative w-full"
                           appDropdownPanel
                           #fixedOptionDropdown="dropdownPanel"
                           [dropdownId]="'cond-fixed-opt-' + condition.id"
@@ -406,7 +384,7 @@
                         >
                           <button
                             type="button"
-                            class="logic-select__trigger"
+                            class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl border border-gray-200 bg-white px-[0.85rem] py-[0.7rem] text-left text-sm leading-5 text-[#161616] transition hover:border-gray-300 hover:bg-[#fafafa] focus-visible:border-[#ff9015] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] aria-expanded:border-[#ff9015] aria-expanded:bg-white aria-expanded:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
                             (click)="fixedOptionDropdown.toggle($event)"
                             [attr.aria-expanded]="fixedOptionDropdown.isOpen"
                           >
@@ -418,10 +396,10 @@
                             </svg>
                           </button>
                           @if (fixedOptionDropdown.isOpen) {
-                            <div class="logic-select__menu">
+                            <div class="absolute left-0 right-0 top-[calc(100%+4px)] z-[200] max-h-64 overflow-y-auto rounded-[0.85rem] border border-gray-200 bg-white p-[0.35rem] shadow-[0_16px_32px_-12px_rgba(15,23,42,0.22)]">
                               <button
                                 type="button"
-                                class="logic-select__option"
+                                class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
                                 (click)="selectFixedOption(condition, '')"
                               >
                                 Choose a value…
@@ -429,8 +407,8 @@
                               @for (option of fixedValueOptions(condition); track option.value) {
                                 <button
                                   type="button"
-                                  class="logic-select__option"
-                                  [class.logic-select__option--selected]="isFixedOptionSelected(condition, option.value)"
+                                  class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                  [class.bg-[#f7fee7]]="isFixedOptionSelected(condition, option.value)" [class.font-semibold]="isFixedOptionSelected(condition, option.value)" [class.text-[#3f6212]]="isFixedOptionSelected(condition, option.value)"
                                   (click)="selectFixedOption(condition, option.value)"
                                 >
                                   {{ option.label }}
@@ -440,12 +418,12 @@
                           }
                         </div>
                       } @else if (fixedComparisonControlKind(condition) === 'options-multi') {
-                        <div class="logic-multi">
+                        <div class="flex max-h-44 flex-col gap-2 overflow-y-auto rounded-xl border border-gray-200 bg-white px-3 py-[0.65rem]">
                           @for (option of fixedValueOptions(condition); track option.value) {
-                            <label class="logic-check">
+                            <label class="flex cursor-pointer items-center gap-[0.625rem] text-sm text-gray-700">
                               <input
                                 type="checkbox"
-                                class="logic-check__input"
+                                class="h-4 w-4 shrink-0 cursor-pointer rounded border border-gray-300 bg-white accent-lime-500"
                                 [checked]="isFixedOptionSelected(condition, option.value)"
                                 (change)="toggleFixedMultiOption(condition, option.value, $any($event.target).checked)"
                               />
@@ -453,13 +431,13 @@
                             </label>
                           }
                           @if (!fixedValueOptions(condition).length) {
-                            <p class="logic-help">No options configured for this field.</p>
+                            <p class="mt-[0.35rem] text-[0.6875rem] text-gray-400">No options configured for this field.</p>
                           }
                         </div>
                       } @else {
                         <input
                           [type]="fixedValueInputType(condition)"
-                          class="logic-rules-input"
+                          class="w-full rounded-xl border border-gray-200 bg-white px-[0.85rem] py-[0.7rem] text-sm leading-5 text-[#161616] transition placeholder:text-gray-400 hover:border-gray-300 focus:border-[#ff9015] focus:outline-none focus:shadow-[0_0_0_3px_rgba(255,144,21,0.15)]"
                           [ngModel]="condition.comparison.value"
                           (ngModelChange)="onFixedValueChange(condition, $event)"
                           [placeholder]="
@@ -478,9 +456,9 @@
 
                   @if (needsValue(condition) && condition.fieldId && condition.comparison.type === 'field') {
                     <div class="mt-3">
-                      <label class="logic-label">Which other answer?</label>
+                      <label class="mb-[0.4rem] block text-[0.8125rem] font-medium text-gray-600">Which other answer?</label>
                       <div
-                        class="logic-select"
+                        class="relative w-full"
                         appDropdownPanel
                         #compareFieldDropdown="dropdownPanel"
                         [dropdownId]="'cond-cmp-field-' + condition.id"
@@ -488,7 +466,7 @@
                       >
                         <button
                           type="button"
-                          class="logic-select__trigger"
+                          class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl border border-gray-200 bg-white px-[0.85rem] py-[0.7rem] text-left text-sm leading-5 text-[#161616] transition hover:border-gray-300 hover:bg-[#fafafa] focus-visible:border-[#ff9015] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] aria-expanded:border-[#ff9015] aria-expanded:bg-white aria-expanded:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
                           (click)="compareFieldDropdown.toggle($event)"
                           [attr.aria-expanded]="compareFieldDropdown.isOpen"
                         >
@@ -500,15 +478,15 @@
                           </svg>
                         </button>
                         @if (compareFieldDropdown.isOpen) {
-                          <div class="logic-select__menu">
-                            <button type="button" class="logic-select__option" (click)="selectCompareField(condition, '')">
+                          <div class="absolute left-0 right-0 top-[calc(100%+4px)] z-[200] max-h-64 overflow-y-auto rounded-[0.85rem] border border-gray-200 bg-white p-[0.35rem] shadow-[0_16px_32px_-12px_rgba(15,23,42,0.22)]">
+                            <button type="button" class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50" (click)="selectCompareField(condition, '')">
                               Choose an answer…
                             </button>
                             @for (field of compatibleFieldsFor(condition); track field.id) {
                               <button
                                 type="button"
-                                class="logic-select__option"
-                                [class.logic-select__option--selected]="condition.comparison.fieldId === field.id"
+                                class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                [class.bg-[#f7fee7]]="condition.comparison.fieldId === field.id" [class.font-semibold]="condition.comparison.fieldId === field.id" [class.text-[#3f6212]]="condition.comparison.fieldId === field.id"
                                 (click)="selectCompareField(condition, field.id)"
                               >
                                 {{ field.label }}
@@ -518,13 +496,13 @@
                         }
                       </div>
                       @if (!compatibleFieldsFor(condition).length) {
-                        <p class="logic-help">No other matching answers are available on this form.</p>
+                        <p class="mt-[0.35rem] text-[0.6875rem] text-gray-400">No other matching answers are available on this form.</p>
                       }
                     </div>
                   }
 
                   @if (needsValue(condition) && condition.fieldId && condition.comparison.type === 'relatedData') {
-                    <div class="logic-nested">
+                    <div class="mt-3 rounded-[0.85rem] border border-dashed border-gray-200 bg-[#fafafa] p-[0.9rem]">
                       <p class="text-xs font-semibold text-slate-700">Use details from a related item</p>
                       @if (!hasRelatedDataSources()) {
                         <p class="text-xs leading-relaxed text-slate-500">
@@ -533,9 +511,9 @@
                       } @else {
                         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                           <div class="min-w-0">
-                            <label class="logic-label">From which item?</label>
+                            <label class="mb-[0.4rem] block text-[0.8125rem] font-medium text-gray-600">From which item?</label>
                             <div
-                              class="logic-select"
+                              class="relative w-full"
                               appDropdownPanel
                               #relatedSourceDropdown="dropdownPanel"
                               [dropdownId]="'cond-src-' + condition.id"
@@ -543,7 +521,7 @@
                             >
                               <button
                                 type="button"
-                                class="logic-select__trigger"
+                                class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl border border-gray-200 bg-white px-[0.85rem] py-[0.7rem] text-left text-sm leading-5 text-[#161616] transition hover:border-gray-300 hover:bg-[#fafafa] focus-visible:border-[#ff9015] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] aria-expanded:border-[#ff9015] aria-expanded:bg-white aria-expanded:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
                                 (click)="relatedSourceDropdown.toggle($event)"
                                 [attr.aria-expanded]="relatedSourceDropdown.isOpen"
                               >
@@ -555,15 +533,15 @@
                                 </svg>
                               </button>
                               @if (relatedSourceDropdown.isOpen) {
-                                <div class="logic-select__menu">
-                                  <button type="button" class="logic-select__option" (click)="selectRelatedSource(condition, '')">
+                                <div class="absolute left-0 right-0 top-[calc(100%+4px)] z-[200] max-h-64 overflow-y-auto rounded-[0.85rem] border border-gray-200 bg-white p-[0.35rem] shadow-[0_16px_32px_-12px_rgba(15,23,42,0.22)]">
+                                  <button type="button" class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50" (click)="selectRelatedSource(condition, '')">
                                     Choose an item…
                                   </button>
                                   @for (field of dynamicSourceFields; track field.id) {
                                     <button
                                       type="button"
-                                      class="logic-select__option"
-                                      [class.logic-select__option--selected]="condition.comparison.sourceFieldId === field.id"
+                                      class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                      [class.bg-[#f7fee7]]="condition.comparison.sourceFieldId === field.id" [class.font-semibold]="condition.comparison.sourceFieldId === field.id" [class.text-[#3f6212]]="condition.comparison.sourceFieldId === field.id"
                                       (click)="selectRelatedSource(condition, field.id)"
                                     >
                                       {{ field.label }}
@@ -574,9 +552,9 @@
                             </div>
                           </div>
                           <div class="min-w-0">
-                            <label class="logic-label">Which detail?</label>
+                            <label class="mb-[0.4rem] block text-[0.8125rem] font-medium text-gray-600">Which detail?</label>
                             <div
-                              class="logic-select"
+                              class="relative w-full"
                               appDropdownPanel
                               #relatedPropertyDropdown="dropdownPanel"
                               [dropdownId]="'cond-prop-' + condition.id"
@@ -584,7 +562,7 @@
                             >
                               <button
                                 type="button"
-                                class="logic-select__trigger"
+                                class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl border border-gray-200 bg-white px-[0.85rem] py-[0.7rem] text-left text-sm leading-5 text-[#161616] transition hover:border-gray-300 hover:bg-[#fafafa] focus-visible:border-[#ff9015] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] aria-expanded:border-[#ff9015] aria-expanded:bg-white aria-expanded:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
                                 (click)="condition.comparison.sourceFieldId && relatedPropertyDropdown.toggle($event)"
                                 [disabled]="!condition.comparison.sourceFieldId"
                                 [attr.aria-expanded]="relatedPropertyDropdown.isOpen"
@@ -597,15 +575,15 @@
                                 </svg>
                               </button>
                               @if (relatedPropertyDropdown.isOpen) {
-                                <div class="logic-select__menu">
-                                  <button type="button" class="logic-select__option" (click)="selectRelatedProperty(condition, '')">
+                                <div class="absolute left-0 right-0 top-[calc(100%+4px)] z-[200] max-h-64 overflow-y-auto rounded-[0.85rem] border border-gray-200 bg-white p-[0.35rem] shadow-[0_16px_32px_-12px_rgba(15,23,42,0.22)]">
+                                  <button type="button" class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50" (click)="selectRelatedProperty(condition, '')">
                                     Choose a detail…
                                   </button>
                                   @for (column of relatedPropertiesFor(condition.comparison.sourceFieldId, condition); track column.id) {
                                     <button
                                       type="button"
-                                      class="logic-select__option"
-                                      [class.logic-select__option--selected]="condition.comparison.property === column.id"
+                                      class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                      [class.bg-[#f7fee7]]="condition.comparison.property === column.id" [class.font-semibold]="condition.comparison.property === column.id" [class.text-[#3f6212]]="condition.comparison.property === column.id"
                                       (click)="selectRelatedProperty(condition, column.id)"
                                     >
                                       {{ column.label }}
@@ -615,12 +593,12 @@
                               }
                             </div>
                             @if (isRelatedPropertiesLoading(condition.comparison.sourceFieldId)) {
-                              <p class="logic-help">Loading details…</p>
+                              <p class="mt-[0.35rem] text-[0.6875rem] text-gray-400">Loading details…</p>
                             } @else if (
                               condition.comparison.sourceFieldId &&
                               !relatedPropertiesFor(condition.comparison.sourceFieldId, condition).length
                             ) {
-                              <p class="logic-help">No compatible details available for this comparison.</p>
+                              <p class="mt-[0.35rem] text-[0.6875rem] text-gray-400">No compatible details available for this comparison.</p>
                             }
                           </div>
                         </div>
@@ -631,10 +609,10 @@
 
                 @if (!$last) {
                   @let nextCondition = rule.conditions.items[$index + 1];
-                  <div class="logic-connector" aria-label="How these conditions are combined">
-                    <span class="logic-connector__rail" aria-hidden="true"></span>
+                  <div class="flex items-center justify-center gap-2 py-[0.15rem]" aria-label="How these conditions are combined">
+                    <span class="h-[0.85rem] w-px shrink-0 bg-gray-300" aria-hidden="true"></span>
                     <div
-                      class="logic-select logic-connector__select"
+                      class="relative w-auto min-w-[5.5rem]"
                       appDropdownPanel
                       #matchConnectorDropdown="dropdownPanel"
                       [dropdownId]="'cond-join-' + nextCondition.id"
@@ -642,7 +620,7 @@
                     >
                       <button
                         type="button"
-                        class="logic-select__trigger logic-connector__trigger"
+                        class="flex w-auto min-w-[5.5rem] cursor-pointer items-center justify-center gap-[0.35rem] rounded-xl border border-gray-200 bg-white px-[0.65rem] py-[0.35rem] text-left text-xs leading-5 text-[#161616] transition hover:border-gray-300 hover:bg-[#fafafa] focus-visible:border-[#ff9015] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] aria-expanded:border-[#ff9015] aria-expanded:shadow-[0_0_0_3px_rgba(255,144,21,0.12)]"
                         (click)="matchConnectorDropdown.toggle($event)"
                         [attr.aria-expanded]="matchConnectorDropdown.isOpen"
                         [attr.aria-label]="
@@ -667,11 +645,11 @@
                         </svg>
                       </button>
                       @if (matchConnectorDropdown.isOpen) {
-                        <div class="logic-select__menu">
+                        <div class="absolute left-0 right-0 top-[calc(100%+4px)] z-[200] max-h-64 overflow-y-auto rounded-[0.85rem] border border-gray-200 bg-white p-[0.35rem] shadow-[0_16px_32px_-12px_rgba(15,23,42,0.22)]">
                           <button
                             type="button"
-                            class="logic-select__option"
-                            [class.logic-select__option--selected]="conditionJoin(nextCondition) === 'and'"
+                            class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                            [class.bg-[#f7fee7]]="conditionJoin(nextCondition) === 'and'" [class.font-semibold]="conditionJoin(nextCondition) === 'and'" [class.text-[#3f6212]]="conditionJoin(nextCondition) === 'and'"
                             (click)="selectConditionJoin(nextCondition.id, 'and')"
                           >
                             <span class="font-semibold">AND</span>
@@ -681,8 +659,8 @@
                           </button>
                           <button
                             type="button"
-                            class="logic-select__option"
-                            [class.logic-select__option--selected]="conditionJoin(nextCondition) === 'or'"
+                            class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                            [class.bg-[#f7fee7]]="conditionJoin(nextCondition) === 'or'" [class.font-semibold]="conditionJoin(nextCondition) === 'or'" [class.text-[#3f6212]]="conditionJoin(nextCondition) === 'or'"
                             (click)="selectConditionJoin(nextCondition.id, 'or')"
                           >
                             <span class="font-semibold">OR</span>
@@ -693,7 +671,7 @@
                         </div>
                       }
                     </div>
-                    <span class="logic-connector__rail" aria-hidden="true"></span>
+                    <span class="h-[0.85rem] w-px shrink-0 bg-gray-300" aria-hidden="true"></span>
                     @if ($index === 0) {
                       <span
                         class="app-tooltip-trigger relative inline-flex shrink-0 cursor-pointer"
@@ -722,36 +700,27 @@
               }
             </div>
 
-            <button
-              type="button"
-              class="logic-add logic-add--if"
-              (click)="addCondition()"
-            >
-              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-              </svg>
-              Add condition
-            </button>
-          </div>
-        </section>
-
-        <!-- THEN -->
-        <section class="logic-section">
-          <div class="logic-section__head logic-section__head--then">
-            <span class="logic-keyword logic-keyword--then">THEN</span>
-            <div class="min-w-0">
-              <h3 class="text-sm font-semibold text-slate-800">Do something automatically</h3>
-              <p class="mt-0.5 text-xs leading-relaxed text-slate-500">
-                Choose what should happen automatically.
-              </p>
+              <button
+                type="button"
+                class="inline-flex items-center gap-[0.4rem] rounded-[0.65rem] border border-dashed border-gray-300 bg-white px-3 py-[0.45rem] text-xs font-semibold text-gray-700 transition hover:border-gray-400 hover:bg-gray-50 focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(148,163,184,0.25)]"
+                (click)="addCondition()"
+              >
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Add condition
+              </button>
             </div>
-          </div>
+          </section>
 
-          <div class="space-y-3 p-4">
-            <div>
-              <label class="logic-label">Actions</label>
+          <!-- THEN -->
+          <section class="grid grid-cols-[3.5rem_minmax(0,1fr)] items-stretch gap-[0.85rem] max-sm:grid-cols-[3.1rem_minmax(0,1fr)] max-sm:gap-[0.65rem]">
+            <div class="relative flex min-h-full flex-col items-center" aria-hidden="true">
+              <span class="inline-flex min-w-[3.25rem] shrink-0 items-center justify-center rounded-[0.4rem] bg-[#d9f99d] px-[0.45rem] py-[0.3rem] text-[0.6875rem] font-extrabold leading-none tracking-wide text-[#161616]">THEN</span>
+            </div>
+            <div class="min-w-0">
               <div
-                class="logic-select multi-select-dropdown"
+                class="relative w-full"
                 appDropdownPanel
                 #actionsMultiSelect="dropdownPanel"
                 dropdownId="actions-multi"
@@ -759,22 +728,22 @@
               >
                 <button
                   type="button"
-                  class="logic-select__trigger min-h-[42px]"
+                  class="flex min-h-[42px] w-full cursor-pointer items-center justify-between gap-2 rounded-xl border border-gray-200 bg-white px-[0.85rem] py-[0.7rem] text-left text-sm leading-5 text-[#161616] transition hover:border-gray-300 hover:bg-[#fafafa] focus-visible:border-[#ff9015] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] aria-expanded:border-[#ff9015] aria-expanded:bg-white aria-expanded:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
                   (click)="actionsMultiSelect.toggle($event)"
                   [attr.aria-expanded]="actionsMultiSelect.isOpen"
                 >
                   <div class="flex min-w-0 flex-1 flex-wrap gap-1">
                     @if (!selectedActionOptions.length) {
-                      <span class="truncate text-slate-400">Select actions…</span>
+                      <span class="truncate text-gray-400">Choose an action...</span>
                     } @else {
                       @for (option of selectedActionOptions; track option.value) {
                         <span
-                          class="inline-flex max-w-full items-center gap-1 rounded border border-[#ffd9b3] bg-[#fff5eb] px-1.5 py-0.5 text-xs font-medium text-[#FF9015]"
+                          class="inline-flex max-w-full items-center gap-1 rounded-md border border-[#d9f99d] bg-[#f7fee7] px-1.5 py-0.5 text-xs font-medium text-[#3f6212]"
                         >
                           <span class="truncate">{{ option.label }}</span>
                           <button
                             type="button"
-                            class="ml-0.5 shrink-0 text-sm font-semibold leading-none text-[#FF9015] hover:text-[#e07800]"
+                            class="ml-0.5 shrink-0 text-sm font-semibold leading-none text-[#3f6212] hover:text-[#1a2e05]"
                             aria-label="Remove action"
                             (click)="removeSelectedActionType(option.value, $event)"
                           >×</button>
@@ -783,7 +752,7 @@
                     }
                   </div>
                   <svg
-                    class="h-4 w-4 shrink-0 text-slate-400 transition-transform"
+                    class="h-4 w-4 shrink-0 text-gray-400 transition-transform"
                     [class.rotate-180]="actionsMultiSelect.isOpen"
                     fill="none"
                     viewBox="0 0 24 24"
@@ -794,45 +763,78 @@
                   </svg>
                 </button>
                 @if (actionsMultiSelect.isOpen) {
-                  <div class="logic-select__menu" (click)="$event.stopPropagation()">
+                  <div class="absolute left-0 right-0 top-[calc(100%+4px)] z-[200] max-h-64 overflow-y-auto rounded-[0.85rem] border border-gray-200 bg-white p-[0.45rem] shadow-[0_16px_32px_-12px_rgba(15,23,42,0.22)]" (click)="$event.stopPropagation()">
                     @for (option of friendlyActionOptions; track option.value) {
                       <button
                         type="button"
-                        class="logic-select__option flex items-center gap-2"
-                        [class.logic-select__option--selected]="isActionTypeSelected(option.value)"
+                        class="flex w-full items-start gap-3 rounded-xl border border-transparent bg-white p-3 text-left transition hover:bg-[#fafafa]"
+                        [class.border-[#bef264]]="isActionTypeSelected(option.value)" [class.bg-[#f7fee7]]="isActionTypeSelected(option.value)"
                         (click)="toggleActionType(option.value, $event)"
                       >
-                        @if (isActionTypeSelected(option.value)) {
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="shrink-0 text-[#FF9015]" aria-hidden="true">
-                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/>
-                          </svg>
-                        }
-                        <span>{{ option.label }}</span>
+                        <span
+                          class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[0.55rem]"
+                          [ngClass]="isActionTypeSelected(option.value) ? 'bg-[#d9f99d] text-[#161616]' : 'bg-gray-100 text-gray-600'"
+                          aria-hidden="true"
+                        >
+                          @if (option.value === 'purchaseRequest') {
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.615 2.92-6.914l.075-.192a.75.75 0 0 0-.72-.986H5.614M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
+                            </svg>
+                          } @else if (option.value === 'sendNotification') {
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+                            </svg>
+                          } @else {
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 1 1-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 0 0 4.486-6.336l-3.276 3.277a3.004 3.004 0 0 1-2.25-2.25l3.276-3.276a4.5 4.5 0 0 0-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437 1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008Z" />
+                            </svg>
+                          }
+                        </span>
+                        <span class="min-w-0 text-left">
+                          <span class="block text-sm font-bold text-[#161616]">{{ option.label }}</span>
+                          <span class="mt-0.5 block text-xs text-gray-500">{{ option.description }}</span>
+                        </span>
                       </button>
                     }
                   </div>
                 }
               </div>
             </div>
-          </div>
-        </section>
+          </section>
+        </div>
       </div>
 
-      <footer class="logic-drawer__footer">
-        <button
-          type="button"
-          class="logic-btn logic-btn--ghost"
-          (click)="closeEditor()"
-        >
-          Cancel
-        </button>
-        <button
-          type="button"
-          class="logic-btn logic-btn--primary"
-          (click)="saveEditor()"
-        >
-          {{ isNewRule ? 'Save Rule' : 'Update Rule' }}
-        </button>
+      <footer class="relative z-30 flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-gray-200 bg-white px-6 pb-5 pt-4 max-sm:px-[1.1rem] max-sm:pb-4 max-sm:pt-[0.85rem]">
+        <div class="flex min-w-0 items-center gap-2.5">
+          <label class="relative inline-flex cursor-pointer" [attr.aria-label]="rule.enabled ? 'Turn automation off' : 'Turn automation on'">
+            <input
+              type="checkbox"
+              class="peer sr-only"
+              [(ngModel)]="rule.enabled"
+            />
+            <span class="relative inline-block h-[1.4rem] w-10 rounded-full bg-gray-300 transition after:absolute after:left-[0.15rem] after:top-[0.15rem] after:h-[1.1rem] after:w-[1.1rem] after:rounded-full after:bg-white after:shadow after:transition peer-checked:bg-[#161616] peer-checked:after:translate-x-[1.1rem] peer-focus-visible:shadow-[0_0_0_3px_rgba(22,22,22,0.15)]" aria-hidden="true"></span>
+          </label>
+          <span class="text-sm font-medium text-[#161616]">
+            {{ rule.enabled ? 'Automation is on' : 'Automation is off' }}
+          </span>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            class="inline-flex items-center justify-center gap-[0.4rem] rounded-[0.65rem] border border-gray-200 bg-white px-[1.1rem] py-[0.6rem] text-sm font-semibold text-[#161616] transition hover:border-gray-300 hover:bg-gray-50 focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(148,163,184,0.25)]"
+            (click)="closeEditor()"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="inline-flex items-center justify-center gap-[0.4rem] rounded-[0.65rem] border border-gray-200 bg-gray-100 px-[1.1rem] py-[0.6rem] text-sm font-semibold text-[#161616] transition hover:border-gray-300 hover:bg-gray-200 focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(148,163,184,0.25)]"
+            (click)="saveEditor()"
+          >
+            {{ isNewRule ? 'Save rule' : 'Update rule' }}
+          </button>
+        </div>
       </footer>
     </div>
   </div>

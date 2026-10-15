@@ -71,10 +71,23 @@ export class LogicRulesPanelComponent implements OnChanges, OnDestroy {
   readonly friendlyActionOptions: ReadonlyArray<{
     value: LogicActionType;
     label: string;
+    description: string;
   }> = [
-    { value: 'purchaseRequest', label: 'Create a Purchase Request' },
-    { value: 'sendNotification', label: 'Send a Notification' },
-    { value: 'maintenanceRequest', label: 'Create a Maintenance Request' },
+    {
+      value: 'purchaseRequest',
+      label: 'Create purchase request',
+      description: 'Sends a request to order an item.',
+    },
+    {
+      value: 'sendNotification',
+      label: 'Notify a job position',
+      description: 'Sends an alert to everyone in a position.',
+    },
+    {
+      value: 'maintenanceRequest',
+      label: 'Create maintenance request',
+      description: 'Creates a maintenance request for follow-up.',
+    },
   ];
 
   readonly friendlyComparisonOptions: ReadonlyArray<{
