@@ -62,6 +62,11 @@ import {
 export class LogicRulesPanelComponent implements OnChanges, OnDestroy {
   @Input() schema: FormField[] = [];
   @Input() rules: FormLogicRule[] = [];
+  /**
+   * When false, hide the panel list chrome. Editor modal stays available so
+   * Form Template field shortcuts / overview can open rules without the tab UI.
+   */
+  @Input() showPanelList = true;
   @Output() rulesChange = new EventEmitter<FormLogicRule[]>();
 
   readonly actionOptions = LOGIC_ACTION_OPTIONS;
@@ -201,22 +206,60 @@ export class LogicRulesPanelComponent implements OnChanges, OnDestroy {
     return label || null;
   }
 
-  openCreateEditor(): void {
+  /**
+   * @param seedFieldId Optional Form Template field shortcut: preselect this
+   * field on the first IF condition so the modal opens ready to configure.
+   */
+  openCreateEditor(seedFieldId?: string): void {
     this.clearEditorCloseTimer();
     this.editorClosing = false;
     this.isNewRule = true;
     this.editingRule = createEmptyLogicRule('');
     this.editorOpen = true;
+
+    const seed = (seedFieldId || '').trim();
+    if (seed && this.editingRule.conditions.items[0]) {
+      // Reuse the same handler as the field selector so operators/comparison
+      // initialize for the selected field type before the UI renders.
+      this.onConditionFieldChange(this.editingRule.conditions.items[0], seed);
+    }
+
     this.prefetchRelatedPropertiesForRule(this.editingRule);
+    // Required when opened programmatically from Form Template field shortcuts
+    // (OnPush — parent viewChild calls do not mark this view dirty).
+    this.cdr.markForCheck();
   }
 
-  openEditEditor(rule: FormLogicRule): void {
+  openEditEditor(rule: FormLogicRule, preferredFieldId?: string): void {
     this.clearEditorCloseTimer();
     this.editorClosing = false;
     this.isNewRule = false;
     this.editingRule = cloneLogicRule(rule);
     this.editorOpen = true;
+
+    const preferred = (preferredFieldId || '').trim();
+    // Surface the clicked field on the first IF row when it already exists as a
+    // condition field (display order only — does not invent/overwrite conditions).
+    if (preferred && this.editingRule.conditions.items.length > 1) {
+      const matchIndex = this.editingRule.conditions.items.findIndex(
+        (item) => item.fieldId === preferred,
+      );
+      if (matchIndex > 0) {
+        const items = [...this.editingRule.conditions.items];
+        const [match] = items.splice(matchIndex, 1);
+        items.unshift({ ...match, join: undefined });
+        if (items[1]) {
+          items[1] = { ...items[1], join: items[1].join ?? 'and' };
+        }
+        this.editingRule = {
+          ...this.editingRule,
+          conditions: { ...this.editingRule.conditions, items },
+        };
+      }
+    }
+
     this.prefetchRelatedPropertiesForRule(this.editingRule);
+    this.cdr.markForCheck();
   }
 
   closeEditor(): void {

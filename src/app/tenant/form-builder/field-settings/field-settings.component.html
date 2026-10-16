@@ -1043,7 +1043,8 @@
     </ng-container>
   </div>
 
-  <!-- Conditional Logic trigger -->
+  <!-- Conditional Logic trigger (hidden in Form Template; opened via field icon) -->
+  @if (showConditionalLogicEntry) {
   <div class="rounded-xl border border-gray-200 bg-white font-ibm">
     <button
       type="button"
@@ -1080,6 +1081,7 @@
       </span>
     </button>
   </div>
+  }
 
   <!-- Conditional Logic modal -->
   @if (conditionModalOpen) {
@@ -1101,7 +1103,9 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 3.75h3v3h-3v-3Zm6 0h3v3h-3v-3Zm-6 6h3v3h-3v-3Zm6 0h3v3h-3v-3Zm-3 3v3m0 0h3m-3 0H7.5m6.75-9V6m0 0h3m-3 0h-3" />
               </svg>
             </span>
-            <h2 id="conditional-logic-modal-title" class="truncate text-base font-bold text-[#161616]">Conditional logic</h2>
+            <h2 id="conditional-logic-modal-title" class="truncate text-base font-bold text-[#161616]">
+              {{ conditionModalPickTargetMode ? 'Add conditional logic' : 'Conditional logic' }}
+            </h2>
           </div>
           <button
             type="button"
@@ -1136,19 +1140,73 @@
                 </svg>
               </div>
 
-              <div class="min-w-0 flex-1 rounded-xl border border-dashed border-gray-300 bg-white px-3.5 py-3">
+              <div
+                class="min-w-0 flex-1 rounded-xl border px-3.5 py-3"
+                [ngClass]="conditionModalPickTargetMode && !conditionModalTargetConfirmed
+                  ? 'border-[#ff9015] bg-[#fff7ed]'
+                  : 'border-dashed border-gray-300 bg-white'"
+              >
                 <p class="m-0 text-[10px] font-semibold uppercase tracking-wide text-gray-500">Changes this field</p>
-                <p class="m-0 mt-1 truncate text-sm font-bold text-[#161616]">
-                  {{ field?.label || 'This field' }}
-                </p>
-                <p class="m-0 mt-0.5 truncate text-xs text-gray-500">
-                  {{ field?.fieldTypeName || field?.type || 'Field' }}
-                </p>
+                @if (conditionModalPickTargetMode && !conditionModalTargetConfirmed) {
+                  <p class="m-0 mt-1 text-sm font-bold text-[#161616]">Step 1: choose it below</p>
+                  <p class="m-0 mt-0.5 text-xs text-gray-500">The field that will be shown, hidden or required</p>
+                } @else {
+                  <p class="m-0 mt-1 truncate text-sm font-bold text-[#161616]">
+                    {{ field?.label || 'This field' }}
+                  </p>
+                  <p class="m-0 mt-0.5 truncate text-xs text-gray-500">
+                    {{ field?.fieldTypeName || field?.type || 'Field' }}
+                  </p>
+                }
               </div>
             </div>
           </div>
 
           <div class="space-y-6 px-5 py-5 max-sm:px-4">
+            @if (conditionModalPickTargetMode) {
+              <!-- Persistent target selector (Add Logic) -->
+              <section class="space-y-2.5">
+                <div class="flex flex-col gap-2.5 sm:flex-row sm:items-start">
+                  <span
+                    class="inline-flex h-7 w-fit shrink-0 items-center justify-center rounded-md px-2.5 text-[11px] font-extrabold tracking-wide text-white"
+                    [ngClass]="!conditionModalTargetConfirmed ? 'bg-[#ff9015]' : 'bg-[#161616]'"
+                  >
+                    FIELD
+                  </span>
+                  <div class="min-w-0 flex-1 space-y-2">
+                    <label class="block text-sm font-semibold text-[#161616]" for="condition-target-field">
+                      Which field should change?
+                    </label>
+                    <select
+                      id="condition-target-field"
+                      class="w-full rounded-lg border bg-white px-3 py-2.5 text-sm text-[#161616] focus:border-[#ff9015] focus:outline-none focus:shadow-[0_0_0_3px_rgba(255,144,21,0.12)]"
+                      [ngClass]="!conditionModalTargetConfirmed
+                        ? 'border-[#ff9015] shadow-[0_0_0_3px_rgba(255,144,21,0.12)]'
+                        : 'border-gray-200'"
+                      [ngModel]="conditionTargetSelectValue"
+                      (ngModelChange)="onConditionTargetFieldPick($event)"
+                      [disabled]="!isFieldEditable"
+                    >
+                      <option value="">Choose a field...</option>
+                      @for (target of conditionTargetFields; track target.id) {
+                        <option [value]="target.id">
+                          {{ target.label || 'Untitled field' }}{{ fieldHasConfiguredCondition(target.id) ? ' (Has logic)' : '' }}
+                        </option>
+                      }
+                    </select>
+                    <p class="m-0 text-xs leading-relaxed text-gray-500">
+                      A field that already has logic is marked “Has logic”. Choosing it opens that logic to edit.
+                    </p>
+                  </div>
+                </div>
+              </section>
+            }
+
+            <!-- WHEN / THEN remain visible in Add Logic; inert until a target is chosen -->
+            <div
+              [class.pointer-events-none]="conditionModalPickTargetMode && !conditionModalTargetConfirmed"
+              [class.opacity-50]="conditionModalPickTargetMode && !conditionModalTargetConfirmed"
+            >
             <!-- WHEN -->
             <section class="space-y-2.5">
               <div class="flex flex-col gap-2.5 sm:flex-row sm:items-start">
@@ -1166,7 +1224,7 @@
                           : 'border-gray-200'"
                         [ngModel]="conditionSourceFieldId"
                         (ngModelChange)="onConditionSourceChange($event)"
-                        [disabled]="!isFieldEditable"
+                        [disabled]="!conditionRuleControlsEnabled"
                         aria-label="Choose a field"
                       >
                         <option value="">Choose a field...</option>
@@ -1506,6 +1564,7 @@
                 }
               </div>
             }
+            </div>
           </div>
         </div>
 
