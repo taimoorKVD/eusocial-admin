@@ -182,6 +182,7 @@ export class FieldSettingsComponent {
 
     if (!isSameField) {
       this.overlayService.close();
+      this.conditionModalOpen = false;
       this.skipFieldReinitialize = false;
       this.assignField(value);
       this.initializeSelectOptionsState(this._field);
@@ -201,6 +202,8 @@ export class FieldSettingsComponent {
 
   private _field!: FormField;
   conditionEditor: FieldConditionalLogic = createEmptyConditionalLogic();
+  /** UI-only: Conditional Logic popup visibility. */
+  conditionModalOpen = false;
   private placeholderManuallyEdited = false;
   private skipFieldReinitialize = false;
   private modulesLoaded = false;
@@ -1269,6 +1272,41 @@ export class FieldSettingsComponent {
 
   get conditionEnabled(): boolean {
     return this.conditionEditor.enabled;
+  }
+
+  get conditionActionLabel(): string {
+    return CONDITION_ACTION_LABELS[this.conditionAction] ?? this.conditionAction;
+  }
+
+  get canSaveConditionLogic(): boolean {
+    return this.isFieldEditable && !!this.conditionSourceFieldId;
+  }
+
+  openConditionModal(): void {
+    if (!this._field || !this.isFieldEditable) {
+      return;
+    }
+
+    this.overlayService.close();
+    if (!this.conditionEnabled) {
+      this.onConditionEnabledChange(true);
+    }
+    this.conditionModalOpen = true;
+  }
+
+  closeConditionModal(): void {
+    this.conditionModalOpen = false;
+  }
+
+  saveConditionModal(): void {
+    if (!this.canSaveConditionLogic) {
+      return;
+    }
+
+    if (!this.conditionEnabled) {
+      this.onConditionEnabledChange(true);
+    }
+    this.conditionModalOpen = false;
   }
 
   get conditionSourceFieldId(): string {
