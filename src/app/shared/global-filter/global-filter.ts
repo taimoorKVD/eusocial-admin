@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   computed,
   effect,
   inject,
@@ -51,10 +52,17 @@ export type { GlobalFilterField, GlobalFilterOption, GlobalFilterValue } from '.
 export class GlobalFilterComponent {
   private readonly overlayService = inject(DropdownOverlayService);
   private readonly locationCache = inject(LocationCacheService);
+  private readonly destroyRef = inject(DestroyRef);
+  private searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
   readonly filterDropdownGroup = 'global-filter';
 
   readonly fields = input<GlobalFilterField[]>([]);
+  /**
+   * When true, emit search as filters change (debounced for text) and hide the Search button.
+   * Clear/reset behavior is unchanged.
+   */
+  readonly autoSearch = input(false);
   readonly search = output<GlobalFilterValue>();
   readonly clear = output<void>();
 
@@ -83,6 +91,8 @@ export class GlobalFilterComponent {
   });
 
   constructor() {
+    this.destroyRef.onDestroy(() => this.clearSearchDebounce());
+
     effect(() => {
       const fields = this.fields();
       this.filters.update((current) => syncFiltersWithFields(fields, current));
@@ -109,6 +119,11 @@ export class GlobalFilterComponent {
     this.filters.update((current) => ({ ...current, [key]: value }));
   }
 
+  onTextModelChange(key: string, value: unknown): void {
+    this.setFilterValue(key, value);
+    this.scheduleAutoSearch();
+  }
+
   onInputChange(field: GlobalFilterField, event: Event): void {
     if (field.type !== 'number') {
       return;
@@ -122,10 +137,34 @@ export class GlobalFilterComponent {
     }
 
     this.setFilterValue(field.key, sanitized);
+    this.scheduleAutoSearch();
   }
 
   onSearch(): void {
+    this.clearSearchDebounce();
     this.search.emit(this.toSearchPayload(this.filters()));
+  }
+
+  private scheduleAutoSearch(immediate = false): void {
+    if (!this.autoSearch()) {
+      return;
+    }
+
+    this.clearSearchDebounce();
+
+    if (immediate) {
+      this.onSearch();
+      return;
+    }
+
+    this.searchDebounceTimer = setTimeout(() => this.onSearch(), 300);
+  }
+
+  private clearSearchDebounce(): void {
+    if (this.searchDebounceTimer) {
+      clearTimeout(this.searchDebounceTimer);
+      this.searchDebounceTimer = null;
+    }
   }
 
   getEffectiveOptions(field: GlobalFilterField): GlobalFilterOption[] {
@@ -259,9 +298,11 @@ export class GlobalFilterComponent {
     }
 
     this.overlayService.close();
+    this.scheduleAutoSearch(true);
   }
 
   onClear(): void {
+    this.clearSearchDebounce();
     this.filters.set(buildClearedFilters(this.fields()));
     this.optionSearch.set({});
     this.optionVisibleLimit.set({});
@@ -283,6 +324,12 @@ export class GlobalFilterComponent {
     this.filters.update((current) =>
       toggleCheckboxFilterValue(current, fieldKey, option, input.checked),
     );
+    this.scheduleAutoSearch(true);
+  }
+
+  onRadioModelChange(key: string, value: unknown): void {
+    this.setFilterValue(key, value);
+    this.scheduleAutoSearch(true);
   }
 
   isChecked(fieldKey: string, option: GlobalFilterOption | string | number): boolean {

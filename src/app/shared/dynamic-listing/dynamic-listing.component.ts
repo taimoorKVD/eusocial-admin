@@ -69,6 +69,9 @@ export class DynamicListingComponent {
   readonly emptyMessage = input('No records found');
   readonly selectable = input(false);
   readonly bulkSelection = input<BulkSelectionState | undefined>(undefined);
+  /** Form Template–style shell/table chrome. Default keeps legacy listing look. */
+  readonly appearance = input<'default' | 'modern'>('default');
+  readonly isModern = computed(() => this.appearance() === 'modern');
 
   readonly editRecord = output<Record<string, unknown>>();
   readonly deleteRecord = output<Record<string, unknown>>();

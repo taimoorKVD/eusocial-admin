@@ -1,5 +1,12 @@
 <div class="create-form p-6">
   <div class="create-form__main">
+  <button
+    type="button"
+    class="create-form__back mb-3 text-sm font-medium text-[#FF9015] hover:underline font-ibm"
+    (click)="cancel()"
+  >
+    ← Back
+  </button>
   <h2 class="create-form__page-title font-ibm">{{ isEditing() ? 'Edit Form' : 'Create Form' }}</h2>
 
   @if (loading()) {
@@ -37,6 +44,260 @@
       }
     }
   </div>
+
+  <!-- Logic & automations overview (Form Template builder) -->
+  @if (fieldBuilderOpen() && logicOverviewOpen()) {
+    <div
+      class="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/45 p-3 backdrop-blur-[2px] sm:p-6"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="logic-overview-title"
+      (click)="closeLogicOverview()"
+    >
+      <div
+        class="flex max-h-[min(92vh,52rem)] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-[0_24px_48px_-16px_rgba(15,23,42,0.35)]"
+        (click)="$event.stopPropagation()"
+      >
+        <header class="flex shrink-0 flex-col gap-3 border-b border-gray-200 px-5 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-6">
+          <div class="min-w-0">
+            <h2 id="logic-overview-title" class="text-xl font-bold text-[#161616]">Logic &amp; automations</h2>
+            <p class="mt-1 text-sm text-gray-500">
+              Everything in '{{ formName() || 'this form' }}' that happens by itself.
+            </p>
+          </div>
+          <div class="flex shrink-0 items-center gap-2">
+            <div class="inline-flex max-w-full flex-wrap items-center rounded-full border border-gray-200 bg-gray-100 p-1 text-xs font-semibold">
+              <button
+                type="button"
+                class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 transition"
+                [ngClass]="logicOverviewTab() === 'logicMap' ? 'bg-[#161616] text-white' : 'text-[#161616] hover:bg-white'"
+                (click)="setLogicOverviewTab('logicMap')"
+              >
+                Logic map {{ fieldsWithConditionalLogicIds().length }}
+              </button>
+              <button
+                type="button"
+                class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 transition"
+                [ngClass]="logicOverviewTab() === 'automationMap' ? 'bg-[#d4e600] text-[#161616]' : 'text-[#161616] hover:bg-white'"
+                (click)="setLogicOverviewTab('automationMap')"
+              >
+                Automation map {{ logicRules().length }}
+              </button>
+              <button
+                type="button"
+                class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 transition"
+                [ngClass]="logicOverviewTab() === 'list' ? 'bg-white text-[#161616] shadow-sm' : 'text-[#161616] hover:bg-white'"
+                (click)="setLogicOverviewTab('list')"
+              >
+                List {{ logicAutomationsCount() }}
+              </button>
+            </div>
+            <button
+              type="button"
+              class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 transition hover:bg-gray-100 hover:text-[#161616]"
+              aria-label="Close"
+              (click)="closeLogicOverview()"
+            >
+              <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </header>
+
+        <div class="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6">
+          @if (logicOverviewTab() === 'list') {
+            <section class="space-y-4">
+              <h3 class="text-base font-bold text-[#161616]">Conditional logic</h3>
+
+              @if (!configuredConditionalLogicFields().length) {
+                <p class="rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-6 text-sm text-gray-500">
+                  No conditional logic configured yet.
+                </p>
+              } @else {
+                <div class="divide-y divide-gray-100 rounded-xl border border-gray-200">
+                  @for (field of configuredConditionalLogicFields(); track field.id) {
+                    <div class="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div class="flex min-w-0 items-start gap-3">
+                        <span class="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#161616] text-white" aria-hidden="true">
+                          <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M7 4v7a3 3 0 0 0 3 3h4a3 3 0 0 1 3 3v3" />
+                            <circle cx="7" cy="4" r="1.5" fill="currentColor" stroke="none" />
+                            <circle cx="17" cy="20" r="1.5" fill="currentColor" stroke="none" />
+                          </svg>
+                        </span>
+                        <div class="min-w-0">
+                          <p class="truncate text-sm font-bold text-[#161616]">
+                            {{ field.label || 'Untitled field' }}
+                            <span class="font-normal text-gray-400"> · {{ fieldLocationLabel(field.id) }}</span>
+                          </p>
+                          <p class="mt-1 text-sm text-gray-600">{{ summarizeFieldCondition(field) }}</p>
+                        </div>
+                      </div>
+                      <div class="flex shrink-0 items-center gap-2">
+                        <label class="relative inline-flex cursor-pointer">
+                          <input
+                            type="checkbox"
+                            class="peer sr-only"
+                            [checked]="!!normalizeConditionEnabled(field)"
+                            (change)="onOverviewToggleLogic(field, $any($event.target).checked)"
+                          />
+                          <span class="relative inline-block h-[1.4rem] w-10 rounded-full bg-gray-300 transition after:absolute after:left-[0.15rem] after:top-[0.15rem] after:h-[1.1rem] after:w-[1.1rem] after:rounded-full after:bg-white after:shadow after:transition peer-checked:bg-[#161616] peer-checked:after:translate-x-[1.1rem]" aria-hidden="true"></span>
+                        </label>
+                        <button
+                          type="button"
+                          class="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-[#161616] hover:bg-gray-50"
+                          (click)="onOverviewEditLogic(field)"
+                        >
+                          Edit
+                        </button>
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+
+              <button
+                type="button"
+                class="inline-flex items-center gap-1.5 rounded-lg bg-[#161616] px-3.5 py-2 text-sm font-semibold text-white hover:bg-black"
+                (click)="onOverviewAddLogic()"
+              >
+                <span aria-hidden="true">+</span> Add logic
+              </button>
+
+              <h3 class="pt-4 text-base font-bold text-[#161616]">Automation</h3>
+
+              @if (!logicRules().length) {
+                <p class="rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-6 text-sm text-gray-500">
+                  No automation rules configured yet.
+                </p>
+              } @else {
+                <div class="divide-y divide-gray-100 rounded-xl border border-gray-200">
+                  @for (rule of logicRules(); track rule.id) {
+                    <div class="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div class="flex min-w-0 items-start gap-3">
+                        <span class="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#d4e600] text-[#161616]" aria-hidden="true">
+                          <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M13 2 4.5 13.5h5.25L9 22l9.75-13.5H13.5L13 2Z" />
+                          </svg>
+                        </span>
+                        <div class="min-w-0">
+                          <p class="truncate text-sm font-bold text-[#161616]">{{ rule.name || 'Untitled Rule' }}</p>
+                          <p class="mt-1 text-sm text-gray-600">{{ summarizeAutomationRule(rule) }}</p>
+                        </div>
+                      </div>
+                      <div class="flex shrink-0 items-center gap-2">
+                        <label class="relative inline-flex cursor-pointer">
+                          <input
+                            type="checkbox"
+                            class="peer sr-only"
+                            [checked]="rule.enabled"
+                            (change)="onOverviewToggleAutomation(rule, $any($event.target).checked)"
+                          />
+                          <span class="relative inline-block h-[1.4rem] w-10 rounded-full bg-gray-300 transition after:absolute after:left-[0.15rem] after:top-[0.15rem] after:h-[1.1rem] after:w-[1.1rem] after:rounded-full after:bg-white after:shadow after:transition peer-checked:bg-[#161616] peer-checked:after:translate-x-[1.1rem]" aria-hidden="true"></span>
+                        </label>
+                        <button
+                          type="button"
+                          class="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-[#161616] hover:bg-gray-50"
+                          (click)="onOverviewEditAutomation(rule)"
+                        >
+                          Edit
+                        </button>
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+            </section>
+          }
+
+          @if (logicOverviewTab() === 'logicMap') {
+            <section class="space-y-4">
+              <div class="grid gap-4 lg:grid-cols-[1fr_auto_1fr] lg:items-start">
+                <div>
+                  <p class="mb-3 text-[10px] font-semibold uppercase tracking-wide text-gray-500">Watches this answer</p>
+                  <div class="space-y-3">
+                    @for (field of configuredConditionalLogicFields(); track field.id) {
+                      <div class="rounded-xl border border-dashed border-gray-300 bg-white px-3.5 py-3">
+                        <p class="m-0 truncate text-sm font-bold text-[#161616]">{{ getConditionSourceLabel(field) }}</p>
+                        <p class="m-0 mt-0.5 text-xs text-gray-500">{{ fieldLocationLabel(getConditionSourceId(field)) }}</p>
+                      </div>
+                    } @empty {
+                      <p class="text-sm text-gray-500">No logic rules to map yet.</p>
+                    }
+                  </div>
+                </div>
+                <div class="hidden items-center justify-center self-center text-gray-400 lg:flex" aria-hidden="true">→</div>
+                <div>
+                  <p class="mb-3 text-[10px] font-semibold uppercase tracking-wide text-gray-500">Changes this field</p>
+                  <div class="space-y-3">
+                    @for (field of configuredConditionalLogicFields(); track field.id) {
+                      <div class="rounded-xl border border-[#161616] bg-white px-3.5 py-3">
+                        <p class="m-0 truncate text-sm font-bold text-[#161616]">{{ field.label || 'Untitled field' }}</p>
+                        <p class="m-0 mt-0.5 text-xs text-gray-500">{{ fieldLocationLabel(field.id) }}</p>
+                        <p class="m-0 mt-2 text-xs text-gray-600">{{ summarizeFieldCondition(field) }}</p>
+                      </div>
+                    }
+                  </div>
+                </div>
+              </div>
+            </section>
+          }
+
+          @if (logicOverviewTab() === 'automationMap') {
+            <section class="space-y-4">
+              @if (!logicRules().length) {
+                <p class="rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-6 text-sm text-gray-500">
+                  No automation rules to map yet.
+                </p>
+              } @else {
+                <div class="space-y-4">
+                  @for (rule of logicRules(); track rule.id; let i = $index) {
+                    <article class="rounded-xl border border-[#d4e600] bg-[#fcffe8] px-4 py-3">
+                      <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                          <p class="text-[10px] font-bold uppercase tracking-wide text-[#161616]">
+                            Runs {{ i + 1 }} · {{ rule.enabled ? 'On' : 'Off' }}
+                          </p>
+                          <p class="mt-1 truncate text-sm font-bold text-[#161616]">{{ rule.name || 'Untitled Rule' }}</p>
+                          <p class="mt-1 text-xs text-gray-600">{{ automationRuleCardSummary(rule).when }}</p>
+                          <p class="mt-1 text-xs font-medium text-[#3f6212]">{{ automationRuleCardSummary(rule).then }}</p>
+                        </div>
+                        <button
+                          type="button"
+                          class="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-[#161616] hover:bg-gray-50"
+                          (click)="onOverviewEditAutomation(rule)"
+                        >
+                          Edit
+                        </button>
+                      </div>
+                    </article>
+                  }
+                </div>
+              }
+            </section>
+          }
+        </div>
+
+        <footer class="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-gray-200 px-5 py-4 sm:px-6">
+          <button
+            type="button"
+            class="inline-flex items-center gap-1.5 rounded-lg bg-[#d4e600] px-3.5 py-2 text-sm font-semibold text-[#161616] hover:bg-[#c5d700]"
+            (click)="onOverviewAddAutomation()"
+          >
+            <span aria-hidden="true">+</span> New automation
+          </button>
+          <button
+            type="button"
+            class="rounded-lg border border-gray-200 bg-white px-3.5 py-2 text-sm font-medium text-[#161616] hover:bg-gray-50"
+            (click)="closeLogicOverview()"
+          >
+            Done
+          </button>
+        </footer>
+      </div>
+    </div>
+  }
 
   <!-- ═══════════════════ STEP 1 — Form Details ═══════════════════ -->
   @if (currentStep() === 1) {
@@ -96,6 +357,47 @@
                           <app-section-field-preview [field]="field" />
                         </div>
                         <div
+                          class="mt-3 flex flex-wrap items-center gap-2 px-0.5"
+                          (click)="$event.stopPropagation()"
+                          (mousedown)="$event.stopPropagation()"
+                        >
+                          <button
+                            type="button"
+                            class="inline-flex items-center justify-center transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ff9015]/40"
+                            [ngClass]="fieldHasConfiguredConditionalLogic(field)
+                              ? 'h-7 gap-1.5 rounded-full bg-[#161616] px-2.5 text-white hover:bg-black'
+                              : 'h-7 w-7 rounded-full bg-gray-300 text-white hover:bg-gray-400'"
+                            [attr.aria-label]="fieldHasConfiguredConditionalLogic(field) ? 'Edit logic' : 'Conditional logic'"
+                            [title]="fieldHasConfiguredConditionalLogic(field) ? 'Edit logic' : 'Conditional logic'"
+                            (click)="onExistingFieldQuickAction($event, field, 'condition')"
+                          >
+                            <svg class="h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M7 4v7a3 3 0 0 0 3 3h4a3 3 0 0 1 3 3v3" />
+                              <circle cx="7" cy="4" r="1.75" fill="currentColor" stroke="none" />
+                              <circle cx="17" cy="20" r="1.75" fill="currentColor" stroke="none" />
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M14 14h6" />
+                              <circle cx="20" cy="14" r="1.75" fill="currentColor" stroke="none" />
+                            </svg>
+                            @if (fieldHasConfiguredConditionalLogic(field)) {
+                              <span class="text-xs font-semibold leading-none">Edit logic</span>
+                            }
+                          </button>
+                          <button
+                            type="button"
+                            class="inline-flex h-7 w-7 items-center justify-center rounded-full transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ff9015]/40"
+                            [ngClass]="fieldHasAutomationRules(field.id)
+                              ? 'bg-[#d4e600] text-[#161616] hover:bg-[#c5d700]'
+                              : 'bg-gray-300 text-white hover:bg-gray-400'"
+                            aria-label="Automation Rules"
+                            title="Automation Rules"
+                            (click)="onExistingFieldQuickAction($event, field, 'automation')"
+                          >
+                            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                              <path d="M13 2 4.5 13.5h5.25L9 22l9.75-13.5H13.5L13 2Z" />
+                            </svg>
+                          </button>
+                        </div>
+                                                <div
                           *cdkDragPlaceholder
                           class="rounded-md border-2 border-dashed border-[#FF9015] bg-[#fff5eb]"
                         ></div>
@@ -110,8 +412,13 @@
                     [schema]="builderSchema()"
                     [selectedFieldId]="selectedFieldId()"
                     [connectedDropLists]="[paletteListId, existingRowListId]"
+                    [showFieldQuickActions]="true"
+                    [fieldsWithConditionalLogic]="fieldsWithConditionalLogicIds()"
+                    [fieldsWithAutomationRules]="fieldsWithAutomationRuleIds()"
                     (dropped)="onCanvasDrop($event)"
                     (selectField)="onSelectField($event)"
+                    (openConditionalLogic)="onOpenFieldConditionalLogic($event)"
+                    (openAutomationRules)="onOpenFieldAutomationRules($event)"
                   ></app-form-canvas>
                 </div>
               </div>
@@ -120,7 +427,27 @@
         </div>
 
         <aside class="row-field-editor__right flex flex-col bg-[#f4f4f4]" aria-label="Field palette and settings">
-          <div class="flex items-center justify-end gap-3 bg-white px-4 py-4 sm:px-6">
+          <div class="flex flex-wrap items-center justify-end gap-2 bg-white px-2.5 py-3 sm:gap-2">
+            <button
+              type="button"
+              class="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-[#161616] shadow-sm transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300"
+              (click)="openLogicOverview('list')"
+            >
+              <span class="inline-flex items-center gap-1 text-[#161616]" aria-hidden="true">
+                <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M13 2 4.5 13.5h5.25L9 22l9.75-13.5H13.5L13 2Z" />
+                </svg>
+                <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M7 4v7a3 3 0 0 0 3 3h4a3 3 0 0 1 3 3v3" />
+                  <circle cx="7" cy="4" r="1.5" fill="currentColor" stroke="none" />
+                  <circle cx="17" cy="20" r="1.5" fill="currentColor" stroke="none" />
+                </svg>
+              </span>
+              <span>Logic &amp; automations</span>
+              <span class="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#161616] px-1.5 text-[11px] font-bold text-white">
+                {{ logicAutomationsCount() }}
+              </span>
+            </button>
             <button
               type="button"
               class="btn btn--save"
@@ -132,64 +459,70 @@
           </div>
 
           <nav
-            class="grid grid-cols-4 border-b border-[#b2b2b2] bg-white"
-            aria-label="Form builder tabs"
+            class="flex items-center border-b border-[#E5E7EB]"
+            [class.bg-white]="builderActiveTab() === 'settings' && !!selectedFieldId()"
+            [class.bg-[#F4F4F4]]="!(builderActiveTab() === 'settings' && !!selectedFieldId())"
+            aria-label="Form builder panels"
           >
-            <button
-              type="button"
-              class="min-w-0 px-1 py-3 text-center text-[11px] font-medium leading-snug tracking-[0.32px] transition focus:outline-none sm:px-2 sm:text-xs"
-              [ngClass]="builderActiveTab() === 'fields' ? 'border-b-2 border-[#FF9015] text-[#FF9015]' : 'border-b-2 border-transparent text-slate-500 hover:bg-slate-100'"
-              (click)="onBuilderActiveTabChange('fields')"
-            >
-              Input Fields
-            </button>
-            <button
-              type="button"
-              class="min-w-0 px-1 py-3 text-center text-[11px] font-medium leading-snug tracking-[0.32px] transition focus:outline-none sm:px-2 sm:text-xs"
-              [ngClass]="builderActiveTab() === 'settings' ? 'border-b-2 border-[#FF9015] text-[#FF9015]' : 'border-b-2 border-transparent text-slate-500 hover:bg-slate-100'"
-              (click)="onBuilderActiveTabChange('settings')"
-            >
-              Input Customization
-            </button>
-            <button
-              type="button"
-              class="min-w-0 px-1 py-3 text-center text-[11px] font-medium leading-snug tracking-[0.32px] transition focus:outline-none sm:px-2 sm:text-xs"
-              [ngClass]="builderActiveTab() === 'logic' ? 'border-b-2 border-[#FF9015] text-[#FF9015]' : 'border-b-2 border-transparent text-slate-500 hover:bg-slate-100'"
-              (click)="onBuilderActiveTabChange('logic')"
-            >
-              Automation Rules
-            </button>
-            <button
-              type="button"
-              class="min-w-0 px-1 py-3 text-center text-[11px] font-medium leading-snug tracking-[0.32px] transition focus:outline-none sm:px-2 sm:text-xs"
-              [ngClass]="builderActiveTab() === 'versions' ? 'border-b-2 border-[#FF9015] text-[#FF9015]' : 'border-b-2 border-transparent text-slate-500 hover:bg-slate-100'"
-              (click)="onBuilderActiveTabChange('versions')"
-            >
-              Versions
-            </button>
+            @if (builderActiveTab() === 'settings' && selectedFieldId()) {
+              <div
+                class="flex min-w-0 flex-1 items-start justify-between gap-2 px-3 py-3"
+              >
+                <div class="min-w-0">
+                  <p class="m-0 text-[11px] font-medium uppercase tracking-[0.06em] text-[#9CA3AF]">
+                    {{ selectedFieldTypeEyebrow() }}
+                  </p>
+                  <h3 class="m-0 mt-0.5 text-base font-semibold leading-snug text-[#161616]">
+                    Field Settings
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[#6B7280] transition hover:bg-black/5 hover:text-[#161616] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF9015]/30"
+                  aria-label="Close field settings"
+                  title="Close"
+                  (click)="showBuilderPalette()"
+                >
+                  <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            } @else {
+              <div
+                class="flex min-w-0 flex-1 items-baseline justify-between gap-3 px-3 py-3.5"
+              >
+                <h3 class="m-0 text-base font-semibold leading-snug text-[#161616] font-ibm">
+                  Add a field
+                </h3>
+                <span class="shrink-0 text-sm font-normal text-[#9CA3AF] font-ibm">
+                  {{ paletteFieldTypeCount }} types
+                </span>
+              </div>
+            }
           </nav>
 
-          <div class="min-h-0 flex-1 overflow-y-auto p-4">
-            <div [class.hidden]="builderActiveTab() !== 'fields'">
+          <!-- Host for the existing Automation Rules editor modal (list chrome hidden). -->
+          <app-logic-rules-panel
+            [showPanelList]="false"
+            [schema]="logicSchemaFields()"
+            [rules]="logicRules()"
+            (rulesChange)="onLogicRulesChange($event)"
+          ></app-logic-rules-panel>
+
+          <div class="min-h-0 flex-1 overflow-y-auto px-2.5 py-2.5 sm:px-3">
+            <!-- Keep palette mounted (hidden) so CDK drop-list connections stay valid. -->
+            <div [class.hidden]="builderActiveTab() === 'settings' && !!selectedFieldId()">
               <app-builder
                 [dropListId]="paletteListId"
                 [connectedDropLists]="[canvasListId]"
               ></app-builder>
             </div>
 
-            @if (builderActiveTab() === 'versions') {
-              <!-- Versions reserved for future implementation -->
-            }
-
-            @if (builderActiveTab() === 'logic') {
-              <app-logic-rules-panel
-                [schema]="logicSchemaFields()"
-                [rules]="logicRules()"
-                (rulesChange)="onLogicRulesChange($event)"
-              ></app-logic-rules-panel>
-            }
-
-            <div [class.hidden]="builderActiveTab() !== 'settings'" class="space-y-4">
+            <div
+              [class.hidden]="builderActiveTab() !== 'settings' || !selectedFieldId()"
+              class="space-y-3"
+            >
               @if (selectedBuilderField(); as draftField) {
                 <app-field-settings
                   [field]="draftField"
@@ -197,14 +530,13 @@
                   [activeModuleName]="builderModuleName"
                   [enforceUniqueDynamicModules]="true"
                   [fieldUsedInLogicRules]="isDraftFieldUsedInLogicRules()"
+                  [showConditionalLogicEntry]="false"
+                  [showCloseButton]="false"
                   (update)="onUpdateField($event)"
                   (duplicate)="onDuplicateSelectedDraft()"
                   (delete)="onDeleteSelectedDraft()"
+                  (conditionTargetFieldChange)="onConditionTargetFieldChange($event)"
                 ></app-field-settings>
-              } @else {
-                <div class="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600 font-ibm">
-                  Click a field on the canvas to edit its settings.
-                </div>
               }
             </div>
           </div>

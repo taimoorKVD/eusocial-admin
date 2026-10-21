@@ -1,4 +1,5 @@
 import {
+  ChangeDetectorRef,
   Component,
   computed,
   DestroyRef,
@@ -11,6 +12,8 @@ import {
   viewChild,
   WritableSignal,
 } from '@angular/core';
+import { FieldSettingsComponent } from '../../../../form-builder/field-settings/field-settings.component';
+import { LogicRulesPanelComponent } from '../../../../forms/logic-rules-panel/logic-rules-panel.component';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -27,6 +30,7 @@ import { SharedModule } from '../../../../../shared/shared.module';
 import { TenantFormsService } from '../services/tenant-forms.service';
 import { FormStorageService } from '../../../../forms/services/form-storage.service';
 import { FormField } from '../../../../form-builder/models/form-field.model';
+import { FIELD_TEMPLATES } from '../../../../form-builder/data/field-templates';
 import {
   applyCanvasDrop,
   clearStaleConditionalLogic,
@@ -35,8 +39,15 @@ import {
   updateFormField,
 } from '../../../../form-builder/utils/form-field-operations';
 import {
+  CONDITION_ACTION_LABELS,
+  CONDITION_OPERATOR_LABELS,
+  getPrimaryActionType,
+  getPrimaryPredicate,
+  hasConfiguredSource,
+  normalizeConditionalLogic,
   pruneConditionalLogicForDeletedFields,
   resolveCollectionConditionalEffects,
+  serializeConditionalLogic,
 } from '../../../../../shared/conditional-logic';
 import { resolveCharacterLimit } from '../../../../../shared/dynamic-form/character-limit.utils';
 import {
@@ -49,9 +60,13 @@ import { FormEditorCoreModule } from '../../../../forms/form-editor-core.module'
 import { FormBuilderTab } from '../../../../forms/components/form-builder-workspace/form-builder-workspace.component';
 import { FormLogicRule } from '../../../../forms/logic-rules/logic-rule.models';
 import {
+  collectLogicRuleFieldIds,
   findLogicRulesUsingField,
   normalizeLogicRules,
   pruneLogicRulesForDeletedFields,
+  summarizeActions,
+  summarizeConditions,
+  summarizeRuleCard,
 } from '../../../../forms/logic-rules/logic-rule.utils';
 import { SectionFieldPreviewComponent } from '../components/section-field-preview/section-field-preview.component';
 import {
@@ -156,7 +171,15 @@ export class CreateFormComponent implements OnInit {
 
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly cdr = inject(ChangeDetectorRef);
   private readonly formsService = inject(TenantFormsService);
+  /** Used to open the existing Conditional Logic modal without duplicating it. */
+  private readonly fieldSettings = viewChild(FieldSettingsComponent);
+  /** Host for Automation Rules editor modal (list chrome hidden). */
+  private readonly logicRulesPanel = viewChild(LogicRulesPanelComponent);
+
+  readonly logicOverviewOpen = signal(false);
+  readonly logicOverviewTab = signal<'logicMap' | 'automationMap' | 'list'>('list');
   private readonly toastr = inject(ToastrService);
   private readonly userService = inject(TenantUserService);
   private readonly jobPositionService = inject(TenantJobPositionService);
@@ -286,6 +309,8 @@ export class CreateFormComponent implements OnInit {
   readonly canvasListId = 'createFormCanvasList';
   readonly existingRowListId = 'createFormExistingRowList';
   readonly builderModuleName = 'dynamic-forms';
+  /** Input Fields header count (“N types”) — matches palette templates. */
+  readonly paletteFieldTypeCount = FIELD_TEMPLATES.length;
   /** Prevents click-to-edit while a row field is being dragged. */
   private isReorderingExistingFields = false;
 
@@ -353,6 +378,14 @@ export class CreateFormComponent implements OnInit {
     );
   });
 
+  /** Field-type eyebrow for the Field Settings panel chrome (e.g. TEXTAREA). */
+  readonly selectedFieldTypeEyebrow = computed(() => {
+    const field = this.selectedBuilderField();
+    if (!field) return '';
+    const raw = (field.fieldTypeName || field.type || 'field').toString();
+    return raw.replace(/[-_]/g, ' ').trim().toUpperCase();
+  });
+
   readonly isDraftFieldUsedInLogicRules = computed(() => {
     const field = this.selectedBuilderField();
     if (!field) {
@@ -360,6 +393,38 @@ export class CreateFormComponent implements OnInit {
     }
     return findLogicRulesUsingField(this.logicRules(), field.id).length > 0;
   });
+
+  /** Fields with configured Conditional Logic (enabled + source). */
+  readonly fieldsWithConditionalLogicIds = computed(() =>
+    this.logicSchemaFields()
+      .filter((field) => this.fieldHasConfiguredConditionalLogic(field))
+      .map((field) => field.id),
+  );
+
+  /** Fields referenced by at least one Automation Rule. */
+  readonly fieldsWithAutomationRuleIds = computed(() => {
+    const ids = new Set<string>();
+    for (const rule of this.logicRules()) {
+      for (const id of collectLogicRuleFieldIds(rule)) {
+        ids.add(id);
+      }
+    }
+    return [...ids];
+  });
+
+  /**
+   * Badge count = configured field conditions + automation rules.
+   * (Matches Figma: 2 logic + 2 automations → 4.)
+   */
+  readonly logicAutomationsCount = computed(
+    () => this.fieldsWithConditionalLogicIds().length + this.logicRules().length,
+  );
+
+  readonly configuredConditionalLogicFields = computed(() =>
+    this.logicSchemaFields().filter((field) =>
+      this.fieldHasConfiguredConditionalLogic(field),
+    ),
+  );
 
   readonly canSaveDraftField = computed(() => {
     const selected = this.selectedBuilderField();
@@ -1772,6 +1837,7 @@ export class CreateFormComponent implements OnInit {
   closeFieldBuilder(): void {
     const target = this.pendingFieldTarget();
     this.fieldBuilderOpen.set(false);
+    this.logicOverviewOpen.set(false);
     this.pendingFieldTarget.set(null);
     this.builderActiveTab.set('fields');
     this.resetBuilderDraft();
@@ -1788,12 +1854,22 @@ export class CreateFormComponent implements OnInit {
   }
 
   onBuilderActiveTabChange(tab: FormBuilderTab): void {
+    // Automation Rules / Versions removed from Form Template builder chrome.
+    if (tab === 'logic' || tab === 'versions') {
+      return;
+    }
+    // Input Fields and Input Customization are mutually exclusive.
+    if (tab === 'fields') {
+      this.showBuilderPalette();
+      return;
+    }
     if (tab === 'settings' && !this.selectedFieldId()) {
       return;
     }
     this.builderActiveTab.set(tab);
   }
 
+  /** Hide Input Customization, clear canvas selection, show Input Fields. */
   showBuilderPalette(): void {
     this.selectedFieldId.set(null);
     this.builderActiveTab.set('fields');
@@ -1820,6 +1896,207 @@ export class CreateFormComponent implements OnInit {
   onSelectField(field: FormField): void {
     this.selectedFieldId.set(field.id);
     this.builderActiveTab.set('settings');
+  }
+
+  /**
+   * Form Template canvas shortcut: open existing Conditional Logic modal for a field.
+   * Selects the field so field-settings (and its modal) load the correct context.
+   */
+  onOpenFieldConditionalLogic(field: FormField): void {
+    this.logicOverviewOpen.set(false);
+    this.selectedFieldId.set(field.id);
+    this.builderActiveTab.set('settings');
+    this.cdr.detectChanges();
+    this.fieldSettings()?.openConditionModal();
+  }
+
+  /**
+   * Form Template canvas shortcut: open existing Automation Rules editor popup.
+   */
+  onOpenFieldAutomationRules(field: FormField): void {
+    this.logicOverviewOpen.set(false);
+    this.selectedFieldId.set(field.id);
+    this.cdr.detectChanges();
+
+    const existing = findLogicRulesUsingField(this.logicRules(), field.id);
+    const panel = this.logicRulesPanel();
+    if (!panel) {
+      return;
+    }
+
+    if (existing.length) {
+      panel.openEditEditor(existing[0], field.id);
+      return;
+    }
+
+    panel.openCreateEditor(field.id);
+  }
+
+  onExistingFieldQuickAction(
+    event: Event,
+    field: FormFieldConfig,
+    action: 'condition' | 'automation',
+  ): void {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (this.isReorderingExistingFields) {
+      return;
+    }
+
+    const builderField = this.rowBuilderFields().find((item) => item.id === field.id);
+    if (!builderField) {
+      return;
+    }
+
+    if (action === 'condition') {
+      this.onOpenFieldConditionalLogic(builderField);
+      return;
+    }
+
+    this.onOpenFieldAutomationRules(builderField);
+  }
+
+  fieldHasConfiguredConditionalLogic(field: FormField | FormFieldConfig): boolean {
+    const logic = normalizeConditionalLogic(field.condition ?? null);
+    return !!logic?.enabled && hasConfiguredSource(logic);
+  }
+
+  normalizeConditionEnabled(field: FormField | FormFieldConfig): boolean {
+    return !!normalizeConditionalLogic(field.condition ?? null)?.enabled;
+  }
+
+  getConditionSourceId(field: FormField): string {
+    return getPrimaryPredicate(normalizeConditionalLogic(field.condition ?? null)).fieldId;
+  }
+
+  getConditionSourceLabel(field: FormField): string {
+    const sourceId = this.getConditionSourceId(field);
+    return (
+      this.logicSchemaFields().find((item) => item.id === sourceId)?.label ||
+      'No field chosen yet'
+    );
+  }
+
+  fieldHasAutomationRules(fieldId: string): boolean {
+    return findLogicRulesUsingField(this.logicRules(), fieldId).length > 0;
+  }
+
+  openLogicOverview(tab: 'logicMap' | 'automationMap' | 'list' = 'list'): void {
+    this.logicOverviewTab.set(tab);
+    this.logicOverviewOpen.set(true);
+  }
+
+  closeLogicOverview(): void {
+    this.logicOverviewOpen.set(false);
+  }
+
+  setLogicOverviewTab(tab: 'logicMap' | 'automationMap' | 'list'): void {
+    this.logicOverviewTab.set(tab);
+  }
+
+  /**
+   * Logic & automations → Add Logic: open Conditional Logic in pick-target mode.
+   * Does not preselect a field — user chooses the target in the modal first.
+   */
+  onOverviewAddLogic(): void {
+    const fields = this.logicSchemaFields();
+    if (!fields.length) {
+      return;
+    }
+
+    this.logicOverviewOpen.set(false);
+    // Mount field-settings host only (temporary); modal awaits explicit target pick.
+    if (!this.selectedFieldId()) {
+      this.selectedFieldId.set(fields[0].id);
+    }
+    this.builderActiveTab.set('settings');
+    this.cdr.detectChanges();
+    this.fieldSettings()?.openConditionModal({ pickTargetField: true });
+  }
+
+  onConditionTargetFieldChange(fieldId: string): void {
+    const field = this.logicSchemaFields().find((item) => item.id === fieldId);
+    if (!field) {
+      return;
+    }
+    this.selectedFieldId.set(field.id);
+    this.builderActiveTab.set('settings');
+    this.cdr.detectChanges();
+  }
+
+  onOverviewEditLogic(field: FormField): void {
+    this.onOpenFieldConditionalLogic(field);
+  }
+
+  onOverviewToggleLogic(field: FormField, enabled: boolean): void {
+    const logic = normalizeConditionalLogic(field.condition ?? null);
+    if (!logic) {
+      return;
+    }
+    this.onUpdateField({
+      ...field,
+      condition: serializeConditionalLogic({ ...logic, enabled }),
+    });
+  }
+
+  onOverviewAddAutomation(): void {
+    this.logicOverviewOpen.set(false);
+    this.cdr.detectChanges();
+    this.logicRulesPanel()?.openCreateEditor();
+  }
+
+  onOverviewEditAutomation(rule: FormLogicRule): void {
+    this.logicOverviewOpen.set(false);
+    this.cdr.detectChanges();
+    this.logicRulesPanel()?.openEditEditor(rule);
+  }
+
+  onOverviewToggleAutomation(rule: FormLogicRule, enabled: boolean): void {
+    this.logicRulesPanel()?.toggleRuleEnabled(rule, enabled);
+  }
+
+  summarizeFieldCondition(field: FormField): string {
+    const logic = normalizeConditionalLogic(field.condition ?? null);
+    if (!logic) {
+      return 'No conditional logic configured';
+    }
+    const predicate = getPrimaryPredicate(logic);
+    const source =
+      this.logicSchemaFields().find((item) => item.id === predicate.fieldId)?.label ||
+      'a field';
+    const operator =
+      CONDITION_OPERATOR_LABELS[predicate.operator] ?? predicate.operator;
+    const needsValue = !['isEmpty', 'isNotEmpty', 'checked', 'unchecked'].includes(
+      predicate.operator,
+    );
+    const valueText =
+      needsValue && predicate.value != null && String(predicate.value).trim() !== ''
+        ? ` ${String(predicate.value)}`
+        : '';
+    const action = CONDITION_ACTION_LABELS[getPrimaryActionType(logic)] ?? 'Update field';
+    return `${action} when ${source} ${operator}${valueText}`;
+  }
+
+  summarizeAutomationRule(rule: FormLogicRule): string {
+    const schema = this.logicSchemaFields();
+    return `If ${summarizeConditions(rule, schema)}, then ${summarizeActions(rule)}`;
+  }
+
+  automationRuleCardSummary(rule: FormLogicRule): { when: string; then: string } {
+    return summarizeRuleCard(rule, this.logicSchemaFields());
+  }
+
+  fieldLocationLabel(fieldId: string): string {
+    for (let s = 0; s < this.sections().length; s++) {
+      const section = this.sections()[s];
+      for (let r = 0; r < section.rows.length; r++) {
+        if (section.rows[r].fields.some((field) => field.id === fieldId)) {
+          return `Section ${s + 1}, Row ${r + 1}`;
+        }
+      }
+    }
+    return 'This form';
   }
 
   onDuplicateField(field: FormField): void {
@@ -2352,11 +2629,10 @@ export class CreateFormComponent implements OnInit {
     const target = this.pendingFieldTarget();
     if (!target) return;
 
-    // Keep consistent sizing with existing section fields; always append to the clicked row.
+    // Always append to the clicked row; preserve builder width when set.
     const newField: FormFieldConfig = {
       ...field,
       isDefault: false,
-      width: undefined,
       value: field.value ?? '',
     };
 

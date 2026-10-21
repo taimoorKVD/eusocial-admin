@@ -1,14 +1,19 @@
-<div class="dynamic-listing bg-white rounded shadow">
+<div
+  class="dynamic-listing font-ibm bg-white"
+  [class.dynamic-listing--modern]="isModern()"
+  [class.rounded]="!isModern()"
+  [class.shadow]="!isModern()"
+>
 
   <!-- Toolbar -->
-  <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-    <p class="text-sm text-gray-500 font-ibm m-0">
+  <div class="dynamic-listing__toolbar flex items-center justify-between px-4 py-3 border-b border-gray-100">
+    <p class="text-sm text-[#6F6F6F] font-ibm m-0">
       Showing {{ visibleColumns().length }} of {{ sortedFields().length }} columns
     </p>
 
     <button
       type="button"
-      class="inline-flex items-center gap-2 px-3 py-2 text-sm font-ibm text-[#ea580c] border border-[#ea580c]/30 rounded-lg hover:bg-blue-50 transition-colors"
+      class="inline-flex items-center gap-2 px-3 py-2 text-sm font-ibm text-[#ea580c] border border-[#ea580c]/30 rounded-lg hover:bg-[#fff7ed] transition-colors"
       (click)="openColumnModal()"
       aria-label="Select columns"
       [attr.aria-expanded]="columnModalOpen()"
@@ -116,14 +121,14 @@
   <!-- Table -->
   @if (hasRecords()) {
     <div class="overflow-x-auto">
-      <table class="w-full text-left text-sm font-ibm">
-        <thead class="bg-gray-200 text-gray-700">
+      <table class="dynamic-listing__table w-full text-left text-sm font-ibm">
+        <thead [class.bg-gray-200]="!isModern()" [class.text-gray-700]="!isModern()">
           <tr>
             @if (selectable()) {
-              <th class="px-4 py-3 w-10 whitespace-nowrap">
+              <th class="dynamic-listing__th px-4 py-3 w-10 whitespace-nowrap">
                 <input
                   type="checkbox"
-                  class="h-4 w-4 rounded border-gray-300 text-[#ea580c] focus:ring-[#ea580c]"
+                  class="h-4 w-4 rounded border-gray-300 text-[#ea580c] accent-[#ea580c] focus:ring-[#ea580c]"
                   [checked]="isAllSelected()"
                   [indeterminate]="isIndeterminate()"
                   [disabled]="!hasSelectableRecords()"
@@ -132,24 +137,29 @@
               </th>
             }
             @for (field of visibleColumns(); track field.id) {
-              <th class="px-4 py-3 whitespace-nowrap">
+              <th class="dynamic-listing__th px-4 py-3 whitespace-nowrap">
                 {{ field.label }}
               </th>
             }
             @if (showActionsColumn()) {
-              <th class="px-4 py-3 text-right whitespace-nowrap">Actions</th>
+              <th class="dynamic-listing__th px-4 py-3 text-right whitespace-nowrap">
+                Actions
+              </th>
             }
           </tr>
         </thead>
 
         <tbody>
           @for (record of records(); track getRecordTrackId($index, record)) {
-            <tr class="border-b hover:bg-gray-50" [class.bg-orange-50]="isRecordSelected(record)">
+            <tr
+              class="dynamic-listing__row border-b border-gray-100 transition-colors hover:bg-gray-50"
+              [class.bg-orange-50]="isRecordSelected(record)"
+            >
               @if (selectable()) {
-                <td class="px-4 py-3 align-middle">
+                <td class="dynamic-listing__td px-4 py-3 align-middle">
                   <input
                     type="checkbox"
-                    class="h-4 w-4 rounded border-gray-300 text-[#ea580c] focus:ring-[#ea580c]"
+                    class="h-4 w-4 rounded border-gray-300 text-[#ea580c] accent-[#ea580c] focus:ring-[#ea580c]"
                     [checked]="isRecordSelected(record)"
                     [disabled]="!isSelectableRecord(record)"
                     (change)="onToggleRecordSelection(record)"
@@ -157,7 +167,7 @@
                 </td>
               }
               @for (field of visibleColumns(); track field.id) {
-                <td class="px-4 py-3 align-middle">
+                <td class="dynamic-listing__td px-4 py-3 align-middle text-[#161616]">
                   @switch (field.type) {
                     @case ('image') {
                       @let imageSrcs = getImageSrcs(record, field);
@@ -252,12 +262,12 @@
               }
 
               @if (showActionsColumn()) {
-                <td class="px-4 py-3 text-right">
+                <td class="dynamic-listing__td px-4 py-3 text-right">
                   <div class="flex justify-end gap-2">
                     @if (showEditAction()) {
                       <button
                         type="button"
-                        class="text-[#ea580c] hover:text-red-900"
+                        class="text-[#ea580c] hover:text-[#c2410c]"
                         (click)="onEdit(record)"
                         aria-label="Edit record"
                       >
@@ -292,7 +302,7 @@
       </table>
     </div>
   } @else {
-    <div class="text-center py-10">
+    <div class="dynamic-listing__empty text-center py-10">
       <p class="text-gray-400 text-sm font-ibm m-0">{{ emptyMessage() }}</p>
     </div>
   }

@@ -6,6 +6,57 @@ $theme-border: #e2e8f0;
 $theme-border-hover: #fdba74;
 $theme-text: #334155;
 
+/* Form Template Input Customization — shared control chrome */
+.fs-ft-input {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  background: #fff;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: #161616;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+
+  &::placeholder {
+    color: #9ca3af;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: #ff9015;
+    box-shadow: 0 0 0 3px rgba(255, 144, 21, 0.12);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    background: #f3f4f6;
+    color: #9ca3af;
+  }
+}
+
+.field-settings--ft {
+  // Theme remaining (field-type-specific) inputs to match the FT chrome.
+  input:not([type='checkbox']):not([type='radio']):not(.sr-only),
+  textarea,
+  select {
+    border-color: #e5e7eb;
+    border-radius: 0.5rem;
+
+    &:focus {
+      border-color: #ff9015 !important;
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(255, 144, 21, 0.12) !important;
+    }
+  }
+
+  .field-settings-select:focus {
+    border-color: #ff9015;
+    box-shadow: 0 0 0 3px rgba(255, 144, 21, 0.12);
+  }
+}
+
 .field-settings-checkbox,
 .field-settings-radio {
   width: 1rem;

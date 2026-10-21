@@ -18,7 +18,10 @@ import {
 })
 export class TenantSidebarComponent {
   @Input() isOpen = false;
+  /** Desktop compact rail (icons only). Distinct from mobile `isOpen` drawer. */
+  @Input() collapsed = false;
   @Output() closeSidebar = new EventEmitter<void>();
+  @Output() toggleCollapsed = new EventEmitter<void>();
 
   readonly permissions = inject(TenantPermissionService);
   readonly PERMISSIONS = PERMISSIONS;
@@ -49,11 +52,23 @@ export class TenantSidebarComponent {
     this.openFormBuilder = false;
   }
 
+  onToggleCollapsed(): void {
+    this.toggleCollapsed.emit();
+  }
+
   toggleSetup() {
+    if (this.collapsed) {
+      this.toggleCollapsed.emit();
+      return;
+    }
     this.openSetup = !this.openSetup;
   }
 
   toggleExtraManagement() {
+    if (this.collapsed) {
+      this.toggleCollapsed.emit();
+      return;
+    }
     this.openExtraManagement = !this.openExtraManagement;
   }
 

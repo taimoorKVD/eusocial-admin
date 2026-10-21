@@ -33,10 +33,21 @@ export class FormCanvasComponent {
   @Input() selectedFieldIds: string[] = [];
   /** Disables drag/drop and field click-to-edit (e.g. bulk delete mode). */
   @Input() interactionsDisabled = false;
+  /**
+   * Form Template only: show Conditional Logic / Automation Rules shortcuts
+   * under each field. Other Form Builder hosts leave this false.
+   */
+  @Input() showFieldQuickActions = false;
+  /** Field ids with configured Conditional Logic (Form Template). */
+  @Input() fieldsWithConditionalLogic: readonly string[] = [];
+  /** Field ids referenced by Automation Rules (Form Template). */
+  @Input() fieldsWithAutomationRules: readonly string[] = [];
 
   @Output() dropped = new EventEmitter<CdkDragDrop<FormField[]>>();
   @Output() selectField = new EventEmitter<FormField>();
   @Output() toggleFieldSelection = new EventEmitter<FormField>();
+  @Output() openConditionalLogic = new EventEmitter<FormField>();
+  @Output() openAutomationRules = new EventEmitter<FormField>();
 
   @ViewChild('canvasList', { static: true })
   canvasListRef!: CdkDropList<FormField[]>;
@@ -86,6 +97,34 @@ export class FormCanvasComponent {
 
   onCheckboxClick(event: Event): void {
     event.stopPropagation();
+  }
+
+  onQuickActionClick(event: Event, field: FormField, action: 'condition' | 'automation'): void {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (this.selectionMode || this.interactionsDisabled || this.isDraggingField) {
+      return;
+    }
+
+    if (action === 'condition') {
+      this.openConditionalLogic.emit(field);
+      return;
+    }
+
+    this.openAutomationRules.emit(field);
+  }
+
+  onQuickActionMouseDown(event: Event): void {
+    event.stopPropagation();
+  }
+
+  hasConditionalLogic(field: FormField): boolean {
+    return this.fieldsWithConditionalLogic.includes(field.id);
+  }
+
+  hasAutomationRules(field: FormField): boolean {
+    return this.fieldsWithAutomationRules.includes(field.id);
   }
 
   onFieldDragStarted(): void {

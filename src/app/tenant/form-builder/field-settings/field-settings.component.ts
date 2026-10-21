@@ -32,7 +32,9 @@ import {
   getPrimaryPredicate,
   getPrimarySetValueSource,
   getValidConditionalSourceFields,
+  hasConfiguredSource,
   isCompatibleSetValueSourceField,
+  normalizeConditionalLogic,
   normalizeValueSource,
   operatorRequiresValue,
   resolveSetValueFieldKind,
@@ -147,6 +149,18 @@ export class FieldSettingsComponent {
    */
   @Input() fieldUsedInLogicRules = false;
 
+  /**
+   * When false, hide the Conditional Logic entry card in Input Customization.
+   * The modal + handlers remain available for field-level shortcuts (Form Template).
+   */
+  @Input() showConditionalLogicEntry = true;
+
+  /**
+   * Form Template builder: show the close (×) control to leave Input Customization
+   * and return to the Input Fields palette.
+   */
+  @Input() showCloseButton = false;
+
   @Input() set schema(value: FormField[] | null | undefined) {
     const next = value ?? [];
     const current = this.schemaSignal();
@@ -182,9 +196,21 @@ export class FieldSettingsComponent {
 
     if (!isSameField) {
       this.overlayService.close();
+      // Keep the Conditional Logic modal open when Add Logic switches target field.
+      if (!this.retainConditionModalOnFieldSwitch) {
+        this.conditionModalOpen = false;
+        this.conditionModalPickTargetMode = false;
+        this.conditionModalTargetConfirmed = false;
+      }
       this.skipFieldReinitialize = false;
       this.assignField(value);
       this.initializeSelectOptionsState(this._field);
+      if (this.retainConditionModalOnFieldSwitch) {
+        this.retainConditionModalOnFieldSwitch = false;
+        this.conditionModalTargetConfirmed = true;
+        // Keep Add Logic picker mode; load the new field's condition into the open modal.
+        queueMicrotask(() => this.openConditionModal());
+      }
       return;
     }
 
@@ -201,6 +227,16 @@ export class FieldSettingsComponent {
 
   private _field!: FormField;
   conditionEditor: FieldConditionalLogic = createEmptyConditionalLogic();
+  /** UI-only: Conditional Logic popup visibility. */
+  conditionModalOpen = false;
+  /**
+   * Form Template Add Logic: keep the “Which field should change?” selector visible.
+   * Field-level icon opens with this false (target already known).
+   */
+  conditionModalPickTargetMode = false;
+  /** Add Logic: false until the user explicitly picks a target field. */
+  conditionModalTargetConfirmed = false;
+  private retainConditionModalOnFieldSwitch = false;
   private placeholderManuallyEdited = false;
   private skipFieldReinitialize = false;
   private modulesLoaded = false;
@@ -232,11 +268,51 @@ export class FieldSettingsComponent {
   @Output() duplicate = new EventEmitter<void>();
   @Output() delete = new EventEmitter<void>();
   @Output() loadingChange = new EventEmitter<boolean>();
+  /**
+   * Form Template Add Logic: user picked the target field that should receive
+   * conditional logic. Parent switches `[field]` to that id, then the modal
+   * continues with the normal field workflow.
+   */
+  @Output() conditionTargetFieldChange = new EventEmitter<string>();
+  /** Form Template: close Input Customization and restore Input Fields. */
+  @Output() closePanel = new EventEmitter<void>();
 
   constructor(
     private dynamicModuleOptionsService: DynamicModuleOptionsService,
     private formImageUploadService: FormImageUploadService,
   ) {}
+
+  /** Form Template Input Customization visual variant (UI only). */
+  get isFormTemplatePanel(): boolean {
+    return (this.activeModuleName || '').trim().toLowerCase() === 'dynamic-forms';
+  }
+
+  /** Field type eyebrow shown in Form Template settings header (e.g. TEXT). */
+  get fieldTypeEyebrow(): string {
+    const raw = (this._field?.fieldTypeName || this._field?.type || 'field').toString();
+    return raw.replace(/[-_]/g, ' ').trim().toUpperCase();
+  }
+
+  /** Width-in-row preset mapped from FormField 12-col `width`. */
+  get rowWidthPreset(): 'third' | 'half' | 'full' {
+    const width = this._field?.width ?? 12;
+    if (width <= 4) return 'third';
+    if (width <= 6) return 'half';
+    return 'full';
+  }
+
+  onRowWidthPresetChange(preset: 'third' | 'half' | 'full'): void {
+    if (!this._field || !this.isFieldEditable) {
+      return;
+    }
+    const next =
+      preset === 'third' ? 4 : preset === 'half' ? 6 : 12;
+    if (this._field.width === next) {
+      return;
+    }
+    this._field.width = next;
+    this.onChange();
+  }
 
   referenceImagesUploading = false;
   referencePreviewUrl: string | null = null;
@@ -1269,6 +1345,116 @@ export class FieldSettingsComponent {
 
   get conditionEnabled(): boolean {
     return this.conditionEditor.enabled;
+  }
+
+  get conditionActionLabel(): string {
+    return CONDITION_ACTION_LABELS[this.conditionAction] ?? this.conditionAction;
+  }
+
+  get canSaveConditionLogic(): boolean {
+    if (this.conditionModalPickTargetMode && !this.conditionModalTargetConfirmed) {
+      return false;
+    }
+    return this.isFieldEditable && !!this.conditionSourceFieldId;
+  }
+
+  /** Bound value for the persistent Add Logic target selector. */
+  get conditionTargetSelectValue(): string {
+    if (!this.conditionModalPickTargetMode || !this.conditionModalTargetConfirmed) {
+      return '';
+    }
+    return this._field?.id ?? '';
+  }
+
+  /** WHEN/THEN stay visible in Add Logic, but stay inert until a target is chosen. */
+  get conditionRuleControlsEnabled(): boolean {
+    return (
+      this.isFieldEditable &&
+      (!this.conditionModalPickTargetMode || this.conditionModalTargetConfirmed)
+    );
+  }
+
+  openConditionModal(options?: { pickTargetField?: boolean }): void {
+    if (!this._field || !this.isFieldEditable) {
+      return;
+    }
+
+    this.overlayService.close();
+
+    if (options?.pickTargetField) {
+      // Add Logic: show persistent target selector; do not preselect/enable a host field.
+      this.conditionModalPickTargetMode = true;
+      this.conditionModalTargetConfirmed = false;
+    } else if (!this.conditionModalPickTargetMode) {
+      // Field-level icon: target is already the current field.
+      this.conditionModalTargetConfirmed = true;
+      if (!this.conditionEnabled) {
+        this.onConditionEnabledChange(true);
+      }
+    } else {
+      // Add Logic after target switch / re-open: keep picker, ensure logic enabled.
+      this.conditionModalTargetConfirmed = true;
+      if (!this.conditionEnabled) {
+        this.onConditionEnabledChange(true);
+      }
+    }
+
+    this.conditionModalOpen = true;
+  }
+
+  closeConditionModal(): void {
+    this.conditionModalOpen = false;
+    this.conditionModalPickTargetMode = false;
+    this.conditionModalTargetConfirmed = false;
+    this.retainConditionModalOnFieldSwitch = false;
+  }
+
+  /**
+   * Add Logic flow: user explicitly chose which field should change.
+   * Selector stays visible so the target can be changed again.
+   */
+  onConditionTargetFieldPick(fieldId: string): void {
+    const nextId = (fieldId || '').trim();
+    if (!nextId || !this.isFieldEditable) {
+      return;
+    }
+
+    if (this._field?.id === nextId) {
+      this.conditionModalTargetConfirmed = true;
+      if (!this.conditionEnabled) {
+        this.onConditionEnabledChange(true);
+      }
+      return;
+    }
+
+    this.conditionModalTargetConfirmed = true;
+    this.retainConditionModalOnFieldSwitch = true;
+    this.conditionTargetFieldChange.emit(nextId);
+  }
+
+  /** Schema fields available as Conditional Logic targets (Add Logic picker). */
+  get conditionTargetFields(): FormField[] {
+    return this.schemaSignal();
+  }
+
+  fieldHasConfiguredCondition(fieldId: string): boolean {
+    const field = this.schemaSignal().find((item) => item.id === fieldId);
+    if (!field) {
+      return false;
+    }
+    const logic = normalizeConditionalLogic(field.condition ?? null);
+    return !!logic?.enabled && hasConfiguredSource(logic);
+  }
+
+  saveConditionModal(): void {
+    if (!this.canSaveConditionLogic) {
+      return;
+    }
+
+    if (!this.conditionEnabled) {
+      this.onConditionEnabledChange(true);
+    }
+    this.conditionModalOpen = false;
   }
 
   get conditionSourceFieldId(): string {
