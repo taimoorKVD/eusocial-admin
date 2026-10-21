@@ -459,7 +459,9 @@
           </div>
 
           <nav
-            class="flex items-center border-b border-[#b2b2b2] bg-white"
+            class="flex items-center border-b border-[#E5E7EB]"
+            [class.bg-white]="builderActiveTab() === 'settings' && !!selectedFieldId()"
+            [class.bg-[#F4F4F4]]="!(builderActiveTab() === 'settings' && !!selectedFieldId())"
             aria-label="Form builder panels"
           >
             @if (builderActiveTab() === 'settings' && selectedFieldId()) {
@@ -487,11 +489,16 @@
                 </button>
               </div>
             } @else {
-              <span
-                class="px-3 py-4 text-[16px] font-medium tracking-[0.32px] text-[#FF9015] border-b border-[#FF9015]"
+              <div
+                class="flex min-w-0 flex-1 items-baseline justify-between gap-3 px-3 py-3.5"
               >
-                Input Fields
-              </span>
+                <h3 class="m-0 text-base font-semibold leading-snug text-[#161616] font-ibm">
+                  Add a field
+                </h3>
+                <span class="shrink-0 text-sm font-normal text-[#9CA3AF] font-ibm">
+                  {{ paletteFieldTypeCount }} types
+                </span>
+              </div>
             }
           </nav>
 

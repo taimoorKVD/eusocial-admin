@@ -30,6 +30,7 @@ import { SharedModule } from '../../../../../shared/shared.module';
 import { TenantFormsService } from '../services/tenant-forms.service';
 import { FormStorageService } from '../../../../forms/services/form-storage.service';
 import { FormField } from '../../../../form-builder/models/form-field.model';
+import { FIELD_TEMPLATES } from '../../../../form-builder/data/field-templates';
 import {
   applyCanvasDrop,
   clearStaleConditionalLogic,
@@ -308,6 +309,8 @@ export class CreateFormComponent implements OnInit {
   readonly canvasListId = 'createFormCanvasList';
   readonly existingRowListId = 'createFormExistingRowList';
   readonly builderModuleName = 'dynamic-forms';
+  /** Input Fields header count (“N types”) — matches palette templates. */
+  readonly paletteFieldTypeCount = FIELD_TEMPLATES.length;
   /** Prevents click-to-edit while a row field is being dragged. */
   private isReorderingExistingFields = false;
 
