@@ -452,25 +452,26 @@
           </div>
 
           <nav
-            class="grid grid-cols-2 border-b border-[#b2b2b2] bg-white"
-            aria-label="Form builder tabs"
+            class="flex items-center border-b border-[#b2b2b2] bg-white"
+            aria-label="Form builder panels"
           >
-            <button
-              type="button"
-              class="min-w-0 px-1 py-3 text-center text-[11px] font-medium leading-snug tracking-[0.32px] transition focus:outline-none sm:px-2 sm:text-xs"
-              [ngClass]="builderActiveTab() === 'fields' ? 'border-b-2 border-[#FF9015] text-[#FF9015]' : 'border-b-2 border-transparent text-slate-500 hover:bg-slate-100'"
-              (click)="onBuilderActiveTabChange('fields')"
-            >
-              Input Fields
-            </button>
-            <button
-              type="button"
-              class="min-w-0 px-1 py-3 text-center text-[11px] font-medium leading-snug tracking-[0.32px] transition focus:outline-none sm:px-2 sm:text-xs"
-              [ngClass]="builderActiveTab() === 'settings' ? 'border-b-2 border-[#FF9015] text-[#FF9015]' : 'border-b-2 border-transparent text-slate-500 hover:bg-slate-100'"
-              (click)="onBuilderActiveTabChange('settings')"
-            >
-              Input Customization
-            </button>
+            @if (builderActiveTab() === 'settings' && selectedFieldId()) {
+              <div
+                class="flex min-w-0 flex-1 items-center justify-between gap-2 px-3 py-4"
+              >
+                <span
+                  class="border-b border-[#FF9015] text-[16px] font-medium tracking-[0.32px] text-[#FF9015]"
+                >
+                  Input Customization
+                </span>
+              </div>
+            } @else {
+              <span
+                class="px-3 py-4 text-[16px] font-medium tracking-[0.32px] text-[#FF9015] border-b border-[#FF9015]"
+              >
+                Input Fields
+              </span>
+            }
           </nav>
 
           <!-- Host for the existing Automation Rules editor modal (list chrome hidden). -->
@@ -482,14 +483,18 @@
           ></app-logic-rules-panel>
 
           <div class="min-h-0 flex-1 overflow-y-auto p-4">
-            <div [class.hidden]="builderActiveTab() !== 'fields'">
+            <!-- Keep palette mounted (hidden) so CDK drop-list connections stay valid. -->
+            <div [class.hidden]="builderActiveTab() === 'settings' && !!selectedFieldId()">
               <app-builder
                 [dropListId]="paletteListId"
                 [connectedDropLists]="[canvasListId]"
               ></app-builder>
             </div>
 
-            <div [class.hidden]="builderActiveTab() !== 'settings'" class="space-y-4">
+            <div
+              [class.hidden]="builderActiveTab() !== 'settings' || !selectedFieldId()"
+              class="space-y-4"
+            >
               @if (selectedBuilderField(); as draftField) {
                 <app-field-settings
                   [field]="draftField"
@@ -498,15 +503,13 @@
                   [enforceUniqueDynamicModules]="true"
                   [fieldUsedInLogicRules]="isDraftFieldUsedInLogicRules()"
                   [showConditionalLogicEntry]="false"
+                  [showCloseButton]="true"
                   (update)="onUpdateField($event)"
                   (duplicate)="onDuplicateSelectedDraft()"
                   (delete)="onDeleteSelectedDraft()"
                   (conditionTargetFieldChange)="onConditionTargetFieldChange($event)"
+                  (closePanel)="showBuilderPalette()"
                 ></app-field-settings>
-              } @else {
-                <div class="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600 font-ibm">
-                  Click a field on the canvas to edit its settings.
-                </div>
               }
             </div>
           </div>

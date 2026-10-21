@@ -1847,12 +1847,18 @@ export class CreateFormComponent implements OnInit {
     if (tab === 'logic' || tab === 'versions') {
       return;
     }
+    // Input Fields and Input Customization are mutually exclusive.
+    if (tab === 'fields') {
+      this.showBuilderPalette();
+      return;
+    }
     if (tab === 'settings' && !this.selectedFieldId()) {
       return;
     }
     this.builderActiveTab.set(tab);
   }
 
+  /** Hide Input Customization, clear canvas selection, show Input Fields. */
   showBuilderPalette(): void {
     this.selectedFieldId.set(null);
     this.builderActiveTab.set('fields');

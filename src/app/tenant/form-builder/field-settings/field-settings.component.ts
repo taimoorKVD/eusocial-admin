@@ -155,6 +155,12 @@ export class FieldSettingsComponent {
    */
   @Input() showConditionalLogicEntry = true;
 
+  /**
+   * Form Template builder: show the close (×) control to leave Input Customization
+   * and return to the Input Fields palette.
+   */
+  @Input() showCloseButton = false;
+
   @Input() set schema(value: FormField[] | null | undefined) {
     const next = value ?? [];
     const current = this.schemaSignal();
@@ -268,6 +274,8 @@ export class FieldSettingsComponent {
    * continues with the normal field workflow.
    */
   @Output() conditionTargetFieldChange = new EventEmitter<string>();
+  /** Form Template: close Input Customization and restore Input Fields. */
+  @Output() closePanel = new EventEmitter<void>();
 
   constructor(
     private dynamicModuleOptionsService: DynamicModuleOptionsService,
