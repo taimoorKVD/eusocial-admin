@@ -427,7 +427,7 @@
         </div>
 
         <aside class="row-field-editor__right flex flex-col bg-[#f4f4f4]" aria-label="Field palette and settings">
-          <div class="flex flex-wrap items-center justify-end gap-2 bg-white px-4 py-4 sm:gap-3 sm:px-6">
+          <div class="flex flex-wrap items-center justify-end gap-2 bg-white px-2.5 py-3 sm:gap-2">
             <button
               type="button"
               class="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-[#161616] shadow-sm transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300"
@@ -489,7 +489,7 @@
             (rulesChange)="onLogicRulesChange($event)"
           ></app-logic-rules-panel>
 
-          <div class="min-h-0 flex-1 overflow-y-auto p-4">
+          <div class="min-h-0 flex-1 overflow-y-auto px-2.5 py-2.5 sm:px-3">
             <!-- Keep palette mounted (hidden) so CDK drop-list connections stay valid. -->
             <div [class.hidden]="builderActiveTab() === 'settings' && !!selectedFieldId()">
               <app-builder
@@ -500,7 +500,7 @@
 
             <div
               [class.hidden]="builderActiveTab() !== 'settings' || !selectedFieldId()"
-              class="space-y-4"
+              class="space-y-3"
             >
               @if (selectedBuilderField(); as draftField) {
                 <app-field-settings

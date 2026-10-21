@@ -398,6 +398,16 @@ body {
     transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
     visibility 0.22s cubic-bezier(0.22, 1, 0.36, 1);
 
+  /* Portaled to document.body — escapes overflow clipping, viewport-positioned in JS. */
+  &--portal {
+    position: fixed !important;
+    z-index: 10060 !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none;
+  }
+
   &::before {
     content: '';
     position: absolute;
