@@ -28,6 +28,9 @@ export interface Tenant {
   phone_country_code?: string | null;
   phoneNumber?: string | null;
   phone_number?: string | null;
+  /** IANA timezone name, e.g. `Asia/Karachi`. */
+  timezone?: string | null;
+  time_zone?: string | null;
   industry?: string | null;
   description?: string | null;
   countryId?: number | null;

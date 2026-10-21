@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
 import { environment } from '../../environments/environment';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { Tenant } from '../interfaces/tenant';
+import { TenantTimezoneOption } from '../interfaces/tenant-profile';
 
 export interface TenantCreatePayload {
   name: string;
@@ -10,6 +11,7 @@ export interface TenantCreatePayload {
   email: string;
   phoneNumber?: string;
   description?: string;
+  timezone: string;
   countryId?: number | null;
   stateId?: number | null;
   city?: string;
@@ -26,6 +28,7 @@ export interface TenantUpdatePayload {
   email?: string;
   phoneNumber?: string;
   description?: string;
+  timezone?: string;
   countryId?: number | null;
   stateId?: number | null;
   city?: string;
@@ -109,6 +112,13 @@ export class TenantService {
     return this.http.get<any>(`${this.geoBaseUrl}/cities`, { params });
   }
 
+  /** GET /api/timezones — searchable options for the organization timezone field. */
+  getTimezones(): Observable<TenantTimezoneOption[]> {
+    return this.http.get<unknown>(`${this.geoBaseUrl}/timezones`).pipe(
+      map((response) => this.mapTimezoneOptions(response))
+    );
+  }
+
   create(data: TenantCreatePayload): Observable<any> {
     return this.http.post<any>(this.baseUrl, data);
   }
@@ -127,5 +137,62 @@ export class TenantService {
 
   sendCredentials(tenantId: number, email: string) {
     return this.http.post<any>(`${this.baseUrl}/${tenantId}/send-credentials`, { email });
+  }
+
+  private mapTimezoneOptions(response: unknown): TenantTimezoneOption[] {
+    const list = this.unwrapList(response);
+    return list
+      .map((item): TenantTimezoneOption | null => {
+        if (!item || typeof item !== 'object') {
+          return null;
+        }
+        const row = item as Record<string, unknown>;
+        const name = this.cleanString(row['name']);
+        if (!name) {
+          return null;
+        }
+        const label = this.cleanString(row['label']) || name;
+        const region = this.cleanString(row['region']) || undefined;
+        const utcOffsetMinutes =
+          typeof row['utcOffsetMinutes'] === 'number'
+            ? row['utcOffsetMinutes']
+            : typeof row['utc_offset_minutes'] === 'number'
+              ? row['utc_offset_minutes']
+              : undefined;
+
+        return {
+          id: (row['id'] as number | string) ?? name,
+          name,
+          label,
+          ...(region ? { region } : {}),
+          ...(utcOffsetMinutes !== undefined ? { utcOffsetMinutes } : {}),
+        };
+      })
+      .filter((item): item is TenantTimezoneOption => item !== null);
+  }
+
+  private unwrapList(response: unknown): unknown[] {
+    if (Array.isArray(response)) {
+      return response;
+    }
+    if (!response || typeof response !== 'object') {
+      return [];
+    }
+    const record = response as Record<string, unknown>;
+    if (Array.isArray(record['data'])) {
+      return record['data'];
+    }
+    if (
+      record['data'] &&
+      typeof record['data'] === 'object' &&
+      Array.isArray((record['data'] as Record<string, unknown>)['data'])
+    ) {
+      return (record['data'] as Record<string, unknown>)['data'] as unknown[];
+    }
+    return [];
+  }
+
+  private cleanString(value: unknown): string {
+    return typeof value === 'string' ? value.trim() : '';
   }
 }
