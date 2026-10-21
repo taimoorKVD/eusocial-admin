@@ -1,5 +1,12 @@
 <div class="create-form p-6">
   <div class="create-form__main">
+  <button
+    type="button"
+    class="create-form__back mb-3 text-sm font-medium text-[#FF9015] hover:underline font-ibm"
+    (click)="cancel()"
+  >
+    ← Back
+  </button>
   <h2 class="create-form__page-title font-ibm">{{ isEditing() ? 'Edit Form' : 'Create Form' }}</h2>
 
   @if (loading()) {
