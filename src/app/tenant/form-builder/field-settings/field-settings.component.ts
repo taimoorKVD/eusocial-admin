@@ -282,6 +282,38 @@ export class FieldSettingsComponent {
     private formImageUploadService: FormImageUploadService,
   ) {}
 
+  /** Form Template Input Customization visual variant (UI only). */
+  get isFormTemplatePanel(): boolean {
+    return (this.activeModuleName || '').trim().toLowerCase() === 'dynamic-forms';
+  }
+
+  /** Field type eyebrow shown in Form Template settings header (e.g. TEXT). */
+  get fieldTypeEyebrow(): string {
+    const raw = (this._field?.fieldTypeName || this._field?.type || 'field').toString();
+    return raw.replace(/[-_]/g, ' ').trim().toUpperCase();
+  }
+
+  /** Width-in-row preset mapped from FormField 12-col `width`. */
+  get rowWidthPreset(): 'third' | 'half' | 'full' {
+    const width = this._field?.width ?? 12;
+    if (width <= 4) return 'third';
+    if (width <= 6) return 'half';
+    return 'full';
+  }
+
+  onRowWidthPresetChange(preset: 'third' | 'half' | 'full'): void {
+    if (!this._field || !this.isFieldEditable) {
+      return;
+    }
+    const next =
+      preset === 'third' ? 4 : preset === 'half' ? 6 : 12;
+    if (this._field.width === next) {
+      return;
+    }
+    this._field.width = next;
+    this.onChange();
+  }
+
   referenceImagesUploading = false;
   referencePreviewUrl: string | null = null;
 

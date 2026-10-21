@@ -375,6 +375,14 @@ export class CreateFormComponent implements OnInit {
     );
   });
 
+  /** Field-type eyebrow for the Field Settings panel chrome (e.g. TEXTAREA). */
+  readonly selectedFieldTypeEyebrow = computed(() => {
+    const field = this.selectedBuilderField();
+    if (!field) return '';
+    const raw = (field.fieldTypeName || field.type || 'field').toString();
+    return raw.replace(/[-_]/g, ' ').trim().toUpperCase();
+  });
+
   readonly isDraftFieldUsedInLogicRules = computed(() => {
     const field = this.selectedBuilderField();
     if (!field) {
@@ -2618,11 +2626,10 @@ export class CreateFormComponent implements OnInit {
     const target = this.pendingFieldTarget();
     if (!target) return;
 
-    // Keep consistent sizing with existing section fields; always append to the clicked row.
+    // Always append to the clicked row; preserve builder width when set.
     const newField: FormFieldConfig = {
       ...field,
       isDefault: false,
-      width: undefined,
       value: field.value ?? '',
     };
 
