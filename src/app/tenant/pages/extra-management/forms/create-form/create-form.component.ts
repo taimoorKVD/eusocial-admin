@@ -2784,9 +2784,26 @@ export class CreateFormComponent implements OnInit {
     return section as CustomFormSection;
   }
 
-  preview(): void {
-    const payload = this.buildPayload();
-    console.log('[Dynamic Forms] Preview payload:', payload);
+  /** Preview requires a persisted template id (same as listing Preview action). */
+  canPreviewTemplate(): boolean {
+    const id = Number(this.formId());
+    return Number.isFinite(id) && id > 0;
+  }
+
+  /**
+   * Open the shared Form Template preview page (FormTemplatePreviewComponent).
+   * Unsaved create drafts have no id — do not navigate or auto-save.
+   */
+  openTemplatePreview(): void {
+    if (!this.canPreviewTemplate()) {
+      this.toastr.info('Save the form first to preview it.');
+      return;
+    }
+
+    const id = this.formId();
+    this.router.navigate(['/dynamic-forms', 'preview', id], {
+      queryParams: { returnTo: `/dynamic-forms/edit/${id}` },
+    });
   }
 
   cancel(): void {

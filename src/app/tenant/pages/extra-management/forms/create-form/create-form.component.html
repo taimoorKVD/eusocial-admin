@@ -450,6 +450,15 @@
             </button>
             <button
               type="button"
+              class="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-[#161616] shadow-sm transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 disabled:cursor-not-allowed disabled:opacity-50"
+              [disabled]="!canPreviewTemplate()"
+              [attr.title]="canPreviewTemplate() ? 'Preview form template' : 'Save the form first to preview it'"
+              (click)="openTemplatePreview()"
+            >
+              Preview
+            </button>
+            <button
+              type="button"
               class="btn btn--save"
               [disabled]="!canSaveDraftField()"
               (click)="onBuilderSave()"
