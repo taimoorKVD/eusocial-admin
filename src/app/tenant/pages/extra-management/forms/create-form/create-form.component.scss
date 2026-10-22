@@ -1,9 +1,7 @@
 .create-form {
-  max-width: 72rem;
-
-  &:has(.row-field-editor) {
-    max-width: 90rem;
-  }
+  /* Full-bleed Build workspace (Figma); wizard steps keep internal max-width. */
+  max-width: none;
+  width: 100%;
 }
 
 .create-form__main {
