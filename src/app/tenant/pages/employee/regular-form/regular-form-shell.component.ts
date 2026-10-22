@@ -3,6 +3,7 @@ import {
   computed,
   input,
   output,
+  signal,
   viewChild,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -11,6 +12,8 @@ import { DynamicFormComponent, DynamicFormSectionLayout } from '../../../../shar
 import { DynamicField } from '../../../../interfaces/dynamic-field';
 import { EmployeeAssignmentSectionView } from '../../../../interfaces/employee-assignment';
 import { AssignmentFormMode } from '../assignment-form-mode';
+
+export type FormPreviewDevice = 'desktop' | 'tablet' | 'phone';
 
 /**
  * Employee Portal — Regular Form mode.
@@ -24,6 +27,10 @@ import { AssignmentFormMode } from '../assignment-form-mode';
  *
  * Tenant Admin's DynamicFormComponent behavior is untouched: the grouped
  * `layoutSections` hint defaults to empty for every other consumer.
+ *
+ * When `previewMode` is true (Form Template Preview), the shell shows the
+ * admin preview chrome (device frames + Back to forms) and keeps fields
+ * read-only — no submit / save APIs.
  */
 @Component({
   selector: 'app-regular-form-shell',
@@ -41,7 +48,7 @@ export class RegularFormShellComponent {
   readonly interactionMode = input.required<AssignmentFormMode>();
   /**
    * Admin Form Template Preview: same Regular Form layout, no mode switcher,
-   * no submit, and preview-oriented chrome. Employee fill flow leaves this false.
+   * decorative submit only, and preview-oriented chrome. Employee fill leaves this false.
    */
   readonly previewMode = input(false);
 
@@ -50,6 +57,9 @@ export class RegularFormShellComponent {
   readonly exitRequested = output<void>();
 
   private readonly formComponent = viewChild(DynamicFormComponent);
+
+  /** Desktop / tablet / phone frame for admin template preview only. */
+  readonly previewDevice = signal<FormPreviewDevice>('desktop');
 
   readonly isManualMode = computed(() => this.interactionMode() === 'manual');
   readonly isNormalMode = computed(() => this.interactionMode() === 'normal');
@@ -85,6 +95,13 @@ export class RegularFormShellComponent {
     }
 
     this.interactionModeChange.emit(mode);
+  }
+
+  setPreviewDevice(device: FormPreviewDevice): void {
+    if (!this.isPreview() || this.previewDevice() === device) {
+      return;
+    }
+    this.previewDevice.set(device);
   }
 
   requestExit(): void {

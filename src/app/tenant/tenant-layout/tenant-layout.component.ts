@@ -56,7 +56,7 @@ export class TenantLayoutComponent implements OnInit {
     this.isAssignmentFullscreen.set(this.isFullscreenRoute(path));
 
     const formEditor = this.isFormEditorRoute(path);
-    // Create/Edit → compact sidebar. Listing and all other routes → expanded.
+    // Create/Edit/Preview → compact sidebar. Listing and all other routes → expanded.
     this.sidebarCollapsed.set(formEditor);
     if (formEditor) {
       this.sidebarOpen = false;
@@ -67,11 +67,12 @@ export class TenantLayoutComponent implements OnInit {
     return /^\/my-forms\/[^/?#]+/.test(url);
   }
 
-  /** Form Template create (/dynamic-forms/create) or edit (/dynamic-forms/edit/:id). */
+  /** Form Template create, edit, or preview routes. */
   private isFormEditorRoute(url: string): boolean {
     return (
       /^\/dynamic-forms\/create\/?$/.test(url) ||
-      /^\/dynamic-forms\/edit\/[^/?#]+/.test(url)
+      /^\/dynamic-forms\/edit\/[^/?#]+/.test(url) ||
+      /^\/dynamic-forms\/preview\/[^/?#]+/.test(url)
     );
   }
 
