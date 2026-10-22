@@ -1,52 +1,162 @@
-<div class="create-form p-6">
-  <div class="create-form__main">
-  <button
-    type="button"
-    class="create-form__back mb-3 text-sm font-medium text-[#FF9015] hover:underline font-ibm"
-    (click)="cancel()"
-  >
-    ← Back
-  </button>
-  <h2 class="create-form__page-title font-ibm">{{ isEditing() ? 'Edit Form' : 'Create Form' }}</h2>
-
+<div class="create-form flex min-h-[calc(100vh-4rem)] flex-col bg-[#F9FAFB] font-ibm">
   @if (loading()) {
-    <app-eu-loader></app-eu-loader>
-  }
-
-  <!-- ═══════════════════ STEP INDICATOR ═══════════════════ -->
-  <div class="wizard-indicator">
-    @for (step of steps; track step.number; let i = $index) {
+    <div class="p-6">
+      <app-eu-loader></app-eu-loader>
+    </div>
+  } @else {
+  <!--
+    Build header breakpoints (viewport; content is narrower with app sidebar):
+    - < md: stacked (title → actions → stepper)
+    - md–xl: 2-row (title | actions; stepper below) — no Schedule/Logic collision
+    - xl+: single line; title column shrinks; Logic label from 2xl when width allows
+  -->
+  <header
+    class="sticky top-0 z-30 grid w-full min-w-0 shrink-0 grid-cols-1 items-center gap-2.5 overflow-x-hidden border-b border-[#E5E7EB] bg-white px-3 py-2.5 sm:gap-3 sm:px-4 md:grid-cols-[minmax(0,1fr)_auto] md:gap-x-3 md:gap-y-2 md:px-5 xl:grid-cols-[minmax(0,1fr)_auto_auto] xl:gap-3 2xl:gap-4"
+  >
+    <!-- Left: back + form name -->
+    <div
+      class="flex min-w-0 items-start gap-2 overflow-hidden sm:gap-2.5 md:col-start-1 md:row-start-1 xl:max-w-[15rem] 2xl:max-w-sm"
+    >
       <button
         type="button"
-        class="wizard-indicator__step"
-        [class.wizard-indicator__step--active]="isStepActive(step.number)"
-        [class.wizard-indicator__step--completed]="isStepCompleted(step.number)"
-        (click)="goToStep(step.number)"
-        [disabled]="step.number > currentStep()"
+        class="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[#E5E7EB] bg-white text-[#161616] transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF9015]/35"
+        aria-label="Back"
+        (click)="cancel()"
       >
-        <span class="wizard-indicator__circle">
-          @if (isStepCompleted(step.number) && !isStepActive(step.number)) {
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
-          } @else {
-            {{ step.number }}
-          }
-        </span>
-        <span class="wizard-indicator__label font-ibm">{{ step.label }}</span>
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19 12H5M12 19l-7-7 7-7" />
+        </svg>
       </button>
+      <div class="min-w-0 flex-1 overflow-hidden">
+        <input
+          type="text"
+          class="w-full min-w-0 truncate rounded-md border border-[#FF9015] bg-white px-2.5 py-1.5 text-sm font-semibold leading-snug text-[#161616] outline-none ring-0 focus:border-[#FF9015] focus:ring-2 focus:ring-[#FF9015]/20"
+          [ngModel]="formName()"
+          (ngModelChange)="formName.set($event)"
+          placeholder="Untitled form"
+          aria-label="Form name"
+        />
+        <p class="mt-1 truncate text-[11px] leading-none text-[#9CA3AF]">{{ draftStatusLabel() }}</p>
+      </div>
+    </div>
 
-      @if (i < steps.length - 1) {
-        <div
-          class="wizard-indicator__connector"
-          [class.wizard-indicator__connector--completed]="isStepCompleted(step.number)"
-        ></div>
-      }
-    }
-  </div>
+    <!-- Right: actions (mobile: under title; md–lg: top-right; xl+: far right) -->
+    <div
+      class="order-2 flex min-w-0 flex-wrap items-center gap-1.5 sm:gap-2 md:col-start-2 md:row-start-1 md:flex-nowrap md:justify-end xl:col-start-3 xl:shrink-0 xl:justify-end"
+    >
+      <button
+        type="button"
+        class="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-[#E5E7EB] bg-white px-2 py-1.5 text-sm font-semibold text-[#161616] transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 sm:gap-2 sm:px-3"
+        (click)="openLogicOverview('list')"
+      >
+        <span class="inline-flex items-center gap-1 text-[#161616]" aria-hidden="true">
+          <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M13 2 4.5 13.5h5.25L9 22l9.75-13.5H13.5L13 2Z" />
+          </svg>
+          <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M7 4v7a3 3 0 0 0 3 3h4a3 3 0 0 1 3 3v3" />
+            <circle cx="7" cy="4" r="1.5" fill="currentColor" stroke="none" />
+            <circle cx="17" cy="20" r="1.5" fill="currentColor" stroke="none" />
+          </svg>
+        </span>
+        <span class="hidden 2xl:inline">Logic &amp; automations</span>
+        <span
+          class="inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] font-bold text-white"
+          [class.bg-[#9CA3AF]]="logicAutomationsCount() === 0"
+          [class.bg-[#161616]]="logicAutomationsCount() > 0"
+        >
+          {{ logicAutomationsCount() }}
+        </span>
+      </button>
+      <button
+        type="button"
+        class="inline-flex shrink-0 items-center justify-center rounded-lg border border-[#E5E7EB] bg-white px-2.5 py-1.5 text-sm font-medium text-[#6B7280] transition hover:bg-gray-50 hover:text-[#161616] focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 disabled:cursor-not-allowed disabled:opacity-50 sm:px-3"
+        [disabled]="!canPreviewTemplate()"
+        [attr.title]="canPreviewTemplate() ? 'Preview form template' : 'Save the form first to preview it'"
+        (click)="openTemplatePreview()"
+      >
+        Preview
+      </button>
+      <button
+        type="button"
+        class="inline-flex min-w-0 flex-1 items-center justify-center rounded-lg px-3 py-1.5 text-sm font-bold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e600]/50 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none sm:px-3.5"
+        [class.bg-[#E5E7EB]]="!canSaveAndContinue()"
+        [class.text-[#9CA3AF]]="!canSaveAndContinue()"
+        [class.bg-[#d4e600]]="canSaveAndContinue()"
+        [class.text-[#161616]]="canSaveAndContinue()"
+        [class.hover:bg-[#c5d700]]="canSaveAndContinue()"
+        [disabled]="!canSaveAndContinue()"
+        (click)="saveAndContinue()"
+      >
+        @if (submitting()) {
+          {{ isEditing() ? 'Updating…' : 'Saving…' }}
+        } @else if (isLastStep()) {
+          {{ isEditing() ? 'Update' : 'Save' }}
+        } @else {
+          <span class="truncate">Save &amp; continue</span>
+        }
+      </button>
+    </div>
+
+    <!-- Center: pill stepper (md–lg: own row; xl+: middle column) -->
+    <nav
+      class="order-3 flex min-w-0 justify-center md:col-span-2 md:row-start-2 md:justify-self-center xl:col-span-1 xl:col-start-2 xl:row-start-1 xl:justify-self-center"
+      aria-label="Form wizard steps"
+    >
+      <div
+        class="inline-flex max-w-full items-center gap-0.5 overflow-x-auto rounded-full bg-[#F3F4F6] p-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        role="group"
+      >
+        @for (step of steps; track step.number) {
+          <button
+            type="button"
+            class="inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF9015]/30 disabled:cursor-default sm:gap-2 sm:px-2.5 md:px-3"
+            [class.bg-white]="isStepActive(step.number)"
+            [class.shadow-sm]="isStepActive(step.number)"
+            [class.font-semibold]="isStepActive(step.number)"
+            [class.text-[#161616]]="isStepActive(step.number)"
+            [class.text-[#9CA3AF]]="!isStepActive(step.number)"
+            [class.font-medium]="!isStepActive(step.number)"
+            [disabled]="step.number > currentStep()"
+            (click)="goToStep(step.number)"
+          >
+            <span
+              class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold leading-none"
+              [ngClass]="{
+                'bg-[#FF9015] text-white': isStepActive(step.number),
+                'bg-[#161616] text-white': isStepCompleted(step.number) && !isStepActive(step.number),
+                'border border-[#D1D5DB] bg-white text-[#9CA3AF]': !isStepActive(step.number) && !isStepCompleted(step.number)
+              }"
+            >
+              @if (isStepCompleted(step.number) && !isStepActive(step.number)) {
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              } @else {
+                {{ step.number }}
+              }
+            </span>
+            <span
+              class="whitespace-nowrap"
+              [class.max-sm:sr-only]="!isStepActive(step.number)"
+            >{{ step.label }}</span>
+          </button>
+        }
+      </div>
+    </nav>
+  </header>
+
+  <!-- Always mounted so Logic/Automation editors work from any wizard step. -->
+  <app-logic-rules-panel
+    class="hidden"
+    [showPanelList]="false"
+    [schema]="logicSchemaFields()"
+    [rules]="logicRules()"
+    (rulesChange)="onLogicRulesChange($event)"
+  ></app-logic-rules-panel>
 
   <!-- Logic & automations overview (Form Template builder) -->
-  @if (fieldBuilderOpen() && logicOverviewOpen()) {
+  @if (logicOverviewOpen()) {
     <div
       class="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/45 p-3 backdrop-blur-[2px] sm:p-6"
       role="dialog"
@@ -299,293 +409,80 @@
     </div>
   }
 
-  <!-- ═══════════════════ STEP 1 — Form Details ═══════════════════ -->
+  <!-- ═══════════════════ STEP 1 — Build workspace ═══════════════════ -->
   @if (currentStep() === 1) {
-    @if (fieldBuilderOpen()) {
-      <!-- Split-view: selected row canvas + field palette / settings -->
-      <div class="row-field-editor">
-        <div class="row-field-editor__left">
-          <div class="row-field-editor__toolbar">
-            <div>
-              <h3 class="row-field-editor__heading font-ibm">Add Field</h3>
-              <p class="row-field-editor__hint font-ibm">
-                Drag a field type from the right into this row.
-              </p>
-            </div>
-            <button
-              type="button"
-              class="btn btn--cancel"
-              (click)="closeFieldBuilder()"
-            >
-              Close
-            </button>
-          </div>
-
-          @if (builderRowContext(); as ctx) {
-            <section class="section-card row-field-editor__section">
-              <div class="section-card__header">
-                <h3 class="section-card__title font-ibm">{{ ctx.sectionLabel }}</h3>
-              </div>
-              <div class="section-card__body">
-                <p class="row-field-editor__row-label font-ibm">
-                  Row {{ ctx.rowIndex + 1 }}
-                </p>
-                @if (ctx.row.fields.length) {
-                  <div
-                    class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 items-start mb-3"
-                    cdkDropList
-                    [id]="existingRowListId"
-                    [cdkDropListData]="ctx.row.fields"
-                    (cdkDropListDropped)="onExistingRowFieldsDrop($event)"
-                  >
-                    @for (field of ctx.row.fields; track field.id) {
-                      <div
-                        cdkDrag
-                        [cdkDragData]="field"
-                        class="section-field section-field--added relative cursor-grab rounded-md transition-shadow active:cursor-grabbing"
-                        [class.ring-2]="selectedFieldId() === field.id"
-                        [class.ring-[#FF9015]]="selectedFieldId() === field.id"
-                        [attr.role]="'button'"
-                        [attr.tabindex]="0"
-                        (click)="onSelectExistingRowField(field)"
-                        (keydown.enter)="onSelectExistingRowField(field)"
-                        (keydown.space)="$event.preventDefault(); onSelectExistingRowField(field)"
-                        (cdkDragStarted)="onExistingRowFieldDragStarted()"
-                        (cdkDragEnded)="onExistingRowFieldDragEnded()"
-                      >
-                        <div class="pointer-events-none">
-                          <app-section-field-preview [field]="field" />
-                        </div>
-                        <div
-                          class="mt-3 flex flex-wrap items-center gap-2 px-0.5"
-                          (click)="$event.stopPropagation()"
-                          (mousedown)="$event.stopPropagation()"
-                        >
-                          <button
-                            type="button"
-                            class="inline-flex items-center justify-center transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ff9015]/40"
-                            [ngClass]="fieldHasConfiguredConditionalLogic(field)
-                              ? 'h-7 gap-1.5 rounded-full bg-[#161616] px-2.5 text-white hover:bg-black'
-                              : 'h-7 w-7 rounded-full bg-gray-300 text-white hover:bg-gray-400'"
-                            [attr.aria-label]="fieldHasConfiguredConditionalLogic(field) ? 'Edit logic' : 'Conditional logic'"
-                            [title]="fieldHasConfiguredConditionalLogic(field) ? 'Edit logic' : 'Conditional logic'"
-                            (click)="onExistingFieldQuickAction($event, field, 'condition')"
-                          >
-                            <svg class="h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                              <path stroke-linecap="round" stroke-linejoin="round" d="M7 4v7a3 3 0 0 0 3 3h4a3 3 0 0 1 3 3v3" />
-                              <circle cx="7" cy="4" r="1.75" fill="currentColor" stroke="none" />
-                              <circle cx="17" cy="20" r="1.75" fill="currentColor" stroke="none" />
-                              <path stroke-linecap="round" stroke-linejoin="round" d="M14 14h6" />
-                              <circle cx="20" cy="14" r="1.75" fill="currentColor" stroke="none" />
-                            </svg>
-                            @if (fieldHasConfiguredConditionalLogic(field)) {
-                              <span class="text-xs font-semibold leading-none">Edit logic</span>
-                            }
-                          </button>
-                          <button
-                            type="button"
-                            class="inline-flex h-7 w-7 items-center justify-center rounded-full transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ff9015]/40"
-                            [ngClass]="fieldHasAutomationRules(field.id)
-                              ? 'bg-[#d4e600] text-[#161616] hover:bg-[#c5d700]'
-                              : 'bg-gray-300 text-white hover:bg-gray-400'"
-                            aria-label="Automation Rules"
-                            title="Automation Rules"
-                            (click)="onExistingFieldQuickAction($event, field, 'automation')"
-                          >
-                            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                              <path d="M13 2 4.5 13.5h5.25L9 22l9.75-13.5H13.5L13 2Z" />
-                            </svg>
-                          </button>
-                        </div>
-                                                <div
-                          *cdkDragPlaceholder
-                          class="rounded-md border-2 border-dashed border-[#FF9015] bg-[#fff5eb]"
-                        ></div>
-                      </div>
-                    }
-                  </div>
-                }
-
-                <div class="row-field-editor__drop-zone">
-                  <app-form-canvas
-                    [dropListId]="canvasListId"
-                    [schema]="builderSchema()"
-                    [selectedFieldId]="selectedFieldId()"
-                    [connectedDropLists]="[paletteListId, existingRowListId]"
-                    [showFieldQuickActions]="true"
-                    [fieldsWithConditionalLogic]="fieldsWithConditionalLogicIds()"
-                    [fieldsWithAutomationRules]="fieldsWithAutomationRuleIds()"
-                    (dropped)="onCanvasDrop($event)"
-                    (selectField)="onSelectField($event)"
-                    (openConditionalLogic)="onOpenFieldConditionalLogic($event)"
-                    (openAutomationRules)="onOpenFieldAutomationRules($event)"
-                  ></app-form-canvas>
-                </div>
-              </div>
-            </section>
-          }
-        </div>
-
-        <aside class="row-field-editor__right flex flex-col bg-[#f4f4f4]" aria-label="Field palette and settings">
-          <div class="flex flex-wrap items-center justify-end gap-2 bg-white px-2.5 py-3 sm:gap-2">
-            <button
-              type="button"
-              class="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-[#161616] shadow-sm transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300"
-              (click)="openLogicOverview('list')"
-            >
-              <span class="inline-flex items-center gap-1 text-[#161616]" aria-hidden="true">
-                <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M13 2 4.5 13.5h5.25L9 22l9.75-13.5H13.5L13 2Z" />
-                </svg>
-                <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M7 4v7a3 3 0 0 0 3 3h4a3 3 0 0 1 3 3v3" />
-                  <circle cx="7" cy="4" r="1.5" fill="currentColor" stroke="none" />
-                  <circle cx="17" cy="20" r="1.5" fill="currentColor" stroke="none" />
-                </svg>
-              </span>
-              <span>Logic &amp; automations</span>
-              <span class="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#161616] px-1.5 text-[11px] font-bold text-white">
-                {{ logicAutomationsCount() }}
-              </span>
-            </button>
-            <button
-              type="button"
-              class="btn btn--save"
-              [disabled]="!canSaveDraftField()"
-              (click)="onBuilderSave()"
-            >
-              Save
-            </button>
-          </div>
-
-          <nav
-            class="flex items-center border-b border-[#E5E7EB]"
-            [class.bg-white]="builderActiveTab() === 'settings' && !!selectedFieldId()"
-            [class.bg-[#F4F4F4]]="!(builderActiveTab() === 'settings' && !!selectedFieldId())"
-            aria-label="Form builder panels"
+    <div class="flex min-h-0 flex-1 flex-col lg:flex-row">
+      <!-- Left: form canvas (Figma Build workspace) -->
+      <div class="build-canvas min-h-0 min-w-0 flex-1 overflow-y-auto bg-[#F9FAFB] p-4 sm:p-6 lg:p-8">
+        @if (!hasSections()) {
+          <div
+            cdkDropList
+            [id]="emptyCanvasListId"
+            [cdkDropListData]="emptyDropListData"
+            [cdkDropListConnectedTo]="[paletteListId]"
+            (cdkDropListDropped)="onEmptyCanvasDrop($event)"
+            class="mx-auto flex min-h-[min(28rem,calc(100vh-14rem))] max-w-4xl flex-col items-center justify-center rounded-xl border border-dashed border-[#D1D5DB] bg-white px-6 py-16 text-center"
           >
-            @if (builderActiveTab() === 'settings' && selectedFieldId()) {
-              <div
-                class="flex min-w-0 flex-1 items-start justify-between gap-2 px-3 py-3"
-              >
-                <div class="min-w-0">
-                  <p class="m-0 text-[11px] font-medium uppercase tracking-[0.06em] text-[#9CA3AF]">
-                    {{ selectedFieldTypeEyebrow() }}
-                  </p>
-                  <h3 class="m-0 mt-0.5 text-base font-semibold leading-snug text-[#161616]">
-                    Field Settings
-                  </h3>
-                </div>
-                <button
-                  type="button"
-                  class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[#6B7280] transition hover:bg-black/5 hover:text-[#161616] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF9015]/30"
-                  aria-label="Close field settings"
-                  title="Close"
-                  (click)="showBuilderPalette()"
-                >
-                  <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            } @else {
-              <div
-                class="flex min-w-0 flex-1 items-baseline justify-between gap-3 px-3 py-3.5"
-              >
-                <h3 class="m-0 text-base font-semibold leading-snug text-[#161616] font-ibm">
-                  Add a field
-                </h3>
-                <span class="shrink-0 text-sm font-normal text-[#9CA3AF] font-ibm">
-                  {{ paletteFieldTypeCount }} types
-                </span>
-              </div>
-            }
-          </nav>
-
-          <!-- Host for the existing Automation Rules editor modal (list chrome hidden). -->
-          <app-logic-rules-panel
-            [showPanelList]="false"
-            [schema]="logicSchemaFields()"
-            [rules]="logicRules()"
-            (rulesChange)="onLogicRulesChange($event)"
-          ></app-logic-rules-panel>
-
-          <div class="min-h-0 flex-1 overflow-y-auto px-2.5 py-2.5 sm:px-3">
-            <!-- Keep palette mounted (hidden) so CDK drop-list connections stay valid. -->
-            <div [class.hidden]="builderActiveTab() === 'settings' && !!selectedFieldId()">
-              <app-builder
-                [dropListId]="paletteListId"
-                [connectedDropLists]="[canvasListId]"
-              ></app-builder>
-            </div>
-
             <div
-              [class.hidden]="builderActiveTab() !== 'settings' || !selectedFieldId()"
-              class="space-y-3"
+              class="mb-4 flex h-11 w-11 items-center justify-center rounded-lg bg-[#FFF5EB] text-[#FF9015]"
+              aria-hidden="true"
             >
-              @if (selectedBuilderField(); as draftField) {
-                <app-field-settings
-                  [field]="draftField"
-                  [schema]="builderCombinedSchema()"
-                  [activeModuleName]="builderModuleName"
-                  [enforceUniqueDynamicModules]="true"
-                  [fieldUsedInLogicRules]="isDraftFieldUsedInLogicRules()"
-                  [showConditionalLogicEntry]="false"
-                  [showCloseButton]="false"
-                  (update)="onUpdateField($event)"
-                  (duplicate)="onDuplicateSelectedDraft()"
-                  (delete)="onDeleteSelectedDraft()"
-                  (conditionTargetFieldChange)="onConditionTargetFieldChange($event)"
-                ></app-field-settings>
-              }
+              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h10" />
+              </svg>
             </div>
+            <h3 class="m-0 text-lg font-semibold text-[#161616]">Start with a section</h3>
+            <p class="mx-auto mt-2 max-w-md text-sm leading-relaxed text-[#6B7280]">
+              Sections group related questions, like 'Opening checks' or 'Sign-off'. Add one, then drag fields into it.
+            </p>
+            <button
+              type="button"
+              class="mt-5 inline-flex items-center gap-2 rounded-lg bg-[#FF9015] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#e8800f] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF9015]/40"
+              (click)="addFirstSection()"
+            >
+              <span aria-hidden="true">+</span>
+              Add first section
+            </button>
+            <p class="mt-4 text-xs text-[#9CA3AF]">
+              Or drag any field here. The first section is created for you.
+            </p>
           </div>
-        </aside>
-      </div>
-    } @else {
-    <div class="wizard-content">
-      <div class="wizard-content__card">
-        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <h3 class="wizard-content__heading font-ibm">Form Details</h3>
-          <button
-            type="button"
-            class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#FF9015] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#e8800f] focus:outline-none focus:ring-2 focus:ring-[#FF9015]/40 focus:ring-offset-2 sm:w-auto"
-            (click)="openAddSectionDialog()"
-          >
-            <span aria-hidden="true">+</span>
-            Add Section
-          </button>
-        </div>
-
-        <div class="create-form__top-grid">
-          <div class="underlined-field">
-            <label class="underlined-field__label font-ibm" for="form-name">Form Name</label>
-            <input
-              id="form-name"
-              type="text"
-              class="underlined-field__input font-ibm"
-              [ngModel]="formName()"
-              (ngModelChange)="formName.set($event)"
-              placeholder="Enter form name"
-            />
-          </div>
-        </div>
-
-        @if (hasSections()) {
-          <div class="mt-8 space-y-6">
+        } @else {
+          <div class="mx-auto flex w-full max-w-4xl flex-col gap-4">
             @for (section of sections(); track section.id) {
               @if (section.type === 'custom') {
                 @let customSection = asCustomSection(section);
-                <section class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-                  <div class="flex items-center justify-between gap-4 border-b border-gray-200 px-4 py-4 sm:px-6">
-                    <h4 class="min-w-0 truncate text-base font-semibold text-gray-900 font-ibm">
+                @let sectionCollapsed = isSectionCollapsed(customSection.id);
+                @let hasSectionFields = sectionHasFields(customSection);
+
+                <section class="overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-sm">
+                  <!-- Section header -->
+                  <div
+                    class="flex items-center gap-2 border-b border-[#E5E7EB] px-3 py-3 sm:gap-3 sm:px-4"
+                  >
+                    <span
+                      class="inline-flex shrink-0 cursor-grab text-[#9CA3AF] active:cursor-grabbing"
+                      aria-hidden="true"
+                      title="Drag section"
+                    >
+                      <svg class="h-4 w-4" viewBox="0 0 16 16" fill="currentColor">
+                        <circle cx="5" cy="4" r="1.25" />
+                        <circle cx="11" cy="4" r="1.25" />
+                        <circle cx="5" cy="8" r="1.25" />
+                        <circle cx="11" cy="8" r="1.25" />
+                        <circle cx="5" cy="12" r="1.25" />
+                        <circle cx="11" cy="12" r="1.25" />
+                      </svg>
+                    </span>
+                    <h3 class="m-0 min-w-0 flex-1 truncate text-sm font-semibold text-[#161616] sm:text-base">
                       {{ customSection.name }}
-                    </h4>
-                    <div class="flex shrink-0 items-center gap-2">
+                    </h3>
+                    <div class="flex shrink-0 items-center gap-0.5">
                       <button
                         type="button"
-                        class="rounded-md p-2 text-gray-500 transition-colors hover:bg-orange-50 hover:text-[#FF9015] focus:outline-none focus:ring-2 focus:ring-[#FF9015]/40"
+                        class="rounded-md p-1.5 text-[#6B7280] transition hover:bg-[#FFF5EB] hover:text-[#FF9015] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF9015]/35"
                         aria-label="Rename section"
+                        title="Rename"
                         (click)="openRenameSectionDialog(customSection)"
                       >
                         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -595,8 +492,21 @@
                       </button>
                       <button
                         type="button"
-                        class="rounded-md p-2 text-gray-500 transition-colors hover:bg-red-50 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-300"
+                        class="rounded-md p-1.5 text-[#6B7280] transition hover:bg-gray-100 hover:text-[#161616] focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300"
+                        aria-label="Duplicate section"
+                        title="Duplicate"
+                        (click)="duplicateSection(customSection)"
+                      >
+                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                          <rect x="9" y="9" width="13" height="13" rx="2" />
+                          <path d="M5 15V5a2 2 0 0 1 2-2h10" />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        class="rounded-md p-1.5 text-[#6B7280] transition hover:bg-red-50 hover:text-red-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
                         aria-label="Remove section"
+                        title="Delete"
                         (click)="requestRemoveSection(customSection)"
                       >
                         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -604,193 +514,301 @@
                           <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                         </svg>
                       </button>
+                      <button
+                        type="button"
+                        class="rounded-md p-1.5 text-[#6B7280] transition hover:bg-gray-100 hover:text-[#161616] focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300"
+                        [attr.aria-expanded]="!sectionCollapsed"
+                        [attr.aria-label]="sectionCollapsed ? 'Expand section' : 'Collapse section'"
+                        [attr.title]="sectionCollapsed ? 'Expand' : 'Collapse'"
+                        (click)="toggleSectionCollapsed(customSection.id)"
+                      >
+                        <svg
+                          class="h-4 w-4 transition-transform"
+                          [class.rotate-180]="sectionCollapsed"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          aria-hidden="true"
+                        >
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7" />
+                        </svg>
+                      </button>
                     </div>
                   </div>
 
-                  <div class="space-y-4 p-4 sm:p-6">
-                    @if (!sectionHasFields(customSection)) {
-                      <p class="text-sm text-gray-500 font-ibm">No fields added yet.</p>
-                    }
-
-                    @for (row of customSection.rows; track row.id; let rowIndex = $index) {
-                      <div class="rounded-lg border border-gray-200 p-4">
-                        <div class="mb-3 flex items-center justify-between gap-3">
-                          <span class="text-xs font-semibold uppercase tracking-wide text-gray-500 font-ibm">
-                            Row {{ rowIndex + 1 }}
-                          </span>
+                  @if (!sectionCollapsed) {
+                    <div class="space-y-3 p-3 sm:space-y-4 sm:p-5">
+                      @if (!hasSectionFields && customSection.rows.length === 0) {
+                        <div
+                          cdkDropList
+                          [id]="sectionNewRowListId(customSection.id)"
+                          [cdkDropListData]="emptyDropListData"
+                          [cdkDropListConnectedTo]="[paletteListId]"
+                          (cdkDropListDropped)="onSectionNewRowDrop(customSection.id, $event)"
+                          class="flex flex-col items-center justify-center rounded-xl border border-dashed border-[#D1D5DB] bg-[#FAFAFA] px-4 py-10 text-center transition hover:border-[#FF9015]"
+                        >
+                          <p class="m-0 text-sm font-semibold text-[#161616]">This section is empty</p>
+                          <p class="mx-auto mt-1.5 max-w-sm text-sm text-[#6B7280]">
+                            Drag a field from the right, or add a row and choose a field.
+                          </p>
                           <button
                             type="button"
-                            class="text-xs font-medium text-red-600 hover:text-red-700"
-                            (click)="removeSectionRow(customSection, row.id)"
+                            class="mt-4 inline-flex items-center gap-2 rounded-lg border border-[#E5E7EB] bg-white px-3.5 py-2 text-sm font-semibold text-[#161616] shadow-sm transition hover:bg-gray-50"
+                            (click)="$event.stopPropagation(); addSectionRow(customSection)"
                           >
-                            Remove row
+                            <span aria-hidden="true">+</span>
+                            Add row
                           </button>
                         </div>
-
-                        @if (row.fields.length) {
-                          <div class="flex flex-nowrap gap-4 overflow-x-auto pb-2">
-                            @let rowEffects = getRowConditionalEffects(row);
-                            @for (field of row.fields; track field.id) {
-                              @if (rowEffects[field.id]?.visible !== false) {
-                              <div class="relative w-56 shrink-0 rounded-lg border border-gray-200 p-3">
-                                <app-section-field-preview
-                                  [field]="field"
-                                  [forceRequired]="rowEffects[field.id]?.required ?? null"
-                                  [forceDisabled]="!!rowEffects[field.id]?.disabled"
-                                  (valueChange)="updateSectionFieldValue(customSection, row.id, field.id, $event)"
-                                />
-                                <div class="absolute right-2 top-2 flex items-center gap-0.5">
-                                  <button
-                                    type="button"
-                                    class="rounded p-1 text-gray-400 transition-colors hover:bg-orange-50 hover:text-[#FF9015]"
-                                    aria-label="Edit field"
-                                    (click)="editSectionField(customSection, row.id, field)"
-                                  >
-                                    <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5Z"></path>
-                                    </svg>
-                                  </button>
-                                  <button
-                                    type="button"
-                                    class="rounded p-1 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600"
-                                    aria-label="Remove field"
-                                    (click)="removeSectionField(customSection, row.id, field.id)"
-                                  >
-                                    <span aria-hidden="true">×</span>
-                                  </button>
-                                </div>
+                      } @else {
+                        @for (row of customSection.rows; track row.id) {
+                          <div
+                            class="rounded-xl border border-dashed border-[#E5E7EB] bg-white p-2.5 sm:p-3"
+                          >
+                            <div class="build-canvas__row flex flex-col gap-3 sm:flex-row sm:items-stretch">
+                              <div class="min-w-0 flex-1">
+                                <app-form-canvas
+                                  [dropListId]="rowCanvasListId(customSection.id, row.id)"
+                                  [schema]="getRowCanvasSchema(customSection.id, row.id)"
+                                  [selectedFieldId]="selectedFieldId()"
+                                  [connectedDropLists]="[paletteListId]"
+                                  [showFieldQuickActions]="true"
+                                  [fieldsWithConditionalLogic]="fieldsWithConditionalLogicIds()"
+                                  [fieldsWithAutomationRules]="fieldsWithAutomationRuleIds()"
+                                  (dropped)="onWorkspaceRowDrop(customSection.id, row.id, $event)"
+                                  (selectField)="onSelectWorkspaceField(customSection.id, row.id, $event)"
+                                  (openConditionalLogic)="onOpenFieldConditionalLogic($event)"
+                                  (openAutomationRules)="onOpenFieldAutomationRules($event)"
+                                ></app-form-canvas>
                               </div>
+
+                              @if (rowCanAddColumn(row)) {
+                                <button
+                                  type="button"
+                                  class="flex min-h-[5.5rem] w-full shrink-0 items-center justify-center gap-1.5 rounded-lg border border-dashed border-[#D1D5DB] bg-[#FAFAFA] px-3 py-4 text-center text-xs font-medium text-[#9CA3AF] transition hover:border-[#FF9015] hover:bg-[#FFF5EB] hover:text-[#FF9015] sm:w-[min(42%,14rem)]"
+                                  (click)="focusWorkspaceRow(customSection.id, row.id); showBuilderPalette()"
+                                >
+                                  <span aria-hidden="true">+</span>
+                                  Add column, or drop a field here
+                                </button>
                               }
+                            </div>
+
+                            @if (!row.fields.length) {
+                              <div class="mt-2 flex justify-end">
+                                <button
+                                  type="button"
+                                  class="text-xs font-medium text-red-600 hover:text-red-700"
+                                  (click)="removeSectionRow(customSection, row.id)"
+                                >
+                                  Remove empty row
+                                </button>
+                              </div>
                             }
                           </div>
                         }
 
-                        <button
-                          type="button"
-                          class="mt-4 inline-flex items-center gap-2 rounded-lg border border-[#FF9015] px-3 py-2 text-sm font-semibold text-[#FF9015] transition-colors hover:bg-orange-50 focus:outline-none focus:ring-2 focus:ring-[#FF9015]/30"
-                          (click)="openFieldModal({ sectionId: customSection.id, rowId: row.id })"
+                        <div
+                          cdkDropList
+                          [id]="sectionNewRowListId(customSection.id)"
+                          [cdkDropListData]="emptyDropListData"
+                          [cdkDropListConnectedTo]="[paletteListId]"
+                          (cdkDropListDropped)="onSectionNewRowDrop(customSection.id, $event)"
+                          class="flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-dashed border-[#D1D5DB] bg-white px-4 py-3.5 text-center text-sm font-medium text-[#9CA3AF] transition hover:border-[#FF9015] hover:bg-[#FFF5EB] hover:text-[#FF9015]"
+                          role="button"
+                          tabindex="0"
+                          (click)="addSectionRow(customSection)"
+                          (keydown.enter)="addSectionRow(customSection)"
                         >
                           <span aria-hidden="true">+</span>
-                          Add Field
-                        </button>
-                      </div>
-                    }
-
-                    @if (customSection.rows.length === 0) {
-                      <button
-                        type="button"
-                        class="inline-flex items-center gap-2 rounded-lg border border-[#FF9015] px-3 py-2 text-sm font-semibold text-[#FF9015] transition-colors hover:bg-orange-50 focus:outline-none focus:ring-2 focus:ring-[#FF9015]/30"
-                        (click)="openFieldBuilderForSection(customSection)"
-                      >
-                        <span aria-hidden="true">+</span>
-                        Add Field
-                      </button>
-                    }
-
-                    <div class="border-t border-gray-100 pt-4">
-                      <button
-                        type="button"
-                        class="inline-flex items-center gap-2 text-sm font-semibold text-[#FF9015] hover:text-[#e8800f]"
-                        (click)="addSectionRow(customSection)"
-                      >
-                        <span aria-hidden="true">+</span>
-                        Add Row
-                      </button>
+                          Add row, or drop a field here
+                        </div>
+                      }
                     </div>
-                  </div>
+                  }
                 </section>
               }
             }
-          </div>
-        } @else {
-          <div class="mt-8 rounded-xl border border-dashed border-gray-300 bg-gray-50 px-6 py-10 text-center">
-            <p class="text-sm text-gray-500 font-ibm">No sections added yet.</p>
-          </div>
-        }
 
-        @if (sectionDialogOpen()) {
-          <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="section-dialog-title">
-            <div class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-              <h4 id="section-dialog-title" class="text-lg font-semibold text-gray-900 font-ibm">
-                {{ sectionDialogMode() === 'create' ? 'Add Section' : 'Rename Section' }}
-              </h4>
-              <div class="mt-5">
-                <label for="section-name" class="mb-2 block text-sm font-medium text-gray-700 font-ibm">
-                  Section Name
-                </label>
-                <input
-                  id="section-name"
-                  type="text"
-                  class="w-full rounded-lg border px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#FF9015] focus:ring-2 focus:ring-[#FF9015]/20"
-                  [class.border-red-500]="sectionNameError()"
-                  [class.border-gray-300]="!sectionNameError()"
-                  [ngModel]="sectionNameInput()"
-                  (ngModelChange)="onSectionNameInput($event)"
-                  (keydown.enter)="saveSection()"
-                  placeholder="Enter section name"
-                  autocomplete="off"
-                />
-                @if (sectionNameError()) {
-                  <p class="mt-2 text-sm text-red-600 font-ibm">{{ sectionNameError() }}</p>
-                }
-              </div>
-              <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-                <button
-                  type="button"
-                  class="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50"
-                  (click)="closeSectionDialog()"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  class="rounded-lg bg-[#FF9015] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#e8800f] focus:outline-none focus:ring-2 focus:ring-[#FF9015]/40"
-                  (click)="saveSection()"
-                >
-                  {{ sectionDialogMode() === 'create' ? 'Add Section' : 'Save' }}
-                </button>
-              </div>
-            </div>
-          </div>
-        }
-
-        @if (sectionPendingRemoval(); as pendingSection) {
-          <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4" role="alertdialog" aria-modal="true" aria-labelledby="remove-section-title">
-            <div class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-              <h4 id="remove-section-title" class="text-lg font-semibold text-gray-900 font-ibm">
-                Remove section?
-              </h4>
-              <p class="mt-3 text-sm leading-6 text-gray-600 font-ibm">
-                This will remove “{{ pendingSection.name }}” and all of its fields.
-              </p>
-              <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-                <button
-                  type="button"
-                  class="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50"
-                  (click)="cancelRemoveSection()"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  class="rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-300"
-                  (click)="confirmRemoveSection()"
-                >
-                  Remove Section
-                </button>
-              </div>
-            </div>
+            <button
+              type="button"
+              class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[#D1D5DB] bg-white px-4 py-3.5 text-sm font-semibold text-[#161616] transition hover:border-[#FF9015] hover:bg-[#FFF5EB] hover:text-[#FF9015] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF9015]/35"
+              (click)="openAddSectionDialog()"
+            >
+              <span aria-hidden="true">+</span>
+              Add section
+            </button>
           </div>
         }
       </div>
+
+      <!-- Right: palette / field settings -->
+      <aside
+        class="flex w-full shrink-0 flex-col border-t border-[#E5E7EB] bg-[#F4F4F4] lg:w-[min(16rem,24%)] lg:border-l lg:border-t-0"
+        aria-label="Field palette and settings"
+      >
+        <nav
+          class="flex items-center border-b border-[#E5E7EB]"
+          [class.bg-white]="builderActiveTab() === 'settings' && !!selectedFieldId()"
+          [class.bg-[#F4F4F4]]="!(builderActiveTab() === 'settings' && !!selectedFieldId())"
+          aria-label="Form builder panels"
+        >
+          @if (builderActiveTab() === 'settings' && selectedFieldId()) {
+            <div class="flex min-w-0 flex-1 items-start justify-between gap-2 px-3 py-3">
+              <div class="min-w-0">
+                <p class="m-0 text-[11px] font-medium uppercase tracking-[0.06em] text-[#9CA3AF]">
+                  {{ selectedFieldTypeEyebrow() }}
+                </p>
+                <h3 class="m-0 mt-0.5 text-base font-semibold leading-snug text-[#161616]">
+                  Field Settings
+                </h3>
+              </div>
+              <button
+                type="button"
+                class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[#6B7280] transition hover:bg-black/5 hover:text-[#161616] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF9015]/30"
+                aria-label="Close field settings"
+                title="Close"
+                (click)="showBuilderPalette()"
+              >
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          } @else {
+            <div class="flex min-w-0 flex-1 items-baseline justify-between gap-3 px-3 py-3.5">
+              <h3 class="m-0 text-base font-semibold leading-snug text-[#161616]">
+                Add a field
+              </h3>
+              <span class="shrink-0 text-sm font-normal text-[#9CA3AF]">
+                {{ paletteFieldTypeCount }} types
+              </span>
+            </div>
+          }
+        </nav>
+
+        <div class="min-h-0 flex-1 overflow-y-auto px-2.5 py-2.5 sm:px-3">
+          <div [class.hidden]="builderActiveTab() === 'settings' && !!selectedFieldId()">
+            <app-builder
+              [dropListId]="paletteListId"
+              [connectedDropLists]="paletteConnectedDropLists()"
+            ></app-builder>
+          </div>
+
+          <div
+            [class.hidden]="builderActiveTab() !== 'settings' || !selectedFieldId()"
+            class="space-y-3"
+          >
+            @if (selectedBuilderField(); as draftField) {
+              <app-field-settings
+                [field]="draftField"
+                [schema]="logicSchemaFields()"
+                [activeModuleName]="builderModuleName"
+                [enforceUniqueDynamicModules]="true"
+                [fieldUsedInLogicRules]="isDraftFieldUsedInLogicRules()"
+                [showConditionalLogicEntry]="false"
+                [showCloseButton]="false"
+                (update)="onUpdateField($event)"
+                (duplicate)="onDuplicateSelectedDraft()"
+                (delete)="onDeleteSelectedDraft()"
+                (conditionTargetFieldChange)="onConditionTargetFieldChange($event)"
+              ></app-field-settings>
+            }
+          </div>
+        </div>
+
+        @if (!(builderActiveTab() === 'settings' && selectedFieldId())) {
+          <p class="m-0 border-t border-[#E5E7EB] bg-[#F4F4F4] px-3 py-3 text-[11px] leading-relaxed text-[#6B7280]">
+            Drag a field onto the canvas. Drop it
+            <span class="font-semibold text-[#161616]">beside</span>
+            a field to make a column, or
+            <span class="font-semibold text-[#161616]">between</span>
+            rows to start a new row.
+          </p>
+        }
+      </aside>
     </div>
+
+    @if (sectionDialogOpen()) {
+      <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="section-dialog-title">
+        <div class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+          <h4 id="section-dialog-title" class="text-lg font-semibold text-gray-900 font-ibm">
+            {{ sectionDialogMode() === 'create' ? 'Add Section' : 'Rename Section' }}
+          </h4>
+          <div class="mt-5">
+            <label for="section-name" class="mb-2 block text-sm font-medium text-gray-700 font-ibm">
+              Section Name
+            </label>
+            <input
+              id="section-name"
+              type="text"
+              class="w-full rounded-lg border px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#FF9015] focus:ring-2 focus:ring-[#FF9015]/20"
+              [class.border-red-500]="sectionNameError()"
+              [class.border-gray-300]="!sectionNameError()"
+              [ngModel]="sectionNameInput()"
+              (ngModelChange)="onSectionNameInput($event)"
+              (keydown.enter)="saveSection()"
+              placeholder="Enter section name"
+              autocomplete="off"
+            />
+            @if (sectionNameError()) {
+              <p class="mt-2 text-sm text-red-600 font-ibm">{{ sectionNameError() }}</p>
+            }
+          </div>
+          <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              class="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+              (click)="closeSectionDialog()"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="rounded-lg bg-[#FF9015] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#e8800f] focus:outline-none focus:ring-2 focus:ring-[#FF9015]/40"
+              (click)="saveSection()"
+            >
+              {{ sectionDialogMode() === 'create' ? 'Add Section' : 'Save' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+
+    @if (sectionPendingRemoval(); as pendingSection) {
+      <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4" role="alertdialog" aria-modal="true" aria-labelledby="remove-section-title">
+        <div class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+          <h4 id="remove-section-title" class="text-lg font-semibold text-gray-900 font-ibm">
+            Remove section?
+          </h4>
+          <p class="mt-3 text-sm leading-6 text-gray-600 font-ibm">
+            This will remove “{{ pendingSection.name }}” and all of its fields.
+          </p>
+          <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              class="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+              (click)="cancelRemoveSection()"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-300"
+              (click)="confirmRemoveSection()"
+            >
+              Remove Section
+            </button>
+          </div>
+        </div>
+      </div>
     }
   }
 
   <!-- ═══════════════════ STEP 2 — Assign & Report ═══════════════════ -->
   @if (currentStep() === 2) {
-    <div class="wizard-content">
+    <div class="wizard-content flex-1 overflow-y-auto p-4 sm:p-6">
       <div class="wizard-content__card">
         <h3 class="wizard-content__heading font-ibm">Assign & Report</h3>
 
@@ -1291,7 +1309,7 @@
     <!-- <pre style="position:fixed;top:0;background-color:black;color:white;font-weight:600;opacity:0.8;z-index:9999;width:18%;height:600px;overflow:scroll;">
       {{ frequencyForm.getRawValue() | json }}
     </pre> -->
-    <div class="wizard-content">
+    <div class="wizard-content flex-1 overflow-y-auto p-4 sm:p-6">
       <div class="wizard-content__card">
         <h3 class="wizard-content__heading font-ibm">Frequency</h3>
 
@@ -1698,80 +1716,5 @@
     </div>
   }
 
-  <!-- ═══════════════════ WIZARD NAVIGATION ═══════════════════ -->
-  @if (!fieldBuilderOpen()) {
-  <div class="wizard-nav">
-    <div class="wizard-nav__left">
-      <button
-        type="button"
-        class="btn btn--delete"
-        (click)="cancel()"
-      >
-        Cancel
-      </button>
-    </div>
-
-    <div class="wizard-nav__right">
-      @if (!isFirstStep()) {
-        <button
-          type="button"
-          class="btn btn--delete"
-          (click)="prevStep()"
-        >
-          ← Back
-        </button>
-      }
-
-      @if (!isLastStep()) {
-        <button
-          type="button"
-          class="btn btn--cancel"
-          [disabled]="!canProceed()"
-          (click)="nextStep()"
-        >
-          Next →
-        </button>
-      }
-
-      @if (isEditing() || isLastStep()) {
-        <button
-          type="button"
-          class="btn btn--save inline-flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-60"
-          [disabled]="!canSave() || submitting()"
-          [attr.aria-busy]="submitting()"
-          (click)="save()"
-        >
-          @if (submitting()) {
-            <svg
-              class="h-4 w-4 animate-spin shrink-0"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <circle
-                class="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                stroke-width="4"
-              ></circle>
-              <path
-                class="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              ></path>
-            </svg>
-            <span>{{ isEditing() ? 'Updating...' : 'Saving...' }}</span>
-          } @else {
-            <span>{{ isEditing() ? 'Update' : 'Save' }}</span>
-          }
-        </button>
-      }
-    </div>
-  </div>
   }
-
-  </div>
 </div>

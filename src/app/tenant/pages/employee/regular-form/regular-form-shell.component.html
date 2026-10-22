@@ -1,52 +1,115 @@
-<div class="regular-form-shell font-ibm">
-  <header class="regular-form-shell__header">
-    <div class="regular-form-shell__header-row">
-      <div class="regular-form-shell__identity">
-        <button type="button" class="regular-form-shell__back" (click)="requestExit()">
+<div
+  class="regular-form-shell font-ibm"
+  [class.regular-form-shell--preview]="isPreview()"
+>
+  @if (isPreview()) {
+    <header class="regular-form-shell__preview-header">
+      <div class="regular-form-shell__preview-header-inner">
+        <div class="regular-form-shell__preview-identity">
+          <span class="regular-form-shell__preview-eyebrow">Preview</span>
+          @if (formTitle()) {
+            <h1 class="regular-form-shell__preview-title">{{ formTitle() }}</h1>
+          }
+        </div>
+
+        <div
+          class="regular-form-shell__device-toggle"
+          role="group"
+          aria-label="Preview device size"
+        >
+          <button
+            type="button"
+            class="regular-form-shell__device-btn"
+            [class.regular-form-shell__device-btn--active]="previewDevice() === 'desktop'"
+            [attr.aria-pressed]="previewDevice() === 'desktop'"
+            (click)="setPreviewDevice('desktop')"
+          >
+            <svg class="regular-form-shell__device-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+              <rect x="3" y="4" width="18" height="12" rx="1.5" />
+              <path stroke-linecap="round" d="M8 20h8M12 16v4" />
+            </svg>
+            <span>Desktop</span>
+          </button>
+          <button
+            type="button"
+            class="regular-form-shell__device-btn"
+            [class.regular-form-shell__device-btn--active]="previewDevice() === 'tablet'"
+            [attr.aria-pressed]="previewDevice() === 'tablet'"
+            (click)="setPreviewDevice('tablet')"
+          >
+            <svg class="regular-form-shell__device-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+              <rect x="5" y="2.5" width="14" height="19" rx="2" />
+              <circle cx="12" cy="18.25" r="0.85" fill="currentColor" stroke="none" />
+            </svg>
+            <span>Tablet</span>
+          </button>
+          <button
+            type="button"
+            class="regular-form-shell__device-btn"
+            [class.regular-form-shell__device-btn--active]="previewDevice() === 'phone'"
+            [attr.aria-pressed]="previewDevice() === 'phone'"
+            (click)="setPreviewDevice('phone')"
+          >
+            <svg class="regular-form-shell__device-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+              <rect x="7" y="2.5" width="10" height="19" rx="2" />
+              <path stroke-linecap="round" d="M10.5 5.25h3" />
+            </svg>
+            <span>Phone</span>
+          </button>
+        </div>
+
+        <button
+          type="button"
+          class="regular-form-shell__preview-back"
+          (click)="requestExit()"
+        >
           <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M19 12H5M12 19l-7-7 7-7" />
           </svg>
-          Back
+          Back to forms
         </button>
+      </div>
+    </header>
+  } @else {
+    <header class="regular-form-shell__header">
+      <div class="regular-form-shell__header-row">
+        <div class="regular-form-shell__identity">
+          <button type="button" class="regular-form-shell__back" (click)="requestExit()">
+            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+            Back
+          </button>
 
-        <div class="regular-form-shell__task-context">
-          <span class="regular-form-shell__eyebrow">
-            {{ isPreview() ? 'Form Template Preview' : 'Assigned task' }}
-          </span>
+          <div class="regular-form-shell__task-context">
+            <span class="regular-form-shell__eyebrow">Assigned task</span>
 
-          @if (formTitle()) {
-            <h1 class="regular-form-shell__title">{{ formTitle() }}</h1>
-          }
-
-          <div class="regular-form-shell__meta">
-            @if (dueDateLabel()) {
-              <span class="regular-form-shell__meta-item regular-form-shell__meta-item--due">
-                <svg class="regular-form-shell__meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3M4 11h16M5 5h14a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V6a1 1 0 011-1z" />
-                </svg>
-                Due {{ dueDateLabel() }}
-              </span>
+            @if (formTitle()) {
+              <h1 class="regular-form-shell__title">{{ formTitle() }}</h1>
             }
 
-            @if (sections().length) {
-              <span class="regular-form-shell__meta-item">
-                <svg class="regular-form-shell__meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-                {{ sections().length }} {{ sections().length === 1 ? 'section' : 'sections' }}
-              </span>
-            }
+            <div class="regular-form-shell__meta">
+              @if (dueDateLabel()) {
+                <span class="regular-form-shell__meta-item regular-form-shell__meta-item--due">
+                  <svg class="regular-form-shell__meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3M4 11h16M5 5h14a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V6a1 1 0 011-1z" />
+                  </svg>
+                  Due {{ dueDateLabel() }}
+                </span>
+              }
 
-            @if (isPreview()) {
-              <span class="regular-form-shell__meta-item">
-                Read-only preview
-              </span>
-            }
+              @if (sections().length) {
+                <span class="regular-form-shell__meta-item">
+                  <svg class="regular-form-shell__meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                  {{ sections().length }} {{ sections().length === 1 ? 'section' : 'sections' }}
+                </span>
+              }
+            </div>
           </div>
         </div>
-      </div>
 
-      @if (!isPreview()) {
         <div class="regular-form-shell__mode" role="group" aria-label="Form fill mode">
           <button
             type="button"
@@ -67,53 +130,75 @@
             Voice Reply
           </button>
         </div>
-      }
-    </div>
-  </header>
+      </div>
+    </header>
+  }
 
-  <div class="regular-form-shell__body">
-    <div class="regular-form-shell__content">
-      <div class="regular-form-shell__panel">
-        <div class="regular-form-shell__panel-intro">
-          @if (isPreview()) {
-            <p class="regular-form-shell__panel-title">Preview only</p>
-            <p class="regular-form-shell__panel-copy">
-              This is how the form appears to employees. Fields are read-only — answers are not saved or submitted.
-            </p>
-          } @else {
-            <p class="regular-form-shell__panel-title">Complete the form</p>
-            <p class="regular-form-shell__panel-copy">
-              Fill in each field below. Required fields are marked with an asterisk.
-            </p>
+  <div
+    class="regular-form-shell__body"
+    [class.regular-form-shell__body--preview]="isPreview()"
+  >
+    <div
+      class="regular-form-shell__content"
+      [class.regular-form-shell__content--desktop]="isPreview() && previewDevice() === 'desktop'"
+      [class.regular-form-shell__content--tablet]="isPreview() && previewDevice() === 'tablet'"
+      [class.regular-form-shell__content--phone]="isPreview() && previewDevice() === 'phone'"
+    >
+      <div
+        class="regular-form-shell__device"
+        [class.regular-form-shell__device--framed]="isPreview() && previewDevice() !== 'desktop'"
+        [class.regular-form-shell__device--tablet]="isPreview() && previewDevice() === 'tablet'"
+        [class.regular-form-shell__device--phone]="isPreview() && previewDevice() === 'phone'"
+      >
+        <div class="regular-form-shell__panel">
+          @if (!isPreview()) {
+            <div class="regular-form-shell__panel-intro">
+              <p class="regular-form-shell__panel-title">Complete the form</p>
+              <p class="regular-form-shell__panel-copy">
+                Fill in each field below. Required fields are marked with an asterisk.
+              </p>
+            </div>
+          }
+
+          <app-dynamic-form
+            [fields]="engineFields()"
+            [layoutSections]="layoutSections()"
+            [enableLocationDependencies]="true"
+            [typeformMode]="false"
+          ></app-dynamic-form>
+
+          @if (showSubmit()) {
+            <div class="regular-form-shell__actions">
+              <p class="regular-form-shell__actions-hint">
+                Review your answers, then submit to complete this task.
+              </p>
+              <button
+                type="button"
+                class="regular-form-shell__submit"
+                [disabled]="submitting()"
+                (click)="submit()"
+              >
+                @if (submitting()) {
+                  Submitting…
+                } @else {
+                  Submit Form
+                }
+              </button>
+            </div>
+          } @else if (isPreview()) {
+            <div class="regular-form-shell__actions regular-form-shell__actions--preview">
+              <button
+                type="button"
+                class="regular-form-shell__submit"
+                disabled
+                aria-disabled="true"
+                title="Preview only — answers are not submitted"
+              >
+                Submit Form
+              </button>
+            </div>
           }
         </div>
-
-        <app-dynamic-form
-          [fields]="engineFields()"
-          [layoutSections]="layoutSections()"
-          [enableLocationDependencies]="true"
-          [typeformMode]="false"
-        ></app-dynamic-form>
-
-        @if (showSubmit()) {
-          <div class="regular-form-shell__actions">
-            <p class="regular-form-shell__actions-hint">
-              Review your answers, then submit to complete this task.
-            </p>
-            <button
-              type="button"
-              class="regular-form-shell__submit"
-              [disabled]="submitting()"
-              (click)="submit()"
-            >
-              @if (submitting()) {
-                Submitting…
-              } @else {
-                Submit Form
-              }
-            </button>
-          </div>
-        }
       </div>
     </div>
   </div>
