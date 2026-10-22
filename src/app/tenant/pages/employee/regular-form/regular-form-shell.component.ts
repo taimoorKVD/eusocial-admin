@@ -29,8 +29,8 @@ export type FormPreviewDevice = 'desktop' | 'tablet' | 'phone';
  * `layoutSections` hint defaults to empty for every other consumer.
  *
  * When `previewMode` is true (Form Template Preview), the shell shows the
- * admin preview chrome (device frames + Back to forms) and keeps fields
- * read-only — no submit / save APIs.
+ * admin preview chrome (device frames + Back to forms). Fields stay interactive
+ * for local testing; Submit stays visible but disabled — no submit / save APIs.
  */
 @Component({
   selector: 'app-regular-form-shell',
@@ -48,7 +48,8 @@ export class RegularFormShellComponent {
   readonly interactionMode = input.required<AssignmentFormMode>();
   /**
    * Admin Form Template Preview: same Regular Form layout, no mode switcher,
-   * decorative submit only, and preview-oriented chrome. Employee fill leaves this false.
+   * interactive fields for local testing, decorative disabled submit, and
+   * preview-oriented chrome. Employee fill leaves this false.
    */
   readonly previewMode = input(false);
 
@@ -109,7 +110,8 @@ export class RegularFormShellComponent {
   }
 
   submit(): void {
-    if (!this.showSubmit() || this.submitting()) {
+    // Preview is interactive for testing only — never emit/submit.
+    if (this.isPreview() || !this.showSubmit() || this.submitting()) {
       return;
     }
 
