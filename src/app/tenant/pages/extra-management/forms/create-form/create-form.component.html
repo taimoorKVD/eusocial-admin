@@ -6,12 +6,13 @@
   } @else {
   <!-- ═══ Build workspace header (Figma) ═══ -->
   <header
-    class="sticky top-0 z-30 flex shrink-0 flex-wrap items-center gap-3 border-b border-[#E5E7EB] bg-white px-4 py-3 sm:gap-4 sm:px-5"
+    class="sticky top-0 z-30 grid shrink-0 grid-cols-1 items-center gap-3 border-b border-[#E5E7EB] bg-white px-4 py-2.5 sm:px-5 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:gap-4"
   >
-    <div class="flex min-w-0 flex-1 items-start gap-2.5 sm:max-w-xs lg:max-w-sm">
+    <!-- Left: back + form name -->
+    <div class="flex min-w-0 items-start gap-2.5 lg:max-w-sm">
       <button
         type="button"
-        class="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#E5E7EB] bg-white text-[#161616] transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF9015]/35"
+        class="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[#E5E7EB] bg-white text-[#161616] transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF9015]/35"
         aria-label="Back"
         (click)="cancel()"
       >
@@ -22,59 +23,65 @@
       <div class="min-w-0 flex-1">
         <input
           type="text"
-          class="w-full rounded-lg border-2 border-[#FF9015] bg-white px-3 py-1.5 text-sm font-semibold text-[#161616] outline-none focus:ring-2 focus:ring-[#FF9015]/25"
+          class="w-full rounded-md border border-[#FF9015] bg-white px-2.5 py-1.5 text-sm font-semibold leading-snug text-[#161616] outline-none ring-0 focus:border-[#FF9015] focus:ring-2 focus:ring-[#FF9015]/20"
           [ngModel]="formName()"
           (ngModelChange)="formName.set($event)"
           placeholder="Untitled form"
           aria-label="Form name"
         />
-        <p class="mt-1 truncate text-xs text-[#9CA3AF]">{{ draftStatusLabel() }}</p>
+        <p class="mt-1 truncate text-[11px] leading-none text-[#9CA3AF]">{{ draftStatusLabel() }}</p>
       </div>
     </div>
 
+    <!-- Center: pill stepper -->
     <nav
-      class="order-3 flex w-full flex-1 items-center justify-center gap-1 sm:order-none sm:w-auto sm:gap-2"
+      class="flex justify-center justify-self-center"
       aria-label="Form wizard steps"
     >
-      @for (step of steps; track step.number; let i = $index) {
-        <button
-          type="button"
-          class="inline-flex items-center gap-2 rounded-full px-2 py-1.5 text-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF9015]/30 disabled:cursor-default"
-          [class.text-[#FF9015]]="isStepActive(step.number)"
-          [class.font-semibold]="isStepActive(step.number)"
-          [class.text-[#9CA3AF]]="!isStepActive(step.number)"
-          [disabled]="step.number > currentStep()"
-          (click)="goToStep(step.number)"
-        >
-          <span
-            class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold"
-            [class.bg-[#FF9015]]="isStepActive(step.number)"
-            [class.text-white]="isStepActive(step.number)"
-            [class.bg-[#E5E7EB]]="!isStepActive(step.number) && !isStepCompleted(step.number)"
-            [class.text-[#6B7280]]="!isStepActive(step.number) && !isStepCompleted(step.number)"
-            [class.bg-[#161616]]="isStepCompleted(step.number) && !isStepActive(step.number)"
-            [class.text-white]="isStepCompleted(step.number) && !isStepActive(step.number)"
+      <div
+        class="inline-flex max-w-full items-center gap-0.5 overflow-x-auto rounded-full bg-[#F3F4F6] p-1"
+        role="group"
+      >
+        @for (step of steps; track step.number) {
+          <button
+            type="button"
+            class="inline-flex shrink-0 items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF9015]/30 disabled:cursor-default sm:px-3"
+            [class.bg-white]="isStepActive(step.number)"
+            [class.shadow-sm]="isStepActive(step.number)"
+            [class.font-semibold]="isStepActive(step.number)"
+            [class.text-[#161616]]="isStepActive(step.number)"
+            [class.text-[#9CA3AF]]="!isStepActive(step.number)"
+            [class.font-medium]="!isStepActive(step.number)"
+            [disabled]="step.number > currentStep()"
+            (click)="goToStep(step.number)"
           >
-            @if (isStepCompleted(step.number) && !isStepActive(step.number)) {
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true">
-                <polyline points="20 6 9 17 4 12"></polyline>
-              </svg>
-            } @else {
-              {{ step.number }}
-            }
-          </span>
-          <span class="hidden md:inline">{{ step.label }}</span>
-        </button>
-        @if (i < steps.length - 1) {
-          <span class="hidden h-px w-6 bg-[#E5E7EB] sm:block" aria-hidden="true"></span>
+            <span
+              class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold leading-none"
+              [ngClass]="{
+                'bg-[#FF9015] text-white': isStepActive(step.number),
+                'bg-[#161616] text-white': isStepCompleted(step.number) && !isStepActive(step.number),
+                'border border-[#D1D5DB] bg-white text-[#9CA3AF]': !isStepActive(step.number) && !isStepCompleted(step.number)
+              }"
+            >
+              @if (isStepCompleted(step.number) && !isStepActive(step.number)) {
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              } @else {
+                {{ step.number }}
+              }
+            </span>
+            <span class="whitespace-nowrap">{{ step.label }}</span>
+          </button>
         }
-      }
+      </div>
     </nav>
 
-    <div class="ml-auto flex shrink-0 flex-wrap items-center justify-end gap-2">
+    <!-- Right: actions -->
+    <div class="flex flex-wrap items-center justify-start gap-2 lg:justify-end">
       <button
         type="button"
-        class="inline-flex items-center gap-2 rounded-xl border border-[#E5E7EB] bg-white px-3 py-2 text-sm font-semibold text-[#161616] shadow-sm transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300"
+        class="inline-flex items-center gap-2 rounded-lg border border-[#E5E7EB] bg-white px-3 py-1.5 text-sm font-semibold text-[#161616] transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300"
         (click)="openLogicOverview('list')"
       >
         <span class="inline-flex items-center gap-1 text-[#161616]" aria-hidden="true">
@@ -88,13 +95,17 @@
           </svg>
         </span>
         <span class="hidden sm:inline">Logic &amp; automations</span>
-        <span class="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#161616] px-1.5 text-[11px] font-bold text-white">
+        <span
+          class="inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] font-bold text-white"
+          [class.bg-[#9CA3AF]]="logicAutomationsCount() === 0"
+          [class.bg-[#161616]]="logicAutomationsCount() > 0"
+        >
           {{ logicAutomationsCount() }}
         </span>
       </button>
       <button
         type="button"
-        class="inline-flex items-center justify-center rounded-xl border border-[#E5E7EB] bg-white px-3 py-2 text-sm font-semibold text-[#161616] shadow-sm transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 disabled:cursor-not-allowed disabled:opacity-50"
+        class="inline-flex items-center justify-center rounded-lg border border-[#E5E7EB] bg-white px-3 py-1.5 text-sm font-medium text-[#6B7280] transition hover:bg-gray-50 hover:text-[#161616] focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 disabled:cursor-not-allowed disabled:opacity-50"
         [disabled]="!canPreviewTemplate()"
         [attr.title]="canPreviewTemplate() ? 'Preview form template' : 'Save the form first to preview it'"
         (click)="openTemplatePreview()"
@@ -103,12 +114,12 @@
       </button>
       <button
         type="button"
-        class="inline-flex items-center justify-center rounded-xl px-3.5 py-2 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF9015]/35 disabled:cursor-not-allowed disabled:opacity-50"
+        class="inline-flex items-center justify-center rounded-lg px-3.5 py-1.5 text-sm font-bold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e600]/50 disabled:cursor-not-allowed disabled:opacity-50"
         [class.bg-[#E5E7EB]]="!canSaveAndContinue()"
         [class.text-[#9CA3AF]]="!canSaveAndContinue()"
-        [class.bg-[#FF9015]]="canSaveAndContinue()"
-        [class.text-white]="canSaveAndContinue()"
-        [class.hover:bg-[#e8800f]]="canSaveAndContinue()"
+        [class.bg-[#d4e600]]="canSaveAndContinue()"
+        [class.text-[#161616]]="canSaveAndContinue()"
+        [class.hover:bg-[#c5d700]]="canSaveAndContinue()"
         [disabled]="!canSaveAndContinue()"
         (click)="saveAndContinue()"
       >
