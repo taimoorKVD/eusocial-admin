@@ -412,8 +412,8 @@
   <!-- ═══════════════════ STEP 1 — Build workspace ═══════════════════ -->
   @if (currentStep() === 1) {
     <div class="flex min-h-0 flex-1 flex-col lg:flex-row">
-      <!-- Left: form canvas -->
-      <div class="min-h-0 min-w-0 flex-1 overflow-y-auto p-4 sm:p-6">
+      <!-- Left: form canvas (Figma Build workspace) -->
+      <div class="build-canvas min-h-0 min-w-0 flex-1 overflow-y-auto bg-[#F9FAFB] p-4 sm:p-6 lg:p-8">
         @if (!hasSections()) {
           <div
             cdkDropList
@@ -421,7 +421,7 @@
             [cdkDropListData]="emptyDropListData"
             [cdkDropListConnectedTo]="[paletteListId]"
             (cdkDropListDropped)="onEmptyCanvasDrop($event)"
-            class="flex min-h-[min(32rem,calc(100vh-14rem))] flex-col items-center justify-center rounded-xl border border-dashed border-[#D1D5DB] bg-white px-6 py-16 text-center"
+            class="mx-auto flex min-h-[min(28rem,calc(100vh-14rem))] max-w-4xl flex-col items-center justify-center rounded-xl border border-dashed border-[#D1D5DB] bg-white px-6 py-16 text-center"
           >
             <div
               class="mb-4 flex h-11 w-11 items-center justify-center rounded-lg bg-[#FFF5EB] text-[#FF9015]"
@@ -448,20 +448,41 @@
             </p>
           </div>
         } @else {
-          <div class="mx-auto flex max-w-5xl flex-col gap-5">
+          <div class="mx-auto flex w-full max-w-4xl flex-col gap-4">
             @for (section of sections(); track section.id) {
               @if (section.type === 'custom') {
                 @let customSection = asCustomSection(section);
+                @let sectionCollapsed = isSectionCollapsed(customSection.id);
+                @let hasSectionFields = sectionHasFields(customSection);
+
                 <section class="overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-sm">
-                  <div class="flex items-center justify-between gap-3 border-b border-[#E5E7EB] px-4 py-3.5 sm:px-5">
-                    <h3 class="m-0 min-w-0 truncate text-base font-semibold text-[#161616]">
+                  <!-- Section header -->
+                  <div
+                    class="flex items-center gap-2 border-b border-[#E5E7EB] px-3 py-3 sm:gap-3 sm:px-4"
+                  >
+                    <span
+                      class="inline-flex shrink-0 cursor-grab text-[#9CA3AF] active:cursor-grabbing"
+                      aria-hidden="true"
+                      title="Drag section"
+                    >
+                      <svg class="h-4 w-4" viewBox="0 0 16 16" fill="currentColor">
+                        <circle cx="5" cy="4" r="1.25" />
+                        <circle cx="11" cy="4" r="1.25" />
+                        <circle cx="5" cy="8" r="1.25" />
+                        <circle cx="11" cy="8" r="1.25" />
+                        <circle cx="5" cy="12" r="1.25" />
+                        <circle cx="11" cy="12" r="1.25" />
+                      </svg>
+                    </span>
+                    <h3 class="m-0 min-w-0 flex-1 truncate text-sm font-semibold text-[#161616] sm:text-base">
                       {{ customSection.name }}
                     </h3>
-                    <div class="flex shrink-0 items-center gap-1">
+                    <div class="flex shrink-0 items-center gap-0.5">
                       <button
                         type="button"
-                        class="rounded-md p-2 text-[#6B7280] transition hover:bg-[#FFF5EB] hover:text-[#FF9015] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF9015]/35"
+                        class="rounded-md p-1.5 text-[#6B7280] transition hover:bg-[#FFF5EB] hover:text-[#FF9015] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF9015]/35"
                         aria-label="Rename section"
+                        title="Rename"
                         (click)="openRenameSectionDialog(customSection)"
                       >
                         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -471,8 +492,21 @@
                       </button>
                       <button
                         type="button"
-                        class="rounded-md p-2 text-[#6B7280] transition hover:bg-red-50 hover:text-red-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
+                        class="rounded-md p-1.5 text-[#6B7280] transition hover:bg-gray-100 hover:text-[#161616] focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300"
+                        aria-label="Duplicate section"
+                        title="Duplicate"
+                        (click)="duplicateSection(customSection)"
+                      >
+                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                          <rect x="9" y="9" width="13" height="13" rx="2" />
+                          <path d="M5 15V5a2 2 0 0 1 2-2h10" />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        class="rounded-md p-1.5 text-[#6B7280] transition hover:bg-red-50 hover:text-red-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
                         aria-label="Remove section"
+                        title="Delete"
                         (click)="requestRemoveSection(customSection)"
                       >
                         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -480,73 +514,130 @@
                           <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                         </svg>
                       </button>
-                    </div>
-                  </div>
-
-                  <div class="space-y-4 p-4 sm:p-5">
-                    @for (row of customSection.rows; track row.id; let rowIndex = $index) {
-                      <div class="rounded-lg border border-[#E5E7EB] bg-[#FAFAFA] p-3 sm:p-4">
-                        <div class="mb-3 flex items-center justify-between gap-3">
-                          <span class="text-[11px] font-semibold uppercase tracking-wide text-[#9CA3AF]">
-                            Row {{ rowIndex + 1 }}
-                          </span>
-                          <button
-                            type="button"
-                            class="text-xs font-medium text-red-600 hover:text-red-700"
-                            (click)="removeSectionRow(customSection, row.id)"
-                          >
-                            Remove row
-                          </button>
-                        </div>
-                        <app-form-canvas
-                          [dropListId]="rowCanvasListId(customSection.id, row.id)"
-                          [schema]="getRowCanvasSchema(customSection.id, row.id)"
-                          [selectedFieldId]="selectedFieldId()"
-                          [connectedDropLists]="[paletteListId]"
-                          [showFieldQuickActions]="true"
-                          [fieldsWithConditionalLogic]="fieldsWithConditionalLogicIds()"
-                          [fieldsWithAutomationRules]="fieldsWithAutomationRuleIds()"
-                          (dropped)="onWorkspaceRowDrop(customSection.id, row.id, $event)"
-                          (selectField)="onSelectWorkspaceField(customSection.id, row.id, $event)"
-                          (openConditionalLogic)="onOpenFieldConditionalLogic($event)"
-                          (openAutomationRules)="onOpenFieldAutomationRules($event)"
-                        ></app-form-canvas>
-                      </div>
-                    }
-
-                    <div
-                      cdkDropList
-                      [id]="sectionNewRowListId(customSection.id)"
-                      [cdkDropListData]="emptyDropListData"
-                      [cdkDropListConnectedTo]="[paletteListId]"
-                      (cdkDropListDropped)="onSectionNewRowDrop(customSection.id, $event)"
-                      class="rounded-lg border border-dashed border-[#D1D5DB] bg-white px-4 py-3 text-center text-xs text-[#9CA3AF] transition hover:border-[#FF9015] hover:bg-[#FFF5EB]"
-                    >
-                      Drop a field here to start a new row
-                    </div>
-
-                    <div class="flex flex-wrap items-center gap-3 border-t border-[#F3F4F6] pt-4">
                       <button
                         type="button"
-                        class="inline-flex items-center gap-2 text-sm font-semibold text-[#FF9015] hover:text-[#e8800f]"
-                        (click)="addSectionRow(customSection)"
+                        class="rounded-md p-1.5 text-[#6B7280] transition hover:bg-gray-100 hover:text-[#161616] focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300"
+                        [attr.aria-expanded]="!sectionCollapsed"
+                        [attr.aria-label]="sectionCollapsed ? 'Expand section' : 'Collapse section'"
+                        [attr.title]="sectionCollapsed ? 'Expand' : 'Collapse'"
+                        (click)="toggleSectionCollapsed(customSection.id)"
                       >
-                        <span aria-hidden="true">+</span>
-                        Add Row
+                        <svg
+                          class="h-4 w-4 transition-transform"
+                          [class.rotate-180]="sectionCollapsed"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          aria-hidden="true"
+                        >
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7" />
+                        </svg>
                       </button>
                     </div>
                   </div>
+
+                  @if (!sectionCollapsed) {
+                    <div class="space-y-3 p-3 sm:space-y-4 sm:p-5">
+                      @if (!hasSectionFields && customSection.rows.length === 0) {
+                        <div
+                          cdkDropList
+                          [id]="sectionNewRowListId(customSection.id)"
+                          [cdkDropListData]="emptyDropListData"
+                          [cdkDropListConnectedTo]="[paletteListId]"
+                          (cdkDropListDropped)="onSectionNewRowDrop(customSection.id, $event)"
+                          class="flex flex-col items-center justify-center rounded-xl border border-dashed border-[#D1D5DB] bg-[#FAFAFA] px-4 py-10 text-center transition hover:border-[#FF9015]"
+                        >
+                          <p class="m-0 text-sm font-semibold text-[#161616]">This section is empty</p>
+                          <p class="mx-auto mt-1.5 max-w-sm text-sm text-[#6B7280]">
+                            Drag a field from the right, or add a row and choose a field.
+                          </p>
+                          <button
+                            type="button"
+                            class="mt-4 inline-flex items-center gap-2 rounded-lg border border-[#E5E7EB] bg-white px-3.5 py-2 text-sm font-semibold text-[#161616] shadow-sm transition hover:bg-gray-50"
+                            (click)="$event.stopPropagation(); addSectionRow(customSection)"
+                          >
+                            <span aria-hidden="true">+</span>
+                            Add row
+                          </button>
+                        </div>
+                      } @else {
+                        @for (row of customSection.rows; track row.id) {
+                          <div
+                            class="rounded-xl border border-dashed border-[#E5E7EB] bg-white p-2.5 sm:p-3"
+                          >
+                            <div class="build-canvas__row flex flex-col gap-3 sm:flex-row sm:items-stretch">
+                              <div class="min-w-0 flex-1">
+                                <app-form-canvas
+                                  [dropListId]="rowCanvasListId(customSection.id, row.id)"
+                                  [schema]="getRowCanvasSchema(customSection.id, row.id)"
+                                  [selectedFieldId]="selectedFieldId()"
+                                  [connectedDropLists]="[paletteListId]"
+                                  [showFieldQuickActions]="true"
+                                  [fieldsWithConditionalLogic]="fieldsWithConditionalLogicIds()"
+                                  [fieldsWithAutomationRules]="fieldsWithAutomationRuleIds()"
+                                  (dropped)="onWorkspaceRowDrop(customSection.id, row.id, $event)"
+                                  (selectField)="onSelectWorkspaceField(customSection.id, row.id, $event)"
+                                  (openConditionalLogic)="onOpenFieldConditionalLogic($event)"
+                                  (openAutomationRules)="onOpenFieldAutomationRules($event)"
+                                ></app-form-canvas>
+                              </div>
+
+                              @if (rowCanAddColumn(row)) {
+                                <button
+                                  type="button"
+                                  class="flex min-h-[5.5rem] w-full shrink-0 items-center justify-center gap-1.5 rounded-lg border border-dashed border-[#D1D5DB] bg-[#FAFAFA] px-3 py-4 text-center text-xs font-medium text-[#9CA3AF] transition hover:border-[#FF9015] hover:bg-[#FFF5EB] hover:text-[#FF9015] sm:w-[min(42%,14rem)]"
+                                  (click)="focusWorkspaceRow(customSection.id, row.id); showBuilderPalette()"
+                                >
+                                  <span aria-hidden="true">+</span>
+                                  Add column, or drop a field here
+                                </button>
+                              }
+                            </div>
+
+                            @if (!row.fields.length) {
+                              <div class="mt-2 flex justify-end">
+                                <button
+                                  type="button"
+                                  class="text-xs font-medium text-red-600 hover:text-red-700"
+                                  (click)="removeSectionRow(customSection, row.id)"
+                                >
+                                  Remove empty row
+                                </button>
+                              </div>
+                            }
+                          </div>
+                        }
+
+                        <div
+                          cdkDropList
+                          [id]="sectionNewRowListId(customSection.id)"
+                          [cdkDropListData]="emptyDropListData"
+                          [cdkDropListConnectedTo]="[paletteListId]"
+                          (cdkDropListDropped)="onSectionNewRowDrop(customSection.id, $event)"
+                          class="flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-dashed border-[#D1D5DB] bg-white px-4 py-3.5 text-center text-sm font-medium text-[#9CA3AF] transition hover:border-[#FF9015] hover:bg-[#FFF5EB] hover:text-[#FF9015]"
+                          role="button"
+                          tabindex="0"
+                          (click)="addSectionRow(customSection)"
+                          (keydown.enter)="addSectionRow(customSection)"
+                        >
+                          <span aria-hidden="true">+</span>
+                          Add row, or drop a field here
+                        </div>
+                      }
+                    </div>
+                  }
                 </section>
               }
             }
 
             <button
               type="button"
-              class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[#D1D5DB] bg-white px-4 py-3.5 text-sm font-semibold text-[#FF9015] transition hover:border-[#FF9015] hover:bg-[#FFF5EB] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF9015]/35"
+              class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[#D1D5DB] bg-white px-4 py-3.5 text-sm font-semibold text-[#161616] transition hover:border-[#FF9015] hover:bg-[#FFF5EB] hover:text-[#FF9015] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF9015]/35"
               (click)="openAddSectionDialog()"
             >
               <span aria-hidden="true">+</span>
-              Add Section
+              Add section
             </button>
           </div>
         }
@@ -554,7 +645,7 @@
 
       <!-- Right: palette / field settings -->
       <aside
-        class="flex w-full shrink-0 flex-col border-t border-[#E5E7EB] bg-[#F4F4F4] lg:w-[min(17.5rem,28%)] lg:border-l lg:border-t-0"
+        class="flex w-full shrink-0 flex-col border-t border-[#E5E7EB] bg-[#F4F4F4] lg:w-[min(16rem,24%)] lg:border-l lg:border-t-0"
         aria-label="Field palette and settings"
       >
         <nav

@@ -267,6 +267,8 @@ export class CreateFormComponent implements OnInit {
   private loadedSchema: DynamicFormPayload | null = null;
 
   readonly sectionDialogOpen = signal(false);
+  /** UI-only: which Build canvas sections are collapsed. */
+  readonly collapsedSectionIds = signal<ReadonlySet<string>>(new Set());
   readonly sectionDialogMode = signal<'create' | 'rename'>('create');
   readonly editingSectionId = signal<string | null>(null);
   readonly sectionNameInput = signal('');
@@ -1648,6 +1650,65 @@ export class CreateFormComponent implements OnInit {
     this.openAddSectionDialog();
   }
 
+  isSectionCollapsed(sectionId: string): boolean {
+    return this.collapsedSectionIds().has(sectionId);
+  }
+
+  toggleSectionCollapsed(sectionId: string): void {
+    this.collapsedSectionIds.update((current) => {
+      const next = new Set(current);
+      if (next.has(sectionId)) {
+        next.delete(sectionId);
+      } else {
+        next.add(sectionId);
+      }
+      return next;
+    });
+  }
+
+  /** Duplicate a section (new ids for section, rows, and fields). */
+  duplicateSection(section: CustomFormSection): void {
+    const copyName = `${section.name} Copy`;
+    let name = copyName;
+    let suffix = 2;
+    while (
+      this.sections().some(
+        (item) => item.name.trim().toLocaleLowerCase() === name.toLocaleLowerCase(),
+      )
+    ) {
+      name = `${copyName} ${suffix}`;
+      suffix += 1;
+    }
+
+    const duplicated: CustomFormSection = {
+      ...createCustomSection(name),
+      rows: section.rows.map((row) => ({
+        id: createId('row'),
+        fields: row.fields.map((field) => ({
+          ...field,
+          id: createId('field'),
+          name: `${field.name}_copy`,
+          isDefault: false,
+        })),
+      })),
+    };
+
+    this.sections.update((list) => {
+      const index = list.findIndex((item) => item.id === section.id);
+      if (index < 0) {
+        return [...list, duplicated];
+      }
+      const next = [...list];
+      next.splice(index + 1, 0, duplicated);
+      return next;
+    });
+  }
+
+  /** True when a row can still accept another column (Figma empty-column slot). */
+  rowCanAddColumn(row: FormRow): boolean {
+    return row.fields.length > 0 && row.fields.length < 3;
+  }
+
   rowCanvasListId(sectionId: string, rowId: string): string {
     return `createFormCanvas_${sectionId}_${rowId}`;
   }
@@ -1881,11 +1942,8 @@ export class CreateFormComponent implements OnInit {
         ),
       );
     } else {
-      const section = createCustomSection(name);
-      this.sections.update((list) => [
-        ...list,
-        { ...section, rows: [createEmptyRow()] },
-      ]);
+      // Start with no rows so the Figma empty-section state is shown.
+      this.sections.update((list) => [...list, createCustomSection(name)]);
     }
 
     this.closeSectionDialog();
