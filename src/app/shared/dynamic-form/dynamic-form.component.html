@@ -16,10 +16,12 @@
   >
     @for (item of layoutItems(); track item.key) {
       @if (item.kind === 'heading') {
-        <!-- Sections -> rows -> fields (Employee Portal Regular Form only). -->
-        <div class="rf-form-section-heading col-span-full">
-          <h2 class="rf-form-section__title">{{ item.name }}</h2>
-        </div>
+        <!-- Sections -> rows -> fields. Empty name hides the heading (setup modules). -->
+        @if (item.name.trim()) {
+          <div class="rf-form-section-heading col-span-full">
+            <h2 class="rf-form-section__title">{{ item.name }}</h2>
+          </div>
+        }
       } @else {
         @let field = item.field;
         @if (isFieldVisible(field) && shouldRenderField(field)) {
