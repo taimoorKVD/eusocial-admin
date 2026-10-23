@@ -2298,6 +2298,10 @@ export class CreateFormComponent implements OnInit {
     );
   }
 
+  getLogicSchemaField(fieldId: string): FormField | undefined {
+    return this.logicSchemaFields().find((item) => item.id === fieldId);
+  }
+
   fieldHasAutomationRules(fieldId: string): boolean {
     return findLogicRulesUsingField(this.logicRules(), fieldId).length > 0;
   }
@@ -2413,6 +2417,156 @@ export class CreateFormComponent implements OnInit {
     return `${action} when ${source} ${operator}${valueText}`;
   }
 
+  /** List/map display: friendlier action phrasing for Figma chrome. */
+  logicActionNarrative(field: FormField): string {
+    const logic = normalizeConditionalLogic(field.condition ?? null);
+    if (!logic?.actions?.length) {
+      return 'Updated';
+    }
+    const types = new Set(logic.actions.map((action) => action.type));
+    if (types.has('show') && types.has('require')) {
+      return 'Shown and required';
+    }
+    if (types.has('show')) {
+      return 'Shown';
+    }
+    if (types.has('hide')) {
+      return 'Hidden';
+    }
+    if (types.has('require')) {
+      return 'Required';
+    }
+    if (types.has('optional')) {
+      return 'Optional';
+    }
+    if (types.has('enable')) {
+      return 'Enabled';
+    }
+    if (types.has('disable')) {
+      return 'Disabled';
+    }
+    if (types.has('setValue')) {
+      return 'Value set';
+    }
+    return CONDITION_ACTION_LABELS[getPrimaryActionType(logic)] ?? 'Updated';
+  }
+
+  /** Logic map condition pill (e.g. "is above 5"). */
+  logicMapConditionPill(field: FormField): string {
+    const logic = normalizeConditionalLogic(field.condition ?? null);
+    if (!logic) {
+      return 'when condition matches';
+    }
+    const predicate = getPrimaryPredicate(logic);
+    const operator = this.mapOperatorPhrase(predicate.operator);
+    const needsValue = !['isEmpty', 'isNotEmpty', 'checked', 'unchecked'].includes(
+      predicate.operator,
+    );
+    const valueText =
+      needsValue && predicate.value != null && String(predicate.value).trim() !== ''
+        ? ` ${String(predicate.value)}`
+        : '';
+    return `${operator}${valueText}`.trim();
+  }
+
+  /** Logic map action pill (e.g. "shows and requires it"). */
+  logicMapActionPill(field: FormField): string {
+    const narrative = this.logicActionNarrative(field).toLowerCase();
+    if (narrative === 'shown and required') {
+      return 'shows and requires it';
+    }
+    if (narrative === 'shown') {
+      return 'shows it';
+    }
+    if (narrative === 'hidden') {
+      return 'hides it';
+    }
+    if (narrative === 'required') {
+      return 'requires it';
+    }
+    if (narrative === 'value set') {
+      return 'sets its value';
+    }
+    return `${narrative} it`;
+  }
+
+  /** List row: narrative with source field split out for a badge. */
+  logicListSummaryParts(field: FormField): {
+    before: string;
+    badge: string;
+    after: string;
+  } {
+    const logic = normalizeConditionalLogic(field.condition ?? null);
+    if (!logic) {
+      return { before: 'No conditional logic configured', badge: '', after: '' };
+    }
+    const predicate = getPrimaryPredicate(logic);
+    const source =
+      this.logicSchemaFields().find((item) => item.id === predicate.fieldId)?.label ||
+      'a field';
+    const operator = this.mapOperatorPhrase(predicate.operator);
+    const needsValue = !['isEmpty', 'isNotEmpty', 'checked', 'unchecked'].includes(
+      predicate.operator,
+    );
+    const valueText =
+      needsValue && predicate.value != null && String(predicate.value).trim() !== ''
+        ? ` ${String(predicate.value)}`
+        : '';
+    return {
+      before: `${this.logicActionNarrative(field)} when`,
+      badge: source,
+      after: `${operator}${valueText}`.trim(),
+    };
+  }
+
+  automationListSummaryParts(rule: FormLogicRule): {
+    before: string;
+    badge: string;
+    after: string;
+  } {
+    const schema = this.logicSchemaFields();
+    const first = rule.conditions.items.find((item) => item.fieldId);
+    if (!first) {
+      return {
+        before: `If ${summarizeConditions(rule, schema)}, then ${summarizeActions(rule)}`,
+        badge: '',
+        after: '',
+      };
+    }
+    const fieldLabel =
+      schema.find((item) => item.id === first.fieldId)?.label?.trim() || 'a field';
+    const operator = this.mapOperatorPhrase(first.operator);
+    let comparison = '';
+    if (!['isEmpty', 'isNotEmpty', 'checked', 'unchecked'].includes(first.operator)) {
+      if (first.comparison.type === 'fixed') {
+        comparison =
+          first.comparison.value != null && String(first.comparison.value).trim() !== ''
+            ? ` ${String(first.comparison.value)}`
+            : '';
+      } else if (first.comparison.type === 'field') {
+        comparison = ` ${
+          schema.find((item) => item.id === first.comparison.fieldId)?.label || 'a field'
+        }`;
+      }
+    }
+    const restConditions = rule.conditions.items.filter((item) => item.fieldId).slice(1);
+    const extra =
+      restConditions.length > 0
+        ? ` ${summarizeConditions(
+            {
+              ...rule,
+              conditions: { ...rule.conditions, items: restConditions },
+            },
+            schema,
+          )}`
+        : '';
+    return {
+      before: 'If',
+      badge: fieldLabel,
+      after: `${operator}${comparison}${extra}, then ${summarizeActions(rule)}`.trim(),
+    };
+  }
+
   summarizeAutomationRule(rule: FormLogicRule): string {
     const schema = this.logicSchemaFields();
     return `If ${summarizeConditions(rule, schema)}, then ${summarizeActions(rule)}`;
@@ -2420,6 +2574,134 @@ export class CreateFormComponent implements OnInit {
 
   automationRuleCardSummary(rule: FormLogicRule): { when: string; then: string } {
     return summarizeRuleCard(rule, this.logicSchemaFields());
+  }
+
+  automationMapSourceFields(rule: FormLogicRule): FormField[] {
+    const schema = this.logicSchemaFields();
+    const seen = new Set<string>();
+    const fields: FormField[] = [];
+    for (const item of rule.conditions.items) {
+      if (!item.fieldId || seen.has(item.fieldId)) {
+        continue;
+      }
+      seen.add(item.fieldId);
+      const field = schema.find((entry) => entry.id === item.fieldId);
+      if (field) {
+        fields.push(field);
+      }
+    }
+    return fields;
+  }
+
+  automationMapConditionPill(rule: FormLogicRule, fieldId: string): string {
+    const item = rule.conditions.items.find((entry) => entry.fieldId === fieldId);
+    if (!item) {
+      return 'matches';
+    }
+    const operator = this.mapOperatorPhrase(item.operator);
+    if (['isEmpty', 'isNotEmpty', 'checked', 'unchecked'].includes(item.operator)) {
+      return operator;
+    }
+    if (item.comparison.type === 'fixed') {
+      const value =
+        item.comparison.value != null && String(item.comparison.value).trim() !== ''
+          ? String(item.comparison.value)
+          : '';
+      return value ? `${operator} ${value}` : operator;
+    }
+    if (item.comparison.type === 'field') {
+      const label =
+        this.logicSchemaFields().find((entry) => entry.id === item.comparison.fieldId)
+          ?.label || 'a field';
+      return `${operator} ${label}`;
+    }
+    return operator;
+  }
+
+  automationMapActionCards(
+    rule: FormLogicRule,
+  ): Array<{ type: string; label: string; detail: string }> {
+    if (!rule.actions.length) {
+      return [{ type: 'none', label: 'No action configured', detail: 'Add an action to this rule' }];
+    }
+    return rule.actions.map((action) => {
+      if (action.type === 'purchaseRequest') {
+        return {
+          type: action.type,
+          label: 'Create purchase request',
+          detail: 'Creates a purchase request on submit',
+        };
+      }
+      if (action.type === 'sendNotification') {
+        return {
+          type: action.type,
+          label: 'Send notification',
+          detail: 'Alert to everyone in the position',
+        };
+      }
+      if (action.type === 'maintenanceRequest') {
+        return {
+          type: action.type,
+          label: 'Create maintenance request',
+          detail: 'Creates a maintenance request on submit',
+        };
+      }
+      return {
+        type: action.type,
+        label: summarizeActions({ ...rule, actions: [action] }),
+        detail: 'After submit',
+      };
+    });
+  }
+
+  automationRunOrdinal(index: number): string {
+    const n = index + 1;
+    const mod100 = n % 100;
+    if (mod100 >= 11 && mod100 <= 13) {
+      return `${n}TH`;
+    }
+    switch (n % 10) {
+      case 1:
+        return `${n}ST`;
+      case 2:
+        return `${n}ND`;
+      case 3:
+        return `${n}RD`;
+      default:
+        return `${n}TH`;
+    }
+  }
+
+  fieldTypeDisplayLabel(field: FormField | null | undefined): string {
+    if (!field) {
+      return 'Field';
+    }
+    const raw = (field.fieldTypeName || field.type || 'field').toString();
+    return raw
+      .replace(/[-_]/g, ' ')
+      .trim()
+      .replace(/\b\w/g, (ch) => ch.toUpperCase());
+  }
+
+  /** Compact glyph for Automation map answer cards (Figma-style). */
+  automationMapFieldGlyph(field: FormField | null | undefined): string {
+    const type = (field?.fieldTypeName || field?.type || '').toString().toLowerCase();
+    if (type.includes('number') || type.includes('measurement') || type.includes('rating')) {
+      return '#';
+    }
+    if (type.includes('checkbox') || type.includes('radio') || type.includes('select')) {
+      return '☑';
+    }
+    if (type.includes('temp') || type.includes('temperature')) {
+      return '°';
+    }
+    if (type.includes('image') || type.includes('photo') || type.includes('file')) {
+      return '▣';
+    }
+    if (type.includes('date') || type.includes('time')) {
+      return '◷';
+    }
+    return '=';
   }
 
   fieldLocationLabel(fieldId: string): string {
@@ -2432,6 +2714,44 @@ export class CreateFormComponent implements OnInit {
       }
     }
     return 'This form';
+  }
+
+  private mapOperatorPhrase(operator: string): string {
+    switch (operator) {
+      case 'greaterThan':
+        return 'is above';
+      case 'lessThan':
+        return 'is below';
+      case 'greaterThanOrEqual':
+        return 'is at least';
+      case 'lessThanOrEqual':
+        return 'is at most';
+      case 'equals':
+        return 'equals';
+      case 'notEquals':
+        return 'does not equal';
+      case 'contains':
+        return 'includes';
+      case 'notContains':
+        return 'does not include';
+      case 'startsWith':
+        return 'starts with';
+      case 'endsWith':
+        return 'ends with';
+      case 'isEmpty':
+        return 'is empty';
+      case 'isNotEmpty':
+        return 'is not empty';
+      case 'checked':
+        return 'is checked';
+      case 'unchecked':
+        return 'is not checked';
+      default:
+        return (
+          CONDITION_OPERATOR_LABELS[operator as keyof typeof CONDITION_OPERATOR_LABELS] ??
+          operator
+        ).toLowerCase();
+    }
   }
 
   onDuplicateField(field: FormField): void {
