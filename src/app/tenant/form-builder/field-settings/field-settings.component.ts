@@ -161,6 +161,19 @@ export class FieldSettingsComponent {
    */
   @Input() showCloseButton = false;
 
+  /**
+   * Form Template: Width-in-row presets that still fit in the field's current row.
+   * Current preset is always included by the parent.
+   */
+  @Input() availableRowWidthPresets: Array<'third' | 'half' | 'full'> = [
+    'third',
+    'half',
+    'full',
+  ];
+
+  /** Shown when some Width-in-row options are disabled due to row capacity. */
+  @Input() rowWidthCapacityHint: string | null = null;
+
   @Input() set schema(value: FormField[] | null | undefined) {
     const next = value ?? [];
     const current = this.schemaSignal();
@@ -301,8 +314,15 @@ export class FieldSettingsComponent {
     return 'full';
   }
 
+  isRowWidthPresetAvailable(preset: 'third' | 'half' | 'full'): boolean {
+    return this.availableRowWidthPresets.includes(preset);
+  }
+
   onRowWidthPresetChange(preset: 'third' | 'half' | 'full'): void {
     if (!this._field || !this.isFieldEditable) {
+      return;
+    }
+    if (!this.isRowWidthPresetAvailable(preset)) {
       return;
     }
     const next =

@@ -437,29 +437,126 @@ function resolveConfigPreviewValue(field: FormField): string | string[] | undefi
   return JSON.stringify(configured);
 }
 
+/** Form Template Width-in-row presets (12-column grid). */
+export const ROW_WIDTH_UNITS = {
+  third: 4,
+  half: 6,
+  full: 12,
+} as const;
+
+export type RowWidthPreset = keyof typeof ROW_WIDTH_UNITS;
+
+export const ROW_CAPACITY_UNITS = 12;
+
+/** Snap any 12-col width to the nearest Width-in-row preset. */
+export function normalizeBuilderWidthUnits(width?: number | null): number {
+  const raw = width == null || width <= 0 ? ROW_WIDTH_UNITS.full : Math.round(width);
+  if (raw <= 4) {
+    return ROW_WIDTH_UNITS.third;
+  }
+  if (raw <= 6) {
+    return ROW_WIDTH_UNITS.half;
+  }
+  return ROW_WIDTH_UNITS.full;
+}
+
+export function builderWidthToPreset(width?: number | null): RowWidthPreset {
+  const units = normalizeBuilderWidthUnits(width);
+  if (units === ROW_WIDTH_UNITS.third) {
+    return 'third';
+  }
+  if (units === ROW_WIDTH_UNITS.half) {
+    return 'half';
+  }
+  return 'full';
+}
+
+export function presetToBuilderWidth(preset: RowWidthPreset): number {
+  return ROW_WIDTH_UNITS[preset];
+}
+
 /** Convert FormField 12-col width to a CSS percentage used by section layout. */
 export function mapBuilderWidthToPercent(width?: number): string {
-  if (width == null || width <= 0) {
-    return '25%';
-  }
-  const clamped = Math.min(12, Math.max(1, Math.round(width)));
-  return `${Math.round((clamped / 12) * 100)}%`;
+  const units = normalizeBuilderWidthUnits(width);
+  return `${Math.round((units / ROW_CAPACITY_UNITS) * 100)}%`;
 }
 
 /** Approximate grid units (out of 12) for a FormFieldConfig width string. */
 export function widthToGridUnits(width?: string): number {
-  if (!width || width === 'auto') return 3;
+  if (!width || width === 'auto') {
+    return ROW_WIDTH_UNITS.full;
+  }
   if (width.endsWith('%')) {
     const pct = parseFloat(width);
     if (Number.isFinite(pct) && pct > 0) {
-      return Math.min(12, Math.max(1, Math.round((pct / 100) * 12)));
+      return normalizeBuilderWidthUnits(Math.round((pct / 100) * ROW_CAPACITY_UNITS));
     }
   }
-  return 3;
+  return ROW_WIDTH_UNITS.full;
 }
 
-export function rowUsedGridUnits(fields: FormFieldConfig[]): number {
-  return fields.reduce((sum, field) => sum + widthToGridUnits(field.width), 0);
+export function rowUsedGridUnits(
+  fields: Array<Pick<FormFieldConfig, 'width'> | Pick<FormField, 'width'>>,
+): number {
+  return fields.reduce((sum, field) => {
+    if (typeof (field as FormField).width === 'number') {
+      return sum + normalizeBuilderWidthUnits((field as FormField).width);
+    }
+    return sum + widthToGridUnits((field as FormFieldConfig).width);
+  }, 0);
+}
+
+export function rowRemainingGridUnits(
+  fields: Array<Pick<FormFieldConfig, 'width'> | Pick<FormField, 'width'>>,
+): number {
+  return Math.max(0, ROW_CAPACITY_UNITS - rowUsedGridUnits(fields));
+}
+
+/** True when the row still has room for at least a 1/3 column. */
+export function rowHasAvailableColumnSpace(
+  fields: Array<Pick<FormFieldConfig, 'width'> | Pick<FormField, 'width'>>,
+): boolean {
+  return fields.length > 0 && rowRemainingGridUnits(fields) >= ROW_WIDTH_UNITS.third;
+}
+
+/** Largest preset that fits in the remaining row capacity. */
+export function largestFittingBuilderWidth(remainingUnits: number): number {
+  if (remainingUnits >= ROW_WIDTH_UNITS.full) {
+    return ROW_WIDTH_UNITS.full;
+  }
+  if (remainingUnits >= ROW_WIDTH_UNITS.half) {
+    return ROW_WIDTH_UNITS.half;
+  }
+  if (remainingUnits >= ROW_WIDTH_UNITS.third) {
+    return ROW_WIDTH_UNITS.third;
+  }
+  return 0;
+}
+
+/**
+ * Presets allowed for `fieldId` given its siblings in the same row.
+ * Current width is always allowed so the control can stay selected.
+ */
+export function availableRowWidthPresetsForField(
+  rowFields: Array<Pick<FormField, 'id' | 'width'>>,
+  fieldId: string,
+): RowWidthPreset[] {
+  const others = rowFields.filter((field) => field.id !== fieldId);
+  const usedByOthers = rowUsedGridUnits(others);
+  const remainingForField = Math.max(0, ROW_CAPACITY_UNITS - usedByOthers);
+  const current = rowFields.find((field) => field.id === fieldId);
+  const currentPreset = builderWidthToPreset(current?.width);
+
+  const allowed: RowWidthPreset[] = [];
+  (['third', 'half', 'full'] as RowWidthPreset[]).forEach((preset) => {
+    if (
+      preset === currentPreset ||
+      ROW_WIDTH_UNITS[preset] <= remainingForField
+    ) {
+      allowed.push(preset);
+    }
+  });
+  return allowed;
 }
 
 export function resolveItemDisplayName(record: Record<string, unknown>): string {

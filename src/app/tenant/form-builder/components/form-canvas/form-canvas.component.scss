@@ -4,6 +4,27 @@
   background: transparent;
 }
 
+/* Form Template rows: one horizontal band sized by each field's Width in row. */
+.form-canvas-drop-list--width-aware {
+  display: flex;
+  min-height: 5.5rem;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 0.75rem;
+}
+
+.form-canvas-drop-list--width-aware .form-canvas-empty {
+  flex: 1 1 100%;
+  min-height: 5.5rem;
+  border-style: dashed;
+  border-color: #d1d5db;
+  background: #fafafa;
+}
+
+.form-canvas-field--width-aware {
+  box-sizing: border-box;
+}
+
 .form-canvas-empty {
   display: flex;
   min-height: 320px;

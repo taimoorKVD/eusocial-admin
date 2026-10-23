@@ -1642,6 +1642,18 @@ export class DynamicFormComponent implements OnDestroy {
     );
   }
 
+  /** Snap DynamicField width to Form Template Width-in-row units (4 / 6 / 12). */
+  fieldWidthUnits(field: DynamicField): number {
+    const width = field.width ?? 12;
+    if (width <= 4) {
+      return 4;
+    }
+    if (width <= 6) {
+      return 6;
+    }
+    return 12;
+  }
+
   private syncFormToFields(fields: DynamicField[]): void {
     const schemaKey = serializeDynamicFieldsSchema(fields);
 

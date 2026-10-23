@@ -739,9 +739,10 @@
   width: 100%;
 }
 
-/* Device frames constrain width — force grid columns by frame, not viewport */
+/* Device frames constrain width — force grid columns by frame, not viewport.
+ * Desktop/tablet use the same 12-col Width-in-row grid as the live form. */
 .regular-form-shell__device--tablet ::ng-deep .dynamic-form > .grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
 }
 
 .regular-form-shell__device--phone ::ng-deep .dynamic-form > .grid {

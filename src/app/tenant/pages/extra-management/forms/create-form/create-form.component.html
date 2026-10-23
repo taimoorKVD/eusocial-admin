@@ -821,13 +821,20 @@
                             class="rounded-xl border border-dashed border-[#E5E7EB] bg-white p-2.5 sm:p-3"
                           >
                             <div class="build-canvas__row flex flex-col gap-3 sm:flex-row sm:items-stretch">
-                              <div class="min-w-0 flex-1">
+                              <div
+                                class="min-w-0"
+                                [class.flex-1]="!rowCanAddColumn(row)"
+                                [style.flex]="rowCanAddColumn(row) ? '0 0 auto' : null"
+                                [style.width]="rowCanAddColumn(row) ? rowUsedFlexBasis(row) : '100%'"
+                                [style.max-width]="rowCanAddColumn(row) ? rowUsedFlexBasis(row) : null"
+                              >
                                 <app-form-canvas
                                   [dropListId]="rowCanvasListId(customSection.id, row.id)"
                                   [schema]="getRowCanvasSchema(customSection.id, row.id)"
                                   [selectedFieldId]="selectedFieldId()"
                                   [connectedDropLists]="[paletteListId]"
                                   [showFieldQuickActions]="true"
+                                  [widthAwareLayout]="true"
                                   [fieldsWithConditionalLogic]="fieldsWithConditionalLogicIds()"
                                   [fieldsWithAutomationRules]="fieldsWithAutomationRuleIds()"
                                   (dropped)="onWorkspaceRowDrop(customSection.id, row.id, $event)"
@@ -838,14 +845,26 @@
                               </div>
 
                               @if (rowCanAddColumn(row)) {
-                                <button
-                                  type="button"
-                                  class="flex min-h-[5.5rem] w-full shrink-0 items-center justify-center gap-1.5 rounded-lg border border-dashed border-[#D1D5DB] bg-[#FAFAFA] px-3 py-4 text-center text-xs font-medium text-[#9CA3AF] transition hover:border-[#FF9015] hover:bg-[#FFF5EB] hover:text-[#FF9015] sm:w-[min(42%,14rem)]"
+                                <div
+                                  cdkDropList
+                                  [id]="rowAddColumnListId(customSection.id, row.id)"
+                                  [cdkDropListData]="emptyDropListData"
+                                  [cdkDropListConnectedTo]="[paletteListId]"
+                                  (cdkDropListDropped)="onRowAddColumnDrop(customSection.id, row.id, $event)"
+                                  class="flex min-h-[5.5rem] w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-dashed border-[#D1D5DB] bg-[#FAFAFA] px-3 py-4 text-center text-xs font-medium text-[#9CA3AF] transition hover:border-[#FF9015] hover:bg-[#FFF5EB] hover:text-[#FF9015]"
+                                  [style.flex]="'1 1 auto'"
+                                  [style.width]="rowAddColumnFlexBasis(row)"
+                                  [style.max-width]="rowAddColumnFlexBasis(row)"
+                                  [style.min-width]="'0'"
+                                  role="button"
+                                  tabindex="0"
+                                  aria-label="Add column, or drop a field here"
                                   (click)="focusWorkspaceRow(customSection.id, row.id); showBuilderPalette()"
+                                  (keydown.enter)="focusWorkspaceRow(customSection.id, row.id); showBuilderPalette()"
                                 >
                                   <span aria-hidden="true">+</span>
                                   Add column, or drop a field here
-                                </button>
+                                </div>
                               }
                             </div>
 
@@ -963,6 +982,8 @@
                 [fieldUsedInLogicRules]="isDraftFieldUsedInLogicRules()"
                 [showConditionalLogicEntry]="false"
                 [showCloseButton]="false"
+                [availableRowWidthPresets]="selectedFieldAvailableWidthPresets()"
+                [rowWidthCapacityHint]="selectedFieldWidthCapacityHint()"
                 (update)="onUpdateField($event)"
                 (duplicate)="onDuplicateSelectedDraft()"
                 (delete)="onDeleteSelectedDraft()"

@@ -70,8 +70,17 @@ import {
 } from '../../../../forms/logic-rules/logic-rule.utils';
 import { SectionFieldPreviewComponent } from '../components/section-field-preview/section-field-preview.component';
 import {
+  availableRowWidthPresetsForField,
+  builderWidthToPreset,
+  largestFittingBuilderWidth,
   mapBuilderFieldToConfig,
+  mapBuilderWidthToPercent,
   mapConfigFieldToBuilder,
+  normalizeBuilderWidthUnits,
+  rowHasAvailableColumnSpace,
+  rowRemainingGridUnits,
+  widthToGridUnits,
+  type RowWidthPreset,
 } from '../utils/field-builder-adapter.utils';
 import {
   hydrateFormTemplateDynamicSelectField,
@@ -320,7 +329,8 @@ export class CreateFormComponent implements OnInit {
 
   /**
    * Drop-list ids the palette connects to in the always-on Build workspace.
-   * Empty canvas when no sections; otherwise each row canvas + per-section new-row zone.
+   * Empty canvas when no sections; otherwise each row canvas, add-column slot,
+   * and per-section new-row zone.
    */
   readonly paletteConnectedDropLists = computed(() => {
     const sections = this.sections();
@@ -331,6 +341,9 @@ export class CreateFormComponent implements OnInit {
     for (const section of sections) {
       for (const row of section.rows) {
         ids.push(this.rowCanvasListId(section.id, row.id));
+        if (this.rowCanAddColumn(row)) {
+          ids.push(this.rowAddColumnListId(section.id, row.id));
+        }
       }
       ids.push(this.sectionNewRowListId(section.id));
     }
@@ -1704,13 +1717,67 @@ export class CreateFormComponent implements OnInit {
     });
   }
 
-  /** True when a row can still accept another column (Figma empty-column slot). */
+  /** True when a row still has Width-in-row capacity for another column. */
   rowCanAddColumn(row: FormRow): boolean {
-    return row.fields.length > 0 && row.fields.length < 3;
+    return rowHasAvailableColumnSpace(row.fields);
   }
+
+  /** Remaining 12-col units in a row (for sizing the Add column slot). */
+  rowRemainingUnits(row: FormRow): number {
+    return rowRemainingGridUnits(row.fields);
+  }
+
+  /** Flex basis for the Add column drop target based on leftover capacity. */
+  rowAddColumnFlexBasis(row: FormRow): string {
+    const remaining = this.rowRemainingUnits(row);
+    if (remaining <= 0) {
+      return '0%';
+    }
+    return `calc(${(remaining / 12) * 100}% - 0.5rem)`;
+  }
+
+  /** Width of the canvas band that already holds fields in this row. */
+  rowUsedFlexBasis(row: FormRow): string {
+    const used = Math.max(0, 12 - this.rowRemainingUnits(row));
+    if (used <= 0) {
+      return '100%';
+    }
+    return `calc(${(used / 12) * 100}% - 0.5rem)`;
+  }
+
+  selectedFieldWidthCapacityHint = computed((): string | null => {
+    const field = this.selectedBuilderField();
+    if (!field) {
+      return null;
+    }
+    const allowed = this.selectedFieldAvailableWidthPresets();
+    if (allowed.length >= 3) {
+      return null;
+    }
+    return 'This width cannot fit because the row is already occupied.';
+  });
+
+  /** Width presets allowed for the selected field in its current row. */
+  selectedFieldAvailableWidthPresets = computed((): RowWidthPreset[] => {
+    const field = this.selectedBuilderField();
+    if (!field) {
+      return ['third', 'half', 'full'];
+    }
+    const location = this.findFieldLocation(field.id);
+    if (!location) {
+      return ['third', 'half', 'full'];
+    }
+    const rowFields = this.getRowCanvasSchema(location.sectionId, location.rowId);
+    return availableRowWidthPresetsForField(rowFields, field.id);
+  });
 
   rowCanvasListId(sectionId: string, rowId: string): string {
     return `createFormCanvas_${sectionId}_${rowId}`;
+  }
+
+  /** Visible “Add column / drop a field here” sink beside a row. */
+  rowAddColumnListId(sectionId: string, rowId: string): string {
+    return `createFormAddCol_${sectionId}_${rowId}`;
   }
 
   sectionNewRowListId(sectionId: string): string {
@@ -1783,6 +1850,16 @@ export class CreateFormComponent implements OnInit {
   ): void {
     this.focusWorkspaceRow(sectionId, rowId);
     const current = this.getRowCanvasSchema(sectionId, rowId);
+
+    // Cross-container insert: if this row has no remaining capacity, start a new row.
+    if (event.previousContainer !== event.container) {
+      const remaining = rowRemainingGridUnits(current);
+      if (current.length > 0 && remaining < 4) {
+        this.onSectionNewRowDrop(sectionId, event);
+        return;
+      }
+    }
+
     const result = applyCanvasDrop(event, current);
 
     if (event.previousContainer === event.container) {
@@ -1796,7 +1873,16 @@ export class CreateFormComponent implements OnInit {
       return;
     }
 
-    const mapped = mapBuilderFieldToConfig(inserted, { preserveId: true });
+    const siblings = result.schema.filter((field) => field.id !== inserted.id);
+    const fittingWidth = largestFittingBuilderWidth(
+      rowRemainingGridUnits(siblings),
+    );
+    const widthAdjusted: FormField = {
+      ...inserted,
+      width: fittingWidth > 0 ? fittingWidth : normalizeBuilderWidthUnits(inserted.width),
+    };
+
+    const mapped = mapBuilderFieldToConfig(widthAdjusted, { preserveId: true });
     hydrateFormTemplateDynamicSelectField(this.formStorageService, mapped)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((hydrated) => {
@@ -1809,6 +1895,35 @@ export class CreateFormComponent implements OnInit {
         this.onSelectField(builderHydrated);
         this.initializeRowLocationDependencies(sectionId, rowId);
       });
+  }
+
+  /**
+   * Drop onto the visible “Add column / drop a field here” slot —
+   * appends a new column on the same row when capacity allows.
+   */
+  onRowAddColumnDrop(
+    sectionId: string,
+    rowId: string,
+    event: CdkDragDrop<FormField[]>,
+  ): void {
+    if (event.previousContainer === event.container) {
+      return;
+    }
+
+    const current = this.getRowCanvasSchema(sectionId, rowId);
+    if (!rowHasAvailableColumnSpace(current)) {
+      // Row is full — place the field on a new row instead of overflowing.
+      this.onSectionNewRowDrop(sectionId, event);
+      return;
+    }
+
+    // Append after existing columns (ignore sink index 0 on the empty list).
+    const appendEvent = {
+      ...event,
+      currentIndex: current.length,
+    } as CdkDragDrop<FormField[]>;
+
+    this.onWorkspaceRowDrop(sectionId, rowId, appendEvent);
   }
 
   /** Drop below a section to append a new row with the dragged field. */
@@ -2763,7 +2878,54 @@ export class CreateFormComponent implements OnInit {
       const current = this.getRowCanvasSchema(location.sectionId, location.rowId);
       const result = duplicateFormField(field, current);
       if (result.duplicate) {
-        const mapped = mapBuilderFieldToConfig(result.duplicate, {
+        const siblings = current;
+        const remaining = rowRemainingGridUnits(siblings);
+        const fitting = largestFittingBuilderWidth(remaining);
+        if (fitting <= 0) {
+          // Current row is full — place the duplicate on a new row.
+          const mapped = mapBuilderFieldToConfig(result.duplicate, {
+            preserveId: true,
+          });
+          hydrateFormTemplateDynamicSelectField(this.formStorageService, mapped)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe((hydrated) => {
+              const newRow = createEmptyRow();
+              const fieldConfig: FormFieldConfig = {
+                ...hydrated,
+                isDefault: false,
+                value: hydrated.value ?? '',
+              };
+              this.sections.update((list) =>
+                list.map((section) => {
+                  if (section.id !== location.sectionId) {
+                    return section;
+                  }
+                  const index = section.rows.findIndex(
+                    (row) => row.id === location.rowId,
+                  );
+                  const nextRows = [...section.rows];
+                  const insertAt = index >= 0 ? index + 1 : nextRows.length;
+                  nextRows.splice(insertAt, 0, {
+                    ...newRow,
+                    fields: [fieldConfig],
+                  });
+                  return { ...section, rows: nextRows };
+                }),
+              );
+              this.focusWorkspaceRow(location.sectionId, newRow.id);
+              this.onSelectField(mapConfigFieldToBuilder(fieldConfig));
+            });
+          return;
+        }
+
+        const widthAdjusted = {
+          ...result.duplicate,
+          width: Math.min(
+            normalizeBuilderWidthUnits(result.duplicate.width),
+            fitting,
+          ),
+        };
+        const mapped = mapBuilderFieldToConfig(widthAdjusted, {
           preserveId: true,
         });
         hydrateFormTemplateDynamicSelectField(this.formStorageService, mapped)
@@ -2859,9 +3021,21 @@ export class CreateFormComponent implements OnInit {
       this.findFieldLocation(updated.id) ?? this.pendingFieldTarget();
 
     if (location) {
+      const rowFields = this.getRowCanvasSchema(location.sectionId, location.rowId);
+      const allowed = availableRowWidthPresetsForField(rowFields, updated.id);
+      const nextPreset = builderWidthToPreset(updated.width);
+      const safeUpdated: FormField = allowed.includes(nextPreset)
+        ? { ...updated, width: normalizeBuilderWidthUnits(updated.width) }
+        : {
+            ...updated,
+            width: normalizeBuilderWidthUnits(
+              rowFields.find((field) => field.id === updated.id)?.width,
+            ),
+          };
+
       this.focusWorkspaceRow(location.sectionId, location.rowId);
-      this.rowBuilderFields.update((fields) => updateFormField(updated, fields));
-      const mapped = mapBuilderFieldToConfig(updated, { preserveId: true });
+      this.rowBuilderFields.update((fields) => updateFormField(safeUpdated, fields));
+      const mapped = mapBuilderFieldToConfig(safeUpdated, { preserveId: true });
       hydrateFormTemplateDynamicSelectField(this.formStorageService, mapped)
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe((hydrated) => this.updateRowFieldInSections(hydrated));
@@ -3299,9 +3473,47 @@ export class CreateFormComponent implements OnInit {
     const target = this.pendingFieldTarget();
     if (!target) return;
 
-    // Always append to the clicked row; preserve builder width when set.
+    const currentRow = this.sections()
+      .find((section) => section.id === target.sectionId)
+      ?.rows.find((row) => row.id === target.rowId);
+    const currentFields = currentRow?.fields ?? [];
+
+    // Row already full — start a new row instead of overflowing capacity.
+    if (currentFields.length > 0 && !rowHasAvailableColumnSpace(currentFields)) {
+      const fittingWidth = largestFittingBuilderWidth(12);
+      const newField: FormFieldConfig = {
+        ...field,
+        width: mapBuilderWidthToPercent(fittingWidth),
+        isDefault: false,
+        value: field.value ?? '',
+      };
+      const newRow = createEmptyRow();
+      this.sections.update((list) =>
+        list.map((section) => {
+          if (section.id !== target.sectionId) {
+            return section;
+          }
+          const index = section.rows.findIndex((row) => row.id === target.rowId);
+          const nextRows = [...section.rows];
+          const insertAt = index >= 0 ? index + 1 : nextRows.length;
+          nextRows.splice(insertAt, 0, { ...newRow, fields: [newField] });
+          return { ...section, rows: nextRows };
+        }),
+      );
+      this.focusWorkspaceRow(target.sectionId, newRow.id);
+      this.onSelectField(mapConfigFieldToBuilder(newField));
+      return;
+    }
+
+    const remaining = rowRemainingGridUnits(currentFields);
+    const requested = widthToGridUnits(field.width);
+    const fitting =
+      currentFields.length === 0
+        ? normalizeBuilderWidthUnits(requested)
+        : largestFittingBuilderWidth(remaining) || requested;
     const newField: FormFieldConfig = {
       ...field,
+      width: mapBuilderWidthToPercent(fitting),
       isDefault: false,
       value: field.value ?? '',
     };
