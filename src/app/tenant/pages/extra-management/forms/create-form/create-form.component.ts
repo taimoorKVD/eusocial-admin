@@ -320,7 +320,8 @@ export class CreateFormComponent implements OnInit {
 
   /**
    * Drop-list ids the palette connects to in the always-on Build workspace.
-   * Empty canvas when no sections; otherwise each row canvas + per-section new-row zone.
+   * Empty canvas when no sections; otherwise each row canvas, add-column slot,
+   * and per-section new-row zone.
    */
   readonly paletteConnectedDropLists = computed(() => {
     const sections = this.sections();
@@ -331,6 +332,9 @@ export class CreateFormComponent implements OnInit {
     for (const section of sections) {
       for (const row of section.rows) {
         ids.push(this.rowCanvasListId(section.id, row.id));
+        if (this.rowCanAddColumn(row)) {
+          ids.push(this.rowAddColumnListId(section.id, row.id));
+        }
       }
       ids.push(this.sectionNewRowListId(section.id));
     }
@@ -1713,6 +1717,11 @@ export class CreateFormComponent implements OnInit {
     return `createFormCanvas_${sectionId}_${rowId}`;
   }
 
+  /** Visible “Add column / drop a field here” sink beside a row. */
+  rowAddColumnListId(sectionId: string, rowId: string): string {
+    return `createFormAddCol_${sectionId}_${rowId}`;
+  }
+
   sectionNewRowListId(sectionId: string): string {
     return `createFormNewRow_${sectionId}`;
   }
@@ -1809,6 +1818,33 @@ export class CreateFormComponent implements OnInit {
         this.onSelectField(builderHydrated);
         this.initializeRowLocationDependencies(sectionId, rowId);
       });
+  }
+
+  /**
+   * Drop onto the visible “Add column / drop a field here” slot —
+   * appends a new column on the same row.
+   */
+  onRowAddColumnDrop(
+    sectionId: string,
+    rowId: string,
+    event: CdkDragDrop<FormField[]>,
+  ): void {
+    if (event.previousContainer === event.container) {
+      return;
+    }
+
+    const current = this.getRowCanvasSchema(sectionId, rowId);
+    if (current.length >= 3) {
+      return;
+    }
+
+    // Append after existing columns (ignore sink index 0 on the empty list).
+    const appendEvent = {
+      ...event,
+      currentIndex: current.length,
+    } as CdkDragDrop<FormField[]>;
+
+    this.onWorkspaceRowDrop(sectionId, rowId, appendEvent);
   }
 
   /** Drop below a section to append a new row with the dragged field. */

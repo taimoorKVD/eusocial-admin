@@ -838,14 +838,22 @@
                               </div>
 
                               @if (rowCanAddColumn(row)) {
-                                <button
-                                  type="button"
-                                  class="flex min-h-[5.5rem] w-full shrink-0 items-center justify-center gap-1.5 rounded-lg border border-dashed border-[#D1D5DB] bg-[#FAFAFA] px-3 py-4 text-center text-xs font-medium text-[#9CA3AF] transition hover:border-[#FF9015] hover:bg-[#FFF5EB] hover:text-[#FF9015] sm:w-[min(42%,14rem)]"
+                                <div
+                                  cdkDropList
+                                  [id]="rowAddColumnListId(customSection.id, row.id)"
+                                  [cdkDropListData]="emptyDropListData"
+                                  [cdkDropListConnectedTo]="[paletteListId]"
+                                  (cdkDropListDropped)="onRowAddColumnDrop(customSection.id, row.id, $event)"
+                                  class="flex min-h-[5.5rem] w-full shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-dashed border-[#D1D5DB] bg-[#FAFAFA] px-3 py-4 text-center text-xs font-medium text-[#9CA3AF] transition hover:border-[#FF9015] hover:bg-[#FFF5EB] hover:text-[#FF9015] sm:w-[min(42%,14rem)]"
+                                  role="button"
+                                  tabindex="0"
+                                  aria-label="Add column, or drop a field here"
                                   (click)="focusWorkspaceRow(customSection.id, row.id); showBuilderPalette()"
+                                  (keydown.enter)="focusWorkspaceRow(customSection.id, row.id); showBuilderPalette()"
                                 >
                                   <span aria-hidden="true">+</span>
                                   Add column, or drop a field here
-                                </button>
+                                </div>
                               }
                             </div>
 
