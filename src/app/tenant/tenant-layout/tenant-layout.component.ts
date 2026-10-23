@@ -1,9 +1,16 @@
-import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  OnInit,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router } from '@angular/router';
 import { TenantSessionService } from '../../services/tenant-session.service';
 import { LocationCacheService } from '../../services/location-cache.service';
-
+import { TenantLayoutChromeService } from './tenant-layout-chrome.service';
 
 @Component({
   selector: 'app-tenant-layout',
@@ -17,6 +24,7 @@ export class TenantLayoutComponent implements OnInit {
   private readonly locationCache = inject(LocationCacheService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly layoutChrome = inject(TenantLayoutChromeService);
 
   /** Mobile drawer open/closed (unchanged). */
   sidebarOpen = false;
@@ -26,9 +34,11 @@ export class TenantLayoutComponent implements OnInit {
 
   /**
    * Desktop compact rail. Collapsed (not hidden) on Form Template create/edit
-   * so the Form Builder gets extra width; expand control can override.
+   * and while a setup Form Builder is open, so the builder gets extra width.
    */
   readonly sidebarCollapsed = signal(false);
+
+  private currentPath = '';
 
   constructor() {
     this.applyRouteChrome(this.router.url);
@@ -40,6 +50,12 @@ export class TenantLayoutComponent implements OnInit {
           this.applyRouteChrome(event.urlAfterRedirects);
         }
       });
+
+    // Setup Form Builder open/close (no route change) → same compact rail.
+    effect(() => {
+      this.layoutChrome.formBuilderActive();
+      this.syncSidebarCollapse();
+    });
   }
 
   ngOnInit(): void {
@@ -52,13 +68,18 @@ export class TenantLayoutComponent implements OnInit {
   }
 
   private applyRouteChrome(url: string): void {
-    const path = url.split('?')[0];
-    this.isAssignmentFullscreen.set(this.isFullscreenRoute(path));
+    this.currentPath = url.split('?')[0];
+    this.isAssignmentFullscreen.set(this.isFullscreenRoute(this.currentPath));
+    this.syncSidebarCollapse();
+  }
 
-    const formEditor = this.isFormEditorRoute(path);
-    // Create/Edit/Preview → compact sidebar. Listing and all other routes → expanded.
-    this.sidebarCollapsed.set(formEditor);
-    if (formEditor) {
+  private syncSidebarCollapse(): void {
+    const formEditor = this.isFormEditorRoute(this.currentPath);
+    const setupBuilderOpen = this.layoutChrome.formBuilderActive();
+    const collapsed = formEditor || setupBuilderOpen;
+    // Create/Edit/Preview or open setup builder → compact sidebar.
+    this.sidebarCollapsed.set(collapsed);
+    if (collapsed) {
       this.sidebarOpen = false;
     }
   }

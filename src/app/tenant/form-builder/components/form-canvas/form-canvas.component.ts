@@ -43,6 +43,11 @@ export class FormCanvasComponent {
    * field's 12-col `width` (Width in row). Other hosts keep the default 2-col grid.
    */
   @Input() widthAwareLayout = false;
+  /**
+   * Setup modules (flat canvas): wrap fields and size each as a fraction of the
+   * full row (units/12). Leave false for Form Template per-row canvases.
+   */
+  @Input() widthAwareFlow = false;
   /** Field ids with configured Conditional Logic (Form Template). */
   @Input() fieldsWithConditionalLogic: readonly string[] = [];
   /** Field ids referenced by Automation Rules (Form Template). */
@@ -70,11 +75,15 @@ export class FormCanvasComponent {
   }
 
   /**
-   * Flex basis relative to fields already in the row (canvas is sized to used
-   * capacity by the parent). A lone 1/3 field fills 100% of its canvas band.
+   * Flex basis for Width in row.
+   * - Flow (setup flat canvas): absolute % of full row (units/12), wraps.
+   * - Row (Form Template): relative to siblings; parent sizes the canvas band.
    */
   fieldWidthFlexBasis(field: FormField): string {
     const units = this.fieldWidthUnits(field);
+    if (this.widthAwareFlow) {
+      return `calc(${(units / 12) * 100}% - 0.5rem)`;
+    }
     const used = this.rowUsedUnits();
     const gapOffset = this.schema.length > 1 ? '0.5rem' : '0px';
     return `calc(${(units / used) * 100}% - ${gapOffset})`;

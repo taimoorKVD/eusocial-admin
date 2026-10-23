@@ -92,7 +92,7 @@
           [ngClass]="rowWidthPreset === 'third'
             ? 'bg-[#F5E6D3] font-semibold text-[#161616]'
             : 'bg-white font-medium text-[#374151] hover:bg-[#FAFAFA]'"
-          [disabled]="!isFieldEditable || !isRowWidthPresetAvailable('third')"
+          [disabled]="!canEditRowWidth || !isRowWidthPresetAvailable('third')"
           [attr.title]="!isRowWidthPresetAvailable('third') ? (rowWidthCapacityHint || 'Does not fit in this row') : null"
           (click)="onRowWidthPresetChange('third')"
         >
@@ -104,7 +104,7 @@
           [ngClass]="rowWidthPreset === 'half'
             ? 'bg-[#F5E6D3] font-semibold text-[#161616]'
             : 'bg-white font-medium text-[#374151] hover:bg-[#FAFAFA]'"
-          [disabled]="!isFieldEditable || !isRowWidthPresetAvailable('half')"
+          [disabled]="!canEditRowWidth || !isRowWidthPresetAvailable('half')"
           [attr.title]="!isRowWidthPresetAvailable('half') ? (rowWidthCapacityHint || 'Does not fit in this row') : null"
           (click)="onRowWidthPresetChange('half')"
         >
@@ -116,7 +116,7 @@
           [ngClass]="rowWidthPreset === 'full'
             ? 'bg-[#F5E6D3] font-semibold text-[#161616]'
             : 'bg-white font-medium text-[#374151] hover:bg-[#FAFAFA]'"
-          [disabled]="!isFieldEditable || !isRowWidthPresetAvailable('full')"
+          [disabled]="!canEditRowWidth || !isRowWidthPresetAvailable('full')"
           [attr.title]="!isRowWidthPresetAvailable('full') ? (rowWidthCapacityHint || 'Does not fit in this row') : null"
           (click)="onRowWidthPresetChange('full')"
         >

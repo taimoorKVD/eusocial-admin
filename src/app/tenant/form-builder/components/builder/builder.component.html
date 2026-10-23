@@ -1,5 +1,8 @@
 <div class="font-ibm" [class.opacity-50]="disabled">
-  <p class="mb-2 text-[11px] leading-snug text-slate-500">
+  <p
+    class="mb-2 text-[11px] leading-snug"
+    [ngClass]="setupPalette ? 'text-[#6B7280]' : 'text-slate-500'"
+  >
     @if (disabled) {
       Finish or cancel Bulk Delete to add fields.
     } @else {
@@ -13,6 +16,7 @@
     [id]="dropListId"
     class="palette-grid"
     [class.palette-grid--disabled]="disabled"
+    [class.gap-2.5]="setupPalette"
     [cdkDropListData]="fieldTemplates"
     [cdkDropListConnectedTo]="connectedDropLists"
     [cdkDropListDisabled]="disabled"
@@ -25,6 +29,7 @@
       [cdkDragDisabled]="disabled"
       class="palette-item"
       [class.palette-item--disabled]="disabled"
+      [class.palette-item--setup]="setupPalette"
     >
       <span
         class="palette-tooltip-trigger app-tooltip-trigger"

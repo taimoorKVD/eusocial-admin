@@ -11,10 +11,11 @@
   [class.md:gap-y-4]="!widthAwareLayout"
   [class.form-canvas-drop-list--locked]="isDragDropDisabled"
   [class.form-canvas-drop-list--width-aware]="widthAwareLayout"
+  [class.form-canvas-drop-list--width-aware-flow]="widthAwareLayout && widthAwareFlow"
   [cdkDropListData]="schema"
   [cdkDropListConnectedTo]="connectedDropLists"
   [cdkDropListDisabled]="isDragDropDisabled"
-  [cdkDropListOrientation]="widthAwareLayout ? 'horizontal' : 'mixed'"
+  [cdkDropListOrientation]="widthAwareLayout && !widthAwareFlow ? 'horizontal' : 'mixed'"
   (cdkDropListDropped)="onDrop($event)"
 >
   <div
@@ -41,6 +42,7 @@
     [class.form-canvas-field--protected]="selectionMode && !isFieldDeletable(field)"
     [class.form-canvas-field--selection-mode]="selectionMode"
     [class.form-canvas-field--width-aware]="widthAwareLayout"
+    [class.form-canvas-field--setup-flow]="widthAwareLayout && widthAwareFlow"
     [style.flex]="widthAwareLayout ? '0 0 auto' : null"
     [style.flex-basis]="widthAwareLayout ? fieldWidthFlexBasis(field) : null"
     [style.max-width]="widthAwareLayout ? fieldWidthFlexBasis(field) : null"

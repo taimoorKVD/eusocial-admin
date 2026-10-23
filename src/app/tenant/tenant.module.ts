@@ -31,6 +31,7 @@ import { RoleComponent } from './pages/setup/Roles/role/role.component';
 import { RoleListingComponent } from './pages/setup/Roles/role-listing/role-listing.component';
 import { RouterModule } from '@angular/router';
 import { FormEditorCoreModule } from './forms/form-editor-core.module';
+import { SetupFormLayoutCanvasComponent } from './forms/components/setup-form-layout-canvas/setup-form-layout-canvas.component';
 import { TenantProfileComponent } from './pages/profile/tenant-profile.component';
 
 
@@ -68,6 +69,7 @@ import { TenantProfileComponent } from './pages/profile/tenant-profile.component
     SharedModule,
     RouterModule,
     FormEditorCoreModule,
+    SetupFormLayoutCanvasComponent,
     EmployeeDashboardComponent,
     TenantAdminDashboardComponent,
   ],

@@ -28,6 +28,11 @@ export class FormBuilderWorkspaceComponent {
   @Input() showPreviewAction = false;
   @Input() paletteListId = 'sidebarList';
   @Input() canvasListId = 'canvasList';
+  /**
+   * Optional override for palette CDK connections (setup multi-row canvases).
+   * When empty, palette connects only to `canvasListId`.
+   */
+  @Input() paletteConnectedDropLists: string[] = [];
   /** Scoped to user/item/vendor setup Edit Form Builder. */
   @Input() enforceUniqueDynamicModules = false;
   /**
@@ -35,6 +40,19 @@ export class FormBuilderWorkspaceComponent {
    * Used by setup-user / setup-item / setup-vendor Bulk Delete mode.
    */
   @Input() interactionLocked = false;
+  /**
+   * Setup-user / setup-item / setup-vendor only: Form Template–like rail
+   * proportions, Versions outside the default tabs, Field Settings header.
+   * Leave false for legacy forms-editor.
+   */
+  @Input() setupChrome = false;
+  /** Setup row-capacity Width in row options for the selected field. */
+  @Input() availableRowWidthPresets: Array<'third' | 'half' | 'full'> = [
+    'third',
+    'half',
+    'full',
+  ];
+  @Input() rowWidthCapacityHint: string | null = null;
 
   @Output() selectField = new EventEmitter<FormField>();
   @Output() duplicateField = new EventEmitter<FormField>();
@@ -46,6 +64,8 @@ export class FormBuilderWorkspaceComponent {
   @Output() restoreVersion = new EventEmitter<FormField[]>();
   @Output() versionsLoadingChange = new EventEmitter<boolean>();
   @Output() dynamicOptionsLoadingChange = new EventEmitter<boolean>();
+  /** Emitted when setup chrome closes Field Settings (deselect). */
+  @Output() clearSelection = new EventEmitter<void>();
 
   get selectedField(): FormField | null {
     return findFormField(this.schema, this.selectedFieldId);
@@ -59,6 +79,17 @@ export class FormBuilderWorkspaceComponent {
     return field.id;
   }
 
+  fieldTypeEyebrow(field: FormField): string {
+    const raw = (field.fieldTypeName || field.type || 'field').toString();
+    return raw.replace(/[-_]/g, ' ').trim().toUpperCase();
+  }
+
+  get resolvedPaletteConnectedDropLists(): string[] {
+    return this.paletteConnectedDropLists.length
+      ? this.paletteConnectedDropLists
+      : [this.canvasListId];
+  }
+
   setActiveTab(tab: FormBuilderTab): void {
     if (this.interactionLocked && tab === 'settings') {
       return;
@@ -69,6 +100,14 @@ export class FormBuilderWorkspaceComponent {
     }
 
     this.activeTabChange.emit(tab);
+  }
+
+  closeSettingsPanel(): void {
+    if (this.interactionLocked) {
+      return;
+    }
+    this.clearSelection.emit();
+    this.activeTabChange.emit('fields');
   }
 
   onDuplicateSelectedField(): void {
