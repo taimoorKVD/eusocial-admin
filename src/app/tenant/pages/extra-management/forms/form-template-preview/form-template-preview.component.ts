@@ -22,8 +22,9 @@ import { FormField } from '../../../../form-builder/models/form-field.model';
 
 /**
  * Admin Portal — Form Template Preview.
- * Renders the template with the same Regular Form pipeline employees use,
- * forced read-only (no submit / save / assignment APIs).
+ * Renders the template with the same Regular Form pipeline employees use.
+ * Fields are interactive for local testing (Conditional Logic, values, etc.);
+ * answers stay in-memory only — no submit / save / assignment APIs.
  */
 @Component({
   selector: 'app-form-template-preview',
@@ -124,16 +125,15 @@ export class FormTemplatePreviewComponent implements OnInit {
     return forkJoin(
       mapped.map((section) =>
         this.fieldMapper.resolveFields(section.builderFields).pipe(
-          map((fields) => {
-            const readonlyFields = this.asReadonly(fields);
-            return {
-              id: section.id,
-              name: section.name,
-              builderFields: section.builderFields,
-              fields: readonlyFields,
-              rows: this.buildSectionRows(section.builderRows, readonlyFields),
-            } satisfies EmployeeAssignmentSectionView;
-          }),
+          map((fields) => ({
+            id: section.id,
+            name: section.name,
+            builderFields: section.builderFields,
+            // Keep schema isReadonly as configured — do not force all fields
+            // read-only so admins can test Conditional Logic interactively.
+            fields,
+            rows: this.buildSectionRows(section.builderRows, fields),
+          } satisfies EmployeeAssignmentSectionView)),
         ),
       ),
     );
@@ -154,12 +154,5 @@ export class FormTemplatePreviewComponent implements OnInit {
           .filter((field): field is DynamicField => !!field),
       )
       .filter((row) => row.length > 0);
-  }
-
-  private asReadonly(fields: DynamicField[]): DynamicField[] {
-    return fields.map((field) => ({
-      ...field,
-      isReadonly: true,
-    }));
   }
 }

@@ -1,4 +1,5 @@
 import {
+  ChangeDetectorRef,
   Component,
   computed,
   DestroyRef,
@@ -11,6 +12,8 @@ import {
   viewChild,
   WritableSignal,
 } from '@angular/core';
+import { FieldSettingsComponent } from '../../../../form-builder/field-settings/field-settings.component';
+import { LogicRulesPanelComponent } from '../../../../forms/logic-rules-panel/logic-rules-panel.component';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -27,6 +30,7 @@ import { SharedModule } from '../../../../../shared/shared.module';
 import { TenantFormsService } from '../services/tenant-forms.service';
 import { FormStorageService } from '../../../../forms/services/form-storage.service';
 import { FormField } from '../../../../form-builder/models/form-field.model';
+import { FIELD_TEMPLATES } from '../../../../form-builder/data/field-templates';
 import {
   applyCanvasDrop,
   clearStaleConditionalLogic,
@@ -35,8 +39,15 @@ import {
   updateFormField,
 } from '../../../../form-builder/utils/form-field-operations';
 import {
+  CONDITION_ACTION_LABELS,
+  CONDITION_OPERATOR_LABELS,
+  getPrimaryActionType,
+  getPrimaryPredicate,
+  hasConfiguredSource,
+  normalizeConditionalLogic,
   pruneConditionalLogicForDeletedFields,
   resolveCollectionConditionalEffects,
+  serializeConditionalLogic,
 } from '../../../../../shared/conditional-logic';
 import { resolveCharacterLimit } from '../../../../../shared/dynamic-form/character-limit.utils';
 import {
@@ -49,9 +60,13 @@ import { FormEditorCoreModule } from '../../../../forms/form-editor-core.module'
 import { FormBuilderTab } from '../../../../forms/components/form-builder-workspace/form-builder-workspace.component';
 import { FormLogicRule } from '../../../../forms/logic-rules/logic-rule.models';
 import {
+  collectLogicRuleFieldIds,
   findLogicRulesUsingField,
   normalizeLogicRules,
   pruneLogicRulesForDeletedFields,
+  summarizeActions,
+  summarizeConditions,
+  summarizeRuleCard,
 } from '../../../../forms/logic-rules/logic-rule.utils';
 import { SectionFieldPreviewComponent } from '../components/section-field-preview/section-field-preview.component';
 import {
@@ -156,7 +171,15 @@ export class CreateFormComponent implements OnInit {
 
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly cdr = inject(ChangeDetectorRef);
   private readonly formsService = inject(TenantFormsService);
+  /** Used to open the existing Conditional Logic modal without duplicating it. */
+  private readonly fieldSettings = viewChild(FieldSettingsComponent);
+  /** Host for Automation Rules editor modal (list chrome hidden). */
+  private readonly logicRulesPanel = viewChild(LogicRulesPanelComponent);
+
+  readonly logicOverviewOpen = signal(false);
+  readonly logicOverviewTab = signal<'logicMap' | 'automationMap' | 'list'>('list');
   private readonly toastr = inject(ToastrService);
   private readonly userService = inject(TenantUserService);
   private readonly jobPositionService = inject(TenantJobPositionService);
@@ -244,6 +267,8 @@ export class CreateFormComponent implements OnInit {
   private loadedSchema: DynamicFormPayload | null = null;
 
   readonly sectionDialogOpen = signal(false);
+  /** UI-only: which Build canvas sections are collapsed. */
+  readonly collapsedSectionIds = signal<ReadonlySet<string>>(new Set());
   readonly sectionDialogMode = signal<'create' | 'rename'>('create');
   readonly editingSectionId = signal<string | null>(null);
   readonly sectionNameInput = signal('');
@@ -285,7 +310,50 @@ export class CreateFormComponent implements OnInit {
   readonly paletteListId = 'createFormPaletteList';
   readonly canvasListId = 'createFormCanvasList';
   readonly existingRowListId = 'createFormExistingRowList';
+  /** Empty-state drop target when the form has no sections yet. */
+  readonly emptyCanvasListId = 'createFormEmptyCanvas';
+  /** Stable empty data ref for CDK drop lists that only accept palette drops. */
+  readonly emptyDropListData: FormField[] = [];
   readonly builderModuleName = 'dynamic-forms';
+  /** Input Fields header count (“N types”) — matches palette templates. */
+  readonly paletteFieldTypeCount = FIELD_TEMPLATES.length;
+
+  /**
+   * Drop-list ids the palette connects to in the always-on Build workspace.
+   * Empty canvas when no sections; otherwise each row canvas + per-section new-row zone.
+   */
+  readonly paletteConnectedDropLists = computed(() => {
+    const sections = this.sections();
+    if (!sections.length) {
+      return [this.emptyCanvasListId];
+    }
+    const ids: string[] = [];
+    for (const section of sections) {
+      for (const row of section.rows) {
+        ids.push(this.rowCanvasListId(section.id, row.id));
+      }
+      ids.push(this.sectionNewRowListId(section.id));
+    }
+    return ids;
+  });
+
+  readonly draftStatusLabel = computed(() =>
+    this.isEditing() ? 'Editing saved template' : 'Draft · Not saved yet',
+  );
+
+  /** Stable per-row builder schemas for canvas CDK lists (rebuilt when sections change). */
+  readonly rowCanvasSchemas = computed(() => {
+    const map = new Map<string, FormField[]>();
+    for (const section of this.sections()) {
+      for (const row of section.rows) {
+        map.set(
+          `${section.id}:${row.id}`,
+          row.fields.map((field) => mapConfigFieldToBuilder(field)),
+        );
+      }
+    }
+    return map;
+  });
   /** Prevents click-to-edit while a row field is being dragged. */
   private isReorderingExistingFields = false;
 
@@ -349,8 +417,17 @@ export class CreateFormComponent implements OnInit {
     return (
       this.builderSchema().find((field) => field.id === id) ??
       this.rowBuilderFields().find((field) => field.id === id) ??
+      this.logicSchemaFields().find((field) => field.id === id) ??
       null
     );
+  });
+
+  /** Field-type eyebrow for the Field Settings panel chrome (e.g. TEXTAREA). */
+  readonly selectedFieldTypeEyebrow = computed(() => {
+    const field = this.selectedBuilderField();
+    if (!field) return '';
+    const raw = (field.fieldTypeName || field.type || 'field').toString();
+    return raw.replace(/[-_]/g, ' ').trim().toUpperCase();
   });
 
   readonly isDraftFieldUsedInLogicRules = computed(() => {
@@ -360,6 +437,38 @@ export class CreateFormComponent implements OnInit {
     }
     return findLogicRulesUsingField(this.logicRules(), field.id).length > 0;
   });
+
+  /** Fields with configured Conditional Logic (enabled + source). */
+  readonly fieldsWithConditionalLogicIds = computed(() =>
+    this.logicSchemaFields()
+      .filter((field) => this.fieldHasConfiguredConditionalLogic(field))
+      .map((field) => field.id),
+  );
+
+  /** Fields referenced by at least one Automation Rule. */
+  readonly fieldsWithAutomationRuleIds = computed(() => {
+    const ids = new Set<string>();
+    for (const rule of this.logicRules()) {
+      for (const id of collectLogicRuleFieldIds(rule)) {
+        ids.add(id);
+      }
+    }
+    return [...ids];
+  });
+
+  /**
+   * Badge count = configured field conditions + automation rules.
+   * (Matches Figma: 2 logic + 2 automations → 4.)
+   */
+  readonly logicAutomationsCount = computed(
+    () => this.fieldsWithConditionalLogicIds().length + this.logicRules().length,
+  );
+
+  readonly configuredConditionalLogicFields = computed(() =>
+    this.logicSchemaFields().filter((field) =>
+      this.fieldHasConfiguredConditionalLogic(field),
+    ),
+  );
 
   readonly canSaveDraftField = computed(() => {
     const selected = this.selectedBuilderField();
@@ -383,9 +492,9 @@ export class CreateFormComponent implements OnInit {
   readonly totalSteps = 3;
 
   readonly steps: WizardStep[] = [
-    { label: 'Form Details', number: 1 },
-    { label: 'Assign & Report', number: 2 },
-    { label: 'Frequency', number: 3 },
+    { label: 'Build', number: 1 },
+    { label: 'Assign & report', number: 2 },
+    { label: 'Schedule', number: 3 },
   ];
 
   readonly isFirstStep = computed(() => this.currentStep() === 1);
@@ -721,23 +830,40 @@ export class CreateFormComponent implements OnInit {
 
   nextStep(): void {
     if (this.currentStep() < this.totalSteps && this.canProceed()) {
-      this.closeFieldBuilder();
+      this.showBuilderPalette();
       this.currentStep.update((s) => s + 1);
     }
   }
 
   prevStep(): void {
     if (this.currentStep() > 1) {
-      this.closeFieldBuilder();
+      this.showBuilderPalette();
       this.currentStep.update((s) => s - 1);
     }
   }
 
   goToStep(stepNum: number): void {
     if (stepNum < this.currentStep()) {
-      this.closeFieldBuilder();
+      this.showBuilderPalette();
       this.currentStep.set(stepNum);
     }
+  }
+
+  /** Header primary action: advance wizard, or persist on the last step. */
+  saveAndContinue(): void {
+    if (this.isLastStep()) {
+      this.save();
+      return;
+    }
+    this.nextStep();
+  }
+
+  /** Disabled state for the Figma “Save & continue” control. */
+  canSaveAndContinue(): boolean {
+    if (this.isLastStep()) {
+      return this.canSave() && !this.submitting();
+    }
+    return this.canProceed();
   }
 
   // ── Lifecycle ────────────────────────────────────────────────
@@ -1519,6 +1645,256 @@ export class CreateFormComponent implements OnInit {
     this.sectionDialogOpen.set(true);
   }
 
+  /** Figma empty-state CTA — same dialog as Add Section. */
+  addFirstSection(): void {
+    this.openAddSectionDialog();
+  }
+
+  isSectionCollapsed(sectionId: string): boolean {
+    return this.collapsedSectionIds().has(sectionId);
+  }
+
+  toggleSectionCollapsed(sectionId: string): void {
+    this.collapsedSectionIds.update((current) => {
+      const next = new Set(current);
+      if (next.has(sectionId)) {
+        next.delete(sectionId);
+      } else {
+        next.add(sectionId);
+      }
+      return next;
+    });
+  }
+
+  /** Duplicate a section (new ids for section, rows, and fields). */
+  duplicateSection(section: CustomFormSection): void {
+    const copyName = `${section.name} Copy`;
+    let name = copyName;
+    let suffix = 2;
+    while (
+      this.sections().some(
+        (item) => item.name.trim().toLocaleLowerCase() === name.toLocaleLowerCase(),
+      )
+    ) {
+      name = `${copyName} ${suffix}`;
+      suffix += 1;
+    }
+
+    const duplicated: CustomFormSection = {
+      ...createCustomSection(name),
+      rows: section.rows.map((row) => ({
+        id: createId('row'),
+        fields: row.fields.map((field) => ({
+          ...field,
+          id: createId('field'),
+          name: `${field.name}_copy`,
+          isDefault: false,
+        })),
+      })),
+    };
+
+    this.sections.update((list) => {
+      const index = list.findIndex((item) => item.id === section.id);
+      if (index < 0) {
+        return [...list, duplicated];
+      }
+      const next = [...list];
+      next.splice(index + 1, 0, duplicated);
+      return next;
+    });
+  }
+
+  /** True when a row can still accept another column (Figma empty-column slot). */
+  rowCanAddColumn(row: FormRow): boolean {
+    return row.fields.length > 0 && row.fields.length < 3;
+  }
+
+  rowCanvasListId(sectionId: string, rowId: string): string {
+    return `createFormCanvas_${sectionId}_${rowId}`;
+  }
+
+  sectionNewRowListId(sectionId: string): string {
+    return `createFormNewRow_${sectionId}`;
+  }
+
+  getRowCanvasSchema(sectionId: string, rowId: string): FormField[] {
+    return this.rowCanvasSchemas().get(`${sectionId}:${rowId}`) ?? [];
+  }
+
+  focusWorkspaceRow(sectionId: string, rowId: string): void {
+    this.pendingFieldTarget.set({ sectionId, rowId });
+    this.initializeRowBuilderFields();
+    this.fieldBuilderOpen.set(true);
+  }
+
+  onSelectWorkspaceField(
+    sectionId: string,
+    rowId: string,
+    field: FormField,
+  ): void {
+    this.focusWorkspaceRow(sectionId, rowId);
+    this.onSelectField(field);
+  }
+
+  /**
+   * Empty canvas: first palette drop creates Section 1 + a row and commits the field.
+   */
+  onEmptyCanvasDrop(event: CdkDragDrop<FormField[]>): void {
+    if (event.previousContainer === event.container || this.hasSections()) {
+      return;
+    }
+
+    const result = applyCanvasDrop(event, []);
+    if (!result.insertedField) {
+      return;
+    }
+
+    const section = createCustomSection(this.nextDefaultSectionName());
+    const row = createEmptyRow();
+    const mapped = mapBuilderFieldToConfig(result.insertedField, {
+      preserveId: true,
+    });
+
+    hydrateFormTemplateDynamicSelectField(this.formStorageService, mapped)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((hydrated) => {
+        const field: FormFieldConfig = {
+          ...hydrated,
+          isDefault: false,
+          value: hydrated.value ?? '',
+        };
+        this.sections.set([
+          {
+            ...section,
+            rows: [{ ...row, fields: [field] }],
+          },
+        ]);
+        this.focusWorkspaceRow(section.id, row.id);
+        this.onSelectField(mapConfigFieldToBuilder(field));
+        this.initializeRowLocationDependencies(section.id, row.id);
+      });
+  }
+
+  /** Drop onto an existing row canvas — insert/reorder and commit immediately. */
+  onWorkspaceRowDrop(
+    sectionId: string,
+    rowId: string,
+    event: CdkDragDrop<FormField[]>,
+  ): void {
+    this.focusWorkspaceRow(sectionId, rowId);
+    const current = this.getRowCanvasSchema(sectionId, rowId);
+    const result = applyCanvasDrop(event, current);
+
+    if (event.previousContainer === event.container) {
+      this.replaceRowFieldsFromBuilder(sectionId, rowId, result.schema);
+      return;
+    }
+
+    const inserted = result.insertedField;
+    if (!inserted) {
+      this.replaceRowFieldsFromBuilder(sectionId, rowId, result.schema);
+      return;
+    }
+
+    const mapped = mapBuilderFieldToConfig(inserted, { preserveId: true });
+    hydrateFormTemplateDynamicSelectField(this.formStorageService, mapped)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((hydrated) => {
+        const builderHydrated = mapConfigFieldToBuilder(hydrated);
+        const nextSchema = result.schema.map((field) =>
+          field.id === inserted.id ? builderHydrated : field,
+        );
+        this.replaceRowFieldsFromBuilder(sectionId, rowId, nextSchema);
+        this.focusWorkspaceRow(sectionId, rowId);
+        this.onSelectField(builderHydrated);
+        this.initializeRowLocationDependencies(sectionId, rowId);
+      });
+  }
+
+  /** Drop below a section to append a new row with the dragged field. */
+  onSectionNewRowDrop(
+    sectionId: string,
+    event: CdkDragDrop<FormField[]>,
+  ): void {
+    if (event.previousContainer === event.container) {
+      return;
+    }
+
+    const result = applyCanvasDrop(event, []);
+    if (!result.insertedField) {
+      return;
+    }
+
+    const row = createEmptyRow();
+    const mapped = mapBuilderFieldToConfig(result.insertedField, {
+      preserveId: true,
+    });
+
+    hydrateFormTemplateDynamicSelectField(this.formStorageService, mapped)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((hydrated) => {
+        const field: FormFieldConfig = {
+          ...hydrated,
+          isDefault: false,
+          value: hydrated.value ?? '',
+        };
+        this.sections.update((list) =>
+          list.map((section) =>
+            section.id === sectionId
+              ? { ...section, rows: [...section.rows, { ...row, fields: [field] }] }
+              : section,
+          ),
+        );
+        this.focusWorkspaceRow(sectionId, row.id);
+        this.onSelectField(mapConfigFieldToBuilder(field));
+        this.initializeRowLocationDependencies(sectionId, row.id);
+      });
+  }
+
+  private nextDefaultSectionName(): string {
+    let n = this.sections().length + 1;
+    let name = `Section ${n}`;
+    while (
+      this.sections().some(
+        (section) => section.name.trim().toLocaleLowerCase() === name.toLocaleLowerCase(),
+      )
+    ) {
+      n += 1;
+      name = `Section ${n}`;
+    }
+    return name;
+  }
+
+  private replaceRowFieldsFromBuilder(
+    sectionId: string,
+    rowId: string,
+    schema: FormField[],
+  ): void {
+    const configs = schema.map((field) => {
+      const mapped = mapBuilderFieldToConfig(field, { preserveId: true });
+      return {
+        ...mapped,
+        isDefault: false,
+        value: mapped.value ?? '',
+      };
+    });
+    this.patchRowFields(sectionId, rowId, () => configs);
+    this.rowBuilderFields.set(schema);
+  }
+
+  private findFieldLocation(
+    fieldId: string,
+  ): { sectionId: string; rowId: string } | null {
+    for (const section of this.sections()) {
+      for (const row of section.rows) {
+        if (row.fields.some((field) => field.id === fieldId)) {
+          return { sectionId: section.id, rowId: row.id };
+        }
+      }
+    }
+    return null;
+  }
+
   openRenameSectionDialog(section: CustomFormSection): void {
     this.sectionDialogMode.set('rename');
     this.editingSectionId.set(section.id);
@@ -1566,6 +1942,7 @@ export class CreateFormComponent implements OnInit {
         ),
       );
     } else {
+      // Start with no rows so the Figma empty-section state is shown.
       this.sections.update((list) => [...list, createCustomSection(name)]);
     }
 
@@ -1772,6 +2149,7 @@ export class CreateFormComponent implements OnInit {
   closeFieldBuilder(): void {
     const target = this.pendingFieldTarget();
     this.fieldBuilderOpen.set(false);
+    this.logicOverviewOpen.set(false);
     this.pendingFieldTarget.set(null);
     this.builderActiveTab.set('fields');
     this.resetBuilderDraft();
@@ -1788,12 +2166,22 @@ export class CreateFormComponent implements OnInit {
   }
 
   onBuilderActiveTabChange(tab: FormBuilderTab): void {
+    // Automation Rules / Versions removed from Form Template builder chrome.
+    if (tab === 'logic' || tab === 'versions') {
+      return;
+    }
+    // Input Fields and Input Customization are mutually exclusive.
+    if (tab === 'fields') {
+      this.showBuilderPalette();
+      return;
+    }
     if (tab === 'settings' && !this.selectedFieldId()) {
       return;
     }
     this.builderActiveTab.set(tab);
   }
 
+  /** Hide Input Customization, clear canvas selection, show Input Fields. */
   showBuilderPalette(): void {
     this.selectedFieldId.set(null);
     this.builderActiveTab.set('fields');
@@ -1822,16 +2210,257 @@ export class CreateFormComponent implements OnInit {
     this.builderActiveTab.set('settings');
   }
 
+  /**
+   * Form Template canvas shortcut: open existing Conditional Logic modal for a field.
+   * Selects the field so field-settings (and its modal) load the correct context.
+   */
+  onOpenFieldConditionalLogic(field: FormField): void {
+    this.logicOverviewOpen.set(false);
+    const location = this.findFieldLocation(field.id);
+    if (location) {
+      this.focusWorkspaceRow(location.sectionId, location.rowId);
+    }
+    this.selectedFieldId.set(field.id);
+    this.builderActiveTab.set('settings');
+    this.cdr.detectChanges();
+    this.fieldSettings()?.openConditionModal();
+  }
+
+  /**
+   * Form Template canvas shortcut: open existing Automation Rules editor popup.
+   */
+  onOpenFieldAutomationRules(field: FormField): void {
+    this.logicOverviewOpen.set(false);
+    const location = this.findFieldLocation(field.id);
+    if (location) {
+      this.focusWorkspaceRow(location.sectionId, location.rowId);
+    }
+    this.selectedFieldId.set(field.id);
+    this.cdr.detectChanges();
+
+    const existing = findLogicRulesUsingField(this.logicRules(), field.id);
+    const panel = this.logicRulesPanel();
+    if (!panel) {
+      return;
+    }
+
+    if (existing.length) {
+      panel.openEditEditor(existing[0], field.id);
+      return;
+    }
+
+    panel.openCreateEditor(field.id);
+  }
+
+  onExistingFieldQuickAction(
+    event: Event,
+    field: FormFieldConfig,
+    action: 'condition' | 'automation',
+  ): void {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (this.isReorderingExistingFields) {
+      return;
+    }
+
+    const builderField = this.rowBuilderFields().find((item) => item.id === field.id);
+    if (!builderField) {
+      return;
+    }
+
+    if (action === 'condition') {
+      this.onOpenFieldConditionalLogic(builderField);
+      return;
+    }
+
+    this.onOpenFieldAutomationRules(builderField);
+  }
+
+  fieldHasConfiguredConditionalLogic(field: FormField | FormFieldConfig): boolean {
+    const logic = normalizeConditionalLogic(field.condition ?? null);
+    return !!logic?.enabled && hasConfiguredSource(logic);
+  }
+
+  normalizeConditionEnabled(field: FormField | FormFieldConfig): boolean {
+    return !!normalizeConditionalLogic(field.condition ?? null)?.enabled;
+  }
+
+  getConditionSourceId(field: FormField): string {
+    return getPrimaryPredicate(normalizeConditionalLogic(field.condition ?? null)).fieldId;
+  }
+
+  getConditionSourceLabel(field: FormField): string {
+    const sourceId = this.getConditionSourceId(field);
+    return (
+      this.logicSchemaFields().find((item) => item.id === sourceId)?.label ||
+      'No field chosen yet'
+    );
+  }
+
+  fieldHasAutomationRules(fieldId: string): boolean {
+    return findLogicRulesUsingField(this.logicRules(), fieldId).length > 0;
+  }
+
+  openLogicOverview(tab: 'logicMap' | 'automationMap' | 'list' = 'list'): void {
+    this.logicOverviewTab.set(tab);
+    this.logicOverviewOpen.set(true);
+  }
+
+  closeLogicOverview(): void {
+    this.logicOverviewOpen.set(false);
+  }
+
+  setLogicOverviewTab(tab: 'logicMap' | 'automationMap' | 'list'): void {
+    this.logicOverviewTab.set(tab);
+  }
+
+  /**
+   * Logic & automations → Add Logic: open Conditional Logic in pick-target mode.
+   * Does not preselect a field — user chooses the target in the modal first.
+   */
+  onOverviewAddLogic(): void {
+    const fields = this.logicSchemaFields();
+    if (!fields.length) {
+      return;
+    }
+
+    this.logicOverviewOpen.set(false);
+    // Field settings host lives on the Build step — ensure it is mounted.
+    if (this.currentStep() !== 1) {
+      this.currentStep.set(1);
+    }
+    const first = fields[0];
+    const location = this.findFieldLocation(first.id);
+    if (location) {
+      this.focusWorkspaceRow(location.sectionId, location.rowId);
+    }
+    if (!this.selectedFieldId()) {
+      this.selectedFieldId.set(first.id);
+    }
+    this.builderActiveTab.set('settings');
+    this.cdr.detectChanges();
+    // Field-settings host may mount on the next CD after switching to Build.
+    queueMicrotask(() =>
+      this.fieldSettings()?.openConditionModal({ pickTargetField: true }),
+    );
+  }
+
+  onConditionTargetFieldChange(fieldId: string): void {
+    const field = this.logicSchemaFields().find((item) => item.id === fieldId);
+    if (!field) {
+      return;
+    }
+    const location = this.findFieldLocation(field.id);
+    if (location) {
+      this.focusWorkspaceRow(location.sectionId, location.rowId);
+    }
+    this.selectedFieldId.set(field.id);
+    this.builderActiveTab.set('settings');
+    this.cdr.detectChanges();
+  }
+
+  onOverviewEditLogic(field: FormField): void {
+    this.onOpenFieldConditionalLogic(field);
+  }
+
+  onOverviewToggleLogic(field: FormField, enabled: boolean): void {
+    const logic = normalizeConditionalLogic(field.condition ?? null);
+    if (!logic) {
+      return;
+    }
+    this.onUpdateField({
+      ...field,
+      condition: serializeConditionalLogic({ ...logic, enabled }),
+    });
+  }
+
+  onOverviewAddAutomation(): void {
+    this.logicOverviewOpen.set(false);
+    this.cdr.detectChanges();
+    this.logicRulesPanel()?.openCreateEditor();
+  }
+
+  onOverviewEditAutomation(rule: FormLogicRule): void {
+    this.logicOverviewOpen.set(false);
+    this.cdr.detectChanges();
+    this.logicRulesPanel()?.openEditEditor(rule);
+  }
+
+  onOverviewToggleAutomation(rule: FormLogicRule, enabled: boolean): void {
+    this.logicRulesPanel()?.toggleRuleEnabled(rule, enabled);
+  }
+
+  summarizeFieldCondition(field: FormField): string {
+    const logic = normalizeConditionalLogic(field.condition ?? null);
+    if (!logic) {
+      return 'No conditional logic configured';
+    }
+    const predicate = getPrimaryPredicate(logic);
+    const source =
+      this.logicSchemaFields().find((item) => item.id === predicate.fieldId)?.label ||
+      'a field';
+    const operator =
+      CONDITION_OPERATOR_LABELS[predicate.operator] ?? predicate.operator;
+    const needsValue = !['isEmpty', 'isNotEmpty', 'checked', 'unchecked'].includes(
+      predicate.operator,
+    );
+    const valueText =
+      needsValue && predicate.value != null && String(predicate.value).trim() !== ''
+        ? ` ${String(predicate.value)}`
+        : '';
+    const action = CONDITION_ACTION_LABELS[getPrimaryActionType(logic)] ?? 'Update field';
+    return `${action} when ${source} ${operator}${valueText}`;
+  }
+
+  summarizeAutomationRule(rule: FormLogicRule): string {
+    const schema = this.logicSchemaFields();
+    return `If ${summarizeConditions(rule, schema)}, then ${summarizeActions(rule)}`;
+  }
+
+  automationRuleCardSummary(rule: FormLogicRule): { when: string; then: string } {
+    return summarizeRuleCard(rule, this.logicSchemaFields());
+  }
+
+  fieldLocationLabel(fieldId: string): string {
+    for (let s = 0; s < this.sections().length; s++) {
+      const section = this.sections()[s];
+      for (let r = 0; r < section.rows.length; r++) {
+        if (section.rows[r].fields.some((field) => field.id === fieldId)) {
+          return `Section ${s + 1}, Row ${r + 1}`;
+        }
+      }
+    }
+    return 'This form';
+  }
+
   onDuplicateField(field: FormField): void {
-    if (this.isExistingRowField(field.id)) {
-      const result = duplicateFormField(field, this.rowBuilderFields());
-      this.rowBuilderFields.set(result.schema);
+    const location =
+      this.findFieldLocation(field.id) ?? this.pendingFieldTarget();
+
+    if (location) {
+      this.focusWorkspaceRow(location.sectionId, location.rowId);
+      const current = this.getRowCanvasSchema(location.sectionId, location.rowId);
+      const result = duplicateFormField(field, current);
       if (result.duplicate) {
-        const mapped = mapBuilderFieldToConfig(result.duplicate, { preserveId: true });
+        const mapped = mapBuilderFieldToConfig(result.duplicate, {
+          preserveId: true,
+        });
         hydrateFormTemplateDynamicSelectField(this.formStorageService, mapped)
           .pipe(takeUntilDestroyed(this.destroyRef))
-          .subscribe((hydrated) => this.appendRowFieldToSections(hydrated));
-        this.onSelectField(result.duplicate);
+          .subscribe((hydrated) => {
+            const builderHydrated = mapConfigFieldToBuilder(hydrated);
+            const nextSchema = result.schema.map((item) =>
+              item.id === result.duplicate!.id ? builderHydrated : item,
+            );
+            this.replaceRowFieldsFromBuilder(
+              location.sectionId,
+              location.rowId,
+              nextSchema,
+            );
+            this.focusWorkspaceRow(location.sectionId, location.rowId);
+            this.onSelectField(builderHydrated);
+          });
       }
       return;
     }
@@ -1851,10 +2480,12 @@ export class CreateFormComponent implements OnInit {
   }
 
   onDeleteField(field: FormField): void {
-    const blockReason = getLocationFieldDeleteBlockReason(
-      field,
-      this.builderCombinedSchema(),
-    );
+    const location =
+      this.findFieldLocation(field.id) ?? this.pendingFieldTarget();
+    const schemaForBlock = location
+      ? this.getRowCanvasSchema(location.sectionId, location.rowId)
+      : this.builderCombinedSchema();
+    const blockReason = getLocationFieldDeleteBlockReason(field, schemaForBlock);
     if (blockReason) {
       return;
     }
@@ -1863,9 +2494,12 @@ export class CreateFormComponent implements OnInit {
       pruneLogicRulesForDeletedFields(this.logicRules(), [field.id]),
     );
 
-    if (this.isExistingRowField(field.id)) {
+    if (location) {
+      this.focusWorkspaceRow(location.sectionId, location.rowId);
       this.rowBuilderFields.update((fields) => removeFormField(field, fields));
-      this.builderSchema.update((fields) => clearStaleConditionalLogic(fields, [field.id]));
+      this.builderSchema.update((fields) =>
+        clearStaleConditionalLogic(fields, [field.id]),
+      );
       this.removeRowFieldFromSections(field.id);
       this.pruneSectionConditions([field.id]);
       const selectedId = this.selectedFieldId();
@@ -1878,7 +2512,9 @@ export class CreateFormComponent implements OnInit {
 
     const nextSchema = removeFormField(field, this.builderSchema());
     this.builderSchema.set(nextSchema);
-    this.rowBuilderFields.update((fields) => clearStaleConditionalLogic(fields, [field.id]));
+    this.rowBuilderFields.update((fields) =>
+      clearStaleConditionalLogic(fields, [field.id]),
+    );
     this.pruneSectionConditions([field.id]);
     const selectedId = this.selectedFieldId();
     if (selectedId && !nextSchema.some((item) => item.id === selectedId)) {
@@ -1899,7 +2535,11 @@ export class CreateFormComponent implements OnInit {
   }
 
   onUpdateField(updated: FormField): void {
-    if (this.isExistingRowField(updated.id)) {
+    const location =
+      this.findFieldLocation(updated.id) ?? this.pendingFieldTarget();
+
+    if (location) {
+      this.focusWorkspaceRow(location.sectionId, location.rowId);
       this.rowBuilderFields.update((fields) => updateFormField(updated, fields));
       const mapped = mapBuilderFieldToConfig(updated, { preserveId: true });
       hydrateFormTemplateDynamicSelectField(this.formStorageService, mapped)
@@ -1911,33 +2551,20 @@ export class CreateFormComponent implements OnInit {
     this.builderSchema.set(updateFormField(updated, this.builderSchema()));
   }
 
-  /** Persist all newly added draft fields into the section/row that opened Add Field. */
+  /**
+   * Legacy builder Save — in the always-on workspace, field edits commit live.
+   * This only returns the right rail to the palette (does not leave Build).
+   */
   onBuilderSave(): void {
-    const selected = this.selectedBuilderField();
-
-    // Existing row-field edits are applied live; Save just returns to the palette.
-    if (selected && this.isExistingRowField(selected.id)) {
-      this.selectedFieldId.set(null);
-      this.builderActiveTab.set('fields');
-      this.closeFieldBuilder();
-      return;
+    this.showBuilderPalette();
+    const target = this.pendingFieldTarget();
+    if (target) {
+      try {
+        this.initializeRowLocationDependencies(target.sectionId, target.rowId);
+      } catch {
+        // Location cascade refresh is best-effort.
+      }
     }
-
-    if (!this.canSaveDraftField()) return;
-
-    // Keep every newly dragged field from this builder session (order preserved).
-    const fieldsToAdd = this.builderSchema().filter((field) => !!field.label?.trim());
-    if (!fieldsToAdd.length) return;
-
-    for (const field of fieldsToAdd) {
-      const mapped = mapBuilderFieldToConfig(field, { preserveId: true });
-      hydrateFormTemplateDynamicSelectField(this.formStorageService, mapped)
-        .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe((hydrated) => this.appendFieldToPendingTarget(hydrated));
-    }
-
-    // closeFieldBuilder also refreshes row location dependencies for the target row.
-    this.closeFieldBuilder();
   }
 
   private isExistingRowField(fieldId: string): boolean {
@@ -2352,11 +2979,10 @@ export class CreateFormComponent implements OnInit {
     const target = this.pendingFieldTarget();
     if (!target) return;
 
-    // Keep consistent sizing with existing section fields; always append to the clicked row.
+    // Always append to the clicked row; preserve builder width when set.
     const newField: FormFieldConfig = {
       ...field,
       isDefault: false,
-      width: undefined,
       value: field.value ?? '',
     };
 
@@ -2508,9 +3134,26 @@ export class CreateFormComponent implements OnInit {
     return section as CustomFormSection;
   }
 
-  preview(): void {
-    const payload = this.buildPayload();
-    console.log('[Dynamic Forms] Preview payload:', payload);
+  /** Preview requires a persisted template id (same as listing Preview action). */
+  canPreviewTemplate(): boolean {
+    const id = Number(this.formId());
+    return Number.isFinite(id) && id > 0;
+  }
+
+  /**
+   * Open the shared Form Template preview page (FormTemplatePreviewComponent).
+   * Unsaved create drafts have no id — do not navigate or auto-save.
+   */
+  openTemplatePreview(): void {
+    if (!this.canPreviewTemplate()) {
+      this.toastr.info('Save the form first to preview it.');
+      return;
+    }
+
+    const id = this.formId();
+    this.router.navigate(['/dynamic-forms', 'preview', id], {
+      queryParams: { returnTo: `/dynamic-forms/edit/${id}` },
+    });
   }
 
   cancel(): void {

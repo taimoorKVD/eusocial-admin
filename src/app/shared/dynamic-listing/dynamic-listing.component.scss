@@ -2,6 +2,64 @@
   .column-modal {
     animation: columnModalIn 0.2s ease-out;
   }
+
+  &--modern {
+    /* Parent listing pages provide the outer shell/border. */
+    overflow: hidden;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+
+    .dynamic-listing__toolbar {
+      border-color: #eef2f7;
+    }
+
+    .dynamic-listing__th {
+      padding-top: 0.85rem;
+      padding-bottom: 0.85rem;
+      font-size: 0.6875rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #9ca3af;
+      background: transparent;
+    }
+
+    thead {
+      background: transparent;
+      color: inherit;
+    }
+
+    thead tr {
+      border-bottom: 1px solid #eef2f7;
+    }
+
+    .dynamic-listing__row {
+      border-color: #eef2f7;
+
+      &:hover {
+        background: #fafafa;
+      }
+
+      &.bg-orange-50 {
+        background: #fff7ed;
+      }
+    }
+
+    .dynamic-listing__td {
+      padding-top: 1rem;
+      padding-bottom: 1rem;
+    }
+
+    .dynamic-listing__empty {
+      padding-top: 3rem;
+      padding-bottom: 3rem;
+
+      p {
+        color: #9ca3af;
+      }
+    }
+  }
 }
 
 .column-modal-backdrop {

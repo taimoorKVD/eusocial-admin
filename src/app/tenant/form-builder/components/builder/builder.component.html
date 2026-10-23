@@ -1,5 +1,5 @@
 <div class="font-ibm" [class.opacity-50]="disabled">
-  <p class="mb-3 text-xs text-slate-500">
+  <p class="mb-2 text-[11px] leading-snug text-slate-500">
     @if (disabled) {
       Finish or cancel Bulk Delete to add fields.
     } @else {
@@ -31,12 +31,18 @@
         tabindex="0"
         role="button"
         [attr.aria-label]="'More information about ' + field.label"
+        (mouseenter)="showPaletteTooltip($event)"
+        (mouseleave)="hidePaletteTooltip()"
+        (focus)="showPaletteTooltip($event)"
+        (blur)="hidePaletteTooltip()"
+        (mousedown)="$event.stopPropagation()"
       >
         <svg class="palette-tooltip-trigger__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
           <circle cx="12" cy="12" r="10" />
           <path stroke-linecap="round" d="M12 16v-4M12 8h.01" />
         </svg>
-        <span role="tooltip" class="app-tooltip app-tooltip--top-end font-ibm">
+        <!-- Source markup for portal clone; in-flow tooltip is hidden (overflow parents clip it). -->
+        <span role="tooltip" class="app-tooltip app-tooltip--top-end font-ibm palette-tooltip-source">
           <ng-container [ngSwitch]="field.type">
             <ng-container *ngSwitchCase="'text'">Use for short text entries such as titles, usernames, or single-line responses.</ng-container>
             <ng-container *ngSwitchCase="'email'">Collect a valid email address from the user.</ng-container>

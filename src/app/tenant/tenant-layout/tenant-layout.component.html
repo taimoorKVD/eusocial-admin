@@ -32,10 +32,12 @@
       (click)="sidebarOpen = false">
     </div>
 
-    <!-- Sidebar -->
+    <!-- Sidebar (collapsed = compact rail, never removed from layout) -->
     <app-tenant-sidebar
       [isOpen]="sidebarOpen"
+      [collapsed]="sidebarCollapsed()"
       (closeSidebar)="sidebarOpen = false"
+      (toggleCollapsed)="toggleSidebarCollapsed()"
       class="z-50">
     </app-tenant-sidebar>
 
