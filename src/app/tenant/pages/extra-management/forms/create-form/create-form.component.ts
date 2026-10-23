@@ -2618,21 +2618,40 @@ export class CreateFormComponent implements OnInit {
     return operator;
   }
 
-  automationMapActionCards(rule: FormLogicRule): Array<{ type: string; label: string }> {
+  automationMapActionCards(
+    rule: FormLogicRule,
+  ): Array<{ type: string; label: string; detail: string }> {
     if (!rule.actions.length) {
-      return [{ type: 'none', label: 'No action configured' }];
+      return [{ type: 'none', label: 'No action configured', detail: 'Add an action to this rule' }];
     }
-    return rule.actions.map((action) => ({
-      type: action.type,
-      label:
-        action.type === 'purchaseRequest'
-          ? 'Create purchase request'
-          : action.type === 'sendNotification'
-            ? 'Send notification'
-            : action.type === 'maintenanceRequest'
-              ? 'Create maintenance request'
-              : summarizeActions({ ...rule, actions: [action] }),
-    }));
+    return rule.actions.map((action) => {
+      if (action.type === 'purchaseRequest') {
+        return {
+          type: action.type,
+          label: 'Create purchase request',
+          detail: 'Creates a purchase request on submit',
+        };
+      }
+      if (action.type === 'sendNotification') {
+        return {
+          type: action.type,
+          label: 'Send notification',
+          detail: 'Alert to everyone in the position',
+        };
+      }
+      if (action.type === 'maintenanceRequest') {
+        return {
+          type: action.type,
+          label: 'Create maintenance request',
+          detail: 'Creates a maintenance request on submit',
+        };
+      }
+      return {
+        type: action.type,
+        label: summarizeActions({ ...rule, actions: [action] }),
+        detail: 'After submit',
+      };
+    });
   }
 
   automationRunOrdinal(index: number): string {
@@ -2662,6 +2681,27 @@ export class CreateFormComponent implements OnInit {
       .replace(/[-_]/g, ' ')
       .trim()
       .replace(/\b\w/g, (ch) => ch.toUpperCase());
+  }
+
+  /** Compact glyph for Automation map answer cards (Figma-style). */
+  automationMapFieldGlyph(field: FormField | null | undefined): string {
+    const type = (field?.fieldTypeName || field?.type || '').toString().toLowerCase();
+    if (type.includes('number') || type.includes('measurement') || type.includes('rating')) {
+      return '#';
+    }
+    if (type.includes('checkbox') || type.includes('radio') || type.includes('select')) {
+      return '☑';
+    }
+    if (type.includes('temp') || type.includes('temperature')) {
+      return '°';
+    }
+    if (type.includes('image') || type.includes('photo') || type.includes('file')) {
+      return '▣';
+    }
+    if (type.includes('date') || type.includes('time')) {
+      return '◷';
+    }
+    return '=';
   }
 
   fieldLocationLabel(fieldId: string): string {
