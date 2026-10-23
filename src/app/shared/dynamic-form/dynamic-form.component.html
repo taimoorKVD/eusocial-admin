@@ -12,9 +12,7 @@
   <div
     class="grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-6"
     [class.md:grid-cols-1]="typeformMode()"
-    [class.sm:grid-cols-2]="isSectionedLayout()"
-    [class.lg:grid-cols-3]="isSectionedLayout()"
-    [class.xl:grid-cols-4]="isSectionedLayout()"
+    [class.md:grid-cols-12]="isSectionedLayout()"
   >
     @for (item of layoutItems(); track item.key) {
       @if (item.kind === 'heading') {
@@ -28,6 +26,9 @@
         <div
           [class.col-span-2]="typeformMode() || (!isSectionedLayout() && isFullWidthField(field))"
           [class.col-span-full]="isSectionedLayout() && isFullWidthField(field)"
+          [class.md:col-span-4]="isSectionedLayout() && !isFullWidthField(field) && fieldWidthUnits(field) === 4"
+          [class.md:col-span-6]="isSectionedLayout() && !isFullWidthField(field) && fieldWidthUnits(field) === 6"
+          [class.md:col-span-12]="isSectionedLayout() && !isFullWidthField(field) && fieldWidthUnits(field) === 12"
           [class.rf-row-start]="isSectionedLayout() && item.rowStart"
           class="field-shell"
         >

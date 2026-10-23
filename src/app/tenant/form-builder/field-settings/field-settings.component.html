@@ -92,7 +92,8 @@
           [ngClass]="rowWidthPreset === 'third'
             ? 'bg-[#F5E6D3] font-semibold text-[#161616]'
             : 'bg-white font-medium text-[#374151] hover:bg-[#FAFAFA]'"
-          [disabled]="!isFieldEditable"
+          [disabled]="!isFieldEditable || !isRowWidthPresetAvailable('third')"
+          [attr.title]="!isRowWidthPresetAvailable('third') ? (rowWidthCapacityHint || 'Does not fit in this row') : null"
           (click)="onRowWidthPresetChange('third')"
         >
           1/3
@@ -103,7 +104,8 @@
           [ngClass]="rowWidthPreset === 'half'
             ? 'bg-[#F5E6D3] font-semibold text-[#161616]'
             : 'bg-white font-medium text-[#374151] hover:bg-[#FAFAFA]'"
-          [disabled]="!isFieldEditable"
+          [disabled]="!isFieldEditable || !isRowWidthPresetAvailable('half')"
+          [attr.title]="!isRowWidthPresetAvailable('half') ? (rowWidthCapacityHint || 'Does not fit in this row') : null"
           (click)="onRowWidthPresetChange('half')"
         >
           1/2
@@ -114,12 +116,16 @@
           [ngClass]="rowWidthPreset === 'full'
             ? 'bg-[#F5E6D3] font-semibold text-[#161616]'
             : 'bg-white font-medium text-[#374151] hover:bg-[#FAFAFA]'"
-          [disabled]="!isFieldEditable"
+          [disabled]="!isFieldEditable || !isRowWidthPresetAvailable('full')"
+          [attr.title]="!isRowWidthPresetAvailable('full') ? (rowWidthCapacityHint || 'Does not fit in this row') : null"
           (click)="onRowWidthPresetChange('full')"
         >
           Full
         </button>
       </div>
+      @if (rowWidthCapacityHint) {
+        <p class="mt-1.5 text-xs leading-snug text-[#6B7280]">{{ rowWidthCapacityHint }}</p>
+      }
     </div>
   }
 
