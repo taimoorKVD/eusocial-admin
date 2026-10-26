@@ -43,6 +43,7 @@
     [class.form-canvas-field--selection-mode]="selectionMode"
     [class.form-canvas-field--width-aware]="widthAwareLayout"
     [class.form-canvas-field--setup-flow]="widthAwareLayout && widthAwareFlow"
+    [class.form-canvas-field--ft-build]="formTemplateBuildUi"
     [style.flex]="widthAwareLayout ? '0 0 auto' : null"
     [style.flex-basis]="widthAwareLayout ? fieldWidthFlexBasis(field) : null"
     [style.max-width]="widthAwareLayout ? fieldWidthFlexBasis(field) : null"
@@ -78,7 +79,10 @@
       }
 
       <div class="min-w-0 flex-1">
-        <app-form-field-preview [field]="field"></app-form-field-preview>
+        <app-form-field-preview
+          [field]="field"
+          [formTemplateBuildUi]="formTemplateBuildUi"
+        ></app-form-field-preview>
 
         @if (showFieldQuickActions && !selectionMode) {
           <div
@@ -91,7 +95,7 @@
               class="inline-flex items-center justify-center transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ff9015]/40 disabled:cursor-not-allowed disabled:opacity-40"
               [ngClass]="hasConditionalLogic(field)
                 ? 'h-7 gap-1.5 rounded-full bg-[#161616] px-2.5 text-white hover:bg-black'
-                : 'h-7 w-7 rounded-full bg-gray-300 text-white hover:bg-gray-400'"
+                : 'h-7 w-7 rounded-full bg-[#D1D5DB] text-white hover:bg-[#9CA3AF]'"
               [attr.aria-label]="hasConditionalLogic(field) ? 'Edit logic' : 'Conditional logic'"
               [title]="hasConditionalLogic(field) ? 'Edit logic' : 'Conditional logic'"
               [disabled]="interactionsDisabled"
@@ -113,7 +117,7 @@
               class="inline-flex h-7 w-7 items-center justify-center rounded-full transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ff9015]/40 disabled:cursor-not-allowed disabled:opacity-40"
               [ngClass]="hasAutomationRules(field)
                 ? 'bg-[#d4e600] text-[#161616] hover:bg-[#c5d700]'
-                : 'bg-gray-300 text-white hover:bg-gray-400'"
+                : 'bg-[#D1D5DB] text-white hover:bg-[#9CA3AF]'"
               aria-label="Automation Rules"
               title="Automation Rules"
               [disabled]="interactionsDisabled"

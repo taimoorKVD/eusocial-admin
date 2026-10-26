@@ -35,11 +35,12 @@
 
     .form-canvas-field {
       min-height: 5rem;
-      padding: 0.875rem;
+      padding: 1rem;
       background: #fff;
       border: 1px solid #e5e7eb;
-      border-radius: 0.625rem;
+      border-radius: 0.5rem;
       box-shadow: none;
+      overflow: hidden;
 
       &:hover {
         background: #fff;
@@ -47,8 +48,19 @@
       }
     }
 
+    .form-canvas-field--ft-build {
+      display: flex;
+      flex-direction: column;
+    }
+
     .form-canvas-field--selected {
       background: #fff;
+      border-color: #ff9015;
+      box-shadow: 0 0 0 1px #ff9015;
+    }
+
+    .form-canvas-field--bulk-selected {
+      background: #fffaf5;
       border-color: #ff9015;
       box-shadow: 0 0 0 1px #ff9015;
     }

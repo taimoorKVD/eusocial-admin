@@ -59,6 +59,14 @@
   }
 }
 
+/* Form Template Build field cards — structural only; chrome lives in create-form .build-canvas */
+.form-canvas-field--ft-build {
+  > .flex {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
 .form-canvas-empty {
   display: flex;
   min-height: 320px;
