@@ -50,6 +50,12 @@ import { resolveImageDisplayUrl } from '../../utils/image-field.utils';
 })
 export class FormFieldPreviewComponent implements OnChanges {
   @Input({ required: true }) field!: FormField;
+  /**
+   * Form Template Build only. When true, preview matches the Figma field-card
+   * controls (filled inputs, option chips, dashed image). Default false so
+   * setup modules and other hosts stay unchanged.
+   */
+  @Input() formTemplateBuildUi = false;
 
   displayOptions: FieldOption[] = [];
   loadingOptions = false;
@@ -60,6 +66,31 @@ export class FormFieldPreviewComponent implements OnChanges {
   isRadioField = false;
   isCheckboxField = false;
   isReadonly = false;
+
+  /** Shared underline-style classes (setup / default hosts). */
+  readonly defaultControlClass =
+    'w-full border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none disabled:cursor-default disabled:text-slate-500';
+
+  /** Figma filled control classes (Form Template Build). */
+  readonly ftControlClass =
+    'w-full min-w-0 rounded-lg border-0 bg-[#F3F4F6] px-3 py-2.5 text-sm text-[#161616] placeholder:text-[#9CA3AF] focus:outline-none disabled:cursor-default disabled:text-[#6B7280]';
+
+  get controlClass(): string {
+    return this.formTemplateBuildUi ? this.ftControlClass : this.defaultControlClass;
+  }
+
+  get labelClass(): string {
+    return this.formTemplateBuildUi
+      ? 'min-w-0 flex-1 text-sm font-medium leading-5 text-[#161616]'
+      : 'mb-1 block text-xs font-medium text-slate-500';
+  }
+
+  get showChoiceChips(): boolean {
+    return (
+      this.formTemplateBuildUi &&
+      (this.isSelectField || this.isRadioField || this.isCheckboxField)
+    );
+  }
 
   get previewValue(): unknown {
     return this.field?.defaultValue ?? this.field?.value ?? '';
