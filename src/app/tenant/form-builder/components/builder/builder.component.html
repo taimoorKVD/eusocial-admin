@@ -1,14 +1,20 @@
 <div class="font-ibm" [class.opacity-50]="disabled">
-  <p
-    class="mb-2 text-[11px] leading-snug"
-    [ngClass]="setupPalette ? 'text-[#6B7280]' : 'text-slate-500'"
-  >
-    @if (disabled) {
+  @if (!formTemplatePalette) {
+    <p
+      class="mb-2 text-[11px] leading-snug"
+      [ngClass]="setupPalette ? 'text-[#6B7280]' : 'text-slate-500'"
+    >
+      @if (disabled) {
+        Finish or cancel Bulk Delete to add fields.
+      } @else {
+        Drag a field onto the canvas to add it.
+      }
+    </p>
+  } @else if (disabled) {
+    <p class="mb-2 text-[11px] leading-snug text-slate-500">
       Finish or cancel Bulk Delete to add fields.
-    } @else {
-      Drag a field onto the canvas to add it.
-    }
-  </p>
+    </p>
+  }
 
   <div
     cdkDropList
@@ -16,145 +22,156 @@
     [id]="dropListId"
     class="palette-grid"
     [class.palette-grid--disabled]="disabled"
+    [class.palette-grid--ft]="formTemplatePalette"
     [class.gap-2.5]="setupPalette"
     [cdkDropListData]="fieldTemplates"
     [cdkDropListConnectedTo]="connectedDropLists"
     [cdkDropListDisabled]="disabled"
     cdkDropListSortingDisabled
   >
-    <div
-      *ngFor="let field of fieldTemplates; trackBy: trackByTemplate"
-      cdkDrag
-      [cdkDragData]="field"
-      [cdkDragDisabled]="disabled"
-      class="palette-item"
-      [class.palette-item--disabled]="disabled"
-      [class.palette-item--setup]="setupPalette"
-    >
-      <span
-        class="palette-tooltip-trigger app-tooltip-trigger"
-        tabindex="0"
-        role="button"
-        [attr.aria-label]="'More information about ' + field.label"
-        (mouseenter)="showPaletteTooltip($event)"
-        (mouseleave)="hidePaletteTooltip()"
-        (focus)="showPaletteTooltip($event)"
-        (blur)="hidePaletteTooltip()"
-        (mousedown)="$event.stopPropagation()"
+    <ng-container *ngFor="let row of paletteRows; trackBy: trackByPaletteRow">
+      <p
+        *ngIf="row.kind === 'heading'"
+        class="palette-group-heading"
       >
-        <svg class="palette-tooltip-trigger__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-          <circle cx="12" cy="12" r="10" />
-          <path stroke-linecap="round" d="M12 16v-4M12 8h.01" />
-        </svg>
-        <!-- Source markup for portal clone; in-flow tooltip is hidden (overflow parents clip it). -->
-        <span role="tooltip" class="app-tooltip app-tooltip--top-end font-ibm palette-tooltip-source">
-          <ng-container [ngSwitch]="field.type">
-            <ng-container *ngSwitchCase="'text'">Use for short text entries such as titles, usernames, or single-line responses.</ng-container>
-            <ng-container *ngSwitchCase="'email'">Collect a valid email address from the user.</ng-container>
-            <ng-container *ngSwitchCase="'number'">Use for numeric values such as quantities, ages, or amounts.</ng-container>
-            <ng-container *ngSwitchCase="'textarea'">Use for longer multi-line text such as descriptions, or comments.</ng-container>
-            <ng-container *ngSwitchCase="'select'">Allow users to select an option from a dropdown list.</ng-container>
-            <ng-container *ngSwitchCase="'radio'">Present mutually exclusive choices using radio buttons.</ng-container>
-            <ng-container *ngSwitchCase="'checkbox'">Allow users to select one or more options from a list.</ng-container>
-            <ng-container *ngSwitchCase="'date'">Collect a single date with optional minimum and maximum limits.</ng-container>
-            <ng-container *ngSwitchCase="'image'">Let users upload an image file such as a photo or logo.</ng-container>
-            <ng-container *ngSwitchCase="'signature'">Capture a digital signature from the user.</ng-container>
-            <ng-container *ngSwitchCase="'time'">Collect a time of day with optional AM/PM display.</ng-container>
-            <ng-container *ngSwitchCase="'rating'">Collect a star rating from the user.</ng-container>
-            <ng-container *ngSwitchCase="'range'">Collect a range of values (from – to).</ng-container>
-            <ng-container *ngSwitchCase="'price'">Collect a monetary amount with currency.</ng-container>
-            <ng-container *ngSwitchCase="'length'">Collect a length or distance with unit.</ng-container>
-            <ng-container *ngSwitchCase="'mass'">Collect a weight or mass with unit.</ng-container>
-            <ng-container *ngSwitchCase="'volume'">Collect a volume or capacity with unit.</ng-container>
-            <ng-container *ngSwitchCase="'temperature'">Collect a temperature with unit.</ng-container>
-            <ng-container *ngSwitchCase="'barcode'">Scan or enter a barcode value.</ng-container>
-            <ng-container *ngSwitchCase="'qr-code'">Scan or enter a QR code value.</ng-container>
+        {{ row.heading }}
+      </p>
+
+      <div
+        *ngIf="row.kind === 'field'"
+        cdkDrag
+        [cdkDragData]="row.field"
+        [cdkDragDisabled]="disabled"
+        class="palette-item"
+        [class.palette-item--disabled]="disabled"
+        [class.palette-item--setup]="setupPalette"
+        [class.palette-item--ft]="formTemplatePalette"
+      >
+        <span
+          class="palette-tooltip-trigger app-tooltip-trigger"
+          tabindex="0"
+          role="button"
+          [attr.aria-label]="'More information about ' + paletteLabel(row.field)"
+          (mouseenter)="showPaletteTooltip($event)"
+          (mouseleave)="hidePaletteTooltip()"
+          (focus)="showPaletteTooltip($event)"
+          (blur)="hidePaletteTooltip()"
+          (mousedown)="$event.stopPropagation()"
+        >
+          <svg class="palette-tooltip-trigger__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <circle cx="12" cy="12" r="10" />
+            <path stroke-linecap="round" d="M12 16v-4M12 8h.01" />
+          </svg>
+          <!-- Source markup for portal clone; in-flow tooltip is hidden (overflow parents clip it). -->
+          <span role="tooltip" class="app-tooltip app-tooltip--top-end font-ibm palette-tooltip-source">
+            <ng-container [ngSwitch]="row.field.type">
+              <ng-container *ngSwitchCase="'text'">Use for short text entries such as titles, usernames, or single-line responses.</ng-container>
+              <ng-container *ngSwitchCase="'email'">Collect a valid email address from the user.</ng-container>
+              <ng-container *ngSwitchCase="'number'">Use for numeric values such as quantities, ages, or amounts.</ng-container>
+              <ng-container *ngSwitchCase="'textarea'">Use for longer multi-line text such as descriptions, or comments.</ng-container>
+              <ng-container *ngSwitchCase="'select'">Allow users to select an option from a dropdown list.</ng-container>
+              <ng-container *ngSwitchCase="'radio'">Present mutually exclusive choices using radio buttons.</ng-container>
+              <ng-container *ngSwitchCase="'checkbox'">Allow users to select one or more options from a list.</ng-container>
+              <ng-container *ngSwitchCase="'date'">Collect a single date with optional minimum and maximum limits.</ng-container>
+              <ng-container *ngSwitchCase="'image'">Let users upload an image file such as a photo or logo.</ng-container>
+              <ng-container *ngSwitchCase="'signature'">Capture a digital signature from the user.</ng-container>
+              <ng-container *ngSwitchCase="'time'">Collect a time of day with optional AM/PM display.</ng-container>
+              <ng-container *ngSwitchCase="'rating'">Collect a star rating from the user.</ng-container>
+              <ng-container *ngSwitchCase="'range'">Collect a range of values (from – to).</ng-container>
+              <ng-container *ngSwitchCase="'price'">Collect a monetary amount with currency.</ng-container>
+              <ng-container *ngSwitchCase="'length'">Collect a length or distance with unit.</ng-container>
+              <ng-container *ngSwitchCase="'mass'">Collect a weight or mass with unit.</ng-container>
+              <ng-container *ngSwitchCase="'volume'">Collect a volume or capacity with unit.</ng-container>
+              <ng-container *ngSwitchCase="'temperature'">Collect a temperature with unit.</ng-container>
+              <ng-container *ngSwitchCase="'barcode'">Scan or enter a barcode value.</ng-container>
+              <ng-container *ngSwitchCase="'qr-code'">Scan or enter a QR code value.</ng-container>
+            </ng-container>
+          </span>
+        </span>
+        <span class="palette-item__icon" aria-hidden="true">
+          <ng-container [ngSwitch]="row.field.type">
+            <svg *ngSwitchCase="'text'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h10M4 18h7" />
+            </svg>
+            <svg *ngSwitchCase="'email'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15A2.25 2.25 0 0 1 2.25 17.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L2.82 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+            </svg>
+            <svg *ngSwitchCase="'number'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 6.75h15v10.5h-15V6.75Z" />
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M8.25 9.75h.008v.008H8.25V9.75Zm0 4.5h.008v.008H8.25v-.008Zm4.5-4.5h.008v.008h-.008V9.75Zm0 4.5h.008v.008h-.008v-.008Zm4.5-4.5h.008v.008H17.25V9.75Zm0 4.5h.008v.008H17.25v-.008Z" />
+            </svg>
+            <svg *ngSwitchCase="'textarea'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h10.5" />
+            </svg>
+            <svg *ngSwitchCase="'select'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M8.25 6.75h12M8.25 12h12M8.25 17.25h12M3.75 6.75h.007v.008H3.75V6.75Zm0 5.25h.007v.008H3.75v-.008Zm0 5.25h.007v.008H3.75v-.008Z" />
+            </svg>
+            <svg *ngSwitchCase="'radio'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M12 12a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5Z" />
+            </svg>
+            <svg *ngSwitchCase="'checkbox'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 6.75h13.5v10.5H5.25V6.75Z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75" />
+            </svg>
+            <svg *ngSwitchCase="'date'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3.75 8.25h16.5M4.5 6.75h15A1.5 1.5 0 0 1 21 8.25v10.5A1.5 1.5 0 0 1 19.5 20.25h-15A1.5 1.5 0 0 1 3 18.75V8.25A1.5 1.5 0 0 1 4.5 6.75Z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 12h.008v.008H8.25V12Zm3.75 0h.008v.008H12V12Zm3.75 0h.008v.008H15.75V12Zm-7.5 3.75h.008v.008H8.25v-.008Zm3.75 0h.008v.008H12v-.008Z" />
+            </svg>
+            <svg *ngSwitchCase="'image'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0 0 22.5 18.75V5.25A2.25 2.25 0 0 0 20.25 3H3.75A2.25 2.25 0 0 0 1.5 5.25v13.5A2.25 2.25 0 0 0 3.75 21Z" />
+            </svg>
+            <svg *ngSwitchCase="'signature'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="m17.469 4.485-9.9 10.164a1.5 1.5 0 0 0-.34.563l-.992 3.47 3.469-.992a1.5 1.5 0 0 0 .563-.34l10.164-9.9a2.121 2.121 0 0 0-2.964-2.965Z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6.75 17.25 8.25" />
+            </svg>
+            <svg *ngSwitchCase="'time'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+            </svg>
+            <svg *ngSwitchCase="'rating'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+            </svg>
+            <svg *ngSwitchCase="'range'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M3.75 12h16.5M3.75 6h10.5M3.75 18h7.5M16.5 9v6" />
+            </svg>
+            <svg *ngSwitchCase="'price'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m0-12c-1.5 0-3 .75-3 2.25S10.5 10.5 12 10.5s3 .75 3 2.25S13.5 15 12 15m0-9c1.5 0 3 .75 3 2.25" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+            </svg>
+            <svg *ngSwitchCase="'length'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5M6 9v6M10.5 10.5v3M15 9v6M18.75 10.5v3" />
+            </svg>
+            <svg *ngSwitchCase="'mass'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v3m0 0 3.75 12.75H8.25L12 6Zm-6.75 15h13.5" />
+            </svg>
+            <svg *ngSwitchCase="'volume'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5h7.5L18 9.75v7.5A2.25 2.25 0 0 1 15.75 19.5h-7.5A2.25 2.25 0 0 1 6 17.25v-7.5L8.25 4.5Z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 12h10.5" />
+            </svg>
+            <svg *ngSwitchCase="'temperature'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5.25a3 3 0 0 1 6 0v7.268a4.5 4.5 0 1 1-6 0V5.25Z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 12.75v3" />
+            </svg>
+            <svg *ngSwitchCase="'barcode'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M3.75 4.5h1.5v15h-1.5V4.5ZM7.5 4.5h.75v15H7.5V4.5ZM12 4.5h.75v15H12V4.5ZM16.5 4.5h.75v15h-.75V4.5ZM20.25 4.5h.75v15h-.75V4.5Z" />
+            </svg>
+            <svg *ngSwitchCase="'qr-code'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M3.75 4.5h4.5v4.5h-4.5V4.5ZM15.75 4.5h4.5v4.5h-4.5V4.5ZM3.75 15.75h4.5v4.5h-4.5v-4.5ZM15.75 15.75h1.5v1.5h-1.5v-1.5ZM20.25 15.75h1.5v1.5h-1.5v-1.5ZM20.25 20.25h1.5v1.5h-1.5v-1.5ZM15.75 20.25h1.5v1.5h-1.5v-1.5ZM19.5 13.5h-3v-3h3v3Z" />
+            </svg>
           </ng-container>
         </span>
-      </span>
-      <span class="palette-item__icon" aria-hidden="true">
-        <ng-container [ngSwitch]="field.type">
-          <svg *ngSwitchCase="'text'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h10M4 18h7" />
-          </svg>
-          <svg *ngSwitchCase="'email'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-            <path stroke-linecap="round" stroke-linejoin="round"
-              d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15A2.25 2.25 0 0 1 2.25 17.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L2.82 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
-          </svg>
-          <svg *ngSwitchCase="'number'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 6.75h15v10.5h-15V6.75Z" />
-            <path stroke-linecap="round" stroke-linejoin="round"
-              d="M8.25 9.75h.008v.008H8.25V9.75Zm0 4.5h.008v.008H8.25v-.008Zm4.5-4.5h.008v.008h-.008V9.75Zm0 4.5h.008v.008h-.008v-.008Zm4.5-4.5h.008v.008H17.25V9.75Zm0 4.5h.008v.008H17.25v-.008Z" />
-          </svg>
-          <svg *ngSwitchCase="'textarea'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h10.5" />
-          </svg>
-          <svg *ngSwitchCase="'select'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-            <path stroke-linecap="round" stroke-linejoin="round"
-              d="M8.25 6.75h12M8.25 12h12M8.25 17.25h12M3.75 6.75h.007v.008H3.75V6.75Zm0 5.25h.007v.008H3.75v-.008Zm0 5.25h.007v.008H3.75v-.008Z" />
-          </svg>
-          <svg *ngSwitchCase="'radio'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-            <path stroke-linecap="round" stroke-linejoin="round"
-              d="M12 12a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5Z" />
-          </svg>
-          <svg *ngSwitchCase="'checkbox'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 6.75h13.5v10.5H5.25V6.75Z" />
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75" />
-          </svg>
-          <svg *ngSwitchCase="'date'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3.75 8.25h16.5M4.5 6.75h15A1.5 1.5 0 0 1 21 8.25v10.5A1.5 1.5 0 0 1 19.5 20.25h-15A1.5 1.5 0 0 1 3 18.75V8.25A1.5 1.5 0 0 1 4.5 6.75Z" />
-            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 12h.008v.008H8.25V12Zm3.75 0h.008v.008H12V12Zm3.75 0h.008v.008H15.75V12Zm-7.5 3.75h.008v.008H8.25v-.008Zm3.75 0h.008v.008H12v-.008Z" />
-          </svg>
-          <svg *ngSwitchCase="'image'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-            <path stroke-linecap="round" stroke-linejoin="round"
-              d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0 0 22.5 18.75V5.25A2.25 2.25 0 0 0 20.25 3H3.75A2.25 2.25 0 0 0 1.5 5.25v13.5A2.25 2.25 0 0 0 3.75 21Z" />
-          </svg>
-          <svg *ngSwitchCase="'signature'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-            <path stroke-linecap="round" stroke-linejoin="round"
-              d="m17.469 4.485-9.9 10.164a1.5 1.5 0 0 0-.34.563l-.992 3.47 3.469-.992a1.5 1.5 0 0 0 .563-.34l10.164-9.9a2.121 2.121 0 0 0-2.964-2.965Z" />
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6.75 17.25 8.25" />
-          </svg>
-          <svg *ngSwitchCase="'time'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-          </svg>
-          <svg *ngSwitchCase="'rating'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-            <path stroke-linecap="round" stroke-linejoin="round"
-              d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-          </svg>
-          <svg *ngSwitchCase="'range'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-            <path stroke-linecap="round" stroke-linejoin="round"
-              d="M3.75 12h16.5M3.75 6h10.5M3.75 18h7.5M16.5 9v6" />
-          </svg>
-          <svg *ngSwitchCase="'price'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m0-12c-1.5 0-3 .75-3 2.25S10.5 10.5 12 10.5s3 .75 3 2.25S13.5 15 12 15m0-9c1.5 0 3 .75 3 2.25" />
-            <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-          </svg>
-          <svg *ngSwitchCase="'length'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5M6 9v6M10.5 10.5v3M15 9v6M18.75 10.5v3" />
-          </svg>
-          <svg *ngSwitchCase="'mass'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v3m0 0 3.75 12.75H8.25L12 6Zm-6.75 15h13.5" />
-          </svg>
-          <svg *ngSwitchCase="'volume'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5h7.5L18 9.75v7.5A2.25 2.25 0 0 1 15.75 19.5h-7.5A2.25 2.25 0 0 1 6 17.25v-7.5L8.25 4.5Z" />
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 12h10.5" />
-          </svg>
-          <svg *ngSwitchCase="'temperature'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5.25a3 3 0 0 1 6 0v7.268a4.5 4.5 0 1 1-6 0V5.25Z" />
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 12.75v3" />
-          </svg>
-          <svg *ngSwitchCase="'barcode'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-            <path stroke-linecap="round" stroke-linejoin="round"
-              d="M3.75 4.5h1.5v15h-1.5V4.5ZM7.5 4.5h.75v15H7.5V4.5ZM12 4.5h.75v15H12V4.5ZM16.5 4.5h.75v15h-.75V4.5ZM20.25 4.5h.75v15h-.75V4.5Z" />
-          </svg>
-          <svg *ngSwitchCase="'qr-code'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-            <path stroke-linecap="round" stroke-linejoin="round"
-              d="M3.75 4.5h4.5v4.5h-4.5V4.5ZM15.75 4.5h4.5v4.5h-4.5V4.5ZM3.75 15.75h4.5v4.5h-4.5v-4.5ZM15.75 15.75h1.5v1.5h-1.5v-1.5ZM20.25 15.75h1.5v1.5h-1.5v-1.5ZM20.25 20.25h1.5v1.5h-1.5v-1.5ZM15.75 20.25h1.5v1.5h-1.5v-1.5ZM19.5 13.5h-3v-3h3v3Z" />
-          </svg>
-        </ng-container>
-      </span>
-      <span class="palette-item__label">{{ field.label }}</span>
-    </div>
+        <span class="palette-item__label">{{ paletteLabel(row.field) }}</span>
+      </div>
+    </ng-container>
   </div>
 </div>
