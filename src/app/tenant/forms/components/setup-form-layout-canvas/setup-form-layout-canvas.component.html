@@ -1,0 +1,88 @@
+<div class="flex flex-col gap-3 font-ibm">
+  @for (section of sections; track section.id) {
+    <section class="space-y-3">
+      @if (section.name.trim()) {
+        <h3 class="m-0 text-sm font-semibold text-[#161616]">{{ section.name }}</h3>
+      }
+
+      @for (row of section.rows; track row.id) {
+        <div class="rounded-xl border border-dashed border-[#E5E7EB] bg-white p-2.5 sm:p-3">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-stretch">
+            <div
+              class="min-w-0"
+              [class.flex-1]="!rowCanAddColumn(row)"
+              [style.flex]="rowCanAddColumn(row) ? '0 0 auto' : null"
+              [style.width]="rowCanAddColumn(row) ? rowUsedFlexBasis(row) : '100%'"
+              [style.max-width]="rowCanAddColumn(row) ? rowUsedFlexBasis(row) : null"
+            >
+              <app-form-canvas
+                [dropListId]="rowCanvasListId(section.id, row.id)"
+                [schema]="row.fields"
+                [selectedFieldId]="selectedFieldId"
+                [connectedDropLists]="connectedDropLists"
+                [selectionMode]="selectionMode"
+                [selectedFieldIds]="selectedFieldIds"
+                [interactionsDisabled]="interactionsDisabled"
+                [widthAwareLayout]="true"
+                (dropped)="onRowDrop(section.id, row.id, $event)"
+                (selectField)="selectField.emit($event)"
+                (toggleFieldSelection)="toggleFieldSelection.emit($event)"
+              ></app-form-canvas>
+            </div>
+
+            @if (rowCanAddColumn(row) && !interactionsDisabled) {
+              <div
+                cdkDropList
+                [id]="rowAddColumnListId(section.id, row.id)"
+                [cdkDropListData]="emptyDropListData"
+                [cdkDropListConnectedTo]="connectedDropLists"
+                (cdkDropListDropped)="onAddColumnDrop(section.id, row.id, $event)"
+                class="flex min-h-[5.5rem] w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-dashed border-[#D1D5DB] bg-[#FAFAFA] px-3 py-4 text-center text-xs font-medium text-[#9CA3AF] transition hover:border-[#FF9015] hover:bg-[#FFF5EB] hover:text-[#FF9015]"
+                [style.flex]="'1 1 auto'"
+                [style.width]="rowAddColumnFlexBasis(row)"
+                [style.max-width]="rowAddColumnFlexBasis(row)"
+                [style.min-width]="'0'"
+                role="button"
+                tabindex="0"
+                aria-label="Add column, or drop a field here"
+              >
+                <span aria-hidden="true">+</span>
+                Add column, or drop a field here
+              </div>
+            }
+          </div>
+
+          @if (!row.fields.length && !interactionsDisabled) {
+            <div class="mt-2 flex justify-end">
+              <button
+                type="button"
+                class="text-xs font-medium text-red-600 hover:text-red-700"
+                (click)="removeEmptyRow(section.id, row.id)"
+              >
+                Remove empty row
+              </button>
+            </div>
+          }
+        </div>
+      }
+
+      @if (!interactionsDisabled) {
+        <div
+          cdkDropList
+          [id]="sectionNewRowListId(section.id)"
+          [cdkDropListData]="emptyDropListData"
+          [cdkDropListConnectedTo]="connectedDropLists"
+          (cdkDropListDropped)="onNewRowDrop(section.id, $event)"
+          class="flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-dashed border-[#D1D5DB] bg-white px-4 py-3.5 text-center text-sm font-medium text-[#9CA3AF] transition hover:border-[#FF9015] hover:bg-[#FFF5EB] hover:text-[#FF9015]"
+          role="button"
+          tabindex="0"
+          (click)="addEmptyRow(section.id)"
+          (keydown.enter)="addEmptyRow(section.id)"
+        >
+          <span aria-hidden="true">+</span>
+          Add row, or drop a field here
+        </div>
+      }
+    </section>
+  }
+</div>

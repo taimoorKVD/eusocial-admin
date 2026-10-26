@@ -161,6 +161,24 @@ export class FieldSettingsComponent {
    */
   @Input() showCloseButton = false;
 
+  /**
+   * Form Template: Width-in-row presets that still fit in the field's current row.
+   * Current preset is always included by the parent.
+   */
+  @Input() availableRowWidthPresets: Array<'third' | 'half' | 'full'> = [
+    'third',
+    'half',
+    'full',
+  ];
+
+  /** Shown when some Width-in-row options are disabled due to row capacity. */
+  @Input() rowWidthCapacityHint: string | null = null;
+  /**
+   * Setup-user / setup-item / setup-vendor only: allow Width in row changes
+   * on locked (isEditable === false) fields. Form Template leaves this false.
+   */
+  @Input() allowLockedRowWidth = false;
+
   @Input() set schema(value: FormField[] | null | undefined) {
     const next = value ?? [];
     const current = this.schemaSignal();
@@ -282,9 +300,20 @@ export class FieldSettingsComponent {
     private formImageUploadService: FormImageUploadService,
   ) {}
 
-  /** Form Template Input Customization visual variant (UI only). */
+  /**
+   * Compact Input Customization visual variant (UI only).
+   * Used by Form Template (`dynamic-forms`) and setup-user / setup-item /
+   * setup-vendor (`users` / `items` / `vendors`) so Width in row and FT styling
+   * apply without changing Form Template host files.
+   */
   get isFormTemplatePanel(): boolean {
-    return (this.activeModuleName || '').trim().toLowerCase() === 'dynamic-forms';
+    const moduleName = (this.activeModuleName || '').trim().toLowerCase();
+    return (
+      moduleName === 'dynamic-forms' ||
+      moduleName === 'users' ||
+      moduleName === 'items' ||
+      moduleName === 'vendors'
+    );
   }
 
   /** Field type eyebrow shown in Form Template settings header (e.g. TEXT). */
@@ -301,8 +330,20 @@ export class FieldSettingsComponent {
     return 'full';
   }
 
+  isRowWidthPresetAvailable(preset: 'third' | 'half' | 'full'): boolean {
+    return this.availableRowWidthPresets.includes(preset);
+  }
+
+  /** Width in row may change for locked setup fields; other settings stay locked. */
+  get canEditRowWidth(): boolean {
+    return this.isFieldEditable || this.allowLockedRowWidth;
+  }
+
   onRowWidthPresetChange(preset: 'third' | 'half' | 'full'): void {
-    if (!this._field || !this.isFieldEditable) {
+    if (!this._field || !this.canEditRowWidth) {
+      return;
+    }
+    if (!this.isRowWidthPresetAvailable(preset)) {
       return;
     }
     const next =
@@ -311,14 +352,17 @@ export class FieldSettingsComponent {
       return;
     }
     this._field.width = next;
-    this.onChange();
+    this.onChange({ allowLockedWidthOnly: this.allowLockedRowWidth && !this.isFieldEditable });
   }
 
   referenceImagesUploading = false;
   referencePreviewUrl: string | null = null;
 
-  onChange(): void {
-    if (!this._field || !this.isFieldEditable) {
+  onChange(options?: { allowLockedWidthOnly?: boolean }): void {
+    if (!this._field) {
+      return;
+    }
+    if (!this.isFieldEditable && !options?.allowLockedWidthOnly) {
       return;
     }
 

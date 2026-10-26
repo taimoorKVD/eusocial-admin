@@ -72,6 +72,36 @@
     overflow-wrap: anywhere;
     word-break: break-word;
   }
+
+  /* Setup modules only — Form Template leaves default .palette-item. */
+  &--setup {
+    min-height: 4.25rem;
+    border-color: #e5e7eb;
+    border-radius: 0.75rem;
+    padding: 0.65rem 0.4rem 0.7rem;
+    box-shadow: 0 1px 2px rgb(15 23 42 / 4%);
+
+    &:hover {
+      border-color: #ff9015;
+      background: #fffaf5;
+      box-shadow: 0 4px 12px rgb(255 144 21 / 12%);
+    }
+
+    .palette-item__icon {
+      height: 1.75rem;
+      width: 1.75rem;
+      border-radius: 0.5rem;
+      background: #f3f4f6;
+      color: #161616;
+    }
+
+    .palette-item__label {
+      margin-top: 0.2rem;
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: #161616;
+    }
+  }
 }
 
 .palette-tooltip-trigger {

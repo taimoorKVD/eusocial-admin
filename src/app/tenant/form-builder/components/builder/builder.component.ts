@@ -22,6 +22,11 @@ export class BuilderComponent implements OnDestroy {
   @Input() dropListId = 'sidebarList';
   /** Disables palette drag when form interactions are locked (e.g. bulk delete). */
   @Input() disabled = false;
+  /**
+   * Setup-user / setup-item / setup-vendor palette polish.
+   * Leave false for Form Template and legacy editors.
+   */
+  @Input() setupPalette = false;
 
   @ViewChild('paletteList', { static: true })
   paletteListRef!: CdkDropList<FormField[]>;

@@ -70,8 +70,17 @@ import {
 } from '../../../../forms/logic-rules/logic-rule.utils';
 import { SectionFieldPreviewComponent } from '../components/section-field-preview/section-field-preview.component';
 import {
+  availableRowWidthPresetsForField,
+  builderWidthToPreset,
+  largestFittingBuilderWidth,
   mapBuilderFieldToConfig,
+  mapBuilderWidthToPercent,
   mapConfigFieldToBuilder,
+  normalizeBuilderWidthUnits,
+  rowHasAvailableColumnSpace,
+  rowRemainingGridUnits,
+  widthToGridUnits,
+  type RowWidthPreset,
 } from '../utils/field-builder-adapter.utils';
 import {
   hydrateFormTemplateDynamicSelectField,
@@ -320,7 +329,8 @@ export class CreateFormComponent implements OnInit {
 
   /**
    * Drop-list ids the palette connects to in the always-on Build workspace.
-   * Empty canvas when no sections; otherwise each row canvas + per-section new-row zone.
+   * Empty canvas when no sections; otherwise each row canvas, add-column slot,
+   * and per-section new-row zone.
    */
   readonly paletteConnectedDropLists = computed(() => {
     const sections = this.sections();
@@ -331,6 +341,9 @@ export class CreateFormComponent implements OnInit {
     for (const section of sections) {
       for (const row of section.rows) {
         ids.push(this.rowCanvasListId(section.id, row.id));
+        if (this.rowCanAddColumn(row)) {
+          ids.push(this.rowAddColumnListId(section.id, row.id));
+        }
       }
       ids.push(this.sectionNewRowListId(section.id));
     }
@@ -1704,13 +1717,67 @@ export class CreateFormComponent implements OnInit {
     });
   }
 
-  /** True when a row can still accept another column (Figma empty-column slot). */
+  /** True when a row still has Width-in-row capacity for another column. */
   rowCanAddColumn(row: FormRow): boolean {
-    return row.fields.length > 0 && row.fields.length < 3;
+    return rowHasAvailableColumnSpace(row.fields);
   }
+
+  /** Remaining 12-col units in a row (for sizing the Add column slot). */
+  rowRemainingUnits(row: FormRow): number {
+    return rowRemainingGridUnits(row.fields);
+  }
+
+  /** Flex basis for the Add column drop target based on leftover capacity. */
+  rowAddColumnFlexBasis(row: FormRow): string {
+    const remaining = this.rowRemainingUnits(row);
+    if (remaining <= 0) {
+      return '0%';
+    }
+    return `calc(${(remaining / 12) * 100}% - 0.5rem)`;
+  }
+
+  /** Width of the canvas band that already holds fields in this row. */
+  rowUsedFlexBasis(row: FormRow): string {
+    const used = Math.max(0, 12 - this.rowRemainingUnits(row));
+    if (used <= 0) {
+      return '100%';
+    }
+    return `calc(${(used / 12) * 100}% - 0.5rem)`;
+  }
+
+  selectedFieldWidthCapacityHint = computed((): string | null => {
+    const field = this.selectedBuilderField();
+    if (!field) {
+      return null;
+    }
+    const allowed = this.selectedFieldAvailableWidthPresets();
+    if (allowed.length >= 3) {
+      return null;
+    }
+    return 'This width cannot fit because the row is already occupied.';
+  });
+
+  /** Width presets allowed for the selected field in its current row. */
+  selectedFieldAvailableWidthPresets = computed((): RowWidthPreset[] => {
+    const field = this.selectedBuilderField();
+    if (!field) {
+      return ['third', 'half', 'full'];
+    }
+    const location = this.findFieldLocation(field.id);
+    if (!location) {
+      return ['third', 'half', 'full'];
+    }
+    const rowFields = this.getRowCanvasSchema(location.sectionId, location.rowId);
+    return availableRowWidthPresetsForField(rowFields, field.id);
+  });
 
   rowCanvasListId(sectionId: string, rowId: string): string {
     return `createFormCanvas_${sectionId}_${rowId}`;
+  }
+
+  /** Visible “Add column / drop a field here” sink beside a row. */
+  rowAddColumnListId(sectionId: string, rowId: string): string {
+    return `createFormAddCol_${sectionId}_${rowId}`;
   }
 
   sectionNewRowListId(sectionId: string): string {
@@ -1783,6 +1850,16 @@ export class CreateFormComponent implements OnInit {
   ): void {
     this.focusWorkspaceRow(sectionId, rowId);
     const current = this.getRowCanvasSchema(sectionId, rowId);
+
+    // Cross-container insert: if this row has no remaining capacity, start a new row.
+    if (event.previousContainer !== event.container) {
+      const remaining = rowRemainingGridUnits(current);
+      if (current.length > 0 && remaining < 4) {
+        this.onSectionNewRowDrop(sectionId, event);
+        return;
+      }
+    }
+
     const result = applyCanvasDrop(event, current);
 
     if (event.previousContainer === event.container) {
@@ -1796,7 +1873,16 @@ export class CreateFormComponent implements OnInit {
       return;
     }
 
-    const mapped = mapBuilderFieldToConfig(inserted, { preserveId: true });
+    const siblings = result.schema.filter((field) => field.id !== inserted.id);
+    const fittingWidth = largestFittingBuilderWidth(
+      rowRemainingGridUnits(siblings),
+    );
+    const widthAdjusted: FormField = {
+      ...inserted,
+      width: fittingWidth > 0 ? fittingWidth : normalizeBuilderWidthUnits(inserted.width),
+    };
+
+    const mapped = mapBuilderFieldToConfig(widthAdjusted, { preserveId: true });
     hydrateFormTemplateDynamicSelectField(this.formStorageService, mapped)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((hydrated) => {
@@ -1809,6 +1895,35 @@ export class CreateFormComponent implements OnInit {
         this.onSelectField(builderHydrated);
         this.initializeRowLocationDependencies(sectionId, rowId);
       });
+  }
+
+  /**
+   * Drop onto the visible “Add column / drop a field here” slot —
+   * appends a new column on the same row when capacity allows.
+   */
+  onRowAddColumnDrop(
+    sectionId: string,
+    rowId: string,
+    event: CdkDragDrop<FormField[]>,
+  ): void {
+    if (event.previousContainer === event.container) {
+      return;
+    }
+
+    const current = this.getRowCanvasSchema(sectionId, rowId);
+    if (!rowHasAvailableColumnSpace(current)) {
+      // Row is full — place the field on a new row instead of overflowing.
+      this.onSectionNewRowDrop(sectionId, event);
+      return;
+    }
+
+    // Append after existing columns (ignore sink index 0 on the empty list).
+    const appendEvent = {
+      ...event,
+      currentIndex: current.length,
+    } as CdkDragDrop<FormField[]>;
+
+    this.onWorkspaceRowDrop(sectionId, rowId, appendEvent);
   }
 
   /** Drop below a section to append a new row with the dragged field. */
@@ -2298,6 +2413,10 @@ export class CreateFormComponent implements OnInit {
     );
   }
 
+  getLogicSchemaField(fieldId: string): FormField | undefined {
+    return this.logicSchemaFields().find((item) => item.id === fieldId);
+  }
+
   fieldHasAutomationRules(fieldId: string): boolean {
     return findLogicRulesUsingField(this.logicRules(), fieldId).length > 0;
   }
@@ -2413,6 +2532,156 @@ export class CreateFormComponent implements OnInit {
     return `${action} when ${source} ${operator}${valueText}`;
   }
 
+  /** List/map display: friendlier action phrasing for Figma chrome. */
+  logicActionNarrative(field: FormField): string {
+    const logic = normalizeConditionalLogic(field.condition ?? null);
+    if (!logic?.actions?.length) {
+      return 'Updated';
+    }
+    const types = new Set(logic.actions.map((action) => action.type));
+    if (types.has('show') && types.has('require')) {
+      return 'Shown and required';
+    }
+    if (types.has('show')) {
+      return 'Shown';
+    }
+    if (types.has('hide')) {
+      return 'Hidden';
+    }
+    if (types.has('require')) {
+      return 'Required';
+    }
+    if (types.has('optional')) {
+      return 'Optional';
+    }
+    if (types.has('enable')) {
+      return 'Enabled';
+    }
+    if (types.has('disable')) {
+      return 'Disabled';
+    }
+    if (types.has('setValue')) {
+      return 'Value set';
+    }
+    return CONDITION_ACTION_LABELS[getPrimaryActionType(logic)] ?? 'Updated';
+  }
+
+  /** Logic map condition pill (e.g. "is above 5"). */
+  logicMapConditionPill(field: FormField): string {
+    const logic = normalizeConditionalLogic(field.condition ?? null);
+    if (!logic) {
+      return 'when condition matches';
+    }
+    const predicate = getPrimaryPredicate(logic);
+    const operator = this.mapOperatorPhrase(predicate.operator);
+    const needsValue = !['isEmpty', 'isNotEmpty', 'checked', 'unchecked'].includes(
+      predicate.operator,
+    );
+    const valueText =
+      needsValue && predicate.value != null && String(predicate.value).trim() !== ''
+        ? ` ${String(predicate.value)}`
+        : '';
+    return `${operator}${valueText}`.trim();
+  }
+
+  /** Logic map action pill (e.g. "shows and requires it"). */
+  logicMapActionPill(field: FormField): string {
+    const narrative = this.logicActionNarrative(field).toLowerCase();
+    if (narrative === 'shown and required') {
+      return 'shows and requires it';
+    }
+    if (narrative === 'shown') {
+      return 'shows it';
+    }
+    if (narrative === 'hidden') {
+      return 'hides it';
+    }
+    if (narrative === 'required') {
+      return 'requires it';
+    }
+    if (narrative === 'value set') {
+      return 'sets its value';
+    }
+    return `${narrative} it`;
+  }
+
+  /** List row: narrative with source field split out for a badge. */
+  logicListSummaryParts(field: FormField): {
+    before: string;
+    badge: string;
+    after: string;
+  } {
+    const logic = normalizeConditionalLogic(field.condition ?? null);
+    if (!logic) {
+      return { before: 'No conditional logic configured', badge: '', after: '' };
+    }
+    const predicate = getPrimaryPredicate(logic);
+    const source =
+      this.logicSchemaFields().find((item) => item.id === predicate.fieldId)?.label ||
+      'a field';
+    const operator = this.mapOperatorPhrase(predicate.operator);
+    const needsValue = !['isEmpty', 'isNotEmpty', 'checked', 'unchecked'].includes(
+      predicate.operator,
+    );
+    const valueText =
+      needsValue && predicate.value != null && String(predicate.value).trim() !== ''
+        ? ` ${String(predicate.value)}`
+        : '';
+    return {
+      before: `${this.logicActionNarrative(field)} when`,
+      badge: source,
+      after: `${operator}${valueText}`.trim(),
+    };
+  }
+
+  automationListSummaryParts(rule: FormLogicRule): {
+    before: string;
+    badge: string;
+    after: string;
+  } {
+    const schema = this.logicSchemaFields();
+    const first = rule.conditions.items.find((item) => item.fieldId);
+    if (!first) {
+      return {
+        before: `If ${summarizeConditions(rule, schema)}, then ${summarizeActions(rule)}`,
+        badge: '',
+        after: '',
+      };
+    }
+    const fieldLabel =
+      schema.find((item) => item.id === first.fieldId)?.label?.trim() || 'a field';
+    const operator = this.mapOperatorPhrase(first.operator);
+    let comparison = '';
+    if (!['isEmpty', 'isNotEmpty', 'checked', 'unchecked'].includes(first.operator)) {
+      if (first.comparison.type === 'fixed') {
+        comparison =
+          first.comparison.value != null && String(first.comparison.value).trim() !== ''
+            ? ` ${String(first.comparison.value)}`
+            : '';
+      } else if (first.comparison.type === 'field') {
+        comparison = ` ${
+          schema.find((item) => item.id === first.comparison.fieldId)?.label || 'a field'
+        }`;
+      }
+    }
+    const restConditions = rule.conditions.items.filter((item) => item.fieldId).slice(1);
+    const extra =
+      restConditions.length > 0
+        ? ` ${summarizeConditions(
+            {
+              ...rule,
+              conditions: { ...rule.conditions, items: restConditions },
+            },
+            schema,
+          )}`
+        : '';
+    return {
+      before: 'If',
+      badge: fieldLabel,
+      after: `${operator}${comparison}${extra}, then ${summarizeActions(rule)}`.trim(),
+    };
+  }
+
   summarizeAutomationRule(rule: FormLogicRule): string {
     const schema = this.logicSchemaFields();
     return `If ${summarizeConditions(rule, schema)}, then ${summarizeActions(rule)}`;
@@ -2420,6 +2689,134 @@ export class CreateFormComponent implements OnInit {
 
   automationRuleCardSummary(rule: FormLogicRule): { when: string; then: string } {
     return summarizeRuleCard(rule, this.logicSchemaFields());
+  }
+
+  automationMapSourceFields(rule: FormLogicRule): FormField[] {
+    const schema = this.logicSchemaFields();
+    const seen = new Set<string>();
+    const fields: FormField[] = [];
+    for (const item of rule.conditions.items) {
+      if (!item.fieldId || seen.has(item.fieldId)) {
+        continue;
+      }
+      seen.add(item.fieldId);
+      const field = schema.find((entry) => entry.id === item.fieldId);
+      if (field) {
+        fields.push(field);
+      }
+    }
+    return fields;
+  }
+
+  automationMapConditionPill(rule: FormLogicRule, fieldId: string): string {
+    const item = rule.conditions.items.find((entry) => entry.fieldId === fieldId);
+    if (!item) {
+      return 'matches';
+    }
+    const operator = this.mapOperatorPhrase(item.operator);
+    if (['isEmpty', 'isNotEmpty', 'checked', 'unchecked'].includes(item.operator)) {
+      return operator;
+    }
+    if (item.comparison.type === 'fixed') {
+      const value =
+        item.comparison.value != null && String(item.comparison.value).trim() !== ''
+          ? String(item.comparison.value)
+          : '';
+      return value ? `${operator} ${value}` : operator;
+    }
+    if (item.comparison.type === 'field') {
+      const label =
+        this.logicSchemaFields().find((entry) => entry.id === item.comparison.fieldId)
+          ?.label || 'a field';
+      return `${operator} ${label}`;
+    }
+    return operator;
+  }
+
+  automationMapActionCards(
+    rule: FormLogicRule,
+  ): Array<{ type: string; label: string; detail: string }> {
+    if (!rule.actions.length) {
+      return [{ type: 'none', label: 'No action configured', detail: 'Add an action to this rule' }];
+    }
+    return rule.actions.map((action) => {
+      if (action.type === 'purchaseRequest') {
+        return {
+          type: action.type,
+          label: 'Create purchase request',
+          detail: 'Creates a purchase request on submit',
+        };
+      }
+      if (action.type === 'sendNotification') {
+        return {
+          type: action.type,
+          label: 'Send notification',
+          detail: 'Alert to everyone in the position',
+        };
+      }
+      if (action.type === 'maintenanceRequest') {
+        return {
+          type: action.type,
+          label: 'Create maintenance request',
+          detail: 'Creates a maintenance request on submit',
+        };
+      }
+      return {
+        type: action.type,
+        label: summarizeActions({ ...rule, actions: [action] }),
+        detail: 'After submit',
+      };
+    });
+  }
+
+  automationRunOrdinal(index: number): string {
+    const n = index + 1;
+    const mod100 = n % 100;
+    if (mod100 >= 11 && mod100 <= 13) {
+      return `${n}TH`;
+    }
+    switch (n % 10) {
+      case 1:
+        return `${n}ST`;
+      case 2:
+        return `${n}ND`;
+      case 3:
+        return `${n}RD`;
+      default:
+        return `${n}TH`;
+    }
+  }
+
+  fieldTypeDisplayLabel(field: FormField | null | undefined): string {
+    if (!field) {
+      return 'Field';
+    }
+    const raw = (field.fieldTypeName || field.type || 'field').toString();
+    return raw
+      .replace(/[-_]/g, ' ')
+      .trim()
+      .replace(/\b\w/g, (ch) => ch.toUpperCase());
+  }
+
+  /** Compact glyph for Automation map answer cards (Figma-style). */
+  automationMapFieldGlyph(field: FormField | null | undefined): string {
+    const type = (field?.fieldTypeName || field?.type || '').toString().toLowerCase();
+    if (type.includes('number') || type.includes('measurement') || type.includes('rating')) {
+      return '#';
+    }
+    if (type.includes('checkbox') || type.includes('radio') || type.includes('select')) {
+      return '☑';
+    }
+    if (type.includes('temp') || type.includes('temperature')) {
+      return '°';
+    }
+    if (type.includes('image') || type.includes('photo') || type.includes('file')) {
+      return '▣';
+    }
+    if (type.includes('date') || type.includes('time')) {
+      return '◷';
+    }
+    return '=';
   }
 
   fieldLocationLabel(fieldId: string): string {
@@ -2434,6 +2831,44 @@ export class CreateFormComponent implements OnInit {
     return 'This form';
   }
 
+  private mapOperatorPhrase(operator: string): string {
+    switch (operator) {
+      case 'greaterThan':
+        return 'is above';
+      case 'lessThan':
+        return 'is below';
+      case 'greaterThanOrEqual':
+        return 'is at least';
+      case 'lessThanOrEqual':
+        return 'is at most';
+      case 'equals':
+        return 'equals';
+      case 'notEquals':
+        return 'does not equal';
+      case 'contains':
+        return 'includes';
+      case 'notContains':
+        return 'does not include';
+      case 'startsWith':
+        return 'starts with';
+      case 'endsWith':
+        return 'ends with';
+      case 'isEmpty':
+        return 'is empty';
+      case 'isNotEmpty':
+        return 'is not empty';
+      case 'checked':
+        return 'is checked';
+      case 'unchecked':
+        return 'is not checked';
+      default:
+        return (
+          CONDITION_OPERATOR_LABELS[operator as keyof typeof CONDITION_OPERATOR_LABELS] ??
+          operator
+        ).toLowerCase();
+    }
+  }
+
   onDuplicateField(field: FormField): void {
     const location =
       this.findFieldLocation(field.id) ?? this.pendingFieldTarget();
@@ -2443,7 +2878,54 @@ export class CreateFormComponent implements OnInit {
       const current = this.getRowCanvasSchema(location.sectionId, location.rowId);
       const result = duplicateFormField(field, current);
       if (result.duplicate) {
-        const mapped = mapBuilderFieldToConfig(result.duplicate, {
+        const siblings = current;
+        const remaining = rowRemainingGridUnits(siblings);
+        const fitting = largestFittingBuilderWidth(remaining);
+        if (fitting <= 0) {
+          // Current row is full — place the duplicate on a new row.
+          const mapped = mapBuilderFieldToConfig(result.duplicate, {
+            preserveId: true,
+          });
+          hydrateFormTemplateDynamicSelectField(this.formStorageService, mapped)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe((hydrated) => {
+              const newRow = createEmptyRow();
+              const fieldConfig: FormFieldConfig = {
+                ...hydrated,
+                isDefault: false,
+                value: hydrated.value ?? '',
+              };
+              this.sections.update((list) =>
+                list.map((section) => {
+                  if (section.id !== location.sectionId) {
+                    return section;
+                  }
+                  const index = section.rows.findIndex(
+                    (row) => row.id === location.rowId,
+                  );
+                  const nextRows = [...section.rows];
+                  const insertAt = index >= 0 ? index + 1 : nextRows.length;
+                  nextRows.splice(insertAt, 0, {
+                    ...newRow,
+                    fields: [fieldConfig],
+                  });
+                  return { ...section, rows: nextRows };
+                }),
+              );
+              this.focusWorkspaceRow(location.sectionId, newRow.id);
+              this.onSelectField(mapConfigFieldToBuilder(fieldConfig));
+            });
+          return;
+        }
+
+        const widthAdjusted = {
+          ...result.duplicate,
+          width: Math.min(
+            normalizeBuilderWidthUnits(result.duplicate.width),
+            fitting,
+          ),
+        };
+        const mapped = mapBuilderFieldToConfig(widthAdjusted, {
           preserveId: true,
         });
         hydrateFormTemplateDynamicSelectField(this.formStorageService, mapped)
@@ -2539,9 +3021,21 @@ export class CreateFormComponent implements OnInit {
       this.findFieldLocation(updated.id) ?? this.pendingFieldTarget();
 
     if (location) {
+      const rowFields = this.getRowCanvasSchema(location.sectionId, location.rowId);
+      const allowed = availableRowWidthPresetsForField(rowFields, updated.id);
+      const nextPreset = builderWidthToPreset(updated.width);
+      const safeUpdated: FormField = allowed.includes(nextPreset)
+        ? { ...updated, width: normalizeBuilderWidthUnits(updated.width) }
+        : {
+            ...updated,
+            width: normalizeBuilderWidthUnits(
+              rowFields.find((field) => field.id === updated.id)?.width,
+            ),
+          };
+
       this.focusWorkspaceRow(location.sectionId, location.rowId);
-      this.rowBuilderFields.update((fields) => updateFormField(updated, fields));
-      const mapped = mapBuilderFieldToConfig(updated, { preserveId: true });
+      this.rowBuilderFields.update((fields) => updateFormField(safeUpdated, fields));
+      const mapped = mapBuilderFieldToConfig(safeUpdated, { preserveId: true });
       hydrateFormTemplateDynamicSelectField(this.formStorageService, mapped)
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe((hydrated) => this.updateRowFieldInSections(hydrated));
@@ -2979,9 +3473,47 @@ export class CreateFormComponent implements OnInit {
     const target = this.pendingFieldTarget();
     if (!target) return;
 
-    // Always append to the clicked row; preserve builder width when set.
+    const currentRow = this.sections()
+      .find((section) => section.id === target.sectionId)
+      ?.rows.find((row) => row.id === target.rowId);
+    const currentFields = currentRow?.fields ?? [];
+
+    // Row already full — start a new row instead of overflowing capacity.
+    if (currentFields.length > 0 && !rowHasAvailableColumnSpace(currentFields)) {
+      const fittingWidth = largestFittingBuilderWidth(12);
+      const newField: FormFieldConfig = {
+        ...field,
+        width: mapBuilderWidthToPercent(fittingWidth),
+        isDefault: false,
+        value: field.value ?? '',
+      };
+      const newRow = createEmptyRow();
+      this.sections.update((list) =>
+        list.map((section) => {
+          if (section.id !== target.sectionId) {
+            return section;
+          }
+          const index = section.rows.findIndex((row) => row.id === target.rowId);
+          const nextRows = [...section.rows];
+          const insertAt = index >= 0 ? index + 1 : nextRows.length;
+          nextRows.splice(insertAt, 0, { ...newRow, fields: [newField] });
+          return { ...section, rows: nextRows };
+        }),
+      );
+      this.focusWorkspaceRow(target.sectionId, newRow.id);
+      this.onSelectField(mapConfigFieldToBuilder(newField));
+      return;
+    }
+
+    const remaining = rowRemainingGridUnits(currentFields);
+    const requested = widthToGridUnits(field.width);
+    const fitting =
+      currentFields.length === 0
+        ? normalizeBuilderWidthUnits(requested)
+        : largestFittingBuilderWidth(remaining) || requested;
     const newField: FormFieldConfig = {
       ...field,
+      width: mapBuilderWidthToPercent(fitting),
       isDefault: false,
       value: field.value ?? '',
     };

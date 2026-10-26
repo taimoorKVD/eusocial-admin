@@ -4,6 +4,61 @@
   background: transparent;
 }
 
+/* Form Template rows: one horizontal band sized by each field's Width in row. */
+.form-canvas-drop-list--width-aware {
+  display: flex;
+  min-height: 5.5rem;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 0.75rem;
+}
+
+/* Setup flat canvas: wrap Width-in-row fields across lines. */
+.form-canvas-drop-list--width-aware-flow {
+  min-height: 420px;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 0.875rem;
+}
+
+.form-canvas-drop-list--width-aware .form-canvas-empty {
+  flex: 1 1 100%;
+  min-height: 5.5rem;
+  border-style: dashed;
+  border-color: #d1d5db;
+  background: #fafafa;
+}
+
+.form-canvas-drop-list--width-aware-flow .form-canvas-empty {
+  min-height: 320px;
+}
+
+.form-canvas-field--width-aware {
+  box-sizing: border-box;
+}
+
+/* Setup flat canvas — card-like fields (widthAwareFlow only; FT rows unchanged). */
+.form-canvas-field--setup-flow {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  background: #fff;
+  padding: 0.9rem 1rem;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 4%);
+
+  &:hover {
+    border-color: #d1d5db;
+    background: #fff;
+  }
+
+  &.form-canvas-field--selected {
+    border-color: transparent;
+    background: #fffaf5;
+    box-shadow:
+      0 0 0 2px #ff9015,
+      0 0 0 4px #fff;
+  }
+}
+
 .form-canvas-empty {
   display: flex;
   min-height: 320px;

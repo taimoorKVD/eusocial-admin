@@ -43,10 +43,10 @@
   (closed)="closePreviewModal()"
 ></app-form-preview-modal>
 
-<div class="tenant-user-page p-6 min-h-screen">
+<div class="tenant-user-page min-h-screen bg-[#F8F9FA] p-4 sm:p-6">
   <div class="tenant-user-page__header">
     <h2
-      class="cursor-pointer text-[16px] font-medium font-ibm text-[#ea580c] hover:underline"
+      class="cursor-pointer font-ibm text-[16px] font-semibold tracking-tight text-[#ea580c] hover:underline"
       (click)="goToItemListing()"
     >
       Create / View Items
@@ -74,6 +74,7 @@
       @if (hasFormFields()) {
         <app-dynamic-form
           [fields]="formFields()"
+          [layoutSections]="formLayoutSections()"
           [enableLocationDependencies]="true"
           (valueChange)="onDynamicFormChange($event)"
         ></app-dynamic-form>
@@ -128,49 +129,119 @@
     </div>
   } @else {
     <div class="tenant-user-builder">
-      <div class="tenant-user-builder__toolbar">
-        @if (!bulkDeleteMode()) {
-          <p class="text-[13px] text-[#666] font-ibm">
-            Editing form configuration
-          </p>
-          <div class="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              class="btn btn--cancel"
-              (click)="enterBulkDeleteMode()"
-            >
-              Bulk Delete
-            </button>
-            <button
-              type="button"
-              class="btn btn--cancel"
-              (click)="onCloseBuilder()"
-            >
-              Close
-            </button>
-          </div>
-        } @else {
-          <p class="text-[13px] text-[#666] font-ibm">
-            Selected: {{ bulkSelectedCount() }}
-          </p>
-          <div class="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              class="btn btn--cancel"
-              (click)="cancelBulkDeleteMode()"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              class="btn btn--delete disabled:cursor-not-allowed disabled:opacity-40"
-              [disabled]="bulkSelectedCount() === 0"
-              (click)="requestBulkDelete()"
-            >
-              Delete Selected
-            </button>
-          </div>
-        }
+      <div
+        class="mb-4 overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04),0_4px_12px_rgba(16,24,40,0.04)]"
+      >
+        <div
+          class="flex flex-col gap-3 border-l-[3px] bg-gradient-to-r via-white to-white px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:gap-5 sm:px-5"
+          [class.border-l-[#FF9015]]="!bulkDeleteMode()"
+          [class.from-[#FFF8F1]]="!bulkDeleteMode()"
+          [class.border-l-[#DC2626]]="bulkDeleteMode()"
+          [class.from-[#FEF2F2]]="bulkDeleteMode()"
+        >
+          @if (!bulkDeleteMode()) {
+            <div class="min-w-0">
+              <div class="flex flex-wrap items-center gap-2">
+                <span
+                  class="inline-flex items-center rounded-md bg-[#FF9015]/12 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#C56A00] font-ibm"
+                >
+                  Form Builder
+                </span>
+                <p class="m-0 text-[15px] font-semibold leading-tight text-[#161616] font-ibm">
+                  Editing form configuration
+                </p>
+              </div>
+              <p class="m-0 mt-1.5 max-w-xl text-xs leading-relaxed text-[#6B7280] font-ibm">
+                Drag fields onto the canvas, then click a field to customize it.
+              </p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2 sm:justify-end">
+              <div
+                class="flex flex-wrap items-center gap-1 rounded-lg border border-[#E5E7EB] bg-white/90 p-1 shadow-sm"
+              >
+                <button
+                  type="button"
+                  class="inline-flex h-8 items-center rounded-md px-2.5 text-xs font-medium text-[#374151] transition hover:bg-[#F3F4F6] hover:text-[#111827] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF9015]/35 font-ibm"
+                  (click)="enterBulkDeleteMode()"
+                >
+                  Bulk Delete
+                </button>
+                <button
+                  type="button"
+                  class="inline-flex h-8 items-center rounded-md px-2.5 text-xs font-medium text-[#374151] transition hover:bg-[#F3F4F6] hover:text-[#111827] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF9015]/35 font-ibm"
+                  (click)="onCloseBuilder()"
+                >
+                  Close
+                </button>
+                <span class="mx-0.5 hidden h-4 w-px bg-[#E5E7EB] sm:block" aria-hidden="true"></span>
+                <button
+                  type="button"
+                  class="inline-flex h-8 items-center rounded-md px-2.5 text-xs font-medium text-[#374151] transition hover:bg-[#F3F4F6] hover:text-[#111827] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF9015]/35 font-ibm"
+                  (click)="openPreviewModal()"
+                >
+                  Preview Form
+                </button>
+                <button
+                  type="button"
+                  class="inline-flex h-8 items-center rounded-md px-2.5 text-xs font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF9015]/35 font-ibm"
+                  [class.bg-[#FF9015]/15]="activeTab() === 'versions'"
+                  [class.text-[#C56A00]]="activeTab() === 'versions'"
+                  [class.ring-1]="activeTab() === 'versions'"
+                  [class.ring-inset]="activeTab() === 'versions'"
+                  [class.ring-[#FF9015]/30]="activeTab() === 'versions'"
+                  [class.text-[#374151]]="activeTab() !== 'versions'"
+                  [class.hover:bg-[#F3F4F6]]="activeTab() !== 'versions'"
+                  [class.hover:text-[#111827]]="activeTab() !== 'versions'"
+                  [attr.aria-pressed]="activeTab() === 'versions'"
+                  (click)="onActiveTabChange('versions')"
+                >
+                  Versions
+                </button>
+              </div>
+              <button
+                type="button"
+                class="inline-flex h-9 items-center rounded-lg bg-[#8BC34A] px-3.5 text-sm font-semibold text-[#1A2E05] shadow-sm transition hover:bg-[#7CB342] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#8BC34A]/50 font-ibm"
+                (click)="saveBuilderForm()"
+              >
+                Save Form
+              </button>
+            </div>
+          } @else {
+            <div class="min-w-0">
+              <div class="flex flex-wrap items-center gap-2">
+                <span
+                  class="inline-flex items-center rounded-md bg-[#FEE2E2] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#B91C1C] font-ibm"
+                >
+                  Bulk Delete
+                </span>
+                <p class="m-0 text-[15px] font-semibold leading-tight text-[#161616] font-ibm">
+                  Select fields to remove
+                </p>
+              </div>
+              <p class="m-0 mt-1.5 text-xs leading-relaxed text-[#6B7280] font-ibm">
+                Selected:
+                <span class="font-semibold text-[#161616]">{{ bulkSelectedCount() }}</span>
+              </p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2 sm:justify-end">
+              <button
+                type="button"
+                class="inline-flex h-9 items-center rounded-lg border border-[#E5E7EB] bg-white px-3 text-sm font-medium text-[#374151] transition hover:bg-[#F9FAFB] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF9015]/35 font-ibm"
+                (click)="cancelBulkDeleteMode()"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                class="inline-flex h-9 items-center rounded-lg bg-[#DC2626] px-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#B91C1C] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#DC2626]/40 disabled:cursor-not-allowed disabled:opacity-40 font-ibm"
+                [disabled]="bulkSelectedCount() === 0"
+                (click)="requestBulkDelete()"
+              >
+                Delete Selected
+              </button>
+            </div>
+          }
+        </div>
       </div>
 
       <app-form-builder-workspace
@@ -181,32 +252,36 @@
         [showPreviewAction]="true"
         [paletteListId]="paletteListId"
         [canvasListId]="canvasListId"
+        [paletteConnectedDropLists]="paletteConnectedDropLists()"
         [enforceUniqueDynamicModules]="true"
         [interactionLocked]="bulkDeleteMode()"
+        [setupChrome]="true"
+        [availableRowWidthPresets]="selectedFieldAvailableWidthPresets()"
+        [rowWidthCapacityHint]="selectedFieldWidthCapacityHint()"
         (selectField)="onSelectField($event)"
         (duplicateField)="onDuplicateField($event)"
         (deleteField)="onDeleteField($event)"
         (updateField)="updateField($event)"
         (activeTabChange)="onActiveTabChange($event)"
+        (clearSelection)="onClearBuilderSelection()"
         (save)="saveBuilderForm()"
         (preview)="openPreviewModal()"
         (restoreVersion)="onRestoreVersion($event)"
         (versionsLoadingChange)="onVersionsLoadingChange($event)"
         (dynamicOptionsLoadingChange)="onDynamicOptionsLoading($event)"
       >
-        <app-form-canvas
+        <app-setup-form-layout-canvas
           formBuilderCanvas
-          [dropListId]="canvasListId"
-          [schema]="builderSchema()"
+          [sections]="builderSections()"
           [selectedFieldId]="selectedFieldId()"
-          [connectedDropLists]="[paletteListId]"
+          [paletteListId]="paletteListId"
           [selectionMode]="bulkDeleteMode()"
           [selectedFieldIds]="bulkSelectedFieldIds()"
           [interactionsDisabled]="bulkDeleteMode()"
-          (dropped)="onCanvasDrop($event)"
+          (sectionsChange)="onBuilderSectionsChange($event)"
           (selectField)="onSelectField($event)"
           (toggleFieldSelection)="onToggleBulkFieldSelection($event)"
-        ></app-form-canvas>
+        ></app-setup-form-layout-canvas>
       </app-form-builder-workspace>
     </div>
   }

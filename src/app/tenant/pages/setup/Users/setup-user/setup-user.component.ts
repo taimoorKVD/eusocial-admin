@@ -4,6 +4,7 @@ import {
   DestroyRef,
   HostListener,
   computed,
+  effect,
   inject,
   signal,
   viewChild,
@@ -18,21 +19,32 @@ import { FormStorageService } from '../../../../forms/services/form-storage.serv
 import { FormField } from '../../../../form-builder/models/form-field.model';
 import { normalizeFieldOrder } from '../../../../form-builder/utils/form-field.factory';
 import {
-  applyCanvasDrop,
   duplicateFormField,
   isFormFieldBulkDeletable,
-  removeFormField,
-  updateFormField,
 } from '../../../../form-builder/utils/form-field-operations';
 import { applyBulkFieldDelete } from '../../../../form-builder/utils/bulk-field-delete.utils';
 import { FormBuilderTab } from '../../../../forms/components/form-builder-workspace/form-builder-workspace.component';
-import { serializeSchemaFields } from '../../../../forms/utils/form-schema-payload.utils';
 import { DynamicFormComponent } from '../../../../../shared/dynamic-form/dynamic-form.component';
 import { remapDynamicFormValuesByFieldId } from '../../../../../shared/dynamic-form/dynamic-form.builder';
 import {
   DynamicField,
   DynamicFormValue,
 } from '../../../../../interfaces/dynamic-field';
+import { TenantLayoutChromeService } from '../../../../tenant-layout/tenant-layout-chrome.service';
+import { availableRowWidthPresetsForField } from '../../../../pages/extra-management/forms/utils/field-builder-adapter.utils';
+import {
+  buildDefaultSetupSections,
+  buildDynamicLayoutSections,
+  createSetupRowId,
+  findSetupFieldRow,
+  flattenSetupSections,
+  hydrateSetupSections,
+  removeFieldFromSetupSections,
+  serializeSetupSections,
+  setupRowCanAddColumn,
+  updateFieldInSetupSections,
+  type SetupFormSection,
+} from '../../../../forms/utils/setup-form-layout.utils';
 
 @Component({
   selector: 'app-setup-user',
@@ -48,6 +60,7 @@ export class SetupUserComponent {
   private readonly formStorageService = inject(FormStorageService);
   private readonly userService = inject(TenantUserService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly layoutChrome = inject(TenantLayoutChromeService);
 
   private readonly dynamicForm = viewChild(DynamicFormComponent);
 
@@ -55,12 +68,20 @@ export class SetupUserComponent {
   /** True while create/update user API is in flight. */
   readonly submitting = signal(false);
   readonly formFields = signal<DynamicField[]>([]);
+  /** Stored schema.sections for fill-form row layout (empty = default stack). */
+  readonly fillLayoutStored = signal<unknown[]>([]);
   readonly userId = signal('');
   readonly latestFormValue = signal<DynamicFormValue>({});
 
   readonly builderVisible = signal(false);
   readonly builderLoading = signal(false);
 
+  /** Collapse app sidebar while the Form Builder is open; clear on destroy. */
+  private readonly syncBuilderChrome = effect(() => {
+    this.layoutChrome.setFormBuilderActive(this.builderVisible());
+  });
+
+  readonly builderSections = signal<SetupFormSection[]>([]);
   readonly builderSchema = signal<FormField[]>([]);
   readonly selectedFieldId = signal<string | null>(null);
   readonly activeTab = signal<FormBuilderTab>('fields');
@@ -79,6 +100,45 @@ export class SetupUserComponent {
   private savedSnapshot = '';
   private schemaReady = false;
 
+  readonly formLayoutSections = computed(() =>
+    buildDynamicLayoutSections(this.formFields(), this.fillLayoutStored()),
+  );
+
+  readonly paletteConnectedDropLists = computed(() => {
+    const ids: string[] = [];
+    for (const section of this.builderSections()) {
+      for (const row of section.rows) {
+        ids.push(`setupCanvas_${section.id}_${row.id}`);
+        if (setupRowCanAddColumn(row) && !this.bulkDeleteMode()) {
+          ids.push(`setupAddCol_${section.id}_${row.id}`);
+        }
+      }
+      if (!this.bulkDeleteMode()) {
+        ids.push(`setupNewRow_${section.id}`);
+      }
+    }
+    return ids;
+  });
+
+  readonly selectedFieldAvailableWidthPresets = computed(() => {
+    const fieldId = this.selectedFieldId();
+    if (!fieldId) {
+      return ['third', 'half', 'full'] as Array<'third' | 'half' | 'full'>;
+    }
+    const location = findSetupFieldRow(this.builderSections(), fieldId);
+    if (!location) {
+      return ['third', 'half', 'full'] as Array<'third' | 'half' | 'full'>;
+    }
+    return availableRowWidthPresetsForField(location.row.fields, fieldId);
+  });
+
+  readonly selectedFieldWidthCapacityHint = computed((): string | null => {
+    if (this.selectedFieldAvailableWidthPresets().length >= 3) {
+      return null;
+    }
+    return 'This width cannot fit because the row is already occupied.';
+  });
+
   readonly hasFormFields = computed(() => this.formFields().length > 0);
   readonly showEmptyState = computed(
     () => !this.loading() && !this.hasFormFields() && !this.builderVisible()
@@ -92,6 +152,12 @@ export class SetupUserComponent {
     const noun = count === 1 ? 'field' : 'fields';
     return `Delete ${count} selected ${noun}? This action cannot be undone.`;
   });
+
+  constructor() {
+    this.destroyRef.onDestroy(() => {
+      this.layoutChrome.setFormBuilderActive(false);
+    });
+  }
 
   ngOnInit(): void {
     this.userId.set(this.route.snapshot.paramMap.get('id') || '');
@@ -174,9 +240,14 @@ export class SetupUserComponent {
           if (saved) {
             this.formName = saved.formName || this.formName;
             this.formId = saved.formId ?? null;
-            this.builderSchema.set(normalizeFieldOrder(saved.fields || []));
+            this.applyBuilderSections(
+              hydrateSetupSections(
+                normalizeFieldOrder(saved.fields || []),
+                saved.sections,
+              ),
+            );
           } else {
-            this.builderSchema.set([]);
+            this.applyBuilderSections(buildDefaultSetupSections([]));
           }
 
           this.schemaReady = true;
@@ -186,7 +257,7 @@ export class SetupUserComponent {
         error: error => {
           console.error('Failed to load form schema:', error);
           this.toastr.error('Failed to load form configuration');
-          this.builderSchema.set([]);
+          this.applyBuilderSections(buildDefaultSetupSections([]));
           this.schemaReady = true;
           this.updateBuilderSnapshot();
         },
@@ -211,17 +282,8 @@ export class SetupUserComponent {
     this.showBuilderExitConfirm.set(false);
   }
 
-  onCanvasDrop(event: Parameters<typeof applyCanvasDrop>[0]): void {
-    if (this.bulkDeleteMode()) {
-      return;
-    }
-
-    const result = applyCanvasDrop(event, this.builderSchema());
-    this.builderSchema.set(result.schema);
-
-    if (result.insertedField) {
-      this.onSelectField(result.insertedField);
-    }
+  onBuilderSectionsChange(sections: SetupFormSection[]): void {
+    this.applyBuilderSections(sections);
   }
 
   onSelectField(field: FormField): void {
@@ -231,6 +293,11 @@ export class SetupUserComponent {
 
     this.selectedFieldId.set(field.id);
     this.activeTab.set('settings');
+  }
+
+  onClearBuilderSelection(): void {
+    this.selectedFieldId.set(null);
+    this.activeTab.set('fields');
   }
 
   enterBulkDeleteMode(): void {
@@ -288,7 +355,14 @@ export class SetupUserComponent {
       return;
     }
 
-    this.builderSchema.set(result.schema);
+    let sections = this.builderSections();
+    for (const id of selectedIds) {
+      sections = removeFieldFromSetupSections(sections, id);
+    }
+    if (!sections.length) {
+      sections = buildDefaultSetupSections([]);
+    }
+    this.applyBuilderSections(sections);
 
     const selectedId = this.selectedFieldId();
     if (selectedId && !result.schema.some(item => item.id === selectedId)) {
@@ -307,12 +381,33 @@ export class SetupUserComponent {
       return;
     }
 
+    const location = findSetupFieldRow(this.builderSections(), field.id);
     const result = duplicateFormField(field, this.builderSchema());
-    this.builderSchema.set(result.schema);
-
-    if (result.duplicate) {
-      this.onSelectField(result.duplicate);
+    if (!result.duplicate) {
+      return;
     }
+
+    const sections = this.builderSections().map((section) => ({
+      ...section,
+      rows: section.rows.map((row) => ({ ...row, fields: [...row.fields] })),
+    }));
+
+    if (location) {
+      const section = sections.find((item) => item.id === location.sectionId);
+      const row = section?.rows.find((item) => item.id === location.rowId);
+      if (row) {
+        const index = row.fields.findIndex((item) => item.id === field.id);
+        row.fields.splice(index + 1, 0, result.duplicate);
+      }
+    } else if (sections[0]) {
+      sections[0].rows.push({
+        id: createSetupRowId(),
+        fields: [result.duplicate],
+      });
+    }
+
+    this.applyBuilderSections(sections);
+    this.onSelectField(result.duplicate);
   }
 
   onDeleteField(field: FormField): void {
@@ -320,11 +415,16 @@ export class SetupUserComponent {
       return;
     }
 
-    const nextSchema = removeFormField(field, this.builderSchema());
-    this.builderSchema.set(nextSchema);
+    const sections = removeFieldFromSetupSections(
+      this.builderSections(),
+      field.id,
+    );
+    this.applyBuilderSections(
+      sections.length ? sections : buildDefaultSetupSections([]),
+    );
 
     const selectedId = this.selectedFieldId();
-    if (selectedId && !nextSchema.some(item => item.id === selectedId)) {
+    if (selectedId === field.id) {
       this.selectedFieldId.set(null);
       this.activeTab.set('fields');
     }
@@ -354,7 +454,12 @@ export class SetupUserComponent {
           if (saved) {
             this.formName = saved.formName || this.formName;
             this.formId = saved.formId ?? null;
-            this.builderSchema.set(normalizeFieldOrder(saved.fields || []));
+            this.applyBuilderSections(
+              hydrateSetupSections(
+                normalizeFieldOrder(saved.fields || []),
+                saved.sections,
+              ),
+            );
             this.updateBuilderSnapshot();
           }
         },
@@ -377,10 +482,33 @@ export class SetupUserComponent {
       return;
     }
 
-    const nextSchema = updateFormField(updated, this.builderSchema());
-    this.builderSchema.set(nextSchema);
+    const location = findSetupFieldRow(this.builderSections(), updated.id);
+    const allowed = location
+      ? availableRowWidthPresetsForField(location.row.fields, updated.id)
+      : (['third', 'half', 'full'] as const);
+    const preset =
+      (updated.width ?? 12) <= 4
+        ? 'third'
+        : (updated.width ?? 12) <= 6
+          ? 'half'
+          : 'full';
+    const safeUpdated: FormField =
+      allowed.includes(preset as 'third' | 'half' | 'full')
+        ? updated
+        : {
+            ...updated,
+            width:
+              location?.row.fields.find((field) => field.id === updated.id)
+                ?.width ?? updated.width,
+          };
 
-    const normalizedField = nextSchema.find(field => field.id === updated.id);
+    this.applyBuilderSections(
+      updateFieldInSetupSections(this.builderSections(), safeUpdated),
+    );
+
+    const normalizedField = this.builderSchema().find(
+      (field) => field.id === safeUpdated.id,
+    );
     if (normalizedField) {
       this.selectedFieldId.set(normalizedField.id);
       this.activeTab.set('settings');
@@ -392,19 +520,20 @@ export class SetupUserComponent {
       return;
     }
 
-    const orderedSchema = normalizeFieldOrder([...this.builderSchema()]);
-    this.builderSchema.set(orderedSchema);
-    const hasRequiredField = orderedSchema.some(field => field.required);
-    // if (!hasRequiredField) {
-    //   this.toastr.error('Please mark at least one field as required.');
-    //   return;
-    // }
+    const orderedSchema = flattenSetupSections(this.builderSections());
+    this.applyBuilderSections(
+      hydrateSetupSections(
+        orderedSchema,
+        serializeSetupSections(this.builderSections()),
+      ),
+    );
     this.builderLoading.set(true);
       this.formStorageService
       .saveForm('users', {
         formName: this.formName,
         formId: this.formId,
         fields: orderedSchema,
+        sections: serializeSetupSections(this.builderSections()),
         markAsDraft: false,
       })
       .pipe(
@@ -438,6 +567,7 @@ export class SetupUserComponent {
   }
 
   private resetBuilderState(): void {
+    this.builderSections.set([]);
     this.builderSchema.set([]);
     this.selectedFieldId.set(null);
     this.activeTab.set('fields');
@@ -447,16 +577,30 @@ export class SetupUserComponent {
     this.cancelBulkDeleteMode();
   }
 
+  private applyBuilderSections(sections: SetupFormSection[]): void {
+    const next =
+      sections.length > 0 ? sections : buildDefaultSetupSections([]);
+    this.builderSections.set(next);
+    this.builderSchema.set(flattenSetupSections(next));
+  }
+
   private hasBuilderUnsavedChanges(): boolean {
     if (!this.schemaReady) {
       return false;
     }
 
-    return serializeSchemaFields(this.builderSchema()) !== this.savedSnapshot;
+    return this.serializeBuilderState() !== this.savedSnapshot;
   }
 
   private updateBuilderSnapshot(): void {
-    this.savedSnapshot = serializeSchemaFields(this.builderSchema());
+    this.savedSnapshot = this.serializeBuilderState();
+  }
+
+  private serializeBuilderState(): string {
+    return JSON.stringify({
+      fields: this.builderSchema(),
+      sections: serializeSetupSections(this.builderSections()),
+    });
   }
 
   private loadFormFields(): void {
@@ -467,9 +611,11 @@ export class SetupUserComponent {
       .pipe(
         switchMap((res) => {
           if (!res) {
+            this.fillLayoutStored.set([]);
             return of([] as DynamicField[]);
           }
 
+          this.fillLayoutStored.set(res.sections || []);
           const fields = normalizeFieldOrder(
             res.fields || [],
           ) as DynamicField[];

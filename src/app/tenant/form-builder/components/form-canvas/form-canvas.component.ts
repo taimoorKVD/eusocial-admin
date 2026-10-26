@@ -38,10 +38,56 @@ export class FormCanvasComponent {
    * under each field. Other Form Builder hosts leave this false.
    */
   @Input() showFieldQuickActions = false;
+  /**
+   * Form Template Build rows: lay fields out in one horizontal band using each
+   * field's 12-col `width` (Width in row). Other hosts keep the default 2-col grid.
+   */
+  @Input() widthAwareLayout = false;
+  /**
+   * Setup modules (flat canvas): wrap fields and size each as a fraction of the
+   * full row (units/12). Leave false for Form Template per-row canvases.
+   */
+  @Input() widthAwareFlow = false;
   /** Field ids with configured Conditional Logic (Form Template). */
   @Input() fieldsWithConditionalLogic: readonly string[] = [];
   /** Field ids referenced by Automation Rules (Form Template). */
   @Input() fieldsWithAutomationRules: readonly string[] = [];
+
+  /** Normalize Width-in-row units to 4 / 6 / 12. */
+  fieldWidthUnits(field: FormField): number {
+    const width = field.width ?? 12;
+    if (width <= 4) {
+      return 4;
+    }
+    if (width <= 6) {
+      return 6;
+    }
+    return 12;
+  }
+
+  /** Total Width-in-row units currently occupied in this canvas row. */
+  private rowUsedUnits(): number {
+    const used = this.schema.reduce(
+      (sum, field) => sum + this.fieldWidthUnits(field),
+      0,
+    );
+    return Math.max(used, 1);
+  }
+
+  /**
+   * Flex basis for Width in row.
+   * - Flow (setup flat canvas): absolute % of full row (units/12), wraps.
+   * - Row (Form Template): relative to siblings; parent sizes the canvas band.
+   */
+  fieldWidthFlexBasis(field: FormField): string {
+    const units = this.fieldWidthUnits(field);
+    if (this.widthAwareFlow) {
+      return `calc(${(units / 12) * 100}% - 0.5rem)`;
+    }
+    const used = this.rowUsedUnits();
+    const gapOffset = this.schema.length > 1 ? '0.5rem' : '0px';
+    return `calc(${(units / used) * 100}% - ${gapOffset})`;
+  }
 
   @Output() dropped = new EventEmitter<CdkDragDrop<FormField[]>>();
   @Output() selectField = new EventEmitter<FormField>();

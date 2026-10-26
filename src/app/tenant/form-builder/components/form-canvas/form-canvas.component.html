@@ -2,17 +2,27 @@
   cdkDropList
   #canvasList="cdkDropList"
   [id]="dropListId"
-  class="form-canvas-drop-list grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-x-6 md:gap-y-4"
+  class="form-canvas-drop-list"
+  [class.grid]="!widthAwareLayout"
+  [class.grid-cols-1]="!widthAwareLayout"
+  [class.gap-4]="!widthAwareLayout"
+  [class.md:grid-cols-2]="!widthAwareLayout"
+  [class.md:gap-x-6]="!widthAwareLayout"
+  [class.md:gap-y-4]="!widthAwareLayout"
   [class.form-canvas-drop-list--locked]="isDragDropDisabled"
+  [class.form-canvas-drop-list--width-aware]="widthAwareLayout"
+  [class.form-canvas-drop-list--width-aware-flow]="widthAwareLayout && widthAwareFlow"
   [cdkDropListData]="schema"
   [cdkDropListConnectedTo]="connectedDropLists"
   [cdkDropListDisabled]="isDragDropDisabled"
-  cdkDropListOrientation="mixed"
+  [cdkDropListOrientation]="widthAwareLayout && !widthAwareFlow ? 'horizontal' : 'mixed'"
   (cdkDropListDropped)="onDrop($event)"
 >
   <div
     *ngIf="schema.length === 0"
-    class="form-canvas-empty col-span-1 md:col-span-2"
+    class="form-canvas-empty"
+    [class.col-span-1]="!widthAwareLayout"
+    [class.md:col-span-2]="!widthAwareLayout"
   >
     <p class="text-sm font-medium text-slate-600">Drag fields here to build your form</p>
     <p class="mt-1 text-xs text-slate-400">Click a field to edit its settings</p>
@@ -31,6 +41,12 @@
     [class.form-canvas-field--bulk-selected]="selectionMode && isFieldSelected(field)"
     [class.form-canvas-field--protected]="selectionMode && !isFieldDeletable(field)"
     [class.form-canvas-field--selection-mode]="selectionMode"
+    [class.form-canvas-field--width-aware]="widthAwareLayout"
+    [class.form-canvas-field--setup-flow]="widthAwareLayout && widthAwareFlow"
+    [style.flex]="widthAwareLayout ? '0 0 auto' : null"
+    [style.flex-basis]="widthAwareLayout ? fieldWidthFlexBasis(field) : null"
+    [style.max-width]="widthAwareLayout ? fieldWidthFlexBasis(field) : null"
+    [style.min-width]="widthAwareLayout ? '0' : null"
     (click)="onFieldClick(field)"
     (cdkDragStarted)="onFieldDragStarted()"
     (cdkDragEnded)="onFieldDragEnded()"
