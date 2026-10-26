@@ -8,6 +8,28 @@
   }
 }
 
+/* Form Template Add Field — grouped sections (Figma). */
+.palette-grid--ft {
+  gap: 0.5rem 0.5rem;
+  align-content: start;
+}
+
+.palette-group-heading {
+  grid-column: 1 / -1;
+  margin: 0.65rem 0 0.15rem;
+  padding: 0 0.1rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  color: #9ca3af;
+
+  &:first-child {
+    margin-top: 0;
+  }
+}
+
 .palette-grid--disabled {
   pointer-events: none;
 }
@@ -71,6 +93,32 @@
     color: rgb(29 31 34);
     overflow-wrap: anywhere;
     word-break: break-word;
+  }
+
+  /* Form Template Add Field tiles — show full names, no ellipsis. */
+  &--ft {
+    min-height: 3.25rem;
+    border-color: #e5e7eb;
+    border-radius: 0.5rem;
+    box-shadow: none;
+    padding: 0.5rem 0.35rem 0.55rem;
+
+    &:hover {
+      border-color: #d1d5db;
+      box-shadow: none;
+    }
+
+    .palette-item__label {
+      overflow: visible;
+      text-overflow: unset;
+      white-space: normal;
+      overflow-wrap: break-word;
+      word-break: normal;
+      hyphens: manual;
+      font-size: 0.6875rem;
+      line-height: 1.25;
+      color: #161616;
+    }
   }
 
   /* Setup modules only — Form Template leaves default .palette-item. */

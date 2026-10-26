@@ -1,5 +1,70 @@
 import { FormField } from '../models/form-field.model';
 
+/** Form Template Add Field tab groups (display only; does not alter FIELD_TEMPLATES). */
+export interface FormTemplatePaletteGroup {
+  id: string;
+  heading: string;
+  types: ReadonlyArray<FormField['type']>;
+}
+
+/**
+ * Figma order for Form Template → Add a field.
+ * Underlying template definitions and canvas labels stay in FIELD_TEMPLATES.
+ */
+export const FORM_TEMPLATE_PALETTE_GROUPS: readonly FormTemplatePaletteGroup[] = [
+  {
+    id: 'basic',
+    heading: 'Basic',
+    types: ['text', 'textarea', 'number', 'email'],
+  },
+  {
+    id: 'choice',
+    heading: 'Choice',
+    types: ['select', 'radio', 'checkbox', 'rating'],
+  },
+  {
+    id: 'date-media',
+    heading: 'Date & Media',
+    types: ['date', 'time', 'image', 'signature'],
+  },
+  {
+    id: 'measurement',
+    heading: 'Measurement',
+    types: ['temperature', 'mass', 'volume', 'length', 'price', 'range'],
+  },
+  {
+    id: 'scan',
+    heading: 'Scan',
+    types: ['barcode', 'qr-code'],
+  },
+];
+
+/** Visible palette labels for Form Template (canvas still uses FIELD_TEMPLATES.label). */
+export const FORM_TEMPLATE_PALETTE_LABELS: Readonly<
+  Partial<Record<FormField['type'], string>>
+> = {
+  text: 'Text',
+  textarea: 'Long text',
+  number: 'Number',
+  email: 'Email',
+  select: 'Dropdown',
+  radio: 'Single choice',
+  checkbox: 'Checkboxes',
+  rating: 'Rating',
+  date: 'Date',
+  time: 'Time',
+  image: 'Image',
+  signature: 'Signature',
+  temperature: 'Temperature',
+  mass: 'Weight',
+  volume: 'Volume',
+  length: 'Length',
+  price: 'Price',
+  range: 'Range',
+  barcode: 'Barcode',
+  'qr-code': 'QR code',
+};
+
 export const FIELD_TEMPLATES: Omit<FormField, 'id'>[] = [
  {
     type: 'text',

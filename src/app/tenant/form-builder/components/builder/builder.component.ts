@@ -8,7 +8,15 @@ import {
 import { CommonModule } from '@angular/common';
 import { CdkDropList, DragDropModule } from '@angular/cdk/drag-drop';
 import { FormField } from '../../models/form-field.model';
-import { FIELD_TEMPLATES } from '../../data/field-templates';
+import {
+  FIELD_TEMPLATES,
+  FORM_TEMPLATE_PALETTE_GROUPS,
+  FORM_TEMPLATE_PALETTE_LABELS,
+} from '../../data/field-templates';
+
+type PaletteRow =
+  | { kind: 'heading'; id: string; heading: string }
+  | { kind: 'field'; field: Omit<FormField, 'id'> };
 
 @Component({
   selector: 'app-builder',
@@ -27,12 +35,40 @@ export class BuilderComponent implements OnDestroy {
    * Leave false for Form Template and legacy editors.
    */
   @Input() setupPalette = false;
+  /**
+   * Form Template Add Field tab: Figma groups, order, and display labels.
+   * Does not change FIELD_TEMPLATES or canvas field labels on drop.
+   */
+  @Input() formTemplatePalette = false;
 
   @ViewChild('paletteList', { static: true })
   paletteListRef!: CdkDropList<FormField[]>;
 
   /** Immutable palette — never modified by drag & drop. */
   readonly fieldTemplates = FIELD_TEMPLATES;
+
+  /** Flat default rows (setup / legacy). Stable identity for *ngFor. */
+  private readonly defaultPaletteRows: PaletteRow[] = FIELD_TEMPLATES.map(
+    (field) => ({ kind: 'field' as const, field }),
+  );
+
+  /** Form Template grouped rows (Figma). Stable identity for *ngFor. */
+  private readonly formTemplatePaletteRows: PaletteRow[] = (() => {
+    const byType = new Map(
+      FIELD_TEMPLATES.map((template) => [template.type, template] as const),
+    );
+    const rows: PaletteRow[] = [];
+    for (const group of FORM_TEMPLATE_PALETTE_GROUPS) {
+      rows.push({ kind: 'heading', id: group.id, heading: group.heading });
+      for (const type of group.types) {
+        const field = byType.get(type);
+        if (field) {
+          rows.push({ kind: 'field', field });
+        }
+      }
+    }
+    return rows;
+  })();
 
   /** Body-level tooltip clone so overflow parents cannot clip it. */
   private portalTooltip: HTMLElement | null = null;
@@ -55,6 +91,25 @@ export class BuilderComponent implements OnDestroy {
 
   trackByTemplate(_index: number, item: Omit<FormField, 'id'>): string {
     return item.type;
+  }
+
+  trackByPaletteRow(_index: number, row: PaletteRow): string {
+    return row.kind === 'heading' ? `heading:${row.id}` : `field:${row.field.type}`;
+  }
+
+  /** Flat rows for Form Template grouped palette, else plain template list. */
+  get paletteRows(): PaletteRow[] {
+    return this.formTemplatePalette
+      ? this.formTemplatePaletteRows
+      : this.defaultPaletteRows;
+  }
+
+  /** Visible label in the Add Field tab (FT display names; otherwise template label). */
+  paletteLabel(field: Omit<FormField, 'id'>): string {
+    if (this.formTemplatePalette) {
+      return FORM_TEMPLATE_PALETTE_LABELS[field.type] ?? field.label;
+    }
+    return field.label;
   }
 
   /**
