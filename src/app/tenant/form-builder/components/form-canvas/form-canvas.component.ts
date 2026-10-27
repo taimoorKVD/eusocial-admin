@@ -39,6 +39,11 @@ export class FormCanvasComponent {
    */
   @Input() showFieldQuickActions = false;
   /**
+   * Form Template Build only: Figma field-card chrome (drag grip + filled
+   * preview controls). Setup modules and other hosts leave this false.
+   */
+  @Input() formTemplateBuildUi = false;
+  /**
    * Form Template Build rows: lay fields out in one horizontal band using each
    * field's 12-col `width` (Width in row). Other hosts keep the default 2-col grid.
    */

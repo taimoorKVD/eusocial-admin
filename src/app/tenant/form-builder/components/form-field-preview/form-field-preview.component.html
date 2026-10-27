@@ -1,8 +1,32 @@
-<label class="mb-1 block text-xs font-medium text-slate-500">
-  {{ field.label }}
-  <span *ngIf="field.required" class="text-red-500">*</span>
-  <span *ngIf="isReadonly" class="ml-1 text-[10px] font-normal text-slate-400">(readonly)</span>
-</label>
+@if (formTemplateBuildUi) {
+  <div class="mb-2 flex min-w-0 items-start gap-2">
+    <span
+      class="mt-0.5 inline-flex shrink-0 text-[#9CA3AF]"
+      aria-hidden="true"
+      title="Drag to reorder"
+    >
+      <svg class="h-4 w-4" viewBox="0 0 16 16" fill="currentColor">
+        <circle cx="5" cy="4" r="1.25" />
+        <circle cx="11" cy="4" r="1.25" />
+        <circle cx="5" cy="8" r="1.25" />
+        <circle cx="11" cy="8" r="1.25" />
+        <circle cx="5" cy="12" r="1.25" />
+        <circle cx="11" cy="12" r="1.25" />
+      </svg>
+    </span>
+    <label [class]="labelClass">
+      {{ field.label }}
+      <span *ngIf="field.required" class="text-red-500">*</span>
+      <span *ngIf="isReadonly" class="ml-1 text-[10px] font-normal text-slate-400">(readonly)</span>
+    </label>
+  </div>
+} @else {
+  <label [class]="labelClass">
+    {{ field.label }}
+    <span *ngIf="field.required" class="text-red-500">*</span>
+    <span *ngIf="isReadonly" class="ml-1 text-[10px] font-normal text-slate-400">(readonly)</span>
+  </label>
+}
 
 <input
   *ngIf="fieldType === 'text'"
@@ -14,7 +38,7 @@
   readonly
   tabindex="-1"
   aria-disabled="true"
-  class="w-full border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none disabled:cursor-default disabled:text-slate-500"
+  [class]="controlClass"
 />
 
 <input
@@ -26,7 +50,7 @@
   readonly
   tabindex="-1"
   aria-disabled="true"
-  class="w-full border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none disabled:cursor-default disabled:text-slate-500"
+  [class]="controlClass"
 />
 
 <input
@@ -39,7 +63,7 @@
   readonly
   tabindex="-1"
   aria-disabled="true"
-  class="w-full border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none disabled:cursor-default disabled:text-slate-500"
+  [class]="controlClass"
 />
 
 <textarea
@@ -52,16 +76,30 @@
   rows="3"
   tabindex="-1"
   aria-disabled="true"
-  class="w-full resize-none border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none disabled:cursor-default disabled:text-slate-500"
+  [class]="controlClass + ' resize-none'"
 ></textarea>
 
+<!-- Form Template Build: option fields as Figma chips -->
+<div *ngIf="showChoiceChips" class="flex flex-wrap gap-2">
+  <p *ngIf="loadingOptions" class="text-xs text-slate-400">Loading options...</p>
+  <p *ngIf="optionsError && !loadingOptions" class="text-xs text-slate-400">
+    Unable to load options
+  </p>
+  <span
+    *ngFor="let opt of displayOptions; trackBy: trackByOptionValue"
+    class="inline-flex max-w-full items-center truncate rounded-md bg-[#F3F4F6] px-3 py-1.5 text-sm text-[#161616]"
+  >
+    {{ opt.label }}
+  </span>
+</div>
+
 <select
-  *ngIf="isSelectField"
+  *ngIf="isSelectField && !formTemplateBuildUi"
   [ngModel]="previewValue"
   disabled
   tabindex="-1"
   aria-disabled="true"
-  class="w-full border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 focus:outline-none disabled:cursor-default disabled:text-slate-500"
+  [class]="controlClass"
 >
   <option *ngIf="loadingOptions" [ngValue]="null" disabled>Loading options...</option>
   <option *ngIf="optionsError && !loadingOptions" [ngValue]="null" disabled>
@@ -84,7 +122,7 @@
   </option>
 </select>
 
-<div *ngIf="isRadioField" class="mt-1 space-y-2">
+<div *ngIf="isRadioField && !formTemplateBuildUi" class="mt-1 space-y-2">
   <p *ngIf="loadingOptions" class="text-xs text-slate-400">Loading options...</p>
   <div
     *ngFor="let opt of displayOptions; trackBy: trackByOptionValue"
@@ -103,7 +141,7 @@
   </div>
 </div>
 
-<div *ngIf="isCheckboxField" class="mt-1 space-y-2">
+<div *ngIf="isCheckboxField && !formTemplateBuildUi" class="mt-1 space-y-2">
   <p *ngIf="loadingOptions" class="text-xs text-slate-400">Loading options...</p>
   <div
     *ngFor="let opt of displayOptions; trackBy: trackByOptionValue"
@@ -120,14 +158,24 @@
   </div>
 </div>
 
+<!-- Form Template Build: dashed photo upload -->
+<div
+  *ngIf="fieldType === 'image' && formTemplateBuildUi"
+  class="flex min-h-[2.75rem] w-full items-center rounded-lg border border-dashed border-[#D1D5DB] bg-white px-3 py-3"
+>
+  <span class="text-sm text-[#9CA3AF]">
+    {{ field.placeholder || 'Take or upload a photo' }}
+  </span>
+</div>
+
 <input
-  *ngIf="fieldType === 'image'"
+  *ngIf="fieldType === 'image' && !formTemplateBuildUi"
   type="file"
   accept="image/*"
   disabled
   tabindex="-1"
   aria-disabled="true"
-  class="w-full border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 focus:outline-none disabled:cursor-default disabled:text-slate-500"
+  [class]="controlClass"
 />
 
 <div
@@ -142,7 +190,14 @@
   </div>
 </div>
 
-<div *ngIf="fieldType === 'signature'" class="flex items-center justify-center rounded-md border border-dashed border-slate-300 bg-slate-50 py-8">
+<div
+  *ngIf="fieldType === 'signature'"
+  class="flex items-center justify-center rounded-lg border border-dashed py-8"
+  [class.border-slate-300]="!formTemplateBuildUi"
+  [class.bg-slate-50]="!formTemplateBuildUi"
+  [class.border-[#D1D5DB]="formTemplateBuildUi"
+  [class.bg-white]="formTemplateBuildUi"
+>
   <svg class="h-8 w-8 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
     <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
   </svg>
@@ -155,7 +210,7 @@
     disabled
     tabindex="-1"
     aria-disabled="true"
-    class="w-full border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none disabled:cursor-default disabled:text-slate-500"
+    [class]="controlClass"
   />
   <span *ngIf="(field.timeFormat || '12') === '12'" class="shrink-0 text-xs text-slate-400">AM/PM</span>
 </div>
@@ -167,7 +222,7 @@
     disabled
     tabindex="-1"
     aria-disabled="true"
-    class="w-full border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none disabled:cursor-default disabled:text-slate-500"
+    [class]="controlClass"
   />
 </div>
 
@@ -187,7 +242,7 @@
         disabled
         tabindex="-1"
         aria-disabled="true"
-        class="w-full border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none disabled:cursor-default disabled:text-slate-500"
+        [class]="controlClass"
       />
       <span class="text-slate-400">–</span>
       <input
@@ -196,7 +251,7 @@
         disabled
         tabindex="-1"
         aria-disabled="true"
-        class="w-full border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none disabled:cursor-default disabled:text-slate-500"
+        [class]="controlClass"
       />
     </ng-container>
     <ng-container *ngSwitchCase="'time'">
@@ -206,7 +261,7 @@
         disabled
         tabindex="-1"
         aria-disabled="true"
-        class="w-full border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none disabled:cursor-default disabled:text-slate-500"
+        [class]="controlClass"
       />
       <span class="text-slate-400">–</span>
       <input
@@ -215,7 +270,7 @@
         disabled
         tabindex="-1"
         aria-disabled="true"
-        class="w-full border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none disabled:cursor-default disabled:text-slate-500"
+        [class]="controlClass"
       />
     </ng-container>
     <ng-container *ngSwitchDefault>
@@ -226,7 +281,7 @@
         disabled
         tabindex="-1"
         aria-disabled="true"
-        class="w-full border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none disabled:cursor-default disabled:text-slate-500"
+        [class]="controlClass"
       />
       <span class="text-slate-400">–</span>
       <input
@@ -236,13 +291,48 @@
         disabled
         tabindex="-1"
         aria-disabled="true"
-        class="w-full border-b border-slate-300 bg-transparent py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none disabled:cursor-default disabled:text-slate-500"
+        [class]="controlClass"
       />
     </ng-container>
   </ng-container>
 </div>
 
-<div *ngIf="isMeasurementPreview" class="flex w-full min-w-0 items-stretch overflow-hidden rounded-lg border border-slate-200 bg-white">
+<!-- Measurement: FT places unit on the right inside a filled box (Figma) -->
+<div
+  *ngIf="isMeasurementPreview && formTemplateBuildUi"
+  class="flex w-full min-w-0 items-stretch overflow-hidden rounded-lg bg-[#F3F4F6]"
+>
+  <input
+    type="number"
+    step="any"
+    [placeholder]="field.placeholder || '0.0'"
+    disabled
+    tabindex="-1"
+    aria-disabled="true"
+    class="min-w-0 flex-1 border-0 bg-transparent px-3 py-2.5 text-sm text-[#161616] placeholder:text-[#9CA3AF] focus:outline-none disabled:cursor-default disabled:text-[#6B7280]"
+  />
+  <span
+    class="inline-flex shrink-0 items-center gap-0.5 px-3 text-sm font-medium text-[#6B7280]"
+  >
+    {{ measurementUnitSymbol }}
+    <svg
+      *ngIf="measurementUnitMode === 'selectable'"
+      class="h-3 w-3 text-slate-400"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      stroke-width="2"
+      aria-hidden="true"
+    >
+      <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+    </svg>
+  </span>
+</div>
+
+<div
+  *ngIf="isMeasurementPreview && !formTemplateBuildUi"
+  class="flex w-full min-w-0 items-stretch overflow-hidden rounded-lg border border-slate-200 bg-white"
+>
   <span
     class="inline-flex shrink-0 items-center gap-0.5 px-2.5 text-sm font-semibold text-slate-600"
   >
@@ -271,14 +361,28 @@
   />
 </div>
 
-<div *ngIf="fieldType === 'barcode'" class="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
+<div
+  *ngIf="fieldType === 'barcode'"
+  class="flex items-center gap-2 rounded-lg px-3 py-2"
+  [class.border]="!formTemplateBuildUi"
+  [class.border-slate-200]="!formTemplateBuildUi"
+  [class.bg-slate-50]="!formTemplateBuildUi"
+  [class.bg-[#F3F4F6]="formTemplateBuildUi"
+>
   <svg class="h-6 w-6 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
     <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.5h1.5v15h-1.5V4.5ZM7.5 4.5h.75v15H7.5V4.5ZM12 4.5h.75v15H12V4.5ZM16.5 4.5h.75v15h-.75V4.5ZM20.25 4.5h.75v15h-.75V4.5Z" />
   </svg>
   <span class="text-sm text-slate-400">{{ field.placeholder || 'Barcode value' }}</span>
 </div>
 
-<div *ngIf="fieldType === 'qr-code'" class="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
+<div
+  *ngIf="fieldType === 'qr-code'"
+  class="flex items-center gap-2 rounded-lg px-3 py-2"
+  [class.border]="!formTemplateBuildUi"
+  [class.border-slate-200]="!formTemplateBuildUi"
+  [class.bg-slate-50]="!formTemplateBuildUi"
+  [class.bg-[#F3F4F6]="formTemplateBuildUi"
+>
   <svg class="h-6 w-6 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
     <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.5h4.5v4.5h-4.5V4.5ZM15.75 4.5h4.5v4.5h-4.5V4.5ZM3.75 15.75h4.5v4.5h-4.5v-4.5ZM15.75 15.75h1.5v1.5h-1.5v-1.5ZM20.25 15.75h1.5v1.5h-1.5v-1.5ZM20.25 20.25h1.5v1.5h-1.5v-1.5ZM15.75 20.25h1.5v1.5h-1.5v-1.5ZM19.5 13.5h-3v-3h3v3Z" />
   </svg>

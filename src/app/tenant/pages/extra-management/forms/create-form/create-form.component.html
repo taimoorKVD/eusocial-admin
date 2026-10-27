@@ -68,15 +68,31 @@
           {{ logicAutomationsCount() }}
         </span>
       </button>
-      <button
-        type="button"
-        class="inline-flex shrink-0 items-center justify-center rounded-lg border border-[#E5E7EB] bg-white px-2.5 py-1.5 text-sm font-medium text-[#6B7280] transition hover:bg-gray-50 hover:text-[#161616] focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 disabled:cursor-not-allowed disabled:opacity-50 sm:px-3"
-        [disabled]="!canPreviewTemplate()"
-        [attr.title]="canPreviewTemplate() ? 'Preview form template' : 'Save the form first to preview it'"
-        (click)="openTemplatePreview()"
-      >
-        Preview
-      </button>
+      @if (isEditing()) {
+        <button
+          type="button"
+          class="inline-flex shrink-0 items-center justify-center rounded-lg border border-[#E5E7EB] bg-white px-2.5 py-1.5 text-sm font-medium text-[#6B7280] transition hover:bg-gray-50 hover:text-[#161616] focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 disabled:cursor-not-allowed disabled:opacity-50 sm:px-3"
+          [attr.title]="'Preview form template'"
+          (click)="openTemplatePreview()"
+        >
+          Preview
+        </button>
+      }
+      @if (isEditing() && !isLastStep()) {
+        <button
+          type="button"
+          class="inline-flex shrink-0 items-center justify-center rounded-lg border border-[#E5E7EB] bg-white px-2.5 py-1.5 text-sm font-semibold text-[#161616] transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 disabled:cursor-not-allowed disabled:opacity-50 sm:px-3"
+          [disabled]="!canUpdateExistingTemplate()"
+          title="Save changes without continuing"
+          (click)="updateExistingTemplate()"
+        >
+          @if (submitting()) {
+            Updating…
+          } @else {
+            Update
+          }
+        </button>
+      }
       <button
         type="button"
         class="inline-flex min-w-0 flex-1 items-center justify-center rounded-lg px-3 py-1.5 text-sm font-bold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e600]/50 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none sm:px-3.5"
@@ -834,6 +850,7 @@
                                   [selectedFieldId]="selectedFieldId()"
                                   [connectedDropLists]="[paletteListId]"
                                   [showFieldQuickActions]="true"
+                                  [formTemplateBuildUi]="true"
                                   [widthAwareLayout]="true"
                                   [fieldsWithConditionalLogic]="fieldsWithConditionalLogicIds()"
                                   [fieldsWithAutomationRules]="fieldsWithAutomationRuleIds()"
@@ -966,6 +983,7 @@
             <app-builder
               [dropListId]="paletteListId"
               [connectedDropLists]="paletteConnectedDropLists()"
+              [formTemplatePalette]="true"
             ></app-builder>
           </div>
 
