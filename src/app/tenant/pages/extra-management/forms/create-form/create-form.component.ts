@@ -879,6 +879,22 @@ export class CreateFormComponent implements OnInit {
     return this.canProceed();
   }
 
+  /**
+   * Edit mode only: enable Update without requiring the user to reach the last tab.
+   * Reuses the same canSave / updateTemplate path as the final-step Update action.
+   */
+  canUpdateExistingTemplate(): boolean {
+    return this.isEditing() && this.canSave() && !this.submitting();
+  }
+
+  /** Edit mode: persist current changes via the existing update API (no step advance). */
+  updateExistingTemplate(): void {
+    if (!this.canUpdateExistingTemplate()) {
+      return;
+    }
+    this.save();
+  }
+
   // ── Lifecycle ────────────────────────────────────────────────
 
   ngOnInit(): void {
