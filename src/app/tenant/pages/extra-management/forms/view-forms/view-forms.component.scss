@@ -490,6 +490,14 @@
     0 12px 24px -8px rgb(15 23 42 / 18%),
     0 4px 10px rgb(15 23 42 / 8%);
   padding: 0.35rem;
+
+  /* Escapes listing overflow:hidden / overflow-x:auto clipping. */
+  &--fixed {
+    position: fixed;
+    top: auto;
+    right: auto;
+    overflow: auto;
+  }
 }
 
 .forms-listing__menu-item {

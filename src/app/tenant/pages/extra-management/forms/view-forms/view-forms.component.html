@@ -351,8 +351,9 @@
 
                       @if (isActionsOpen(form)) {
                         <div
-                          class="forms-listing__menu"
+                          class="forms-listing__menu forms-listing__menu--fixed"
                           role="menu"
+                          [ngStyle]="actionsMenuStyle()"
                           (click)="$event.stopPropagation()"
                         >
                           @if (!isArchivedView() && canEdit) {

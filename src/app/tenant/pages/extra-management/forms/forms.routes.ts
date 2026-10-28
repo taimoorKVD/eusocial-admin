@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { ViewFormsComponent } from './view-forms/view-forms.component';
 import { CreateFormComponent } from './create-form/create-form.component';
 import { FormTemplatePreviewComponent } from './form-template-preview/form-template-preview.component';
+import { createFormCanDeactivateGuard } from './create-form/create-form-can-deactivate.guard';
 import { permissionGuard } from '../../../../guards/permission.guard';
 import { PERMISSIONS } from '../../../../constants/permissions';
 
@@ -16,6 +17,7 @@ export const DYNAMIC_FORMS_ROUTES: Routes = [
     path: 'create',
     component: CreateFormComponent,
     canActivate: [permissionGuard],
+    canDeactivate: [createFormCanDeactivateGuard],
     data: { permission: PERMISSIONS.DATA_COLLECTION.CREATE_TEMPLATE },
   },
   {
@@ -28,6 +30,7 @@ export const DYNAMIC_FORMS_ROUTES: Routes = [
     path: 'edit/:id',
     component: CreateFormComponent,
     canActivate: [permissionGuard],
+    canDeactivate: [createFormCanDeactivateGuard],
     data: {
       anyPermission: [
         PERMISSIONS.DATA_COLLECTION.VIEW_TEMPLATE,

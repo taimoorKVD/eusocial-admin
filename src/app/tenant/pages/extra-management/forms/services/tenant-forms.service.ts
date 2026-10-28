@@ -5,7 +5,7 @@ import { environment } from '../../../../../../environments/environment';
 import { SavedDynamicForm, createId } from '../models/dynamic-form.models';
 
 /** Template lifecycle statuses accepted by listing/search filters. */
-export type TenantFormStatusFilter = 'active' | 'archived';
+export type TenantFormStatusFilter = 'active' | 'draft' | 'archived';
 
 /** Raw item shape from GET /api/data-collection/templates. */
 export interface TenantFormsApiItem {
@@ -125,6 +125,24 @@ export class TenantFormsService {
 
   createForm(payload: CreateTenantFormPayload): Observable<TenantFormsApiResponse> {
     return this.http.post<TenantFormsApiResponse>(this.apiUrl, payload);
+  }
+
+  /** Persist a new template as a draft (manual Save as Draft — create). */
+  saveTemplateDraft(
+    payload: CreateTenantFormPayload,
+  ): Observable<TenantFormsApiResponse> {
+    return this.http.post<TenantFormsApiResponse>(`${this.apiUrl}/draft`, payload);
+  }
+
+  /** Update an existing draft template (manual Save as Draft — edit). */
+  updateTemplateDraft(
+    id: number,
+    payload: CreateTenantFormPayload,
+  ): Observable<TenantFormsApiResponse> {
+    return this.http.post<TenantFormsApiResponse>(
+      `${this.apiUrl}/${id}/draft`,
+      payload,
+    );
   }
 
   /** Fetch a single template (including its full schema) for the edit flow. */

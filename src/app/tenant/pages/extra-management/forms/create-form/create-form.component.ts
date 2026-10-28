@@ -19,7 +19,8 @@ import { FormBuilder, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
-import { finalize, startWith, take } from 'rxjs';
+import { finalize, Observable, startWith, take } from 'rxjs';
+import { CreateFormCanDeactivate } from './create-form-can-deactivate.interface';
 import flatpickr from 'flatpickr';
 import { Instance as FlatpickrInstance } from 'flatpickr/dist/types/instance';
 import { TenantUserService } from '../../../../../services/tenant-user.service';
@@ -152,7 +153,19 @@ interface WizardStep {
   templateUrl: './create-form.component.html',
   styleUrl: './create-form.component.scss',
 })
-export class CreateFormComponent implements OnInit {
+export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
+  /**
+   * Browser unload (reload / tab close) can only show the native prompt.
+   * Custom Angular modals cannot block or replace this dialog.
+   */
+  @HostListener('window:beforeunload', ['$event'])
+  onBeforeUnload(event: BeforeUnloadEvent): void {
+    if (this.hasUnsavedChanges()) {
+      event.preventDefault();
+      event.returnValue = '';
+    }
+  }
+
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
     const target = event.target as HTMLElement;
@@ -273,7 +286,19 @@ export class CreateFormComponent implements OnInit {
   readonly loading = signal(false);
   /** True while create/update form template API is in flight. */
   readonly submitting = signal(false);
+  /** True while manual Save as Draft API is in flight. */
+  readonly savingDraft = signal(false);
+  readonly showUnsavedChangesModal = signal(false);
   private loadedSchema: DynamicFormPayload | null = null;
+
+  /** Snapshot of last saved / loaded template config for dirty detection. */
+  private savedSnapshot = '';
+  private baselineReady = false;
+  /** Once the user has unsaved edits, stop auto-refreshing the baseline. */
+  private freezeBaseline = false;
+  /** Skip unsaved guard after intentional navigate (save/discard). */
+  private allowNavigation = false;
+  private navigationResolver: ((allow: boolean) => void) | null = null;
 
   readonly sectionDialogOpen = signal(false);
   /** UI-only: which Build canvas sections are collapsed. */
@@ -903,7 +928,142 @@ export class CreateFormComponent implements OnInit {
     this.loadUsers();
     if (this.formId()) {
       this.loadTemplate();
+    } else {
+      // Create mode: empty template is the clean baseline (not unsaved).
+      this.markBaseline();
     }
+  }
+
+  canDeactivate(): boolean | Promise<boolean> {
+    if (this.allowNavigation || !this.hasUnsavedChanges()) {
+      return true;
+    }
+
+    this.showUnsavedChangesModal.set(true);
+    return new Promise<boolean>((resolve) => {
+      this.navigationResolver = resolve;
+    });
+  }
+
+  /** Meaningful template config changes vs last saved/loaded baseline. */
+  hasUnsavedChanges(): boolean {
+    if (this.allowNavigation || !this.baselineReady) {
+      return false;
+    }
+    const dirty = this.captureSnapshot() !== this.savedSnapshot;
+    if (dirty) {
+      this.freezeBaseline = true;
+    }
+    return dirty;
+  }
+
+  canSaveAsDraft(): boolean {
+    const hasName = this.formName().trim().length > 0;
+    return hasName && !this.savingDraft() && !this.submitting();
+  }
+
+  /** Header: save incomplete/complete template via draft endpoint, then leave. */
+  saveAsDraft(): void {
+    if (!this.canSaveAsDraft()) {
+      return;
+    }
+
+    this.performSaveDraft()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.toastr.success('Draft saved successfully');
+          this.freezeBaseline = false;
+          this.markBaseline();
+          this.leaveAfterSave();
+        },
+        error: (err) => {
+          this.toastr.error(err?.error?.message || 'Failed to save draft');
+        },
+      });
+  }
+
+  onUnsavedStayHere(): void {
+    this.showUnsavedChangesModal.set(false);
+    if (this.navigationResolver) {
+      this.navigationResolver(false);
+      this.navigationResolver = null;
+    }
+  }
+
+  onUnsavedDiscardChanges(): void {
+    this.showUnsavedChangesModal.set(false);
+    this.allowNavigation = true;
+    if (this.navigationResolver) {
+      this.navigationResolver(true);
+      this.navigationResolver = null;
+      return;
+    }
+    this.router.navigate(['/dynamic-forms']);
+  }
+
+  onUnsavedSaveAsDraft(): void {
+    if (!this.canSaveAsDraft()) {
+      return;
+    }
+
+    this.performSaveDraft()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.toastr.success('Draft saved successfully');
+          this.freezeBaseline = false;
+          this.markBaseline();
+          this.showUnsavedChangesModal.set(false);
+          this.allowNavigation = true;
+          if (this.navigationResolver) {
+            this.navigationResolver(true);
+            this.navigationResolver = null;
+            return;
+          }
+          this.router.navigate(['/dynamic-forms']);
+        },
+        error: (err) => {
+          this.toastr.error(err?.error?.message || 'Failed to save draft');
+        },
+      });
+  }
+
+  private performSaveDraft(): Observable<unknown> {
+    this.savingDraft.set(true);
+    const body = {
+      name: this.formName().trim() || 'Untitled form',
+      schema: this.buildPayload(),
+    };
+    const persistedId = Number(this.formId());
+    const request$ =
+      Number.isFinite(persistedId) && persistedId > 0
+        ? this.formsService.updateTemplateDraft(persistedId, body)
+        : this.formsService.saveTemplateDraft(body);
+
+    return request$.pipe(finalize(() => this.savingDraft.set(false)));
+  }
+
+  private leaveAfterSave(): void {
+    this.allowNavigation = true;
+    this.router.navigate(['/dynamic-forms']);
+  }
+
+  private captureSnapshot(): string {
+    return JSON.stringify({
+      formName: this.formName(),
+      sections: this.sections(),
+      meta: this.meta(),
+      logicRules: this.logicRules(),
+    });
+  }
+
+  private markBaseline(): void {
+    if (this.freezeBaseline) {
+      return;
+    }
+    this.savedSnapshot = this.captureSnapshot();
+    this.baselineReady = true;
   }
 
   private loadJobPositions(): void {
@@ -1016,6 +1176,7 @@ export class CreateFormComponent implements OnInit {
       .subscribe((hydratedSections) => {
         this.sections.set(hydratedSections);
         this.wireRowLocationDependencies();
+        this.markBaseline();
       });
   }
 
@@ -1167,6 +1328,11 @@ export class CreateFormComponent implements OnInit {
         .map((name) => name.trim())
         .filter(Boolean),
     }));
+
+    // Options may resolve after hydrate; refresh baseline until the user edits.
+    if (this.isEditing()) {
+      this.markBaseline();
+    }
   }
 
   /**
@@ -3735,7 +3901,9 @@ export class CreateFormComponent implements OnInit {
       .subscribe({
         next: () => {
           this.toastr.success(id ? 'Form updated successfully' : 'Form created successfully');
-          this.router.navigate(['/dynamic-forms']);
+          this.freezeBaseline = false;
+          this.markBaseline();
+          this.leaveAfterSave();
         },
         error: (err) => {
           this.toastr.error(
