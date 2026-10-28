@@ -127,6 +127,13 @@ export class TenantFormsService {
     return this.http.post<TenantFormsApiResponse>(this.apiUrl, payload);
   }
 
+  /** Persist an incomplete/complete template as a draft (manual Save as Draft). */
+  saveTemplateDraft(
+    payload: CreateTenantFormPayload,
+  ): Observable<TenantFormsApiResponse> {
+    return this.http.post<TenantFormsApiResponse>(`${this.apiUrl}/draft`, payload);
+  }
+
   /** Fetch a single template (including its full schema) for the edit flow. */
   getTemplateById(id: number): Observable<SavedDynamicForm> {
     return this.http
