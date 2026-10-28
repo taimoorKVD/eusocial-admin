@@ -154,6 +154,10 @@ interface WizardStep {
   styleUrl: './create-form.component.scss',
 })
 export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
+  /**
+   * Browser unload (reload / tab close) can only show the native prompt.
+   * Custom Angular modals cannot block or replace this dialog.
+   */
   @HostListener('window:beforeunload', ['$event'])
   onBeforeUnload(event: BeforeUnloadEvent): void {
     if (this.hasUnsavedChanges()) {
@@ -954,7 +958,8 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
   }
 
   canSaveAsDraft(): boolean {
-    return !this.savingDraft() && !this.submitting();
+    const hasName = this.formName().trim().length > 0;
+    return hasName && !this.savingDraft() && !this.submitting();
   }
 
   /** Header: save incomplete/complete template via draft endpoint, then leave. */
@@ -1026,13 +1031,17 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
 
   private performSaveDraft(): Observable<unknown> {
     this.savingDraft.set(true);
-    const payload = this.buildPayload();
-    return this.formsService
-      .saveTemplateDraft({
-        name: this.formName().trim() || 'Untitled form',
-        schema: payload,
-      })
-      .pipe(finalize(() => this.savingDraft.set(false)));
+    const body = {
+      name: this.formName().trim() || 'Untitled form',
+      schema: this.buildPayload(),
+    };
+    const persistedId = Number(this.formId());
+    const request$ =
+      Number.isFinite(persistedId) && persistedId > 0
+        ? this.formsService.updateTemplateDraft(persistedId, body)
+        : this.formsService.saveTemplateDraft(body);
+
+    return request$.pipe(finalize(() => this.savingDraft.set(false)));
   }
 
   private leaveAfterSave(): void {

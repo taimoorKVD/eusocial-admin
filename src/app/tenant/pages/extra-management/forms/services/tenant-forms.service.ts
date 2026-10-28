@@ -127,11 +127,22 @@ export class TenantFormsService {
     return this.http.post<TenantFormsApiResponse>(this.apiUrl, payload);
   }
 
-  /** Persist an incomplete/complete template as a draft (manual Save as Draft). */
+  /** Persist a new template as a draft (manual Save as Draft — create). */
   saveTemplateDraft(
     payload: CreateTenantFormPayload,
   ): Observable<TenantFormsApiResponse> {
     return this.http.post<TenantFormsApiResponse>(`${this.apiUrl}/draft`, payload);
+  }
+
+  /** Update an existing draft template (manual Save as Draft — edit). */
+  updateTemplateDraft(
+    id: number,
+    payload: CreateTenantFormPayload,
+  ): Observable<TenantFormsApiResponse> {
+    return this.http.post<TenantFormsApiResponse>(
+      `${this.apiUrl}/${id}/draft`,
+      payload,
+    );
   }
 
   /** Fetch a single template (including its full schema) for the edit flow. */

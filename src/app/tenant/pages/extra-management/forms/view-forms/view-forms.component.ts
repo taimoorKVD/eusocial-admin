@@ -49,11 +49,19 @@ export class ViewFormsComponent implements OnInit {
   onDocumentClick(event: MouseEvent): void {
     const target = event.target as HTMLElement;
     if (!target.closest('.forms-listing__actions-menu')) {
-      this.openActionsId.set(null);
+      this.closeActionsMenu();
     }
     if (!target.closest('[data-forms-filter-dropdown]')) {
       this.assignedDropdownOpen.set(false);
       this.sortDropdownOpen.set(false);
+    }
+  }
+
+  @HostListener('window:resize')
+  @HostListener('window:scroll')
+  onViewportChange(): void {
+    if (this.openActionsId()) {
+      this.closeActionsMenu();
     }
   }
 
@@ -123,6 +131,8 @@ export class ViewFormsComponent implements OnInit {
   readonly assignedDropdownOpen = signal(false);
   readonly sortDropdownOpen = signal(false);
   readonly openActionsId = signal<string | null>(null);
+  /** Fixed coords so the actions menu is not clipped by listing overflow. */
+  readonly actionsMenuStyle = signal<Record<string, string>>({});
   readonly isArchivedView = computed(() => this.listingStatus() === 'archived');
   readonly isDraftView = computed(() => this.listingStatus() === 'draft');
   readonly assignedToOptions = computed(() => {
@@ -433,11 +443,70 @@ export class ViewFormsComponent implements OnInit {
     if (!id) {
       return;
     }
-    this.openActionsId.update((current) => (current === id ? null : id));
+
+    const closing = this.openActionsId() === id;
+    if (closing) {
+      this.closeActionsMenu();
+      return;
+    }
+
+    const trigger = event.currentTarget as HTMLElement | null;
+    this.positionActionsMenu(trigger);
+    this.openActionsId.set(id);
   }
 
   closeActionsMenu(): void {
     this.openActionsId.set(null);
+    this.actionsMenuStyle.set({});
+  }
+
+  private positionActionsMenu(trigger: HTMLElement | null): void {
+    if (!trigger) {
+      this.actionsMenuStyle.set({});
+      return;
+    }
+
+    const rect = trigger.getBoundingClientRect();
+    const menuWidth = 184; // ~11.5rem
+    const menuMaxHeight = 220;
+    const gap = 4;
+    const viewportPadding = 8;
+
+    const spaceBelow = window.innerHeight - rect.bottom - viewportPadding;
+    const spaceAbove = rect.top - viewportPadding;
+    const openUpward = spaceBelow < 120 && spaceAbove > spaceBelow;
+
+    let left = rect.right - menuWidth;
+    left = Math.min(
+      Math.max(viewportPadding, left),
+      Math.max(viewportPadding, window.innerWidth - menuWidth - viewportPadding),
+    );
+
+    if (openUpward) {
+      const bottom = Math.max(viewportPadding, window.innerHeight - rect.top + gap);
+      this.actionsMenuStyle.set({
+        position: 'fixed',
+        top: 'auto',
+        bottom: `${Math.round(bottom)}px`,
+        left: `${Math.round(left)}px`,
+        right: 'auto',
+        zIndex: '80',
+        maxHeight: `${Math.min(menuMaxHeight, spaceAbove)}px`,
+        overflowY: 'auto',
+      });
+      return;
+    }
+
+    this.actionsMenuStyle.set({
+      position: 'fixed',
+      top: `${Math.round(rect.bottom + gap)}px`,
+      bottom: 'auto',
+      left: `${Math.round(left)}px`,
+      right: 'auto',
+      zIndex: '80',
+      maxHeight: `${Math.min(menuMaxHeight, Math.max(80, spaceBelow))}px`,
+      overflowY: 'auto',
+    });
   }
 
   onSearchInput(event: Event): void {

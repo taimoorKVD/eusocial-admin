@@ -68,21 +68,19 @@
           {{ logicAutomationsCount() }}
         </span>
       </button>
-      @if (!isEditing()) {
-        <button
-          type="button"
-          class="inline-flex shrink-0 items-center justify-center rounded-lg border border-[#E5E7EB] bg-white px-2.5 py-1.5 text-sm font-semibold text-[#161616] transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 disabled:cursor-not-allowed disabled:opacity-50 sm:px-3"
-          [disabled]="!canSaveAsDraft()"
-          title="Save current progress as a draft"
-          (click)="saveAsDraft()"
-        >
-          @if (savingDraft()) {
-            Saving draft…
-          } @else {
-            Save as Draft
-          }
-        </button>
-      }
+      <button
+        type="button"
+        class="inline-flex shrink-0 items-center justify-center rounded-lg border border-[#E5E7EB] bg-white px-2.5 py-1.5 text-sm font-semibold text-[#161616] transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 disabled:cursor-not-allowed disabled:opacity-50 sm:px-3"
+        [disabled]="!canSaveAsDraft()"
+        title="Save current progress as a draft"
+        (click)="saveAsDraft()"
+      >
+        @if (savingDraft()) {
+          Saving draft…
+        } @else {
+          Save as Draft
+        }
+      </button>
       @if (isEditing()) {
         <button
           type="button"
