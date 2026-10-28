@@ -28,7 +28,7 @@ const FORM_FILTER_FIELDS: GlobalFilterField[] = [
   { key: 'name', label: 'Form Name', placeholder: 'Search forms', type: 'text' },
 ];
 
-type ListingStatus = TenantFormStatusFilter | 'draft';
+type ListingStatus = TenantFormStatusFilter;
 
 interface StatusFilterOption {
   label: string;
@@ -108,9 +108,9 @@ export class ViewFormsComponent implements OnInit {
   readonly pageSize = signal(environment.limit || 15);
   readonly pageSizeValue = computed(() => this.pageSize());
   readonly filterFields = signal<GlobalFilterField[]>([]);
-  /** API status for active/archived requests. */
+  /** API status for active/draft/archived listing requests. */
   readonly statusFilter = signal<TenantFormStatusFilter>('active');
-  /** UI tab status, including Drafts (local-only; no API status yet). */
+  /** UI tab status (mirrors API status filter). */
   readonly listingStatus = signal<ListingStatus>('active');
   readonly statusCounts = signal<Record<ListingStatus, number>>({
     active: 0,
@@ -496,15 +496,6 @@ export class ViewFormsComponent implements OnInit {
     this.assignedDropdownOpen.set(false);
     this.sortDropdownOpen.set(false);
     this.page.set(1);
-
-    if (value === 'draft') {
-      this.forms.set([]);
-      this.total.set(0);
-      this.lastPage.set(1);
-      this.statusCounts.update((counts) => ({ ...counts, draft: 0 }));
-      return;
-    }
-
     this.statusFilter.set(value);
     this.loadForms(1);
   }
@@ -590,9 +581,6 @@ export class ViewFormsComponent implements OnInit {
   }
 
   onFilterSearch(filters: Record<string, unknown>): void {
-    if (this.isDraftView()) {
-      return;
-    }
     const allowedKeys = this.getAllowedFilterKeys();
     this.filters = pruneFiltersByAllowedKeys(filters, allowedKeys);
     const name = this.filters['name'];
@@ -609,9 +597,7 @@ export class ViewFormsComponent implements OnInit {
     this.selectedIds.set([]);
     this.openActionsId.set(null);
     this.page.set(1);
-    if (!this.isDraftView()) {
-      this.loadForms(this.page());
-    }
+    this.loadForms(this.page());
   }
 
   private getAllowedFilterKeys(): Set<string> {

@@ -5,7 +5,7 @@ import { environment } from '../../../../../../environments/environment';
 import { SavedDynamicForm, createId } from '../models/dynamic-form.models';
 
 /** Template lifecycle statuses accepted by listing/search filters. */
-export type TenantFormStatusFilter = 'active' | 'archived';
+export type TenantFormStatusFilter = 'active' | 'draft' | 'archived';
 
 /** Raw item shape from GET /api/data-collection/templates. */
 export interface TenantFormsApiItem {
