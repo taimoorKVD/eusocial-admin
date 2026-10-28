@@ -1381,17 +1381,18 @@
 
             <!-- WHEN / THEN remain visible in Add Logic; inert until a target is chosen -->
             <div
+              class="space-y-6"
               [class.pointer-events-none]="conditionModalPickTargetMode && !conditionModalTargetConfirmed"
               [class.opacity-50]="conditionModalPickTargetMode && !conditionModalTargetConfirmed"
             >
             <!-- WHEN -->
             <section class="space-y-2.5">
-              <div class="flex flex-col gap-2.5 sm:flex-row sm:items-start">
+              <div class="flex flex-col gap-3 sm:flex-row sm:items-start">
                 <span class="inline-flex h-7 w-fit shrink-0 items-center justify-center rounded-md bg-[#161616] px-2.5 text-[11px] font-extrabold tracking-wide text-white">
                   WHEN
                 </span>
 
-                <div class="min-w-0 flex-1 space-y-2">
+                <div class="min-w-0 flex-1 space-y-3">
                   <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
                     <div class="min-w-0">
                       <select
@@ -1466,12 +1467,12 @@
 
             <!-- THEN -->
             <section class="space-y-2.5">
-              <div class="flex flex-col gap-2.5 sm:flex-row sm:items-start">
+              <div class="flex flex-col gap-3 sm:flex-row sm:items-start">
                 <span class="inline-flex h-7 w-fit shrink-0 items-center justify-center rounded-md bg-[#161616] px-2.5 text-[11px] font-extrabold tracking-wide text-white">
                   THEN
                 </span>
 
-                <div class="min-w-0 flex-1 space-y-2">
+                <div class="min-w-0 flex-1 space-y-3">
                   <div class="flex flex-wrap gap-2">
                     @for (action of conditionActions; track action.value) {
                       <button

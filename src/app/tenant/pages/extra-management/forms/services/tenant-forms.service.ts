@@ -27,6 +27,13 @@ export interface TenantFormsApiResponse {
     page?: number;
     lastPage?: number;
   };
+  /** Status tab totals from listing responses (`drafts` maps to UI "draft"). */
+  counts?: {
+    active?: number;
+    drafts?: number;
+    draft?: number;
+    archived?: number;
+  };
   data?: TenantFormsApiItem[];
 }
 
@@ -37,11 +44,18 @@ export interface CreateTenantFormPayload {
   createdBy?: number;
 }
 
+export interface TenantFormsStatusCounts {
+  active: number;
+  draft: number;
+  archived: number;
+}
+
 export interface TenantFormsPagedResult {
   forms: SavedDynamicForm[];
   total: number;
   page: number;
   lastPage: number;
+  counts?: TenantFormsStatusCounts | null;
 }
 
 /** Payload for the future bulk delete endpoint. */
@@ -82,6 +96,7 @@ export class TenantFormsService {
             total: Number(meta?.total ?? 0),
             page: Number(meta?.page ?? page),
             lastPage: Number(meta?.lastPage ?? 1),
+            counts: this.extractStatusCounts(response),
           };
         }),
       );
@@ -118,6 +133,7 @@ export class TenantFormsService {
             total: Number(count ?? meta?.total ?? 0),
             page: Number(meta?.page ?? page),
             lastPage: Number(meta?.lastPage ?? 1),
+            counts: this.extractStatusCounts(response),
           };
         }),
       );
@@ -191,6 +207,27 @@ export class TenantFormsService {
       next = next.set(key, text);
     }
     return next;
+  }
+
+  /** Map API `counts` (`drafts`) onto listing tab keys; ignore missing values. */
+  private extractStatusCounts(
+    response: TenantFormsApiResponse | TenantFormsApiItem[],
+  ): TenantFormsStatusCounts | null {
+    if (!response || typeof response !== 'object' || Array.isArray(response)) {
+      return null;
+    }
+
+    const raw = response.counts;
+    if (!raw || typeof raw !== 'object') {
+      return null;
+    }
+
+    const draftSource = raw.drafts ?? raw.draft;
+    return {
+      active: Number(raw.active ?? 0) || 0,
+      draft: Number(draftSource ?? 0) || 0,
+      archived: Number(raw.archived ?? 0) || 0,
+    };
   }
 
   private extractItem(response: TenantFormsApiResponse): TenantFormsApiItem {
