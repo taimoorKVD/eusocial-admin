@@ -28,7 +28,7 @@ const FORM_FILTER_FIELDS: GlobalFilterField[] = [
   { key: 'name', label: 'Form Name', placeholder: 'Search forms', type: 'text' },
 ];
 
-type ListingStatus = TenantFormStatusFilter | 'draft';
+type ListingStatus = TenantFormStatusFilter;
 
 interface StatusFilterOption {
   label: string;
@@ -49,11 +49,19 @@ export class ViewFormsComponent implements OnInit {
   onDocumentClick(event: MouseEvent): void {
     const target = event.target as HTMLElement;
     if (!target.closest('.forms-listing__actions-menu')) {
-      this.openActionsId.set(null);
+      this.closeActionsMenu();
     }
     if (!target.closest('[data-forms-filter-dropdown]')) {
       this.assignedDropdownOpen.set(false);
       this.sortDropdownOpen.set(false);
+    }
+  }
+
+  @HostListener('window:resize')
+  @HostListener('window:scroll')
+  onViewportChange(): void {
+    if (this.openActionsId()) {
+      this.closeActionsMenu();
     }
   }
 
@@ -108,9 +116,9 @@ export class ViewFormsComponent implements OnInit {
   readonly pageSize = signal(environment.limit || 15);
   readonly pageSizeValue = computed(() => this.pageSize());
   readonly filterFields = signal<GlobalFilterField[]>([]);
-  /** API status for active/archived requests. */
+  /** API status for active/draft/archived listing requests. */
   readonly statusFilter = signal<TenantFormStatusFilter>('active');
-  /** UI tab status, including Drafts (local-only; no API status yet). */
+  /** UI tab status (mirrors API status filter). */
   readonly listingStatus = signal<ListingStatus>('active');
   readonly statusCounts = signal<Record<ListingStatus, number>>({
     active: 0,
@@ -123,6 +131,8 @@ export class ViewFormsComponent implements OnInit {
   readonly assignedDropdownOpen = signal(false);
   readonly sortDropdownOpen = signal(false);
   readonly openActionsId = signal<string | null>(null);
+  /** Fixed coords so the actions menu is not clipped by listing overflow. */
+  readonly actionsMenuStyle = signal<Record<string, string>>({});
   readonly isArchivedView = computed(() => this.listingStatus() === 'archived');
   readonly isDraftView = computed(() => this.listingStatus() === 'draft');
   readonly assignedToOptions = computed(() => {
@@ -433,11 +443,70 @@ export class ViewFormsComponent implements OnInit {
     if (!id) {
       return;
     }
-    this.openActionsId.update((current) => (current === id ? null : id));
+
+    const closing = this.openActionsId() === id;
+    if (closing) {
+      this.closeActionsMenu();
+      return;
+    }
+
+    const trigger = event.currentTarget as HTMLElement | null;
+    this.positionActionsMenu(trigger);
+    this.openActionsId.set(id);
   }
 
   closeActionsMenu(): void {
     this.openActionsId.set(null);
+    this.actionsMenuStyle.set({});
+  }
+
+  private positionActionsMenu(trigger: HTMLElement | null): void {
+    if (!trigger) {
+      this.actionsMenuStyle.set({});
+      return;
+    }
+
+    const rect = trigger.getBoundingClientRect();
+    const menuWidth = 184; // ~11.5rem
+    const menuMaxHeight = 220;
+    const gap = 4;
+    const viewportPadding = 8;
+
+    const spaceBelow = window.innerHeight - rect.bottom - viewportPadding;
+    const spaceAbove = rect.top - viewportPadding;
+    const openUpward = spaceBelow < 120 && spaceAbove > spaceBelow;
+
+    let left = rect.right - menuWidth;
+    left = Math.min(
+      Math.max(viewportPadding, left),
+      Math.max(viewportPadding, window.innerWidth - menuWidth - viewportPadding),
+    );
+
+    if (openUpward) {
+      const bottom = Math.max(viewportPadding, window.innerHeight - rect.top + gap);
+      this.actionsMenuStyle.set({
+        position: 'fixed',
+        top: 'auto',
+        bottom: `${Math.round(bottom)}px`,
+        left: `${Math.round(left)}px`,
+        right: 'auto',
+        zIndex: '80',
+        maxHeight: `${Math.min(menuMaxHeight, spaceAbove)}px`,
+        overflowY: 'auto',
+      });
+      return;
+    }
+
+    this.actionsMenuStyle.set({
+      position: 'fixed',
+      top: `${Math.round(rect.bottom + gap)}px`,
+      bottom: 'auto',
+      left: `${Math.round(left)}px`,
+      right: 'auto',
+      zIndex: '80',
+      maxHeight: `${Math.min(menuMaxHeight, Math.max(80, spaceBelow))}px`,
+      overflowY: 'auto',
+    });
   }
 
   onSearchInput(event: Event): void {
@@ -496,15 +565,6 @@ export class ViewFormsComponent implements OnInit {
     this.assignedDropdownOpen.set(false);
     this.sortDropdownOpen.set(false);
     this.page.set(1);
-
-    if (value === 'draft') {
-      this.forms.set([]);
-      this.total.set(0);
-      this.lastPage.set(1);
-      this.statusCounts.update((counts) => ({ ...counts, draft: 0 }));
-      return;
-    }
-
     this.statusFilter.set(value);
     this.loadForms(1);
   }
@@ -590,9 +650,6 @@ export class ViewFormsComponent implements OnInit {
   }
 
   onFilterSearch(filters: Record<string, unknown>): void {
-    if (this.isDraftView()) {
-      return;
-    }
     const allowedKeys = this.getAllowedFilterKeys();
     this.filters = pruneFiltersByAllowedKeys(filters, allowedKeys);
     const name = this.filters['name'];
@@ -609,9 +666,7 @@ export class ViewFormsComponent implements OnInit {
     this.selectedIds.set([]);
     this.openActionsId.set(null);
     this.page.set(1);
-    if (!this.isDraftView()) {
-      this.loadForms(this.page());
-    }
+    this.loadForms(this.page());
   }
 
   private getAllowedFilterKeys(): Set<string> {
