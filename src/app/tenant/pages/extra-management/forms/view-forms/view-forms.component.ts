@@ -611,11 +611,19 @@ export class ViewFormsComponent implements OnInit {
           this.page.set(res.page);
           this.lastPage.set(res.lastPage);
           this.total.set(res.total);
-          const status = this.statusFilter();
-          this.statusCounts.update((counts) => ({
-            ...counts,
-            [status]: res.total,
-          }));
+          if (res.counts) {
+            this.statusCounts.set({
+              active: res.counts.active,
+              draft: res.counts.draft,
+              archived: res.counts.archived,
+            });
+          } else {
+            const status = this.statusFilter();
+            this.statusCounts.update((counts) => ({
+              ...counts,
+              [status]: res.total,
+            }));
+          }
         },
         error: () => {
           this.forms.set([]);
