@@ -1,9 +1,5 @@
 <div class="create-form flex min-h-[calc(100vh-4rem)] flex-col bg-[#F9FAFB] font-ibm">
-  @if (loading()) {
-    <div class="p-6">
-      <app-eu-loader></app-eu-loader>
-    </div>
-  } @else {
+  @if (!loading()) {
   <!--
     Build header breakpoints (viewport; content is narrower with app sidebar):
     - < md: stacked (title → actions → stepper)
