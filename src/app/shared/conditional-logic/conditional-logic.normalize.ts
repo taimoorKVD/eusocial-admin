@@ -207,24 +207,37 @@ function normalizeActions(raw: unknown): ConditionAction[] {
   }
 
   const actions: ConditionAction[] = [];
+  const seen = new Set<ConditionActionType>();
 
   for (const item of raw) {
+    let next: ConditionAction | null = null;
+
     if (typeof item === 'string') {
-      actions.push({ type: normalizeActionType(item) });
+      next = { type: normalizeActionType(item) };
+    } else if (item && typeof item === 'object' && 'type' in item) {
+      const type = normalizeActionType((item as ConditionAction).type);
+      next =
+        type === 'setValue'
+          ? {
+              type,
+              source: normalizeValueSource((item as ConditionAction).source),
+            }
+          : { type };
+    }
+
+    if (!next || seen.has(next.type)) {
       continue;
     }
 
-    if (item && typeof item === 'object' && 'type' in item) {
-      const type = normalizeActionType((item as ConditionAction).type);
-      if (type === 'setValue') {
-        actions.push({
-          type,
-          source: normalizeValueSource((item as ConditionAction).source),
-        });
-      } else {
-        actions.push({ type });
-      }
+    // Drop mutually exclusive pairs if both somehow appear in saved data
+    // (keep the first occurrence).
+    const conflict = CONDITION_ACTION_CONFLICTS[next.type];
+    if (conflict && seen.has(conflict)) {
+      continue;
     }
+
+    seen.add(next.type);
+    actions.push(next);
   }
 
   return actions.length ? actions : [{ type: 'show' }];
@@ -375,10 +388,49 @@ export function setPrimaryPredicate(
   };
 }
 
+/** Mutually exclusive THEN actions (cannot both apply under the same WHEN). */
+export const CONDITION_ACTION_CONFLICTS: Readonly<
+  Partial<Record<ConditionActionType, ConditionActionType>>
+> = {
+  show: 'hide',
+  hide: 'show',
+  require: 'optional',
+  optional: 'require',
+  enable: 'disable',
+  disable: 'enable',
+};
+
+export function getSelectedActionTypes(
+  logic: FieldConditionalLogic | null | undefined
+): ConditionActionType[] {
+  const types = (logic?.actions ?? [])
+    .map(action => action?.type)
+    .filter((type): type is ConditionActionType => ACTION_SET.has(String(type)));
+  return types.length ? types : ['show'];
+}
+
+export function hasConditionActionType(
+  logic: FieldConditionalLogic | null | undefined,
+  type: ConditionActionType
+): boolean {
+  return getSelectedActionTypes(logic).includes(type);
+}
+
+export function isConditionActionDisabled(
+  logic: FieldConditionalLogic | null | undefined,
+  type: ConditionActionType
+): boolean {
+  if (hasConditionActionType(logic, type)) {
+    return false;
+  }
+  const conflict = CONDITION_ACTION_CONFLICTS[type];
+  return !!conflict && hasConditionActionType(logic, conflict);
+}
+
 export function getPrimaryActionType(
   logic: FieldConditionalLogic | null | undefined
 ): ConditionActionType {
-  return logic?.actions?.[0]?.type ?? 'show';
+  return getSelectedActionTypes(logic)[0] ?? 'show';
 }
 
 export function getPrimaryAction(
@@ -391,34 +443,92 @@ export function setPrimaryActionType(
   logic: FieldConditionalLogic,
   type: ConditionActionType
 ): FieldConditionalLogic {
-  const current = getPrimaryAction(logic);
+  const existingSetValue = logic.actions?.find(action => action.type === 'setValue');
+  const nextAction: ConditionAction =
+    type === 'setValue'
+      ? {
+          type,
+          source: existingSetValue
+            ? normalizeValueSource(existingSetValue.source)
+            : createDefaultValueSource('relatedData'),
+        }
+      : { type };
+
+  // Keep other compatible actions; replace/remove conflicts with `type`.
+  const conflict = CONDITION_ACTION_CONFLICTS[type];
+  const retained = (logic.actions ?? []).filter(
+    action => action.type !== type && action.type !== conflict
+  );
+
+  return {
+    ...logic,
+    actions: [nextAction, ...retained],
+  };
+}
+
+/**
+ * Toggle a THEN action on/off while preserving other compatible actions.
+ * Removes a mutually exclusive conflict when enabling. Keeps at least one action.
+ */
+export function toggleConditionAction(
+  logic: FieldConditionalLogic,
+  type: ConditionActionType
+): FieldConditionalLogic {
+  const current = [...(logic.actions ?? [])];
+  const existingIndex = current.findIndex(action => action.type === type);
+
+  if (existingIndex >= 0) {
+    if (current.length <= 1) {
+      return { ...logic, actions: current };
+    }
+    current.splice(existingIndex, 1);
+    return { ...logic, actions: current };
+  }
+
+  const conflict = CONDITION_ACTION_CONFLICTS[type];
+  const withoutConflict = conflict
+    ? current.filter(action => action.type !== conflict)
+    : current;
+
   const nextAction: ConditionAction =
     type === 'setValue'
       ? {
           type,
           source:
-            current.type === 'setValue'
-              ? normalizeValueSource(current.source)
-              : createDefaultValueSource('relatedData'),
+            getPrimarySetValueSourceFromActions(withoutConflict) ??
+            createDefaultValueSource('relatedData'),
         }
       : { type };
 
   return {
     ...logic,
-    actions: [nextAction, ...(logic.actions?.slice(1) ?? [])],
+    actions: [...withoutConflict, nextAction],
   };
+}
+
+function getPrimarySetValueSourceFromActions(
+  actions: ConditionAction[]
+): ValueSource | null {
+  const action = actions.find(item => item.type === 'setValue');
+  return action ? normalizeValueSource(action.source) : null;
 }
 
 export function setPrimarySetValueSource(
   logic: FieldConditionalLogic,
   source: ValueSource
 ): FieldConditionalLogic {
+  const normalized = normalizeValueSource(source);
+  const actions = [...(logic.actions ?? [])];
+  const index = actions.findIndex(action => action.type === 'setValue');
+
+  if (index >= 0) {
+    actions[index] = { type: 'setValue', source: normalized };
+    return { ...logic, actions };
+  }
+
   return {
     ...logic,
-    actions: [
-      { type: 'setValue', source: normalizeValueSource(source) },
-      ...(logic.actions?.slice(1) ?? []),
-    ],
+    actions: [...actions, { type: 'setValue', source: normalized }],
   };
 }
 

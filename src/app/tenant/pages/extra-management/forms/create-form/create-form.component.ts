@@ -44,6 +44,7 @@ import {
   CONDITION_OPERATOR_LABELS,
   getPrimaryActionType,
   getPrimaryPredicate,
+  getSelectedActionTypes,
   hasConfiguredSource,
   normalizeConditionalLogic,
   pruneConditionalLogicForDeletedFields,
@@ -2710,8 +2711,10 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
       needsValue && predicate.value != null && String(predicate.value).trim() !== ''
         ? ` ${String(predicate.value)}`
         : '';
-    const action = CONDITION_ACTION_LABELS[getPrimaryActionType(logic)] ?? 'Update field';
-    return `${action} when ${source} ${operator}${valueText}`;
+    const action = getSelectedActionTypes(logic)
+      .map((type) => CONDITION_ACTION_LABELS[type] ?? type)
+      .join(' + ');
+    return `${action || 'Update field'} when ${source} ${operator}${valueText}`;
   }
 
   /** List/map display: friendlier action phrasing for Figma chrome. */
@@ -2720,32 +2723,37 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
     if (!logic?.actions?.length) {
       return 'Updated';
     }
-    const types = new Set(logic.actions.map((action) => action.type));
-    if (types.has('show') && types.has('require')) {
-      return 'Shown and required';
-    }
+    const types = new Set(getSelectedActionTypes(logic));
+    const parts: string[] = [];
     if (types.has('show')) {
-      return 'Shown';
+      parts.push('Shown');
     }
     if (types.has('hide')) {
-      return 'Hidden';
+      parts.push('Hidden');
     }
     if (types.has('require')) {
-      return 'Required';
+      parts.push('required');
     }
     if (types.has('optional')) {
-      return 'Optional';
+      parts.push('optional');
     }
     if (types.has('enable')) {
-      return 'Enabled';
+      parts.push('enabled');
     }
     if (types.has('disable')) {
-      return 'Disabled';
+      parts.push('disabled');
     }
     if (types.has('setValue')) {
-      return 'Value set';
+      parts.push('value set');
     }
-    return CONDITION_ACTION_LABELS[getPrimaryActionType(logic)] ?? 'Updated';
+    if (!parts.length) {
+      return CONDITION_ACTION_LABELS[getPrimaryActionType(logic)] ?? 'Updated';
+    }
+    if (parts.length === 1) {
+      return parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
+    }
+    const [first, ...rest] = parts;
+    return `${first} and ${rest.join(' and ')}`;
   }
 
   /** Logic map condition pill (e.g. "is above 5"). */

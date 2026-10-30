@@ -1478,10 +1478,11 @@
                       <button
                         type="button"
                         class="rounded-lg border px-3 py-2 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ff9015]/30 disabled:cursor-not-allowed disabled:opacity-40"
-                        [ngClass]="conditionAction === action.value
+                        [ngClass]="isConditionActionSelected(action.value)
                           ? 'border-[#161616] bg-[#161616] text-white'
                           : 'border-gray-200 bg-white text-[#161616] hover:border-gray-300 hover:bg-gray-50'"
-                        [disabled]="!isFieldEditable"
+                        [disabled]="!isFieldEditable || isConditionActionOptionDisabled(action.value)"
+                        [attr.aria-pressed]="isConditionActionSelected(action.value)"
                         (click)="onConditionActionChange(action.value)"
                       >
                         @switch (action.value) {
@@ -1500,7 +1501,7 @@
                     }
                   </div>
                   <p class="m-0 text-xs leading-relaxed text-gray-500">
-                    Pick one or more. Show and Hide cannot both be on.
+                    Pick one or more compatible actions. Show/Hide, Require/Optional, and Enable/Disable cannot be combined.
                   </p>
                 </div>
               </div>
