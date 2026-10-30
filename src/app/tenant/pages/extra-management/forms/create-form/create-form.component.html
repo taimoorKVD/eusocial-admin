@@ -49,11 +49,7 @@
           <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
             <path d="M13 2 4.5 13.5h5.25L9 22l9.75-13.5H13.5L13 2Z" />
           </svg>
-          <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M7 4v7a3 3 0 0 0 3 3h4a3 3 0 0 1 3 3v3" />
-            <circle cx="7" cy="4" r="1.5" fill="currentColor" stroke="none" />
-            <circle cx="17" cy="20" r="1.5" fill="currentColor" stroke="none" />
-          </svg>
+          <app-logic-map-icon [size]="14"></app-logic-map-icon>
         </span>
         <span class="hidden 2xl:inline">Logic &amp; automations</span>
         <span
@@ -210,11 +206,7 @@
                 [ngClass]="logicOverviewTab() === 'logicMap' ? 'border-[#161616] bg-[#161616] text-white' : 'border-[#E5E7EB] bg-white text-[#4B5563] hover:border-[#D1D5DB] hover:text-[#161616]'"
                 (click)="setLogicOverviewTab('logicMap')"
               >
-                <svg class="h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M7 4v7a3 3 0 0 0 3 3h4a3 3 0 0 1 3 3v3" />
-                  <circle cx="7" cy="4" r="1.5" fill="currentColor" stroke="none" />
-                  <circle cx="17" cy="20" r="1.5" fill="currentColor" stroke="none" />
-                </svg>
+                <app-logic-map-icon></app-logic-map-icon>
                 Logic map {{ fieldsWithConditionalLogicIds().length }}
               </button>
               <button
@@ -273,11 +265,7 @@
                       <div class="flex flex-col gap-3 rounded-xl border border-[#E5E7EB] bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                         <div class="flex min-w-0 items-start gap-3">
                           <span class="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[#161616] text-white" aria-hidden="true">
-                            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                              <path stroke-linecap="round" stroke-linejoin="round" d="M7 4v7a3 3 0 0 0 3 3h4a3 3 0 0 1 3 3v3" />
-                              <circle cx="7" cy="4" r="1.5" fill="currentColor" stroke="none" />
-                              <circle cx="17" cy="20" r="1.5" fill="currentColor" stroke="none" />
-                            </svg>
+                            <app-logic-map-icon [size]="14"></app-logic-map-icon>
                           </span>
                           <div class="min-w-0">
                             <p class="truncate text-sm font-bold text-[#161616]">
