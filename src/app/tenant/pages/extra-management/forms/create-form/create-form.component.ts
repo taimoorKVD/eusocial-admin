@@ -13,6 +13,7 @@ import {
   WritableSignal,
 } from '@angular/core';
 import { FieldSettingsComponent } from '../../../../form-builder/field-settings/field-settings.component';
+import { AutomationRuleIconComponent } from '../../../../form-builder/icons/automation-rule-icon.component';
 import { LogicMapIconComponent } from '../../../../form-builder/icons/logic-map-icon.component';
 import { LogicRulesPanelComponent } from '../../../../forms/logic-rules-panel/logic-rules-panel.component';
 import { CommonModule } from '@angular/common';
@@ -152,6 +153,7 @@ interface WizardStep {
     FormEditorCoreModule,
     SectionFieldPreviewComponent,
     LogicMapIconComponent,
+    AutomationRuleIconComponent,
   ],
   templateUrl: './create-form.component.html',
   styleUrl: './create-form.component.scss',

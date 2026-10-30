@@ -13,13 +13,20 @@ import {
 } from '@angular/cdk/drag-drop';
 import { FormField } from '../../models/form-field.model';
 import { FormFieldPreviewComponent } from '../form-field-preview/form-field-preview.component';
+import { AutomationRuleIconComponent } from '../../icons/automation-rule-icon.component';
 import { LogicMapIconComponent } from '../../icons/logic-map-icon.component';
 import { isFormFieldBulkDeletable } from '../../utils/form-field-operations';
 
 @Component({
   selector: 'app-form-canvas',
   standalone: true,
-  imports: [CommonModule, DragDropModule, FormFieldPreviewComponent, LogicMapIconComponent],
+  imports: [
+    CommonModule,
+    DragDropModule,
+    FormFieldPreviewComponent,
+    LogicMapIconComponent,
+    AutomationRuleIconComponent,
+  ],
   templateUrl: './form-canvas.component.html',
   styleUrl: './form-canvas.component.scss',
 })

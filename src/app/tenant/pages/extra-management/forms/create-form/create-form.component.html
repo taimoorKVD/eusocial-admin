@@ -46,9 +46,7 @@
         (click)="openLogicOverview('list')"
       >
         <span class="inline-flex items-center gap-1 text-[#161616]" aria-hidden="true">
-          <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M13 2 4.5 13.5h5.25L9 22l9.75-13.5H13.5L13 2Z" />
-          </svg>
+          <app-automation-rule-icon></app-automation-rule-icon>
           <app-logic-map-icon [size]="14"></app-logic-map-icon>
         </span>
         <span class="hidden 2xl:inline">Logic &amp; automations</span>
@@ -215,9 +213,7 @@
                 [ngClass]="logicOverviewTab() === 'automationMap' ? 'border-[#d4e600] bg-[#d4e600] text-[#161616]' : 'border-[#E5E7EB] bg-white text-[#4B5563] hover:border-[#D1D5DB] hover:text-[#161616]'"
                 (click)="setLogicOverviewTab('automationMap')"
               >
-                <svg class="h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                  <path d="M13 2 4.5 13.5h5.25L9 22l9.75-13.5H13.5L13 2Z" />
-                </svg>
+                <app-automation-rule-icon></app-automation-rule-icon>
                 Automation map {{ logicRules().length }}
               </button>
               <button
@@ -327,9 +323,7 @@
                       <div class="flex flex-col gap-3 rounded-xl border border-[#E5E7EB] bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                         <div class="flex min-w-0 items-start gap-3">
                           <span class="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[#d4e600] text-[#161616]" aria-hidden="true">
-                            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
-                              <path d="M13 2 4.5 13.5h5.25L9 22l9.75-13.5H13.5L13 2Z" />
-                            </svg>
+                            <app-automation-rule-icon></app-automation-rule-icon>
                           </span>
                           <div class="min-w-0">
                             <p class="truncate text-sm font-bold text-[#161616]">{{ rule.name || 'Untitled Rule' }}</p>
@@ -552,9 +546,7 @@
                         <!-- Rule -->
                         <div class="rounded-lg bg-[#d4e600] px-3.5 py-3 text-[#161616]">
                           <div class="flex items-start gap-2">
-                            <svg class="mt-0.5 h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                              <path d="M13 2 4.5 13.5h5.25L9 22l9.75-13.5H13.5L13 2Z" />
-                            </svg>
+                            <app-automation-rule-icon hostClass="mt-0.5"></app-automation-rule-icon>
                             <div class="min-w-0">
                               <p class="m-0 text-[10px] font-bold uppercase tracking-wider">
                                 Runs {{ automationRunOrdinal(i) }} · {{ rule.enabled ? 'On' : 'Off' }}
