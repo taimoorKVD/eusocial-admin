@@ -21,7 +21,11 @@
           title="Close"
           (click)="closePanel.emit()"
         >
-          <span class="text-xl leading-none" aria-hidden="true">×</span>
+          <span class="text-xl leading-none" aria-hidden="true">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M10.833 0.833374L5.83301 5.83337M5.83301 5.83337L0.833008 10.8334M5.83301 5.83337L0.833008 0.833374M5.83301 5.83337L10.833 10.8334" stroke-width="1.66667" stroke-linecap="round" stroke="black"/>
+            </svg>
+          </span>
         </button>
       }
     </div>
@@ -1222,7 +1226,7 @@
 
   <!-- Conditional Logic trigger (hidden in Form Template; opened via field icon) -->
   @if (showConditionalLogicEntry) {
-  <div class="rounded-xl border border-gray-200 bg-white font-ibm">
+  <div class="rounded-xl border border-[#BDBDBD] bg-white font-ibm">
     <button
       type="button"
       class="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ff9015]/30 disabled:cursor-not-allowed disabled:opacity-50"
@@ -1231,9 +1235,10 @@
     >
       <span class="flex min-w-0 items-center gap-2.5">
         <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#161616] text-white" aria-hidden="true">
-          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 3.75h3v3h-3v-3Zm6 0h3v3h-3v-3Zm-6 6h3v3h-3v-3Zm6 0h3v3h-3v-3Zm-3 3v3m0 0h3m-3 0H7.5m6.75-9V6m0 0h3m-3 0h-3" />
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M5 2.5V12.5M5 12.5C4.33696 12.5 3.70107 12.7634 3.23223 13.2322C2.76339 13.7011 2.5 14.337 2.5 15C2.5 15.663 2.76339 16.2989 3.23223 16.7678C3.70107 17.2366 4.33696 17.5 5 17.5C5.66304 17.5 6.29893 17.2366 6.76777 16.7678C7.23661 16.2989 7.5 15.663 7.5 15M5 12.5C5.66304 12.5 6.29893 12.7634 6.76777 13.2322C7.23661 13.7011 7.5 14.337 7.5 15M15 7.5C15 9.48912 14.2098 11.3968 12.8033 12.8033C11.3968 14.2098 9.48912 15 7.5 15M15 7.5C14.337 7.5 13.7011 7.23661 13.2322 6.76777C12.7634 6.29893 12.5 5.66304 12.5 5C12.5 4.33696 12.7634 3.70107 13.2322 3.23223C13.7011 2.76339 14.337 2.5 15 2.5C15.663 2.5 16.2989 2.76339 16.7678 3.23223C17.2366 3.70107 17.5 4.33696 17.5 5C17.5 5.66304 17.2366 6.29893 16.7678 6.76777C16.2989 7.23661 15.663 7.5 15 7.5Z" stroke-width="1.83333" stroke-linecap="round" stroke-linejoin="round" stroke="white"/>
           </svg>
+
         </span>
         <span class="min-w-0">
           <span class="block truncate text-sm font-bold text-[#161616]">Conditional logic</span>
@@ -1270,14 +1275,14 @@
       (click)="closeConditionModal()"
     >
       <div
-        class="flex max-h-[min(92vh,40rem)] w-full max-w-[45rem] flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-[0_24px_48px_-16px_rgba(15,23,42,0.35)] max-sm:max-h-[94vh] max-sm:max-w-full"
+        class="flex max-h-[min(92vh,40rem)] w-full max-w-[55rem] flex-col overflow-hidden rounded-2xl border border-[#BDBDBD] bg-white shadow-[0_24px_48px_-16px_rgba(15,23,42,0.35)] max-sm:max-h-[94vh] max-sm:max-w-full"
         (click)="$event.stopPropagation()"
       >
-        <header class="flex shrink-0 items-center justify-between gap-3 border-b border-gray-200 px-5 py-4 max-sm:px-4">
+        <header class="flex shrink-0 items-center justify-between gap-3 border-b border-[#E0E0E0] px-5 py-4 max-sm:px-4">
           <div class="flex min-w-0 items-center gap-2.5">
             <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#161616] text-white" aria-hidden="true">
-              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 3.75h3v3h-3v-3Zm6 0h3v3h-3v-3Zm-6 6h3v3h-3v-3Zm6 0h3v3h-3v-3Zm-3 3v3m0 0h3m-3 0H7.5m6.75-9V6m0 0h3m-3 0h-3" />
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M5 2.5V12.5M5 12.5C4.33696 12.5 3.70107 12.7634 3.23223 13.2322C2.76339 13.7011 2.5 14.337 2.5 15C2.5 15.663 2.76339 16.2989 3.23223 16.7678C3.70107 17.2366 4.33696 17.5 5 17.5C5.66304 17.5 6.29893 17.2366 6.76777 16.7678C7.23661 16.2989 7.5 15.663 7.5 15M5 12.5C5.66304 12.5 6.29893 12.7634 6.76777 13.2322C7.23661 13.7011 7.5 14.337 7.5 15M15 7.5C15 9.48912 14.2098 11.3968 12.8033 12.8033C11.3968 14.2098 9.48912 15 7.5 15M15 7.5C14.337 7.5 13.7011 7.23661 13.2322 6.76777C12.7634 6.29893 12.5 5.66304 12.5 5C12.5 4.33696 12.7634 3.70107 13.2322 3.23223C13.7011 2.76339 14.337 2.5 15 2.5C15.663 2.5 16.2989 2.76339 16.7678 3.23223C17.2366 3.70107 17.5 4.33696 17.5 5C17.5 5.66304 17.2366 6.29893 16.7678 6.76777C16.2989 7.23661 15.663 7.5 15 7.5Z" stroke-width="1.83333" stroke-linecap="round" stroke-linejoin="round" stroke="white"/>
               </svg>
             </span>
             <h2 id="conditional-logic-modal-title" class="truncate text-base font-bold text-[#161616]">
@@ -1291,39 +1296,45 @@
             title="Close"
             (click)="closeConditionModal()"
           >
-            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M10.833 0.833374L5.83301 5.83337M5.83301 5.83337L0.833008 10.8334M5.83301 5.83337L0.833008 0.833374M5.83301 5.83337L10.833 10.8334" stroke-width="1.66667" stroke-linecap="round" stroke="black"/>
             </svg>
           </button>
         </header>
 
-        <div class="min-h-0 flex-1 overflow-y-auto">
+        <div class="min-h-0 flex-1 overflow-y-auto px-5 mt-3">
           <!-- Flow summary -->
-          <div class="border-b border-gray-200 bg-gray-50 px-5 py-4 max-sm:px-4">
-            <div class="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
-              <div class="min-w-0 flex-1 rounded-xl border border-dashed border-gray-300 bg-white px-3.5 py-3">
-                <p class="m-0 text-[10px] font-semibold uppercase tracking-wide text-gray-500">Watches this answer</p>
+          <div class="bg-gray-50 px-5 py-4 max-sm:px-4 rounded-lg">
+            <div class="flex flex-col items-stretch sm:flex-row sm:items-center">
+              <div class="min-w-0 flex-[0.8] rounded-xl border border-dashed border-gray-300 bg-white px-3.5 py-3">
+                <p class="m-0 text-[11px] font-semibold uppercase tracking-wide text-gray-500">Watches this answer</p>
                 <p class="m-0 mt-1 truncate text-sm font-bold text-[#161616]">
                   {{ conditionSourceField?.label || 'No field chosen yet' }}
                 </p>
-                <p class="m-0 mt-0.5 text-xs text-gray-500">
+                <p class="m-0 mt-0.5 text-[15px] text-gray-500">
                   {{ conditionSourceField ? (conditionSourceField.fieldTypeName || conditionSourceField.type || 'Field') : 'Pick one below' }}
                 </p>
               </div>
 
-              <div class="flex shrink-0 items-center justify-center text-gray-400" aria-hidden="true">
-                <svg class="h-5 w-5 rotate-90 sm:rotate-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+              <div class="flex flex-[0.3] shrink-0 items-center justify-center text-gray-400" aria-hidden="true">
+                <svg width="72" height="12" viewBox="0 0 72 12" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+                  <rect width="72" height="12" fill="url(#pattern0_1_3)"/>
+                  <defs>
+                  <pattern id="pattern0_1_3" patternContentUnits="objectBoundingBox" width="1" height="1">
+                  <use xlink:href="#image0_1_3" transform="scale(0.00694444 0.0416667)"/>
+                  </pattern>
+                  <image id="image0_1_3" width="144" height="24" preserveAspectRatio="none" xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJAAAAAYCAYAAAAVpXQNAAAACXBIWXMAABYlAAAWJQFJUiTwAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAOdEVYdFNvZnR3YXJlAEZpZ21hnrGWYwAAAW9JREFUeAHtmMGNgzAQRW2ggC0h2xkpAQkJccwJBEVkS6CDbSUlcOEI2XEUo1ljQ5wc578L8Zjcnv7MoBQQSdu216ZpTupDEgVEorXOkyT5JYly9QFaAZF0XXdnx595ni91Xd9UJEggYHg7jZBAQun7/k74rqLSCAkkFCsPl4jmIvOISiMIJBySZVMjkU5pml5pTjrc1CCQcHgCeVraYRphBhKKs4V5MS2NSeWdjZBAIIiTSI80IvFyXtSvmAhkYIWxyfMcqv/dP2trGkEgoXBZ7NkVZu9/xG1ZlkumgEhcWezZPEmMoEzsvS96jBAIrLiptMOQZdm5KIoRW5hQQqPLXiuj+kjpdK6qarA1bGHCMcJ4vkZv7mkDG6Zp+ubyGNDChHPUrkicR+qUZTn47iGQYF7YvNZZJ/QCBAIbfLNOCMxAguHpY3+HZp0QSCCheNrXSLXgrBMCCSQUR56o1OEggQQTM+uEQALJ5e3U4fwBYaDGyXBOgnsAAAAASUVORK5CYII="/>
+                  </defs>
                 </svg>
               </div>
 
               <div
-                class="min-w-0 flex-1 rounded-xl border px-3.5 py-3"
+                class="min-w-0 flex-[0.8] rounded-xl border px-3.5 py-3"
                 [ngClass]="conditionModalPickTargetMode && !conditionModalTargetConfirmed
                   ? 'border-[#ff9015] bg-[#fff7ed]'
                   : 'border-dashed border-gray-300 bg-white'"
               >
-                <p class="m-0 text-[10px] font-semibold uppercase tracking-wide text-gray-500">Changes this field</p>
+                <p class="m-0 text-[11px] font-semibold uppercase tracking-wide text-gray-500">Changes this field</p>
                 @if (conditionModalPickTargetMode && !conditionModalTargetConfirmed) {
                   <p class="m-0 mt-1 text-sm font-bold text-[#161616]">Step 1: choose it below</p>
                   <p class="m-0 mt-0.5 text-xs text-gray-500">The field that will be shown, hidden or required</p>
@@ -1331,7 +1342,7 @@
                   <p class="m-0 mt-1 truncate text-sm font-bold text-[#161616]">
                     {{ field?.label || 'This field' }}
                   </p>
-                  <p class="m-0 mt-0.5 truncate text-xs text-gray-500">
+                  <p class="m-0 mt-0.5 truncate text-[12px] text-gray-500">
                     {{ field?.fieldTypeName || field?.type || 'Field' }}
                   </p>
                 }
@@ -1339,11 +1350,11 @@
             </div>
           </div>
 
-          <div class="space-y-6 px-5 py-5 max-sm:px-4">
+          <div class="space-y-6 py-5 max-sm:px-4">
             @if (conditionModalPickTargetMode) {
               <!-- Persistent target selector (Add Logic) -->
               <section class="space-y-2.5">
-                <div class="flex flex-col gap-2.5 sm:flex-row sm:items-start">
+                <div class="flex flex-col gap-10 sm:flex-row sm:items-start">
                   <span
                     class="inline-flex h-7 w-fit shrink-0 items-center justify-center rounded-md px-2.5 text-[11px] font-extrabold tracking-wide text-white"
                     [ngClass]="!conditionModalTargetConfirmed ? 'bg-[#ff9015]' : 'bg-[#161616]'"
@@ -1351,27 +1362,62 @@
                     FIELD
                   </span>
                   <div class="min-w-0 flex-1 space-y-2">
-                    <label class="block text-sm font-semibold text-[#161616]" for="condition-target-field">
+                    <label class="block text-sm font-semibold text-[#161616]">
                       Which field should change?
                     </label>
-                    <select
-                      id="condition-target-field"
-                      class="w-full rounded-lg border bg-white px-3 py-2.5 text-sm text-[#161616] focus:border-[#ff9015] focus:outline-none focus:shadow-[0_0_0_3px_rgba(255,144,21,0.12)]"
-                      [ngClass]="!conditionModalTargetConfirmed
-                        ? 'border-[#ff9015] shadow-[0_0_0_3px_rgba(255,144,21,0.12)]'
-                        : 'border-gray-200'"
-                      [ngModel]="conditionTargetSelectValue"
-                      (ngModelChange)="onConditionTargetFieldPick($event)"
-                      [disabled]="!isFieldEditable"
+                    <div
+                      class="relative w-full"
+                      appDropdownPanel
+                      #conditionTargetDropdown="dropdownPanel"
+                      dropdownId="condition-target-field"
+                      dropdownGroup="conditional-logic-modal"
                     >
-                      <option value="">Choose a field...</option>
-                      @for (target of conditionTargetFields; track target.id) {
-                        <option [value]="target.id">
-                          {{ target.label || 'Untitled field' }}{{ fieldHasConfiguredCondition(target.id) ? ' (Has logic)' : '' }}
-                        </option>
+                      <button
+                        type="button"
+                        class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl border border-[#BDBDBD] bg-white px-[0.85rem] py-[0.7rem] text-left text-sm font-medium leading-5 text-black transition hover:border-gray-300 hover:bg-[#fafafa] focus-visible:border-[#ff9015] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] aria-expanded:border-[#ff9015] aria-expanded:bg-white aria-expanded:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
+                        (click)="conditionTargetDropdown.toggle($event)"
+                        [disabled]="!isFieldEditable"
+                        [attr.aria-expanded]="conditionTargetDropdown.isOpen"
+                      >
+                        <span class="truncate" [class.text-slate-400]="!conditionTargetSelectValue">
+                          {{ selectFieldLabel(conditionTargetFields, conditionTargetSelectValue) || 'Choose a field...' }}
+                        </span>
+                        <svg
+                          class="h-4 w-4 shrink-0 text-slate-400 transition-transform"
+                          [class.rotate-180]="conditionTargetDropdown.isOpen"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          stroke-width="2"
+                        >
+                          <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                        </svg>
+                      </button>
+                      @if (conditionTargetDropdown.isOpen) {
+                        <div class="absolute left-0 right-0 top-[calc(100%+4px)] z-[200] max-h-64 overflow-y-auto rounded-[0.85rem] border border-[#BDBDBD] bg-white p-[0.35rem] shadow-[0_16px_32px_-12px_rgba(15,23,42,0.22)]">
+                          <button
+                            type="button"
+                            class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                            (click)="onConditionTargetFieldPick('')"
+                          >
+                            Choose a field...
+                          </button>
+                          @for (target of conditionTargetFields; track target.id) {
+                            <button
+                              type="button"
+                              class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                              [class.bg-[#f7fee7]]="conditionTargetSelectValue === target.id"
+                              [class.font-semibold]="conditionTargetSelectValue === target.id"
+                              [class.text-[#3f6212]]="conditionTargetSelectValue === target.id"
+                              (click)="onConditionTargetFieldPick(target.id)"
+                            >
+                              {{ target.label || 'Untitled field' }}{{ fieldHasConfiguredCondition(target.id) ? ' (Has logic)' : '' }}
+                            </button>
+                          }
+                        </div>
                       }
-                    </select>
-                    <p class="m-0 text-xs leading-relaxed text-gray-500">
+                    </div>
+                    <p class="m-0 text-[13px] leading-relaxed text-[#3D3D3D]">
                       A field that already has logic is marked “Has logic”. Choosing it opens that logic to edit.
                     </p>
                   </div>
@@ -1387,60 +1433,175 @@
             >
             <!-- WHEN -->
             <section class="space-y-2.5">
-              <div class="flex flex-col gap-3 sm:flex-row sm:items-start">
+              <div class="flex flex-col gap-10 sm:flex-row sm:items-start">
                 <span class="inline-flex h-7 w-fit shrink-0 items-center justify-center rounded-md bg-[#161616] px-2.5 text-[11px] font-extrabold tracking-wide text-white">
                   WHEN
                 </span>
 
                 <div class="min-w-0 flex-1 space-y-3">
-                  <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                  <div class="grid grid-cols-1 gap-3 sm:grid-cols-[2fr_1fr_1fr] sm:items-stretch
+">
                     <div class="min-w-0">
-                      <select
-                        class="w-full rounded-lg border bg-white px-3 py-2.5 text-sm text-[#161616] focus:border-[#ff9015] focus:outline-none focus:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
-                        [ngClass]="!conditionSourceFieldId
-                          ? 'border-[#ff9015] shadow-[0_0_0_3px_rgba(255,144,21,0.12)]'
-                          : 'border-gray-200'"
-                        [ngModel]="conditionSourceFieldId"
-                        (ngModelChange)="onConditionSourceChange($event)"
-                        [disabled]="!conditionRuleControlsEnabled"
-                        aria-label="Choose a field"
+                      <div
+                        class="relative w-full"
+                        appDropdownPanel
+                        #conditionSourceDropdown="dropdownPanel"
+                        dropdownId="condition-source-field"
+                        dropdownGroup="conditional-logic-modal"
                       >
-                        <option value="">Choose a field...</option>
-                        @for (source of validConditionSourceFields; track source.id) {
-                          <option [value]="source.id">{{ source.label }}</option>
+                        <button
+                          type="button"
+                          class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl border border-[#BDBDBD] bg-white px-[0.85rem] py-[0.7rem] text-left text-sm font-medium leading-5 text-black transition hover:border-gray-300 hover:bg-[#fafafa] focus-visible:border-[#ff9015] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] aria-expanded:border-[#ff9015] aria-expanded:bg-white aria-expanded:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
+                          (click)="conditionSourceDropdown.toggle($event)"
+                          [disabled]="!conditionRuleControlsEnabled"
+                          [attr.aria-expanded]="conditionSourceDropdown.isOpen"
+                          aria-label="Choose a field"
+                        >
+                          <span class="truncate" [class.text-slate-400]="!conditionSourceFieldId">
+                            {{ selectFieldLabel(validConditionSourceFields, conditionSourceFieldId) || 'Choose a field...' }}
+                          </span>
+                          <svg
+                            class="h-4 w-4 shrink-0 text-slate-400 transition-transform"
+                            [class.rotate-180]="conditionSourceDropdown.isOpen"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            stroke-width="2"
+                          >
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                          </svg>
+                        </button>
+                        @if (conditionSourceDropdown.isOpen) {
+                          <div class="absolute left-0 right-0 top-[calc(100%+4px)] z-[200] max-h-64 overflow-y-auto rounded-[0.85rem] border border-[#BDBDBD] bg-white p-[0.35rem] shadow-[0_16px_32px_-12px_rgba(15,23,42,0.22)]">
+                            <button
+                              type="button"
+                              class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                              (click)="onConditionSourceChange('')"
+                            >
+                              Choose a field...
+                            </button>
+                            @for (source of validConditionSourceFields; track source.id) {
+                              <button
+                                type="button"
+                                class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                [class.bg-[#f7fee7]]="conditionSourceFieldId === source.id"
+                                [class.font-semibold]="conditionSourceFieldId === source.id"
+                                [class.text-[#3f6212]]="conditionSourceFieldId === source.id"
+                                (click)="onConditionSourceChange(source.id)"
+                              >
+                                {{ source.label }}
+                              </button>
+                            }
+                          </div>
                         }
-                      </select>
+                      </div>
                     </div>
 
                     <div class="min-w-0">
-                      <select
-                        class="w-full rounded-lg border border-transparent bg-gray-100 px-3 py-2.5 text-sm text-[#161616] focus:border-[#ff9015] focus:bg-white focus:outline-none focus:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:text-gray-400"
-                        [ngModel]="conditionOperator"
-                        (ngModelChange)="onConditionOperatorChange($event)"
-                        [disabled]="!isFieldEditable"
-                        aria-label="Check"
+                      <div
+                        class="relative w-full"
+                        appDropdownPanel
+                        #conditionOperatorDropdown="dropdownPanel"
+                        dropdownId="condition-operator"
+                        dropdownGroup="conditional-logic-modal"
                       >
-                        @for (operator of conditionOperators; track operator.value) {
-                          <option [value]="operator.value">{{ operator.label }}</option>
+                        <button
+                          type="button"
+                          class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl border border-[#BDBDBD] bg-white px-[0.85rem] py-[0.7rem] text-left text-sm font-medium leading-5 text-black transition hover:border-gray-300 hover:bg-[#fafafa] focus-visible:border-[#ff9015] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] aria-expanded:border-[#ff9015] aria-expanded:bg-white aria-expanded:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
+                          (click)="conditionOperatorDropdown.toggle($event)"
+                          [disabled]="!isFieldEditable"
+                          [attr.aria-expanded]="conditionOperatorDropdown.isOpen"
+                          aria-label="Check"
+                        >
+                          <span class="truncate">
+                            {{ selectOptionLabel(conditionOperators, conditionOperator) }}
+                          </span>
+                          <svg
+                            class="h-4 w-4 shrink-0 text-slate-400 transition-transform"
+                            [class.rotate-180]="conditionOperatorDropdown.isOpen"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            stroke-width="2"
+                          >
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                          </svg>
+                        </button>
+                        @if (conditionOperatorDropdown.isOpen) {
+                          <div class="absolute left-0 right-0 top-[calc(100%+4px)] z-[200] max-h-64 overflow-y-auto rounded-[0.85rem] border border-[#BDBDBD] bg-white p-[0.35rem] shadow-[0_16px_32px_-12px_rgba(15,23,42,0.22)]">
+                            @for (operator of conditionOperators; track operator.value) {
+                              <button
+                                type="button"
+                                class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                [class.bg-[#f7fee7]]="conditionOperator === operator.value"
+                                [class.font-semibold]="conditionOperator === operator.value"
+                                [class.text-[#3f6212]]="conditionOperator === operator.value"
+                                (click)="onConditionOperatorChange(operator.value)"
+                              >
+                                {{ operator.label }}
+                              </button>
+                            }
+                          </div>
                         }
-                      </select>
+                      </div>
                     </div>
 
                     @if (conditionNeedsValue) {
                       <div class="min-w-0">
                         @if (conditionSourceHasOptions) {
-                          <select
-                            class="w-full rounded-lg border border-transparent bg-gray-100 px-3 py-2.5 text-sm text-[#161616] focus:border-[#ff9015] focus:bg-white focus:outline-none focus:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:text-gray-400"
-                            [ngModel]="conditionCompareValue"
-                            (ngModelChange)="onConditionValueChange($event)"
-                            [disabled]="!isFieldEditable"
-                            aria-label="Value"
+                          <div
+                            class="relative w-full"
+                            appDropdownPanel
+                            #conditionValueDropdown="dropdownPanel"
+                            dropdownId="condition-value"
+                            dropdownGroup="conditional-logic-modal"
                           >
-                            <option value="">Value</option>
-                            @for (option of conditionSourceOptions; track option.value) {
-                              <option [ngValue]="option.value">{{ option.label }}</option>
+                            <button
+                              type="button"
+                              class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl border border-[#BDBDBD] bg-white px-[0.85rem] py-[0.7rem] text-left text-sm font-medium leading-5 text-black transition hover:border-gray-300 hover:bg-[#fafafa] focus-visible:border-[#ff9015] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] aria-expanded:border-[#ff9015] aria-expanded:bg-white aria-expanded:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
+                              (click)="conditionValueDropdown.toggle($event)"
+                              [disabled]="!isFieldEditable"
+                              [attr.aria-expanded]="conditionValueDropdown.isOpen"
+                              aria-label="Value"
+                            >
+                              <span class="truncate" [class.text-slate-400]="conditionCompareValue === '' || conditionCompareValue == null">
+                                {{ selectOptionLabel(conditionSourceOptions, conditionCompareValue) || 'Value' }}
+                              </span>
+                              <svg
+                                class="h-4 w-4 shrink-0 text-slate-400 transition-transform"
+                                [class.rotate-180]="conditionValueDropdown.isOpen"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                stroke-width="2"
+                              >
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                              </svg>
+                            </button>
+                            @if (conditionValueDropdown.isOpen) {
+                              <div class="absolute left-0 right-0 top-[calc(100%+4px)] z-[200] max-h-64 overflow-y-auto rounded-[0.85rem] border border-[#BDBDBD] bg-white p-[0.35rem] shadow-[0_16px_32px_-12px_rgba(15,23,42,0.22)]">
+                                <button
+                                  type="button"
+                                  class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                  (click)="onConditionValueChange('')"
+                                >
+                                  Value
+                                </button>
+                                @for (option of conditionSourceOptions; track option.value) {
+                                  <button
+                                    type="button"
+                                    class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                    [class.bg-[#f7fee7]]="isSelectOptionSelected(option.value, conditionCompareValue)"
+                                    [class.font-semibold]="isSelectOptionSelected(option.value, conditionCompareValue)"
+                                    [class.text-[#3f6212]]="isSelectOptionSelected(option.value, conditionCompareValue)"
+                                    (click)="onConditionValueChange(option.value)"
+                                  >
+                                    {{ option.label }}
+                                  </button>
+                                }
+                              </div>
                             }
-                          </select>
+                          </div>
                         } @else {
                           <input
                             type="text"
@@ -1458,7 +1619,7 @@
                     }
                   </div>
 
-                  <p class="m-0 text-xs leading-relaxed text-gray-500">
+                  <p class="m-0 text-[13px] leading-relaxed text-[#3D3D3D]">
                     Start by choosing the field whose answer decides what happens. The checks you can use depend on that field's type.
                   </p>
                 </div>
@@ -1467,7 +1628,7 @@
 
             <!-- THEN -->
             <section class="space-y-2.5">
-              <div class="flex flex-col gap-3 sm:flex-row sm:items-start">
+              <div class="flex flex-col gap-10 sm:flex-row sm:items-start">
                 <span class="inline-flex h-7 w-fit shrink-0 items-center justify-center rounded-md bg-[#161616] px-2.5 text-[11px] font-extrabold tracking-wide text-white">
                   THEN
                 </span>
@@ -1477,10 +1638,10 @@
                     @for (action of conditionActions; track action.value) {
                       <button
                         type="button"
-                        class="rounded-lg border px-3 py-2 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ff9015]/30 disabled:cursor-not-allowed disabled:opacity-40"
+                        class="rounded-lg border px-3 py-3 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ff9015]/30 disabled:cursor-not-allowed disabled:opacity-40"
                         [ngClass]="isConditionActionSelected(action.value)
                           ? 'border-[#161616] bg-[#161616] text-white'
-                          : 'border-gray-200 bg-white text-[#161616] hover:border-gray-300 hover:bg-gray-50'"
+                          : 'border-[#BDBDBD] bg-white text-black hover:border-gray-300 hover:bg-gray-50'"
                         [disabled]="!isFieldEditable || isConditionActionOptionDisabled(action.value)"
                         [attr.aria-pressed]="isConditionActionSelected(action.value)"
                         (click)="onConditionActionChange(action.value)"
@@ -1500,7 +1661,7 @@
                       </button>
                     }
                   </div>
-                  <p class="m-0 text-xs leading-relaxed text-gray-500">
+                  <p class="m-0 text-[13px] leading-relaxed text-[#3D3D3D]">
                     Pick one or more compatible actions. Show/Hide, Require/Optional, and Enable/Disable cannot be combined.
                   </p>
                 </div>
@@ -1508,19 +1669,54 @@
             </section>
 
             @if (conditionUsesSetValue) {
-              <div class="space-y-3 rounded-xl border border-dashed border-gray-200 bg-gray-50 px-3.5 py-3.5">
+              <div class="space-y-3 rounded-xl border border-dashed border-[#BDBDBD] bg-gray-50 px-3.5 py-3.5">
                 <div>
                   <label class="mb-1.5 block text-xs font-medium text-gray-600">Set value from</label>
-                  <select
-                    class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-[#161616] focus:border-[#ff9015] focus:outline-none focus:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
-                    [ngModel]="setValueSourceKind"
-                    (ngModelChange)="onSetValueSourceKindChange($event)"
-                    [disabled]="!isFieldEditable"
+                  <div
+                    class="relative w-full"
+                    appDropdownPanel
+                    #setValueSourceKindDropdown="dropdownPanel"
+                    dropdownId="condition-set-value-source-kind"
+                    dropdownGroup="conditional-logic-modal"
                   >
-                    @for (kind of valueSourceKinds; track kind.value) {
-                      <option [value]="kind.value">{{ kind.label }}</option>
+                    <button
+                      type="button"
+                      class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl border border-[#BDBDBD] bg-white px-[0.85rem] py-[0.7rem] text-left text-sm font-medium leading-5 text-black transition hover:border-gray-300 hover:bg-[#fafafa] focus-visible:border-[#ff9015] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] aria-expanded:border-[#ff9015] aria-expanded:bg-white aria-expanded:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
+                      (click)="setValueSourceKindDropdown.toggle($event)"
+                      [disabled]="!isFieldEditable"
+                      [attr.aria-expanded]="setValueSourceKindDropdown.isOpen"
+                    >
+                      <span class="truncate">
+                        {{ selectOptionLabel(valueSourceKinds, setValueSourceKind) }}
+                      </span>
+                      <svg
+                        class="h-4 w-4 shrink-0 text-slate-400 transition-transform"
+                        [class.rotate-180]="setValueSourceKindDropdown.isOpen"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                      </svg>
+                    </button>
+                    @if (setValueSourceKindDropdown.isOpen) {
+                      <div class="absolute left-0 right-0 top-[calc(100%+4px)] z-[200] max-h-64 overflow-y-auto rounded-[0.85rem] border border-[#BDBDBD] bg-white p-[0.35rem] shadow-[0_16px_32px_-12px_rgba(15,23,42,0.22)]">
+                        @for (kind of valueSourceKinds; track kind.value) {
+                          <button
+                            type="button"
+                            class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                            [class.bg-[#f7fee7]]="setValueSourceKind === kind.value"
+                            [class.font-semibold]="setValueSourceKind === kind.value"
+                            [class.text-[#3f6212]]="setValueSourceKind === kind.value"
+                            (click)="onSetValueSourceKindChange(kind.value)"
+                          >
+                            {{ kind.label }}
+                          </button>
+                        }
+                      </div>
                     }
-                  </select>
+                  </div>
                 </div>
 
                 @if (setValueSourceKind === 'fixed') {
@@ -1528,7 +1724,7 @@
                     <label class="mb-1.5 block text-xs font-medium text-gray-600">Value</label>
                     <input
                       type="text"
-                      class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-[#161616] placeholder:text-gray-400 focus:border-[#ff9015] focus:outline-none focus:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
+                      class="w-full rounded-lg border border-[#BDBDBD] bg-white px-3 py-2.5 text-sm text-[#161616] placeholder:text-gray-400 focus:border-[#ff9015] focus:outline-none focus:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
                       [ngModel]="setValueFixedValue"
                       (ngModelChange)="onSetValueFixedValueChange($event)"
                       [disabled]="!isFieldEditable"
@@ -1540,17 +1736,58 @@
                 @if (setValueSourceKind === 'field') {
                   <div>
                     <label class="mb-1.5 block text-xs font-medium text-gray-600">Field</label>
-                    <select
-                      class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-[#161616] focus:border-[#ff9015] focus:outline-none focus:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
-                      [ngModel]="setValueFieldId"
-                      (ngModelChange)="onSetValueFieldChange($event)"
-                      [disabled]="!isFieldEditable"
+                    <div
+                      class="relative w-full"
+                      appDropdownPanel
+                      #setValueFieldDropdown="dropdownPanel"
+                      dropdownId="condition-set-value-field"
+                      dropdownGroup="conditional-logic-modal"
                     >
-                      <option value="">Select a field</option>
-                      @for (source of setValueFormFields; track source.id) {
-                        <option [value]="source.id">{{ source.label }}</option>
+                      <button
+                        type="button"
+                        class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl border border-[#BDBDBD] bg-white px-[0.85rem] py-[0.7rem] text-left text-sm font-medium leading-5 text-black transition hover:border-gray-300 hover:bg-[#fafafa] focus-visible:border-[#ff9015] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] aria-expanded:border-[#ff9015] aria-expanded:bg-white aria-expanded:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
+                        (click)="setValueFieldDropdown.toggle($event)"
+                        [disabled]="!isFieldEditable"
+                        [attr.aria-expanded]="setValueFieldDropdown.isOpen"
+                      >
+                        <span class="truncate" [class.text-slate-400]="!setValueFieldId">
+                          {{ selectFieldLabel(setValueFormFields, setValueFieldId) || 'Select a field' }}
+                        </span>
+                        <svg
+                          class="h-4 w-4 shrink-0 text-slate-400 transition-transform"
+                          [class.rotate-180]="setValueFieldDropdown.isOpen"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          stroke-width="2"
+                        >
+                          <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                        </svg>
+                      </button>
+                      @if (setValueFieldDropdown.isOpen) {
+                        <div class="absolute left-0 right-0 top-[calc(100%+4px)] z-[200] max-h-64 overflow-y-auto rounded-[0.85rem] border border-[#BDBDBD] bg-white p-[0.35rem] shadow-[0_16px_32px_-12px_rgba(15,23,42,0.22)]">
+                          <button
+                            type="button"
+                            class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                            (click)="onSetValueFieldChange('')"
+                          >
+                            Select a field
+                          </button>
+                          @for (source of setValueFormFields; track source.id) {
+                            <button
+                              type="button"
+                              class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                              [class.bg-[#f7fee7]]="setValueFieldId === source.id"
+                              [class.font-semibold]="setValueFieldId === source.id"
+                              [class.text-[#3f6212]]="setValueFieldId === source.id"
+                              (click)="onSetValueFieldChange(source.id)"
+                            >
+                              {{ source.label }}
+                            </button>
+                          }
+                        </div>
                       }
-                    </select>
+                    </div>
                   </div>
                 }
 
@@ -1558,17 +1795,58 @@
                   <div class="space-y-3">
                     <div>
                       <label class="mb-1.5 block text-xs font-medium text-gray-600">Source</label>
-                      <select
-                        class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-[#161616] focus:border-[#ff9015] focus:outline-none focus:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
-                        [ngModel]="setValueRelatedSourceFieldId"
-                        (ngModelChange)="onSetValueRelatedSourceChange($event)"
-                        [disabled]="!isFieldEditable"
+                      <div
+                        class="relative w-full"
+                        appDropdownPanel
+                        #setValueRelatedSourceDropdown="dropdownPanel"
+                        dropdownId="condition-set-value-related-source"
+                        dropdownGroup="conditional-logic-modal"
                       >
-                        <option value="">Select source</option>
-                        @for (source of dynamicConditionSourceFields; track source.id) {
-                          <option [value]="source.id">{{ source.label }}</option>
+                        <button
+                          type="button"
+                          class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl border border-[#BDBDBD] bg-white px-[0.85rem] py-[0.7rem] text-left text-sm font-medium leading-5 text-black transition hover:border-gray-300 hover:bg-[#fafafa] focus-visible:border-[#ff9015] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] aria-expanded:border-[#ff9015] aria-expanded:bg-white aria-expanded:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
+                          (click)="setValueRelatedSourceDropdown.toggle($event)"
+                          [disabled]="!isFieldEditable"
+                          [attr.aria-expanded]="setValueRelatedSourceDropdown.isOpen"
+                        >
+                          <span class="truncate" [class.text-slate-400]="!setValueRelatedSourceFieldId">
+                            {{ selectFieldLabel(dynamicConditionSourceFields, setValueRelatedSourceFieldId) || 'Select source' }}
+                          </span>
+                          <svg
+                            class="h-4 w-4 shrink-0 text-slate-400 transition-transform"
+                            [class.rotate-180]="setValueRelatedSourceDropdown.isOpen"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            stroke-width="2"
+                          >
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                          </svg>
+                        </button>
+                        @if (setValueRelatedSourceDropdown.isOpen) {
+                          <div class="absolute left-0 right-0 top-[calc(100%+4px)] z-[200] max-h-64 overflow-y-auto rounded-[0.85rem] border border-[#BDBDBD] bg-white p-[0.35rem] shadow-[0_16px_32px_-12px_rgba(15,23,42,0.22)]">
+                            <button
+                              type="button"
+                              class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                              (click)="onSetValueRelatedSourceChange('')"
+                            >
+                              Select source
+                            </button>
+                            @for (source of dynamicConditionSourceFields; track source.id) {
+                              <button
+                                type="button"
+                                class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                [class.bg-[#f7fee7]]="setValueRelatedSourceFieldId === source.id"
+                                [class.font-semibold]="setValueRelatedSourceFieldId === source.id"
+                                [class.text-[#3f6212]]="setValueRelatedSourceFieldId === source.id"
+                                (click)="onSetValueRelatedSourceChange(source.id)"
+                              >
+                                {{ source.label }}
+                              </button>
+                            }
+                          </div>
                         }
-                      </select>
+                      </div>
                       @if (!dynamicConditionSourceFields.length) {
                         <p class="mt-1 text-[11px] text-gray-400">
                           Add a dynamic Select field (e.g. Items) to use related data.
@@ -1578,17 +1856,58 @@
 
                     <div>
                       <label class="mb-1.5 block text-xs font-medium text-gray-600">Property</label>
-                      <select
-                        class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-[#161616] focus:border-[#ff9015] focus:outline-none focus:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
-                        [ngModel]="setValueRelatedProperty"
-                        (ngModelChange)="onSetValueRelatedPropertyChange($event)"
-                        [disabled]="!isFieldEditable || !setValueRelatedSourceFieldId"
+                      <div
+                        class="relative w-full"
+                        appDropdownPanel
+                        #setValueRelatedPropertyDropdown="dropdownPanel"
+                        dropdownId="condition-set-value-related-property"
+                        dropdownGroup="conditional-logic-modal"
                       >
-                        <option value="">Select property</option>
-                        @for (column of relatedPropertiesFor(setValueRelatedSourceFieldId); track column.id) {
-                          <option [value]="column.id">{{ column.label }}</option>
+                        <button
+                          type="button"
+                          class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl border border-[#BDBDBD] bg-white px-[0.85rem] py-[0.7rem] text-left text-sm font-medium leading-5 text-black transition hover:border-gray-300 hover:bg-[#fafafa] focus-visible:border-[#ff9015] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] aria-expanded:border-[#ff9015] aria-expanded:bg-white aria-expanded:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
+                          (click)="setValueRelatedPropertyDropdown.toggle($event)"
+                          [disabled]="!isFieldEditable || !setValueRelatedSourceFieldId"
+                          [attr.aria-expanded]="setValueRelatedPropertyDropdown.isOpen"
+                        >
+                          <span class="truncate" [class.text-slate-400]="!setValueRelatedProperty">
+                            {{ selectColumnLabel(relatedPropertiesFor(setValueRelatedSourceFieldId), setValueRelatedProperty) || 'Select property' }}
+                          </span>
+                          <svg
+                            class="h-4 w-4 shrink-0 text-slate-400 transition-transform"
+                            [class.rotate-180]="setValueRelatedPropertyDropdown.isOpen"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            stroke-width="2"
+                          >
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                          </svg>
+                        </button>
+                        @if (setValueRelatedPropertyDropdown.isOpen) {
+                          <div class="absolute left-0 right-0 top-[calc(100%+4px)] z-[200] max-h-64 overflow-y-auto rounded-[0.85rem] border border-[#BDBDBD] bg-white p-[0.35rem] shadow-[0_16px_32px_-12px_rgba(15,23,42,0.22)]">
+                            <button
+                              type="button"
+                              class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                              (click)="onSetValueRelatedPropertyChange('')"
+                            >
+                              Select property
+                            </button>
+                            @for (column of relatedPropertiesFor(setValueRelatedSourceFieldId); track column.id) {
+                              <button
+                                type="button"
+                                class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                [class.bg-[#f7fee7]]="setValueRelatedProperty === column.id"
+                                [class.font-semibold]="setValueRelatedProperty === column.id"
+                                [class.text-[#3f6212]]="setValueRelatedProperty === column.id"
+                                (click)="onSetValueRelatedPropertyChange(column.id)"
+                              >
+                                {{ column.label }}
+                              </button>
+                            }
+                          </div>
                         }
-                      </select>
+                      </div>
                       @if (isRelatedPropertiesLoading(setValueRelatedSourceFieldId)) {
                         <p class="mt-1 text-[11px] text-gray-400">Loading properties…</p>
                       }
@@ -1598,23 +1917,58 @@
 
                 @if (setValueSourceKind === 'expression') {
                   <div class="space-y-3">
-                    <div class="space-y-2 rounded-lg border border-gray-200 bg-white px-3 py-3">
+                    <div class="space-y-2 rounded-lg border border-[#BDBDBD] bg-white px-3 py-3">
                       <p class="m-0 text-[11px] font-semibold uppercase tracking-wide text-gray-500">Left</p>
-                      <select
-                        class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm focus:border-[#ff9015] focus:outline-none focus:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100"
-                        [ngModel]="setValueExpressionLeftKind"
-                        (ngModelChange)="onSetValueExpressionSideKindChange('left', $event)"
-                        [disabled]="!isFieldEditable"
+                      <div
+                        class="relative w-full"
+                        appDropdownPanel
+                        #expressionLeftKindDropdown="dropdownPanel"
+                        dropdownId="condition-expression-left-kind"
+                        dropdownGroup="conditional-logic-modal"
                       >
-                        @for (kind of operandSourceKinds('left'); track kind.value) {
-                          <option [value]="kind.value">{{ kind.label }}</option>
+                        <button
+                          type="button"
+                          class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl border border-[#BDBDBD] bg-white px-[0.85rem] py-[0.7rem] text-left text-sm font-medium leading-5 text-black transition hover:border-gray-300 hover:bg-[#fafafa] focus-visible:border-[#ff9015] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] aria-expanded:border-[#ff9015] aria-expanded:bg-white aria-expanded:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
+                          (click)="expressionLeftKindDropdown.toggle($event)"
+                          [disabled]="!isFieldEditable"
+                          [attr.aria-expanded]="expressionLeftKindDropdown.isOpen"
+                        >
+                          <span class="truncate">
+                            {{ selectOptionLabel(operandSourceKinds('left'), setValueExpressionLeftKind) }}
+                          </span>
+                          <svg
+                            class="h-4 w-4 shrink-0 text-slate-400 transition-transform"
+                            [class.rotate-180]="expressionLeftKindDropdown.isOpen"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            stroke-width="2"
+                          >
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                          </svg>
+                        </button>
+                        @if (expressionLeftKindDropdown.isOpen) {
+                          <div class="absolute left-0 right-0 top-[calc(100%+4px)] z-[200] max-h-64 overflow-y-auto rounded-[0.85rem] border border-[#BDBDBD] bg-white p-[0.35rem] shadow-[0_16px_32px_-12px_rgba(15,23,42,0.22)]">
+                            @for (kind of operandSourceKinds('left'); track kind.value) {
+                              <button
+                                type="button"
+                                class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                [class.bg-[#f7fee7]]="setValueExpressionLeftKind === kind.value"
+                                [class.font-semibold]="setValueExpressionLeftKind === kind.value"
+                                [class.text-[#3f6212]]="setValueExpressionLeftKind === kind.value"
+                                (click)="onSetValueExpressionSideKindChange('left', kind.value)"
+                              >
+                                {{ kind.label }}
+                              </button>
+                            }
+                          </div>
                         }
-                      </select>
+                      </div>
 
                       @if (setValueExpressionLeftKind === 'fixed') {
                         <input
                           type="text"
-                          class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm placeholder:text-gray-400 focus:border-[#ff9015] focus:outline-none focus:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100"
+                          class="w-full rounded-lg border border-[#BDBDBD] bg-white px-3 py-2.5 text-sm placeholder:text-gray-400 focus:border-[#ff9015] focus:outline-none focus:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100"
                           [ngModel]="setValueExpressionLeftFixedValue"
                           (ngModelChange)="onSetValueExpressionSideFixedChange('left', $event)"
                           [disabled]="!isFieldEditable"
@@ -1623,76 +1977,269 @@
                       }
 
                       @if (setValueExpressionLeftKind === 'field') {
-                        <select
-                          class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm focus:border-[#ff9015] focus:outline-none focus:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100"
-                          [ngModel]="setValueExpressionLeftFieldId"
-                          (ngModelChange)="onSetValueExpressionSideFieldChange('left', $event)"
-                          [disabled]="!isFieldEditable"
+                        <div
+                          class="relative w-full"
+                          appDropdownPanel
+                          #expressionLeftFieldDropdown="dropdownPanel"
+                          dropdownId="condition-expression-left-field"
+                          dropdownGroup="conditional-logic-modal"
                         >
-                          <option value="">Select a field</option>
-                          @for (source of setValueFormFields; track source.id) {
-                            <option [value]="source.id">{{ source.label }}</option>
+                          <button
+                            type="button"
+                            class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl border border-[#BDBDBD] bg-white px-[0.85rem] py-[0.7rem] text-left text-sm font-medium leading-5 text-black transition hover:border-gray-300 hover:bg-[#fafafa] focus-visible:border-[#ff9015] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] aria-expanded:border-[#ff9015] aria-expanded:bg-white aria-expanded:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
+                            (click)="expressionLeftFieldDropdown.toggle($event)"
+                            [disabled]="!isFieldEditable"
+                            [attr.aria-expanded]="expressionLeftFieldDropdown.isOpen"
+                          >
+                            <span class="truncate" [class.text-slate-400]="!setValueExpressionLeftFieldId">
+                              {{ selectFieldLabel(setValueFormFields, setValueExpressionLeftFieldId) || 'Select a field' }}
+                            </span>
+                            <svg
+                              class="h-4 w-4 shrink-0 text-slate-400 transition-transform"
+                              [class.rotate-180]="expressionLeftFieldDropdown.isOpen"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              stroke-width="2"
+                            >
+                              <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                            </svg>
+                          </button>
+                          @if (expressionLeftFieldDropdown.isOpen) {
+                            <div class="absolute left-0 right-0 top-[calc(100%+4px)] z-[200] max-h-64 overflow-y-auto rounded-[0.85rem] border border-[#BDBDBD] bg-white p-[0.35rem] shadow-[0_16px_32px_-12px_rgba(15,23,42,0.22)]">
+                              <button
+                                type="button"
+                                class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                (click)="onSetValueExpressionSideFieldChange('left', '')"
+                              >
+                                Select a field
+                              </button>
+                              @for (source of setValueFormFields; track source.id) {
+                                <button
+                                  type="button"
+                                  class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                  [class.bg-[#f7fee7]]="setValueExpressionLeftFieldId === source.id"
+                                  [class.font-semibold]="setValueExpressionLeftFieldId === source.id"
+                                  [class.text-[#3f6212]]="setValueExpressionLeftFieldId === source.id"
+                                  (click)="onSetValueExpressionSideFieldChange('left', source.id)"
+                                >
+                                  {{ source.label }}
+                                </button>
+                              }
+                            </div>
                           }
-                        </select>
+                        </div>
                       }
 
                       @if (setValueExpressionLeftKind === 'relatedData') {
-                        <select
-                          class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm focus:border-[#ff9015] focus:outline-none focus:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100"
-                          [ngModel]="setValueExpressionLeftRelatedSourceFieldId"
-                          (ngModelChange)="onSetValueExpressionSideRelatedSourceChange('left', $event)"
-                          [disabled]="!isFieldEditable"
+                        <div
+                          class="relative w-full"
+                          appDropdownPanel
+                          #expressionLeftRelatedSourceDropdown="dropdownPanel"
+                          dropdownId="condition-expression-left-related-source"
+                          dropdownGroup="conditional-logic-modal"
                         >
-                          <option value="">Select source</option>
-                          @for (source of dynamicConditionSourceFields; track source.id) {
-                            <option [value]="source.id">{{ source.label }}</option>
+                          <button
+                            type="button"
+                            class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl border border-[#BDBDBD] bg-white px-[0.85rem] py-[0.7rem] text-left text-sm font-medium leading-5 text-black transition hover:border-gray-300 hover:bg-[#fafafa] focus-visible:border-[#ff9015] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] aria-expanded:border-[#ff9015] aria-expanded:bg-white aria-expanded:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
+                            (click)="expressionLeftRelatedSourceDropdown.toggle($event)"
+                            [disabled]="!isFieldEditable"
+                            [attr.aria-expanded]="expressionLeftRelatedSourceDropdown.isOpen"
+                          >
+                            <span class="truncate" [class.text-slate-400]="!setValueExpressionLeftRelatedSourceFieldId">
+                              {{ selectFieldLabel(dynamicConditionSourceFields, setValueExpressionLeftRelatedSourceFieldId) || 'Select source' }}
+                            </span>
+                            <svg
+                              class="h-4 w-4 shrink-0 text-slate-400 transition-transform"
+                              [class.rotate-180]="expressionLeftRelatedSourceDropdown.isOpen"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              stroke-width="2"
+                            >
+                              <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                            </svg>
+                          </button>
+                          @if (expressionLeftRelatedSourceDropdown.isOpen) {
+                            <div class="absolute left-0 right-0 top-[calc(100%+4px)] z-[200] max-h-64 overflow-y-auto rounded-[0.85rem] border border-[#BDBDBD] bg-white p-[0.35rem] shadow-[0_16px_32px_-12px_rgba(15,23,42,0.22)]">
+                              <button
+                                type="button"
+                                class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                (click)="onSetValueExpressionSideRelatedSourceChange('left', '')"
+                              >
+                                Select source
+                              </button>
+                              @for (source of dynamicConditionSourceFields; track source.id) {
+                                <button
+                                  type="button"
+                                  class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                  [class.bg-[#f7fee7]]="setValueExpressionLeftRelatedSourceFieldId === source.id"
+                                  [class.font-semibold]="setValueExpressionLeftRelatedSourceFieldId === source.id"
+                                  [class.text-[#3f6212]]="setValueExpressionLeftRelatedSourceFieldId === source.id"
+                                  (click)="onSetValueExpressionSideRelatedSourceChange('left', source.id)"
+                                >
+                                  {{ source.label }}
+                                </button>
+                              }
+                            </div>
                           }
-                        </select>
-                        <select
-                          class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm focus:border-[#ff9015] focus:outline-none focus:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100"
-                          [ngModel]="setValueExpressionLeftRelatedProperty"
-                          (ngModelChange)="onSetValueExpressionSideRelatedPropertyChange('left', $event)"
-                          [disabled]="!isFieldEditable || !setValueExpressionLeftRelatedSourceFieldId"
+                        </div>
+                        <div
+                          class="relative w-full"
+                          appDropdownPanel
+                          #expressionLeftRelatedPropertyDropdown="dropdownPanel"
+                          dropdownId="condition-expression-left-related-property"
+                          dropdownGroup="conditional-logic-modal"
                         >
-                          <option value="">Select property</option>
-                          @for (column of relatedPropertiesFor(setValueExpressionLeftRelatedSourceFieldId); track column.id) {
-                            <option [value]="column.id">{{ column.label }}</option>
+                          <button
+                            type="button"
+                            class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl border border-[#BDBDBD] bg-white px-[0.85rem] py-[0.7rem] text-left text-sm font-medium leading-5 text-black transition hover:border-gray-300 hover:bg-[#fafafa] focus-visible:border-[#ff9015] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] aria-expanded:border-[#ff9015] aria-expanded:bg-white aria-expanded:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
+                            (click)="expressionLeftRelatedPropertyDropdown.toggle($event)"
+                            [disabled]="!isFieldEditable || !setValueExpressionLeftRelatedSourceFieldId"
+                            [attr.aria-expanded]="expressionLeftRelatedPropertyDropdown.isOpen"
+                          >
+                            <span class="truncate" [class.text-slate-400]="!setValueExpressionLeftRelatedProperty">
+                              {{ selectColumnLabel(relatedPropertiesFor(setValueExpressionLeftRelatedSourceFieldId), setValueExpressionLeftRelatedProperty) || 'Select property' }}
+                            </span>
+                            <svg
+                              class="h-4 w-4 shrink-0 text-slate-400 transition-transform"
+                              [class.rotate-180]="expressionLeftRelatedPropertyDropdown.isOpen"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              stroke-width="2"
+                            >
+                              <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                            </svg>
+                          </button>
+                          @if (expressionLeftRelatedPropertyDropdown.isOpen) {
+                            <div class="absolute left-0 right-0 top-[calc(100%+4px)] z-[200] max-h-64 overflow-y-auto rounded-[0.85rem] border border-[#BDBDBD] bg-white p-[0.35rem] shadow-[0_16px_32px_-12px_rgba(15,23,42,0.22)]">
+                              <button
+                                type="button"
+                                class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                (click)="onSetValueExpressionSideRelatedPropertyChange('left', '')"
+                              >
+                                Select property
+                              </button>
+                              @for (column of relatedPropertiesFor(setValueExpressionLeftRelatedSourceFieldId); track column.id) {
+                                <button
+                                  type="button"
+                                  class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                  [class.bg-[#f7fee7]]="setValueExpressionLeftRelatedProperty === column.id"
+                                  [class.font-semibold]="setValueExpressionLeftRelatedProperty === column.id"
+                                  [class.text-[#3f6212]]="setValueExpressionLeftRelatedProperty === column.id"
+                                  (click)="onSetValueExpressionSideRelatedPropertyChange('left', column.id)"
+                                >
+                                  {{ column.label }}
+                                </button>
+                              }
+                            </div>
                           }
-                        </select>
+                        </div>
                       }
                     </div>
 
                     <div>
                       <label class="mb-1.5 block text-xs font-medium text-gray-600">Operator</label>
-                      <select
-                        class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm focus:border-[#ff9015] focus:outline-none focus:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100"
-                        [ngModel]="setValueExpressionOp"
-                        (ngModelChange)="onSetValueExpressionOpChange($event)"
-                        [disabled]="!isFieldEditable"
+                      <div
+                        class="relative w-full"
+                        appDropdownPanel
+                        #expressionOpDropdown="dropdownPanel"
+                        dropdownId="condition-expression-op"
+                        dropdownGroup="conditional-logic-modal"
                       >
-                        @for (op of expressionOps; track op.value) {
-                          <option [value]="op.value">{{ op.label }}</option>
+                        <button
+                          type="button"
+                          class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl border border-[#BDBDBD] bg-white px-[0.85rem] py-[0.7rem] text-left text-sm font-medium leading-5 text-black transition hover:border-gray-300 hover:bg-[#fafafa] focus-visible:border-[#ff9015] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] aria-expanded:border-[#ff9015] aria-expanded:bg-white aria-expanded:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
+                          (click)="expressionOpDropdown.toggle($event)"
+                          [disabled]="!isFieldEditable"
+                          [attr.aria-expanded]="expressionOpDropdown.isOpen"
+                        >
+                          <span class="truncate">
+                            {{ selectOptionLabel(expressionOps, setValueExpressionOp) }}
+                          </span>
+                          <svg
+                            class="h-4 w-4 shrink-0 text-slate-400 transition-transform"
+                            [class.rotate-180]="expressionOpDropdown.isOpen"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            stroke-width="2"
+                          >
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                          </svg>
+                        </button>
+                        @if (expressionOpDropdown.isOpen) {
+                          <div class="absolute left-0 right-0 top-[calc(100%+4px)] z-[200] max-h-64 overflow-y-auto rounded-[0.85rem] border border-[#BDBDBD] bg-white p-[0.35rem] shadow-[0_16px_32px_-12px_rgba(15,23,42,0.22)]">
+                            @for (op of expressionOps; track op.value) {
+                              <button
+                                type="button"
+                                class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                [class.bg-[#f7fee7]]="setValueExpressionOp === op.value"
+                                [class.font-semibold]="setValueExpressionOp === op.value"
+                                [class.text-[#3f6212]]="setValueExpressionOp === op.value"
+                                (click)="onSetValueExpressionOpChange(op.value)"
+                              >
+                                {{ op.label }}
+                              </button>
+                            }
+                          </div>
                         }
-                      </select>
+                      </div>
                     </div>
 
-                    <div class="space-y-2 rounded-lg border border-gray-200 bg-white px-3 py-3">
+                    <div class="space-y-2 rounded-lg border border-[#BDBDBD] bg-white px-3 py-3">
                       <p class="m-0 text-[11px] font-semibold uppercase tracking-wide text-gray-500">Right</p>
-                      <select
-                        class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm focus:border-[#ff9015] focus:outline-none focus:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100"
-                        [ngModel]="setValueExpressionRightKind"
-                        (ngModelChange)="onSetValueExpressionSideKindChange('right', $event)"
-                        [disabled]="!isFieldEditable"
+                      <div
+                        class="relative w-full"
+                        appDropdownPanel
+                        #expressionRightKindDropdown="dropdownPanel"
+                        dropdownId="condition-expression-right-kind"
+                        dropdownGroup="conditional-logic-modal"
                       >
-                        @for (kind of operandSourceKinds('right'); track kind.value) {
-                          <option [value]="kind.value">{{ kind.label }}</option>
+                        <button
+                          type="button"
+                          class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl border border-[#BDBDBD] bg-white px-[0.85rem] py-[0.7rem] text-left text-sm font-medium leading-5 text-black transition hover:border-gray-300 hover:bg-[#fafafa] focus-visible:border-[#ff9015] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] aria-expanded:border-[#ff9015] aria-expanded:bg-white aria-expanded:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
+                          (click)="expressionRightKindDropdown.toggle($event)"
+                          [disabled]="!isFieldEditable"
+                          [attr.aria-expanded]="expressionRightKindDropdown.isOpen"
+                        >
+                          <span class="truncate">
+                            {{ selectOptionLabel(operandSourceKinds('right'), setValueExpressionRightKind) }}
+                          </span>
+                          <svg
+                            class="h-4 w-4 shrink-0 text-slate-400 transition-transform"
+                            [class.rotate-180]="expressionRightKindDropdown.isOpen"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            stroke-width="2"
+                          >
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                          </svg>
+                        </button>
+                        @if (expressionRightKindDropdown.isOpen) {
+                          <div class="absolute left-0 right-0 top-[calc(100%+4px)] z-[200] max-h-64 overflow-y-auto rounded-[0.85rem] border border-[#BDBDBD] bg-white p-[0.35rem] shadow-[0_16px_32px_-12px_rgba(15,23,42,0.22)]">
+                            @for (kind of operandSourceKinds('right'); track kind.value) {
+                              <button
+                                type="button"
+                                class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                [class.bg-[#f7fee7]]="setValueExpressionRightKind === kind.value"
+                                [class.font-semibold]="setValueExpressionRightKind === kind.value"
+                                [class.text-[#3f6212]]="setValueExpressionRightKind === kind.value"
+                                (click)="onSetValueExpressionSideKindChange('right', kind.value)"
+                              >
+                                {{ kind.label }}
+                              </button>
+                            }
+                          </div>
                         }
-                      </select>
+                      </div>
 
                       @if (setValueExpressionRightKind === 'fixed') {
                         <input
                           type="text"
-                          class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm placeholder:text-gray-400 focus:border-[#ff9015] focus:outline-none focus:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100"
+                          class="w-full rounded-lg border border-[#BDBDBD] bg-white px-3 py-2.5 text-sm placeholder:text-gray-400 focus:border-[#ff9015] focus:outline-none focus:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100"
                           [ngModel]="setValueExpressionRightFixedValue"
                           (ngModelChange)="onSetValueExpressionSideFixedChange('right', $event)"
                           [disabled]="!isFieldEditable"
@@ -1701,42 +2248,165 @@
                       }
 
                       @if (setValueExpressionRightKind === 'field') {
-                        <select
-                          class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm focus:border-[#ff9015] focus:outline-none focus:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100"
-                          [ngModel]="setValueExpressionRightFieldId"
-                          (ngModelChange)="onSetValueExpressionSideFieldChange('right', $event)"
-                          [disabled]="!isFieldEditable"
+                        <div
+                          class="relative w-full"
+                          appDropdownPanel
+                          #expressionRightFieldDropdown="dropdownPanel"
+                          dropdownId="condition-expression-right-field"
+                          dropdownGroup="conditional-logic-modal"
                         >
-                          <option value="">Select a field</option>
-                          @for (source of setValueFormFields; track source.id) {
-                            <option [value]="source.id">{{ source.label }}</option>
+                          <button
+                            type="button"
+                            class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl border border-[#BDBDBD] bg-white px-[0.85rem] py-[0.7rem] text-left text-sm font-medium leading-5 text-black transition hover:border-gray-300 hover:bg-[#fafafa] focus-visible:border-[#ff9015] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] aria-expanded:border-[#ff9015] aria-expanded:bg-white aria-expanded:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
+                            (click)="expressionRightFieldDropdown.toggle($event)"
+                            [disabled]="!isFieldEditable"
+                            [attr.aria-expanded]="expressionRightFieldDropdown.isOpen"
+                          >
+                            <span class="truncate" [class.text-slate-400]="!setValueExpressionRightFieldId">
+                              {{ selectFieldLabel(setValueFormFields, setValueExpressionRightFieldId) || 'Select a field' }}
+                            </span>
+                            <svg
+                              class="h-4 w-4 shrink-0 text-slate-400 transition-transform"
+                              [class.rotate-180]="expressionRightFieldDropdown.isOpen"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              stroke-width="2"
+                            >
+                              <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                            </svg>
+                          </button>
+                          @if (expressionRightFieldDropdown.isOpen) {
+                            <div class="absolute left-0 right-0 top-[calc(100%+4px)] z-[200] max-h-64 overflow-y-auto rounded-[0.85rem] border border-[#BDBDBD] bg-white p-[0.35rem] shadow-[0_16px_32px_-12px_rgba(15,23,42,0.22)]">
+                              <button
+                                type="button"
+                                class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                (click)="onSetValueExpressionSideFieldChange('right', '')"
+                              >
+                                Select a field
+                              </button>
+                              @for (source of setValueFormFields; track source.id) {
+                                <button
+                                  type="button"
+                                  class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                  [class.bg-[#f7fee7]]="setValueExpressionRightFieldId === source.id"
+                                  [class.font-semibold]="setValueExpressionRightFieldId === source.id"
+                                  [class.text-[#3f6212]]="setValueExpressionRightFieldId === source.id"
+                                  (click)="onSetValueExpressionSideFieldChange('right', source.id)"
+                                >
+                                  {{ source.label }}
+                                </button>
+                              }
+                            </div>
                           }
-                        </select>
+                        </div>
                       }
 
                       @if (setValueExpressionRightKind === 'relatedData') {
-                        <select
-                          class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm focus:border-[#ff9015] focus:outline-none focus:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100"
-                          [ngModel]="setValueExpressionRightRelatedSourceFieldId"
-                          (ngModelChange)="onSetValueExpressionSideRelatedSourceChange('right', $event)"
-                          [disabled]="!isFieldEditable"
+                        <div
+                          class="relative w-full"
+                          appDropdownPanel
+                          #expressionRightRelatedSourceDropdown="dropdownPanel"
+                          dropdownId="condition-expression-right-related-source"
+                          dropdownGroup="conditional-logic-modal"
                         >
-                          <option value="">Select source</option>
-                          @for (source of dynamicConditionSourceFields; track source.id) {
-                            <option [value]="source.id">{{ source.label }}</option>
+                          <button
+                            type="button"
+                            class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl border border-[#BDBDBD] bg-white px-[0.85rem] py-[0.7rem] text-left text-sm font-medium leading-5 text-black transition hover:border-gray-300 hover:bg-[#fafafa] focus-visible:border-[#ff9015] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] aria-expanded:border-[#ff9015] aria-expanded:bg-white aria-expanded:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
+                            (click)="expressionRightRelatedSourceDropdown.toggle($event)"
+                            [disabled]="!isFieldEditable"
+                            [attr.aria-expanded]="expressionRightRelatedSourceDropdown.isOpen"
+                          >
+                            <span class="truncate" [class.text-slate-400]="!setValueExpressionRightRelatedSourceFieldId">
+                              {{ selectFieldLabel(dynamicConditionSourceFields, setValueExpressionRightRelatedSourceFieldId) || 'Select source' }}
+                            </span>
+                            <svg
+                              class="h-4 w-4 shrink-0 text-slate-400 transition-transform"
+                              [class.rotate-180]="expressionRightRelatedSourceDropdown.isOpen"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              stroke-width="2"
+                            >
+                              <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                            </svg>
+                          </button>
+                          @if (expressionRightRelatedSourceDropdown.isOpen) {
+                            <div class="absolute left-0 right-0 top-[calc(100%+4px)] z-[200] max-h-64 overflow-y-auto rounded-[0.85rem] border border-[#BDBDBD] bg-white p-[0.35rem] shadow-[0_16px_32px_-12px_rgba(15,23,42,0.22)]">
+                              <button
+                                type="button"
+                                class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                (click)="onSetValueExpressionSideRelatedSourceChange('right', '')"
+                              >
+                                Select source
+                              </button>
+                              @for (source of dynamicConditionSourceFields; track source.id) {
+                                <button
+                                  type="button"
+                                  class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                  [class.bg-[#f7fee7]]="setValueExpressionRightRelatedSourceFieldId === source.id"
+                                  [class.font-semibold]="setValueExpressionRightRelatedSourceFieldId === source.id"
+                                  [class.text-[#3f6212]]="setValueExpressionRightRelatedSourceFieldId === source.id"
+                                  (click)="onSetValueExpressionSideRelatedSourceChange('right', source.id)"
+                                >
+                                  {{ source.label }}
+                                </button>
+                              }
+                            </div>
                           }
-                        </select>
-                        <select
-                          class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm focus:border-[#ff9015] focus:outline-none focus:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100"
-                          [ngModel]="setValueExpressionRightRelatedProperty"
-                          (ngModelChange)="onSetValueExpressionSideRelatedPropertyChange('right', $event)"
-                          [disabled]="!isFieldEditable || !setValueExpressionRightRelatedSourceFieldId"
+                        </div>
+                        <div
+                          class="relative w-full"
+                          appDropdownPanel
+                          #expressionRightRelatedPropertyDropdown="dropdownPanel"
+                          dropdownId="condition-expression-right-related-property"
+                          dropdownGroup="conditional-logic-modal"
                         >
-                          <option value="">Select property</option>
-                          @for (column of relatedPropertiesFor(setValueExpressionRightRelatedSourceFieldId); track column.id) {
-                            <option [value]="column.id">{{ column.label }}</option>
+                          <button
+                            type="button"
+                            class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl border border-[#BDBDBD] bg-white px-[0.85rem] py-[0.7rem] text-left text-sm font-medium leading-5 text-black transition hover:border-gray-300 hover:bg-[#fafafa] focus-visible:border-[#ff9015] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] aria-expanded:border-[#ff9015] aria-expanded:bg-white aria-expanded:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
+                            (click)="expressionRightRelatedPropertyDropdown.toggle($event)"
+                            [disabled]="!isFieldEditable || !setValueExpressionRightRelatedSourceFieldId"
+                            [attr.aria-expanded]="expressionRightRelatedPropertyDropdown.isOpen"
+                          >
+                            <span class="truncate" [class.text-slate-400]="!setValueExpressionRightRelatedProperty">
+                              {{ selectColumnLabel(relatedPropertiesFor(setValueExpressionRightRelatedSourceFieldId), setValueExpressionRightRelatedProperty) || 'Select property' }}
+                            </span>
+                            <svg
+                              class="h-4 w-4 shrink-0 text-slate-400 transition-transform"
+                              [class.rotate-180]="expressionRightRelatedPropertyDropdown.isOpen"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              stroke-width="2"
+                            >
+                              <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                            </svg>
+                          </button>
+                          @if (expressionRightRelatedPropertyDropdown.isOpen) {
+                            <div class="absolute left-0 right-0 top-[calc(100%+4px)] z-[200] max-h-64 overflow-y-auto rounded-[0.85rem] border border-[#BDBDBD] bg-white p-[0.35rem] shadow-[0_16px_32px_-12px_rgba(15,23,42,0.22)]">
+                              <button
+                                type="button"
+                                class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                (click)="onSetValueExpressionSideRelatedPropertyChange('right', '')"
+                              >
+                                Select property
+                              </button>
+                              @for (column of relatedPropertiesFor(setValueExpressionRightRelatedSourceFieldId); track column.id) {
+                                <button
+                                  type="button"
+                                  class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                  [class.bg-[#f7fee7]]="setValueExpressionRightRelatedProperty === column.id"
+                                  [class.font-semibold]="setValueExpressionRightRelatedProperty === column.id"
+                                  [class.text-[#3f6212]]="setValueExpressionRightRelatedProperty === column.id"
+                                  (click)="onSetValueExpressionSideRelatedPropertyChange('right', column.id)"
+                                >
+                                  {{ column.label }}
+                                </button>
+                              }
+                            </div>
                           }
-                        </select>
+                        </div>
                       }
                     </div>
                   </div>
@@ -1747,10 +2417,10 @@
           </div>
         </div>
 
-        <footer class="flex shrink-0 items-center justify-end gap-2 border-t border-gray-200 px-5 py-4 max-sm:px-4">
+        <footer class="flex shrink-0 items-center justify-end gap-2 border-t border-[#E0E0E0]  px-5 py-4 max-sm:px-4">
           <button
             type="button"
-            class="rounded-lg border border-gray-200 bg-white px-3.5 py-2 text-sm font-medium text-[#161616] transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300"
+            class="rounded-lg border border-[#BDBDBD] bg-white px-3.5 py-2 text-sm font-medium text-[#161616] transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300"
             (click)="closeConditionModal()"
           >
             Cancel

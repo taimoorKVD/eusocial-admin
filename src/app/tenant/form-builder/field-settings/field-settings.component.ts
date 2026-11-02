@@ -1378,6 +1378,34 @@ export class FieldSettingsComponent {
     label: EXPRESSION_OP_LABELS[value],
   }));
 
+  selectOptionLabel(
+    options: ReadonlyArray<{ label: string; value: string | number }>,
+    value: unknown,
+  ): string {
+    const match =
+      options.find(option => option.value === value) ??
+      options.find(option => String(option.value) === String(value));
+    return match?.label ?? '';
+  }
+
+  isSelectOptionSelected(optionValue: unknown, selectedValue: unknown): boolean {
+    return (
+      optionValue === selectedValue ||
+      String(optionValue) === String(selectedValue)
+    );
+  }
+
+  selectFieldLabel(fields: ReadonlyArray<FormField>, fieldId: string): string {
+    return fields.find(field => field.id === fieldId)?.label ?? '';
+  }
+
+  selectColumnLabel(
+    columns: ReadonlyArray<ModuleColumnOption>,
+    columnId: string,
+  ): string {
+    return columns.find(column => column.id === columnId)?.label ?? '';
+  }
+
   get conditionActions(): Array<{ value: ConditionActionType; label: string }> {
     const actions = CONDITION_ACTIONS.map(value => ({
       value,
@@ -1465,6 +1493,7 @@ export class FieldSettingsComponent {
    * Selector stays visible so the target can be changed again.
    */
   onConditionTargetFieldPick(fieldId: string): void {
+    this.overlayService.close();
     const nextId = (fieldId || '').trim();
     if (!nextId || !this.isFieldEditable) {
       return;
@@ -1607,6 +1636,7 @@ export class FieldSettingsComponent {
   }
 
   onConditionSourceChange(fieldId: string): void {
+    this.overlayService.close();
     if (!this._field || !this.isFieldEditable) {
       return;
     }
@@ -1628,6 +1658,7 @@ export class FieldSettingsComponent {
   }
 
   onConditionOperatorChange(operator: ConditionOperator): void {
+    this.overlayService.close();
     if (!this._field || !this.isFieldEditable) {
       return;
     }
@@ -1643,6 +1674,7 @@ export class FieldSettingsComponent {
   }
 
   onConditionValueChange(value: unknown): void {
+    this.overlayService.close();
     if (!this._field || !this.isFieldEditable) {
       return;
     }
@@ -1832,6 +1864,7 @@ export class FieldSettingsComponent {
   }
 
   onSetValueSourceKindChange(kind: ValueSourceKind): void {
+    this.overlayService.close();
     if (!this._field || !this.isFieldEditable || !this.conditionUsesSetValue) {
       return;
     }
@@ -1852,6 +1885,7 @@ export class FieldSettingsComponent {
   }
 
   onSetValueFieldChange(fieldId: string): void {
+    this.overlayService.close();
     if (!this._field || !this.isFieldEditable || !this.conditionUsesSetValue) {
       return;
     }
@@ -1868,6 +1902,7 @@ export class FieldSettingsComponent {
   }
 
   onSetValueRelatedSourceChange(sourceFieldId: string): void {
+    this.overlayService.close();
     if (!this._field || !this.isFieldEditable || !this.conditionUsesSetValue) {
       return;
     }
@@ -1884,6 +1919,7 @@ export class FieldSettingsComponent {
   }
 
   onSetValueRelatedPropertyChange(property: string): void {
+    this.overlayService.close();
     if (!this._field || !this.isFieldEditable || !this.conditionUsesSetValue) {
       return;
     }
@@ -1900,6 +1936,7 @@ export class FieldSettingsComponent {
   }
 
   onSetValueExpressionOpChange(op: ExpressionOp): void {
+    this.overlayService.close();
     if (!this._field || !this.isFieldEditable || !this.conditionUsesSetValue) {
       return;
     }
@@ -1919,6 +1956,7 @@ export class FieldSettingsComponent {
     side: 'left' | 'right',
     kind: ValueSourceKind,
   ): void {
+    this.overlayService.close();
     if (!this._field || !this.isFieldEditable || !this.conditionUsesSetValue) {
       return;
     }
@@ -1941,6 +1979,7 @@ export class FieldSettingsComponent {
   }
 
   onSetValueExpressionSideFieldChange(side: 'left' | 'right', fieldId: string): void {
+    this.overlayService.close();
     if (!this._field || !this.isFieldEditable || !this.conditionUsesSetValue) {
       return;
     }
@@ -1988,6 +2027,7 @@ export class FieldSettingsComponent {
     side: 'left' | 'right',
     sourceFieldId: string,
   ): void {
+    this.overlayService.close();
     if (!this._field || !this.isFieldEditable || !this.conditionUsesSetValue) {
       return;
     }
@@ -2017,6 +2057,7 @@ export class FieldSettingsComponent {
     side: 'left' | 'right',
     property: string,
   ): void {
+    this.overlayService.close();
     if (!this._field || !this.isFieldEditable || !this.conditionUsesSetValue) {
       return;
     }
