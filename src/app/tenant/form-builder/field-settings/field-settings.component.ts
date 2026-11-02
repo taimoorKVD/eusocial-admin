@@ -31,18 +31,22 @@ import {
   getPrimaryActionType,
   getPrimaryPredicate,
   getPrimarySetValueSource,
+  getSelectedActionTypes,
   getValidConditionalSourceFields,
+  hasConditionActionType,
   hasConfiguredSource,
+  hasSetValueAction,
   isCompatibleSetValueSourceField,
+  isConditionActionDisabled,
   normalizeConditionalLogic,
   normalizeValueSource,
   operatorRequiresValue,
   resolveSetValueFieldKind,
   serializeConditionalLogic,
-  setPrimaryActionType,
   setPrimaryPredicate,
   setPrimarySetValueSource,
   supportsSetValueFieldType,
+  toggleConditionAction,
   wouldCreateCircularDependency,
 } from '../../../shared/conditional-logic';
 import { FormField, FieldOption, OptionSource, RangeFieldType, RangeTimeFormat } from '../models/form-field.model';
@@ -1392,7 +1396,10 @@ export class FieldSettingsComponent {
   }
 
   get conditionActionLabel(): string {
-    return CONDITION_ACTION_LABELS[this.conditionAction] ?? this.conditionAction;
+    const types = getSelectedActionTypes(this.conditionEditor);
+    return types
+      .map(type => CONDITION_ACTION_LABELS[type] ?? type)
+      .join(' + ');
   }
 
   get canSaveConditionLogic(): boolean {
@@ -1517,6 +1524,14 @@ export class FieldSettingsComponent {
     return getPrimaryActionType(this.conditionEditor);
   }
 
+  isConditionActionSelected(type: ConditionActionType): boolean {
+    return hasConditionActionType(this.conditionEditor, type);
+  }
+
+  isConditionActionOptionDisabled(type: ConditionActionType): boolean {
+    return isConditionActionDisabled(this.conditionEditor, type);
+  }
+
   get conditionNeedsValue(): boolean {
     return operatorRequiresValue(this.conditionOperator);
   }
@@ -1585,7 +1600,7 @@ export class FieldSettingsComponent {
         : [{ type: 'show' }],
     };
     this._field.condition = this.conditionEditor;
-    if (enabled && getPrimaryActionType(this.conditionEditor) === 'setValue') {
+    if (enabled && hasSetValueAction(this.conditionEditor)) {
       this.prefetchSetValueRelatedProperties();
     }
     this.onChange();
@@ -1642,7 +1657,7 @@ export class FieldSettingsComponent {
       return;
     }
 
-    if (type === this.conditionAction) {
+    if (this.isConditionActionOptionDisabled(type)) {
       return;
     }
 
@@ -1651,10 +1666,18 @@ export class FieldSettingsComponent {
       return;
     }
 
-    this.conditionEditor = setPrimaryActionType(this.conditionEditor, type);
+    const wasSelected = this.isConditionActionSelected(type);
+    if (
+      wasSelected &&
+      getSelectedActionTypes(this.conditionEditor).length <= 1
+    ) {
+      return;
+    }
+
+    this.conditionEditor = toggleConditionAction(this.conditionEditor, type);
     this._field.condition = this.conditionEditor;
 
-    if (type === 'setValue') {
+    if (hasSetValueAction(this.conditionEditor)) {
       this.prefetchSetValueRelatedProperties();
     }
 
@@ -1662,7 +1685,7 @@ export class FieldSettingsComponent {
   }
 
   get conditionUsesSetValue(): boolean {
-    return this.conditionAction === 'setValue';
+    return hasSetValueAction(this.conditionEditor);
   }
 
   get setValueSource(): ValueSource {
@@ -2691,7 +2714,7 @@ export class FieldSettingsComponent {
     this.conditionEditor =
       cloneConditionalLogic(value.condition) ?? createEmptyConditionalLogic();
     this.ensureConditionSourceIsValid(false);
-    if (getPrimaryActionType(this.conditionEditor) === 'setValue') {
+    if (hasSetValueAction(this.conditionEditor)) {
       this.prefetchSetValueRelatedProperties();
     }
   }

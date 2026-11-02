@@ -315,14 +315,14 @@ deleteJob(id: number) {
   const confirmDelete = confirm('Are you sure you want to delete this job position?');
   if (!confirmDelete) return;
 
-  this.isLoading = true;
+  this.deleting = true;
 
   this.tenantJobPosition.deleteJobPosition(id).subscribe({
     next: () => {
 
       this.toastr.success('Job deleted successfully');
 
-      this.isLoading = false;
+      this.deleting = false;
 
       this.bulkSelection.clear();
 
@@ -349,7 +349,7 @@ deleteJob(id: number) {
     },
 
     error: (err) => {
-      this.isLoading = false;
+      this.deleting = false;
       this.toastr.error(err?.error?.message || 'Failed to delete Job');
     }
   });

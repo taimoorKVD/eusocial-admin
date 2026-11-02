@@ -1167,7 +1167,7 @@
   max-height: 85vh;
   width: auto;
   height: auto;
-  border-radius: 0.75rem;
+  border-radius: 1rem; /* match tenant modal radius (rounded-2xl) */
   object-fit: contain;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
 }

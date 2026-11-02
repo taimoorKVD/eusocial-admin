@@ -127,7 +127,7 @@
     (click)="closeEditor()"
   >
     <div
-      class="flex max-h-[min(92vh,52rem)] w-full max-w-[40rem] flex-col rounded-[1.25rem] border border-gray-200 bg-white shadow-[0_24px_48px_-16px_rgba(15,23,42,0.35)] max-sm:max-h-[94vh] max-sm:max-w-full max-sm:rounded-t-[1.1rem] max-sm:rounded-b-xl"
+      class="flex max-h-[min(92vh,52rem)] w-full max-w-[40rem] flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-[0_24px_48px_-16px_rgba(15,23,42,0.35)] max-sm:max-h-[94vh] max-sm:max-w-full"
       [class.logic-anim-modal-in]="!editorClosing"
       [class.logic-anim-modal-out]="editorClosing"
       (click)="$event.stopPropagation()"

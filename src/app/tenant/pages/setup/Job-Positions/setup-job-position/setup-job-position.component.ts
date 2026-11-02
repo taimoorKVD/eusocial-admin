@@ -276,15 +276,13 @@ export class SetupJobPositionComponent {
       return;
     }
 
-    this.isLoading = true;
-
+    // No EU loader on route entry — keep shell visible while details fetch.
     this.tenantJobPosition.getJobPositionById(this.selectedJobId).subscribe({
       next: (res: any) => {
         const job = res?.data ?? res;
         this.jobTitle = job?.name || '';
         this.selectedPermissionIds = this.extractPermissionIdsFromJob(job);
         this.permissionsTouched = false;
-        this.isLoading = false;
 
         // If the user already opened step 2 (or master list is cached), bind now.
         if (this.permissionModules.length) {
@@ -292,7 +290,6 @@ export class SetupJobPositionComponent {
         }
       },
       error: () => {
-        this.isLoading = false;
         this.toastr.error('Failed to load job details');
       },
     });

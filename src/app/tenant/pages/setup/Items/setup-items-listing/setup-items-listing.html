@@ -18,7 +18,7 @@
   (closed)="closeBulkDeleteConfirmModal()"
 ></app-confirm-modal>
 
-@if (loading() || deleting()) {
+@if (deleting()) {
   <app-eu-loader></app-eu-loader>
 }
 
