@@ -1307,11 +1307,11 @@
           <div class="bg-gray-50 px-5 py-4 max-sm:px-4 rounded-lg">
             <div class="flex flex-col items-stretch sm:flex-row sm:items-center">
               <div class="min-w-0 flex-[0.8] rounded-xl border border-dashed border-gray-300 bg-white px-3.5 py-3">
-                <p class="m-0 text-[10px] font-semibold uppercase tracking-wide text-gray-500">Watches this answer</p>
+                <p class="m-0 text-[11px] font-semibold uppercase tracking-wide text-gray-500">Watches this answer</p>
                 <p class="m-0 mt-1 truncate text-sm font-bold text-[#161616]">
                   {{ conditionSourceField?.label || 'No field chosen yet' }}
                 </p>
-                <p class="m-0 mt-0.5 text-xs text-gray-500">
+                <p class="m-0 mt-0.5 text-[15px] text-gray-500">
                   {{ conditionSourceField ? (conditionSourceField.fieldTypeName || conditionSourceField.type || 'Field') : 'Pick one below' }}
                 </p>
               </div>
@@ -1334,7 +1334,7 @@
                   ? 'border-[#ff9015] bg-[#fff7ed]'
                   : 'border-dashed border-gray-300 bg-white'"
               >
-                <p class="m-0 text-[10px] font-semibold uppercase tracking-wide text-gray-500">Changes this field</p>
+                <p class="m-0 text-[11px] font-semibold uppercase tracking-wide text-gray-500">Changes this field</p>
                 @if (conditionModalPickTargetMode && !conditionModalTargetConfirmed) {
                   <p class="m-0 mt-1 text-sm font-bold text-[#161616]">Step 1: choose it below</p>
                   <p class="m-0 mt-0.5 text-xs text-gray-500">The field that will be shown, hidden or required</p>
@@ -1342,7 +1342,7 @@
                   <p class="m-0 mt-1 truncate text-sm font-bold text-[#161616]">
                     {{ field?.label || 'This field' }}
                   </p>
-                  <p class="m-0 mt-0.5 truncate text-xs text-gray-500">
+                  <p class="m-0 mt-0.5 truncate text-[12px] text-gray-500">
                     {{ field?.fieldTypeName || field?.type || 'Field' }}
                   </p>
                 }
