@@ -31,6 +31,10 @@ import { LocationCacheService } from '../../../../../services/location-cache.ser
 import { ToastrService } from 'ngx-toastr';
 import { SharedModule } from '../../../../../shared/shared.module';
 import { TenantFormsService } from '../services/tenant-forms.service';
+import {
+  FormEditorPreviewState,
+  FormPreviewBridgeService,
+} from '../services/form-preview-bridge.service';
 import { FormStorageService } from '../../../../forms/services/form-storage.service';
 import { FormField } from '../../../../form-builder/models/form-field.model';
 import { FIELD_TEMPLATES } from '../../../../form-builder/data/field-templates';
@@ -200,6 +204,7 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
   private readonly route = inject(ActivatedRoute);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly formsService = inject(TenantFormsService);
+  private readonly previewBridge = inject(FormPreviewBridgeService);
   /** Used to open the existing Conditional Logic modal without duplicating it. */
   private readonly fieldSettings = viewChild(FieldSettingsComponent);
   /** Host for Automation Rules editor modal (list chrome hidden). */
@@ -931,12 +936,34 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
     this.formId.set(this.route.snapshot.paramMap.get('id') ?? '');
     this.loadJobPositions();
     this.loadUsers();
-    if (this.formId()) {
-      this.loadTemplate();
-    } else {
+    if (!this.formId()) {
       // Create mode: empty template is the clean baseline (not unsaved).
       this.markBaseline();
+      return;
     }
+
+    const previewState = this.previewBridge.consumeEditorState(this.formId());
+    if (previewState) {
+      this.restorePreviewState(previewState);
+      return;
+    }
+
+    this.loadTemplate();
+  }
+
+  /** Restore the unsaved editor exactly as it was before opening Preview. */
+  private restorePreviewState(state: FormEditorPreviewState): void {
+    this.formName.set(state.formName);
+    this.sections.set(state.sections);
+    this.logicRules.set(state.logicRules);
+    this.applyFrequencyToForm(state.frequencyPayload);
+    this.meta.set(state.meta);
+    this.loadedSchema = null;
+    this.savedSnapshot = state.savedSnapshot;
+    this.baselineReady = state.baselineReady;
+    this.freezeBaseline = state.freezeBaseline;
+    this.currentStep.set(state.currentStep);
+    this.wireRowLocationDependencies();
   }
 
   canDeactivate(): boolean | Promise<boolean> {
@@ -3877,9 +3904,42 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
     }
 
     const id = this.formId();
-    this.router.navigate(['/dynamic-forms', 'preview', id], {
-      queryParams: { returnTo: `/dynamic-forms/edit/${id}` },
+    const payload = this.buildPayload();
+
+    this.previewBridge.setPreview({
+      templateId: Number(id),
+      formName: payload.formName?.trim() || 'Form Template',
+      payload,
     });
+    this.previewBridge.setEditorState({
+      formId: id,
+      formName: this.formName(),
+      sections: this.sections(),
+      meta: this.meta(),
+      logicRules: this.logicRules(),
+      frequencyPayload: this.buildPayload(),
+      savedSnapshot: this.savedSnapshot,
+      baselineReady: this.baselineReady,
+      freezeBaseline: this.freezeBaseline,
+      currentStep: this.currentStep(),
+    });
+
+    // Preview must not trigger the unsaved-changes guard or save the template.
+    this.allowNavigation = true;
+    void this.router
+      .navigate(['/dynamic-forms', 'preview', id], {
+        queryParams: { returnTo: `/dynamic-forms/edit/${id}` },
+      })
+      .then((navigated) => {
+        if (!navigated) {
+          this.allowNavigation = false;
+          this.previewBridge.clear();
+        }
+      })
+      .catch(() => {
+        this.allowNavigation = false;
+        this.previewBridge.clear();
+      });
   }
 
   cancel(): void {

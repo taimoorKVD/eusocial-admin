@@ -13,6 +13,7 @@ import { Subject, takeUntil } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { BillingCycle, MasterPlan } from '../../../interfaces/master-billing';
 import { Tenant } from '../../../interfaces/tenant';
+import { TenantTimezoneOption } from '../../../interfaces/tenant-profile';
 import { MasterPlanService } from '../../../services/master-plan.service';
 import {
   TenantCreatePayload,
@@ -43,6 +44,7 @@ export class TenantForm implements OnInit, OnDestroy {
   countries: SelectOption[] = [];
   states: SelectOption[] = [];
   cities: SelectOption[] = [];
+  timezones: TenantTimezoneOption[] = [];
   plans: MasterPlan[] = [];
 
   readonly baseDomain = environment.baseDomain || 'eusocial.thebetawebsite.com';
@@ -148,6 +150,7 @@ export class TenantForm implements OnInit, OnDestroy {
       ],
       email: ['', [Validators.required, Validators.email]],
       phoneNumber: [''],
+      timezone: [null as string | null, Validators.required],
       description: ['', Validators.maxLength(500)],
       countryId: [null as number | null],
       stateId: [{ value: null as number | null, disabled: true }],
@@ -178,6 +181,17 @@ export class TenantForm implements OnInit, OnDestroy {
       },
       error: (err) =>
         this.toastr.error(this.extractError(err, 'Failed to load countries')),
+    });
+
+    this.tenantService.getTimezones().subscribe({
+      next: (options) => {
+        this.timezones = options;
+        if (!this.timezones.length) {
+          this.toastr.warning('No timezones returned from the server');
+        }
+      },
+      error: (err) =>
+        this.toastr.error(this.extractError(err, 'Failed to load timezones')),
     });
 
     this.planService.getPlans().subscribe({
@@ -243,6 +257,7 @@ export class TenantForm implements OnInit, OnDestroy {
             name: t.name || '',
             email: t.email || '',
             phoneNumber: this.formatPhone(t),
+            timezone: t.timezone || t.time_zone || null,
             description: t.description || '',
             countryId: countryId ?? null,
             stateId: stateId ?? null,
@@ -362,6 +377,17 @@ export class TenantForm implements OnInit, OnDestroy {
     this.form.get(controlName)?.setValue(null);
   }
 
+  onTimezoneClearMouseDown(event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.clearTimezone();
+  }
+
+  clearTimezone(): void {
+    this.form.get('timezone')?.setValue(null);
+    this.form.get('timezone')?.markAsTouched();
+  }
+
   backToList(): void {
     this.router.navigate(['/tenants']);
   }
@@ -376,6 +402,7 @@ export class TenantForm implements OnInit, OnDestroy {
       domain: `${slug}.com`,
       email: String(v.email || '').trim(),
       phoneNumber: String(v.phoneNumber || '').trim() || undefined,
+      timezone: String(v.timezone || '').trim(),
       description: String(v.description || '').trim() || undefined,
       countryId: v.countryId != null ? Number(v.countryId) : null,
       stateId: v.stateId != null ? Number(v.stateId) : null,
@@ -394,6 +421,7 @@ export class TenantForm implements OnInit, OnDestroy {
       name: String(v.name || '').trim(),
       email: String(v.email || '').trim(),
       phoneNumber: String(v.phoneNumber || '').trim() || undefined,
+      timezone: String(v.timezone || '').trim(),
       description: String(v.description || '').trim() || undefined,
       countryId: v.countryId != null ? Number(v.countryId) : null,
       stateId: v.stateId != null ? Number(v.stateId) : null,
