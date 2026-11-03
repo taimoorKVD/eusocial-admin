@@ -94,8 +94,8 @@
               type="button"
               class="inline-flex items-center justify-center transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ff9015]/40 disabled:cursor-not-allowed disabled:opacity-40"
               [ngClass]="hasConditionalLogic(field)
-                ? 'h-7 gap-1.5 rounded-full bg-[#161616] px-2.5 text-white hover:bg-black'
-                : 'h-7 w-7 rounded-full bg-[#D1D5DB] text-white hover:bg-[#9CA3AF]'"
+                ? 'h-7 gap-1.5 rounded-full bg-[#161616] px-[20px] py-[20px] text-white hover:bg-black'
+                : 'h-[35px] w-[35px] rounded-full bg-[#BDBDBD] text-white hover:bg-[#9CA3AF]'"
               [attr.aria-label]="hasConditionalLogic(field) ? 'Edit logic' : 'Conditional logic'"
               [title]="hasConditionalLogic(field) ? 'Edit logic' : 'Conditional logic'"
               [disabled]="interactionsDisabled"
@@ -103,15 +103,15 @@
             >
               <app-logic-map-icon [size]="14"></app-logic-map-icon>
               @if (hasConditionalLogic(field)) {
-                <span class="text-xs font-semibold leading-none">Edit logic</span>
+                <span class="text-sm font-semibold leading-none">Edit logic</span>
               }
             </button>
             <button
               type="button"
-              class="inline-flex h-7 w-7 items-center justify-center rounded-full transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ff9015]/40 disabled:cursor-not-allowed disabled:opacity-40"
+              class="inline-flex h-[35px] w-[35px] items-center justify-center rounded-full transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ff9015]/40 disabled:cursor-not-allowed disabled:opacity-40"
               [ngClass]="hasAutomationRules(field)
-                ? 'bg-[#d4e600] text-[#161616] hover:bg-[#c5d700]'
-                : 'bg-[#D1D5DB] text-white hover:bg-[#9CA3AF]'"
+                ? 'bg-[#D0DD28] text-[#161616] hover:bg-[#c5d700]'
+                : 'bg-[#BDBDBD] text-white hover:bg-[#9CA3AF]'"
               aria-label="Automation Rules"
               title="Automation Rules"
               [disabled]="interactionsDisabled"

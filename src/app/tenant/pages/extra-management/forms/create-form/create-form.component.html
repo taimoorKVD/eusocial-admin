@@ -26,7 +26,7 @@
       <div class="min-w-0 flex-1 overflow-hidden">
         <input
           type="text"
-          class="w-full min-w-0 truncate rounded-md border border-[#FF9015] bg-white px-2.5 py-1.5 text-sm font-semibold leading-snug text-[#161616] outline-none ring-0 focus:border-[#FF9015] focus:ring-2 focus:ring-[#FF9015]/20"
+          class="w-full min-w-0 truncate rounded-md border border-[#FF9015] bg-white px-2.5 py-1.5 text-[16px] font-semibold leading-snug text-[#161616] outline-none ring-0 focus:border-[#FF9015] focus:ring-2 focus:ring-[#FF9015]/20"
           [ngModel]="formName()"
           (ngModelChange)="formName.set($event)"
           placeholder="Untitled form"
@@ -42,7 +42,7 @@
     >
       <button
         type="button"
-        class="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-[#E5E7EB] bg-white px-2 py-1.5 text-sm font-semibold text-[#161616] transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 sm:gap-2 sm:px-3"
+        class="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-[#E5E7EB] bg-white px-[16px] py-[10px] text-sm font-semibold text-[#161616] transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 sm:gap-2 sm:px-3"
         (click)="openLogicOverview('list')"
       >
         <span class="inline-flex items-center gap-1 text-[#161616]" aria-hidden="true">
@@ -60,7 +60,7 @@
       </button>
       <button
         type="button"
-        class="inline-flex shrink-0 items-center justify-center rounded-lg border border-[#E5E7EB] bg-white px-2.5 py-1.5 text-sm font-semibold text-[#161616] transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 disabled:cursor-not-allowed disabled:opacity-50 sm:px-3"
+        class="inline-flex shrink-0 items-center justify-center rounded-lg border border-[#E5E7EB] bg-white px-2.5 px-[16px] py-[10px] text-sm font-semibold text-[#161616] transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 disabled:cursor-not-allowed disabled:opacity-50 sm:px-3"
         [disabled]="!canSaveAsDraft()"
         title="Save current progress as a draft"
         (click)="saveAsDraft()"
@@ -74,7 +74,7 @@
       @if (isEditing()) {
         <button
           type="button"
-          class="inline-flex shrink-0 items-center justify-center rounded-lg border border-[#E5E7EB] bg-white px-2.5 py-1.5 text-sm font-medium text-[#6B7280] transition hover:bg-gray-50 hover:text-[#161616] focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 disabled:cursor-not-allowed disabled:opacity-50 sm:px-3"
+          class="inline-flex shrink-0 items-center justify-center rounded-lg border border-[#E5E7EB] bg-white px-[16px] py-[10px] text-sm font-medium text-[#6B7280] transition hover:bg-gray-50 hover:text-[#161616] focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 disabled:cursor-not-allowed disabled:opacity-50 sm:px-3"
           [attr.title]="'Preview form template'"
           (click)="openTemplatePreview()"
         >
@@ -84,7 +84,7 @@
       @if (isEditing() && !isLastStep()) {
         <button
           type="button"
-          class="inline-flex shrink-0 items-center justify-center rounded-lg border border-[#E5E7EB] bg-white px-2.5 py-1.5 text-sm font-semibold text-[#161616] transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 disabled:cursor-not-allowed disabled:opacity-50 sm:px-3"
+          class="inline-flex shrink-0 items-center justify-center rounded-lg border border-[#E5E7EB] bg-white px-2.5 px-[16px] py-[10px] text-sm font-semibold text-[#161616] transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 disabled:cursor-not-allowed disabled:opacity-50 sm:px-3"
           [disabled]="!canUpdateExistingTemplate()"
           title="Save changes without continuing"
           (click)="updateExistingTemplate()"
@@ -98,7 +98,7 @@
       }
       <button
         type="button"
-        class="inline-flex min-w-0 flex-1 items-center justify-center rounded-lg px-3 py-1.5 text-sm font-bold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e600]/50 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none sm:px-3.5"
+        class=" text-[#3D3D3D] inline-flex min-w-0 flex-1 items-center justify-center rounded-lg px-[16px] py-[10px] text-sm font-bold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e600]/50 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none sm:px-3.5"
         [class.bg-[#E5E7EB]]="!canSaveAndContinue()"
         [class.text-[#9CA3AF]]="!canSaveAndContinue()"
         [class.bg-[#d4e600]]="canSaveAndContinue()"
@@ -123,28 +123,28 @@
       aria-label="Form wizard steps"
     >
       <div
-        class="inline-flex max-w-full items-center gap-0.5 overflow-x-auto rounded-full bg-[#F3F4F6] p-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        class="inline-flex max-w-full items-center gap-0.5 overflow-x-auto rounded-lg bg-[#F4F4F4] p-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         role="group"
       >
         @for (step of steps; track step.number) {
           <button
             type="button"
-            class="inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF9015]/30 disabled:cursor-default sm:gap-2 sm:px-2.5 md:px-3"
+            class="inline-flex shrink-0 items-center gap-1.5 rounded-lg px-[16px] py-[10px] text-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF9015]/30 disabled:cursor-default sm:gap-2 sm:px-2.5 md:px-3"
             [class.bg-white]="isStepActive(step.number)"
             [class.shadow-sm]="isStepActive(step.number)"
             [class.font-semibold]="isStepActive(step.number)"
             [class.text-[#161616]]="isStepActive(step.number)"
-            [class.text-[#9CA3AF]]="!isStepActive(step.number)"
+            [class.text-[#5E5E5E]]="!isStepActive(step.number)"
             [class.font-medium]="!isStepActive(step.number)"
             [disabled]="step.number > currentStep()"
             (click)="goToStep(step.number)"
           >
             <span
-              class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold leading-none"
+              class="inline-flex h-[25px] w-[25px] shrink-0 items-center justify-center rounded-full text-[11px] font-bold leading-none"
               [ngClass]="{
                 'bg-[#FF9015] text-white': isStepActive(step.number),
                 'bg-[#161616] text-white': isStepCompleted(step.number) && !isStepActive(step.number),
-                'border border-[#D1D5DB] bg-white text-[#9CA3AF]': !isStepActive(step.number) && !isStepCompleted(step.number)
+                'border border-[#D1D5DB]  text-[#9CA3AF]': !isStepActive(step.number) && !isStepCompleted(step.number)
               }"
             >
               @if (isStepCompleted(step.number) && !isStepActive(step.number)) {
@@ -733,13 +733,13 @@
                         <circle cx="11" cy="12" r="1.25" />
                       </svg>
                     </span>
-                    <h3 class="m-0 min-w-0 flex-1 truncate text-sm font-semibold text-[#161616] sm:text-base">
+                    <h3 class="m-0 min-w-0 flex-1 truncate text-[16px] font-semibold text-[#161616] sm:text-base">
                       {{ customSection.name }}
                     </h3>
                     <div class="flex shrink-0 items-center gap-0.5">
                       <button
                         type="button"
-                        class="rounded-md p-1.5 text-[#6B7280] transition hover:bg-[#FFF5EB] hover:text-[#FF9015] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF9015]/35"
+                        class="rounded-md p-1.5 text-[#000000] transition hover:bg-[#FFF5EB] hover:text-[#FF9015] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF9015]/35"
                         aria-label="Rename section"
                         title="Rename"
                         (click)="openRenameSectionDialog(customSection)"
@@ -751,7 +751,7 @@
                       </button>
                       <button
                         type="button"
-                        class="rounded-md p-1.5 text-[#6B7280] transition hover:bg-gray-100 hover:text-[#161616] focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300"
+                        class="rounded-md p-1.5 text-[#000000] transition hover:bg-gray-100 hover:text-[#161616] focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300"
                         aria-label="Duplicate section"
                         title="Duplicate"
                         (click)="duplicateSection(customSection)"
@@ -763,7 +763,7 @@
                       </button>
                       <button
                         type="button"
-                        class="rounded-md p-1.5 text-[#6B7280] transition hover:bg-red-50 hover:text-red-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
+                        class="rounded-md p-1.5 text-[#000000] transition hover:bg-red-50 hover:text-red-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
                         aria-label="Remove section"
                         title="Delete"
                         (click)="requestRemoveSection(customSection)"
@@ -775,7 +775,7 @@
                       </button>
                       <button
                         type="button"
-                        class="rounded-md p-1.5 text-[#6B7280] transition hover:bg-gray-100 hover:text-[#161616] focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300"
+                        class="rounded-md p-1.5 text-[#000000] transition hover:bg-gray-100 hover:text-[#161616] focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300"
                         [attr.aria-expanded]="!sectionCollapsed"
                         [attr.aria-label]="sectionCollapsed ? 'Expand section' : 'Collapse section'"
                         [attr.title]="sectionCollapsed ? 'Expand' : 'Collapse'"
@@ -924,7 +924,7 @@
 
       <!-- Right: palette / field settings -->
       <aside
-        class="flex w-full shrink-0 flex-col border-t border-[#E5E7EB] bg-[#F4F4F4] lg:w-[min(16rem,24%)] lg:border-l lg:border-t-0"
+        class="flex w-full shrink-0 flex-col border-t border-[#E5E7EB] bg-[#F4F4F4] lg:w-[min(20rem,26%)] lg:border-l lg:border-t-0"
         aria-label="Field palette and settings"
       >
         <nav
@@ -950,8 +950,8 @@
                 title="Close"
                 (click)="showBuilderPalette()"
               >
-                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                 <svg width="11" height="11" viewBox="0 0 11 11" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M9.75 0.75L5.25 5.25M5.25 5.25L0.75 9.75M5.25 5.25L0.75 0.75M5.25 5.25L9.75 9.75" stroke-width="1.5" stroke-linecap="round" stroke="black"/>
                 </svg>
               </button>
             </div>
