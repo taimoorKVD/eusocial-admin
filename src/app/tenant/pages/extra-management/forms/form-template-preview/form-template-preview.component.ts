@@ -88,7 +88,22 @@ export class FormTemplatePreviewComponent implements OnInit {
       });
 
     const idParam = this.route.snapshot.paramMap.get('id');
-    const templateId = idParam ? Number(idParam) : NaN;
+
+    if (!idParam) {
+      const createPreview = this.previewBridge.consumeCreatePreview();
+      if (createPreview) {
+        this.loadLivePreview(createPreview.formName, createPreview.payload);
+        return;
+      }
+
+      this.loading.set(false);
+      this.errorMessage.set(
+        'Form template preview is unavailable. Return to Create Template and try again.',
+      );
+      return;
+    }
+
+    const templateId = Number(idParam);
 
     if (!Number.isFinite(templateId) || templateId <= 0) {
       this.loading.set(false);

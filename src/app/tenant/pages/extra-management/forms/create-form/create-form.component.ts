@@ -945,6 +945,12 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
     this.loadJobPositions();
     this.loadUsers();
     if (!this.formId()) {
+      const previewState = this.previewBridge.consumeEditorState('');
+      if (previewState) {
+        this.restorePreviewState(previewState);
+        return;
+      }
+
       // Create mode: empty template is the clean baseline (not unsaved).
       this.markBaseline();
       return;
@@ -3895,24 +3901,49 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
     return section as CustomFormSection;
   }
 
-  /** Preview requires a persisted template id (same as listing Preview action). */
-  canPreviewTemplate(): boolean {
-    const id = Number(this.formId());
-    return Number.isFinite(id) && id > 0;
-  }
-
   /**
    * Open the shared Form Template preview page (FormTemplatePreviewComponent).
-   * Unsaved create drafts have no id — do not navigate or auto-save.
+   * Create mode renders the in-memory schema without saving or calling the preview API.
    */
   openTemplatePreview(): void {
-    if (!this.canPreviewTemplate()) {
-      this.toastr.info('Save the form first to preview it.');
-      return;
-    }
-
     const id = this.formId();
     const payload = this.buildPayload();
+
+    if (!id) {
+      this.previewBridge.setCreatePreview({
+        formName: payload.formName?.trim() || 'Form Template',
+        payload,
+      });
+      this.previewBridge.setEditorState({
+        formId: '',
+        formName: this.formName(),
+        sections: this.sections(),
+        meta: this.meta(),
+        logicRules: this.logicRules(),
+        frequencyPayload: this.buildPayload(),
+        savedSnapshot: this.savedSnapshot,
+        baselineReady: this.baselineReady,
+        freezeBaseline: this.freezeBaseline,
+        currentStep: this.currentStep(),
+      });
+
+      this.allowNavigation = true;
+      void this.router
+        .navigate(['/dynamic-forms', 'preview'], {
+          queryParams: { returnTo: '/dynamic-forms/create' },
+        })
+        .then((navigated) => {
+          if (!navigated) {
+            this.allowNavigation = false;
+            this.previewBridge.clear();
+          }
+        })
+        .catch(() => {
+          this.allowNavigation = false;
+          this.previewBridge.clear();
+        });
+      return;
+    }
 
     this.previewBridge.setPreview({
       templateId: Number(id),
