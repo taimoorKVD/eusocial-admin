@@ -48,6 +48,37 @@
         </div>
 
         <div class="field">
+          <label>Timezone <span>*</span></label>
+          <ng-select
+            class="tenant-ng-select"
+            formControlName="timezone"
+            [items]="timezones"
+            bindLabel="label"
+            bindValue="name"
+            placeholder="Select timezone"
+            [searchable]="true"
+            [clearable]="true"
+            appendTo="body"
+            notFoundText="No timezones found"
+            (clear)="clearTimezone()"
+          >
+            <ng-template ng-clearbutton-tmp>
+              <span
+                class="ng-clear-wrapper"
+                role="button"
+                title="Clear"
+                (mousedown)="onTimezoneClearMouseDown($event)"
+              >
+                <span class="ng-clear" aria-hidden="true">×</span>
+              </span>
+            </ng-template>
+          </ng-select>
+          <small class="error" *ngIf="f['timezone'].touched && f['timezone'].errors?.['required']">
+            Timezone is required.
+          </small>
+        </div>
+
+        <div class="field">
           <label>Description</label>
           <textarea rows="4" formControlName="description" maxlength="500" placeholder="Short description of the organization"></textarea>
           <small class="counter">{{ descriptionCount }}/500</small>
