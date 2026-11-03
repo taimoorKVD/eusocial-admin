@@ -21,6 +21,12 @@ export const DYNAMIC_FORMS_ROUTES: Routes = [
     data: { permission: PERMISSIONS.DATA_COLLECTION.CREATE_TEMPLATE },
   },
   {
+    path: 'preview',
+    component: FormTemplatePreviewComponent,
+    canActivate: [permissionGuard],
+    data: { permission: PERMISSIONS.DATA_COLLECTION.CREATE_TEMPLATE },
+  },
+  {
     path: 'preview/:id',
     component: FormTemplatePreviewComponent,
     canActivate: [permissionGuard],

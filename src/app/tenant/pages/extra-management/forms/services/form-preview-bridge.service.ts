@@ -12,6 +12,11 @@ export interface FormPreviewPayload {
   payload: DynamicFormPayload;
 }
 
+export interface FormCreatePreviewPayload {
+  formName: string;
+  payload: DynamicFormPayload;
+}
+
 export interface FormEditorPreviewState {
   formId: string;
   formName: string;
@@ -34,10 +39,21 @@ export interface FormEditorPreviewState {
 })
 export class FormPreviewBridgeService {
   private preview: FormPreviewPayload | null = null;
+  private createPreview: FormCreatePreviewPayload | null = null;
   private editorState: FormEditorPreviewState | null = null;
 
   setPreview(preview: FormPreviewPayload): void {
     this.preview = preview;
+  }
+
+  setCreatePreview(preview: FormCreatePreviewPayload): void {
+    this.createPreview = preview;
+  }
+
+  consumeCreatePreview(): FormCreatePreviewPayload | null {
+    const preview = this.createPreview;
+    this.createPreview = null;
+    return preview;
   }
 
   consumePreview(templateId: number): FormPreviewPayload | null {
@@ -64,6 +80,7 @@ export class FormPreviewBridgeService {
 
   clear(): void {
     this.preview = null;
+    this.createPreview = null;
     this.editorState = null;
   }
 }
