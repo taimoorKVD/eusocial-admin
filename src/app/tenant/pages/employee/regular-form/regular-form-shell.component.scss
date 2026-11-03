@@ -739,8 +739,24 @@
   width: 100%;
 }
 
+/* Desktop has no frame override, so the base Tailwind md:grid-cols-2 rule
+ * wins over md:grid-cols-12 and collapses Width-in-row. Restore the 12-col
+ * grid for desktop only; tablet/phone keep their explicit frame overrides. */
+@media (min-width: 768px) {
+  .regular-form-shell__content--desktop ::ng-deep .dynamic-form > .grid {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .regular-form-shell__content:not(.regular-form-shell__content--tablet):not(.regular-form-shell__content--phone)
+    ::ng-deep .dynamic-form > .grid {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+}
+
 /* Device frames constrain width — force grid columns by frame, not viewport.
- * Desktop/tablet use the same 12-col Width-in-row grid as the live form. */
+ * Tablet/phone keep their explicit 12-col / 1-col overrides. */
 .regular-form-shell__device--tablet ::ng-deep .dynamic-form > .grid {
   grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
 }
