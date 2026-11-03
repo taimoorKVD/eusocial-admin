@@ -197,11 +197,11 @@
             </p>
           </div>
           <div class="flex shrink-0 items-center gap-2">
-            <div class="inline-flex max-w-full flex-wrap items-center gap-1.5 text-xs font-semibold">
+            <div class="inline-flex max-w-full p-1 flex-wrap items-center gap-1.5 text-[14px] font-semibold bg-gray-200 rounded-lg">
               <button
                 type="button"
-                class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 transition"
-                [ngClass]="logicOverviewTab() === 'logicMap' ? 'border-[#161616] bg-[#161616] text-white' : 'border-[#E5E7EB] bg-white text-[#4B5563] hover:border-[#D1D5DB] hover:text-[#161616]'"
+                class="inline-flex items-center gap-1.5 px-3 py-2 transition hover:bg-white hover:text-[#161616] rounded-lg"
+                [ngClass]="logicOverviewTab() === 'logicMap' ? 'border-[#161616] bg-[#161616] text-white font-normal' : 'border-[#E5E7EB] text-[#3D3D3D] hover:border-[#D1D5DB] hover:text-[#161616]'"
                 (click)="setLogicOverviewTab('logicMap')"
               >
                 <app-logic-map-icon></app-logic-map-icon>
@@ -209,8 +209,8 @@
               </button>
               <button
                 type="button"
-                class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 transition"
-                [ngClass]="logicOverviewTab() === 'automationMap' ? 'border-[#d4e600] bg-[#d4e600] text-[#161616]' : 'border-[#E5E7EB] bg-white text-[#4B5563] hover:border-[#D1D5DB] hover:text-[#161616]'"
+                class="inline-flex items-center gap-1.5 px-3 py-2 transition hover:bg-white hover:text-[#161616] rounded-lg"
+                [ngClass]="logicOverviewTab() === 'automationMap' ? 'border-[#d4e600] bg-[#D0DD28] text-[#161616] font-normal' : 'border-[#E5E7EB] text-[#3D3D3D] hover:border-[#D1D5DB] hover:text-[#161616]'"
                 (click)="setLogicOverviewTab('automationMap')"
               >
                 <app-automation-rule-icon></app-automation-rule-icon>
@@ -218,8 +218,8 @@
               </button>
               <button
                 type="button"
-                class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 transition"
-                [ngClass]="logicOverviewTab() === 'list' ? 'border-[#E5E7EB] bg-[#F3F4F6] text-[#161616]' : 'border-[#E5E7EB] bg-white text-[#4B5563] hover:border-[#D1D5DB] hover:text-[#161616]'"
+                class="inline-flex items-center gap-1.5 px-3 py-2 transition hover:bg-white hover:text-[#161616] rounded-lg"
+                [ngClass]="logicOverviewTab() === 'list' ? 'border-[#E5E7EB] bg-white text-[#161616] font-normal' : 'border-[#E5E7EB] text-[#3D3D3D] hover:border-[#D1D5DB] hover:text-[#161616]'"
                 (click)="setLogicOverviewTab('list')"
               >
                 <svg class="h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -361,7 +361,7 @@
 
                 <button
                   type="button"
-                  class="inline-flex items-center gap-1.5 rounded-lg bg-[#d4e600] px-3.5 py-2 text-sm font-semibold text-[#161616] hover:bg-[#c5d700]"
+                  class="inline-flex items-center gap-1.5 rounded-lg bg-[#D0DD28] px-3.5 py-2 text-sm font-semibold text-[#161616] hover:bg-[#c5d700]"
                   (click)="onOverviewAddAutomation()"
                 >
                   <span aria-hidden="true">+</span> New automation
