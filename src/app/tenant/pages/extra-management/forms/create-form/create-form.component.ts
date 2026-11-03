@@ -784,8 +784,16 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
           altInput: true,
           altFormat: 'F j, Y',
           allowInput: false,
+          allowInvalidPreload: true,
           minDate: 'today',
           defaultDate: this.frequencyForm.controls.date.value || undefined,
+          onOpen: (_selectedDates, _dateStr, instance) => {
+            const savedDate = this.frequencyForm.controls.date.value;
+            const today = instance.formatDate(new Date(), 'Y-m-d');
+            if (savedDate && savedDate < today) {
+              instance.jumpToDate(today);
+            }
+          },
           onChange: (_selectedDates, dateStr) => {
             this.frequencyForm.controls.date.setValue(dateStr || null, { emitEvent: true });
           },
