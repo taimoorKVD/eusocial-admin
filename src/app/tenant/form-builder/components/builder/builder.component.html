@@ -90,46 +90,36 @@
         </span>
         <span class="palette-item__icon" aria-hidden="true">
           <ng-container [ngSwitch]="row.field.type">
-            <svg *ngSwitchCase="'text'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h10M4 18h7" />
+            <svg *ngSwitchCase="'text'" class="h-5 w-5" viewBox="0 0 12 5" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M0.666748 0.666656H11.3334M0.666748 3.99999H7.33342" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round" stroke="#3D3D3D"/>
             </svg>
             <svg *ngSwitchCase="'email'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
               <path stroke-linecap="round" stroke-linejoin="round"
                 d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15A2.25 2.25 0 0 1 2.25 17.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L2.82 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
             </svg>
-            <svg *ngSwitchCase="'number'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 6.75h15v10.5h-15V6.75Z" />
-              <path stroke-linecap="round" stroke-linejoin="round"
-                d="M8.25 9.75h.008v.008H8.25V9.75Zm0 4.5h.008v.008H8.25v-.008Zm4.5-4.5h.008v.008h-.008V9.75Zm0 4.5h.008v.008h-.008v-.008Zm4.5-4.5h.008v.008H17.25V9.75Zm0 4.5h.008v.008H17.25v-.008Z" />
+            <svg *ngSwitchCase="'number'" class="h-5 w-5" viewBox="0 0 12 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M0.666748 4.66672H4.2223M4.2223 4.66672H8.2223M4.2223 4.66672L4.66675 0.666718M4.2223 4.66672L3.77786 8.66672M8.2223 4.66672H11.3334M8.2223 4.66672L8.66675 0.666718M8.2223 4.66672L7.77786 8.66672M0.666748 8.66672H3.77786M3.77786 8.66672H7.77786M3.77786 8.66672L3.33341 12.6667M7.77786 8.66672H11.3334M7.77786 8.66672L7.33342 12.6667" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round" stroke="#3D3D3D"/>
             </svg>
             <svg *ngSwitchCase="'textarea'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
               <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h10.5" />
             </svg>
-            <svg *ngSwitchCase="'select'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-              <path stroke-linecap="round" stroke-linejoin="round"
-                d="M8.25 6.75h12M8.25 12h12M8.25 17.25h12M3.75 6.75h.007v.008H3.75V6.75Zm0 5.25h.007v.008H3.75v-.008Zm0 5.25h.007v.008H3.75v-.008Z" />
+            <svg *ngSwitchCase="'select'" class="h-5 w-5" viewBox="0 0 14 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M5.19727 7.42252L6.9297 9.15495L8.66212 7.42252M2.88737 3.95767H10.972C11.2783 3.95767 11.5721 4.07935 11.7887 4.29595C12.0053 4.51254 12.127 4.80631 12.127 5.11262V10.8874C12.127 11.1937 12.0053 11.4875 11.7887 11.704C11.5721 11.9206 11.2783 12.0423 10.972 12.0423H2.88737C2.58106 12.0423 2.28729 11.9206 2.0707 11.704C1.8541 11.4875 1.73242 11.1937 1.73242 10.8874V5.11262C1.73242 4.80631 1.8541 4.51254 2.0707 4.29595C2.28729 4.07935 2.58106 3.95767 2.88737 3.95767Z" stroke-width="1.155" stroke-linecap="round" stroke-linejoin="round" stroke="#3D3D3D"/>
             </svg>
-            <svg *ngSwitchCase="'radio'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-              <path stroke-linecap="round" stroke-linejoin="round"
-                d="M12 12a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5Z" />
+            <svg *ngSwitchCase="'radio'" class="h-5 w-5" viewBox="0 0 11 11" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M5.19533 0.519592C4.5813 0.519592 3.97327 0.640535 3.40598 0.875516C2.83869 1.1105 2.32323 1.45491 1.88904 1.8891C1.45485 2.32329 1.11044 2.83875 0.875455 3.40604C0.640474 3.97334 0.519531 4.58136 0.519531 5.19539C0.519531 5.80943 0.640474 6.41745 0.875455 6.98474C1.11044 7.55204 1.45485 8.06749 1.88904 8.50168C2.32323 8.93587 2.83869 9.28029 3.40598 9.51527C3.97327 9.75025 4.5813 9.87119 5.19533 9.87119C6.43543 9.87119 7.62474 9.37856 8.50162 8.50168C9.3785 7.6248 9.87113 6.43549 9.87113 5.19539C9.87113 3.95529 9.3785 2.76598 8.50162 1.8891C7.62474 1.01222 6.43543 0.519592 5.19533 0.519592ZM5.19533 3.63679C4.78196 3.63679 4.38553 3.801 4.09323 4.0933C3.80094 4.38559 3.63673 4.78203 3.63673 5.19539C3.63673 5.60876 3.80094 6.00519 4.09323 6.29749C4.38553 6.58978 4.78196 6.75399 5.19533 6.75399C5.6087 6.75399 6.00513 6.58978 6.29743 6.29749C6.58972 6.00519 6.75393 5.60876 6.75393 5.19539C6.75393 4.78203 6.58972 4.38559 6.29743 4.0933C6.00513 3.801 5.6087 3.63679 5.19533 3.63679Z" stroke-width="1.03917" stroke-linecap="round" stroke-linejoin="round" stroke="#3D3D3D"/>
             </svg>
-            <svg *ngSwitchCase="'checkbox'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 6.75h13.5v10.5H5.25V6.75Z" />
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75" />
+            <svg *ngSwitchCase="'checkbox'" class="h-5 w-5" viewBox="0 0 2 2" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M0.547559 0.912498L0.821309 1.18625L1.27756 0.638748M0.365059 0.0912476H1.46006C1.53266 0.0912476 1.60229 0.120089 1.65363 0.171427C1.70497 0.222765 1.73381 0.292395 1.73381 0.364998V1.46C1.73381 1.5326 1.70497 1.60223 1.65363 1.65357C1.60229 1.70491 1.53266 1.73375 1.46006 1.73375H0.365059C0.292456 1.73375 0.222826 1.70491 0.171488 1.65357C0.12015 1.60223 0.0913086 1.5326 0.0913086 1.46V0.364998C0.0913086 0.292395 0.12015 0.222765 0.171488 0.171427C0.222826 0.120089 0.292456 0.0912476 0.365059 0.0912476Z" stroke-width="0.1825" stroke-linecap="round" stroke-linejoin="round" stroke="#3D3D3D"/>
             </svg>
-            <svg *ngSwitchCase="'date'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3.75 8.25h16.5M4.5 6.75h15A1.5 1.5 0 0 1 21 8.25v10.5A1.5 1.5 0 0 1 19.5 20.25h-15A1.5 1.5 0 0 1 3 18.75V8.25A1.5 1.5 0 0 1 4.5 6.75Z" />
-              <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 12h.008v.008H8.25V12Zm3.75 0h.008v.008H12V12Zm3.75 0h.008v.008H15.75V12Zm-7.5 3.75h.008v.008H8.25v-.008Zm3.75 0h.008v.008H12v-.008Z" />
+            <svg *ngSwitchCase="'date'" class="h-5 w-5" viewBox="0 0 2 2" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M0.547559 0.912498L0.821309 1.18625L1.27756 0.638748M0.365059 0.0912476H1.46006C1.53266 0.0912476 1.60229 0.120089 1.65363 0.171427C1.70497 0.222765 1.73381 0.292395 1.73381 0.364998V1.46C1.73381 1.5326 1.70497 1.60223 1.65363 1.65357C1.60229 1.70491 1.53266 1.73375 1.46006 1.73375H0.365059C0.292456 1.73375 0.222826 1.70491 0.171488 1.65357C0.12015 1.60223 0.0913086 1.5326 0.0913086 1.46V0.364998C0.0913086 0.292395 0.12015 0.222765 0.171488 0.171427C0.222826 0.120089 0.292456 0.0912476 0.365059 0.0912476Z" stroke-width="0.1825" stroke-linecap="round" stroke-linejoin="round" stroke="#3D3D3D"/>
             </svg>
-            <svg *ngSwitchCase="'image'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-              <path stroke-linecap="round" stroke-linejoin="round"
-                d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0 0 22.5 18.75V5.25A2.25 2.25 0 0 0 20.25 3H3.75A2.25 2.25 0 0 0 1.5 5.25v13.5A2.25 2.25 0 0 0 3.75 21Z" />
+            <svg *ngSwitchCase="'image'" class="h-5 w-5" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M14 10.6667V4.00002C14 3.6464 13.8595 3.30726 13.6095 3.05721C13.3594 2.80716 13.0203 2.66669 12.6667 2.66669H3.33333C2.97971 2.66669 2.64057 2.80716 2.39052 3.05721C2.14048 3.30726 2 3.6464 2 4.00002V12C2 12.3536 2.14048 12.6928 2.39052 12.9428C2.64057 13.1929 2.97971 13.3334 3.33333 13.3334M14 10.6667V12C14 12.3536 13.8595 12.6928 13.6095 12.9428C13.3594 13.1929 13.0203 13.3334 12.6667 13.3334H3.33333M14 10.6667L10.6667 7.33335L3.33333 13.3334M6 5.33335C5.64638 5.33335 5.30724 5.47383 5.05719 5.72388C4.80714 5.97393 4.66667 6.31307 4.66667 6.66669C4.66667 7.02031 4.80714 7.35945 5.05719 7.6095C5.30724 7.85954 5.64638 8.00002 6 8.00002C6.35362 8.00002 6.69276 7.85954 6.94281 7.6095C7.19286 7.35945 7.33333 7.02031 7.33333 6.66669C7.33333 6.31307 7.19286 5.97393 6.94281 5.72388C6.69276 5.47383 6.35362 5.33335 6 5.33335Z" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round" stroke="#3D3D3D"/>
             </svg>
-            <svg *ngSwitchCase="'signature'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-              <path stroke-linecap="round" stroke-linejoin="round"
-                d="m17.469 4.485-9.9 10.164a1.5 1.5 0 0 0-.34.563l-.992 3.47 3.469-.992a1.5 1.5 0 0 0 .563-.34l10.164-9.9a2.121 2.121 0 0 0-2.964-2.965Z" />
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6.75 17.25 8.25" />
+            <svg *ngSwitchCase="'signature'" class="h-12 w-12" viewBox="0 0 14 13" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6.66675 12.0809H12.6667M9.66675 1.0809C9.93196 0.815684 10.2917 0.666687 10.6667 0.666687C11.0418 0.666687 11.4015 0.815684 11.6667 1.0809C11.932 1.34612 12.081 1.70583 12.081 2.0809C12.081 2.45597 11.932 2.81568 11.6667 3.0809L3.33341 11.4142L0.666748 12.0809L1.33341 9.41423L9.66675 1.0809Z" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round" stroke="#3D3D3D"/>
             </svg>
             <svg *ngSwitchCase="'time'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
@@ -138,35 +128,31 @@
               <path stroke-linecap="round" stroke-linejoin="round"
                 d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
             </svg>
-            <svg *ngSwitchCase="'range'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-              <path stroke-linecap="round" stroke-linejoin="round"
-                d="M3.75 12h16.5M3.75 6h10.5M3.75 18h7.5M16.5 9v6" />
+            <svg *ngSwitchCase="'range'" class="h-5 w-5" viewBox="0 0 12 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M0.666748 2.66669H11.3334M2.66675 4.66669L0.666748 2.66669L2.66675 0.666687M9.33342 4.66669L11.3334 2.66669L9.33342 0.666687" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round" stroke="#3D3D3D"/>
             </svg>
-            <svg *ngSwitchCase="'price'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m0-12c-1.5 0-3 .75-3 2.25S10.5 10.5 12 10.5s3 .75 3 2.25S13.5 15 12 15m0-9c1.5 0 3 .75 3 2.25" />
-              <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+            <svg *ngSwitchCase="'price'" class="h-5 w-5" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6.66675 2.66669V4.00002M6.66675 4.00002V6.66669M6.66675 4.00002C7.53341 4.00002 8.26675 4.33335 8.66675 5.00002M6.66675 4.00002C5.53341 4.00002 4.66675 4.53335 4.66675 5.33335C4.66675 6.13335 5.53341 6.53335 6.66675 6.66669M6.66675 6.66669V9.33335M6.66675 6.66669C7.80008 6.80002 8.66675 7.20002 8.66675 8.00002C8.66675 8.80002 7.80008 9.33335 6.66675 9.33335M6.66675 9.33335V10.6667M6.66675 9.33335C5.80008 9.33335 5.06675 9.00002 4.66675 8.33335M6.66675 0.666687C5.87882 0.666687 5.0986 0.821882 4.37065 1.12341C3.64269 1.42494 2.98126 1.86689 2.42411 2.42405C1.86696 2.9812 1.425 3.64263 1.12347 4.37059C0.821943 5.09854 0.666748 5.87876 0.666748 6.66669C0.666748 7.45462 0.821943 8.23483 1.12347 8.96279C1.425 9.69074 1.86696 10.3522 2.42411 10.9093C2.98126 11.4665 3.64269 11.9084 4.37065 12.21C5.0986 12.5115 5.87882 12.6667 6.66675 12.6667C8.25805 12.6667 9.78417 12.0345 10.9094 10.9093C12.0346 9.78411 12.6667 8.25799 12.6667 6.66669C12.6667 5.07539 12.0346 3.54926 10.9094 2.42405C9.78417 1.29883 8.25805 0.666687 6.66675 0.666687Z" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round" stroke="#3D3D3D"/>
             </svg>
-            <svg *ngSwitchCase="'length'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+            <svg *ngSwitchCase="'length'" class="h-16 w-16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
               <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5M6 9v6M10.5 10.5v3M15 9v6M18.75 10.5v3" />
             </svg>
-            <svg *ngSwitchCase="'mass'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v3m0 0 3.75 12.75H8.25L12 6Zm-6.75 15h13.5" />
+            <svg *ngSwitchCase="'mass'" class="h-16 w-16" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+               <path d="M2.00008 4.00002H10.0001L11.3334 11.3334H0.666748L2.00008 4.00002ZM6.00008 0.666687C5.64646 0.666687 5.30732 0.807163 5.05727 1.05721C4.80722 1.30726 4.66675 1.6464 4.66675 2.00002C4.66675 2.35364 4.80722 2.69278 5.05727 2.94283C5.30732 3.19288 5.64646 3.33335 6.00008 3.33335C6.3537 3.33335 6.69284 3.19288 6.94289 2.94283C7.19294 2.69278 7.33341 2.35364 7.33341 2.00002C7.33341 1.6464 7.19294 1.30726 6.94289 1.05721C6.69284 0.807163 6.3537 0.666687 6.00008 0.666687Z" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round" stroke="#3D3D3D"/>
             </svg>
-            <svg *ngSwitchCase="'volume'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5h7.5L18 9.75v7.5A2.25 2.25 0 0 1 15.75 19.5h-7.5A2.25 2.25 0 0 1 6 17.25v-7.5L8.25 4.5Z" />
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 12h10.5" />
+            <svg *ngSwitchCase="'volume'" class="h-16 w-16" viewBox="0 0 11 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M2.00008 0.666687H8.66675V3.33335L10.0001 5.33335V11.3334C10.0001 11.687 9.85961 12.0261 9.60956 12.2762C9.35951 12.5262 9.02037 12.6667 8.66675 12.6667H2.00008C1.64646 12.6667 1.30732 12.5262 1.05727 12.2762C0.807224 12.0261 0.666748 11.687 0.666748 11.3334V5.33335L2.00008 3.33335V0.666687Z" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round" stroke="#3D3D3D"/>
             </svg>
-            <svg *ngSwitchCase="'temperature'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+            <svg *ngSwitchCase="'temperature'" class="h-16 w-16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
               <path stroke-linecap="round" stroke-linejoin="round" d="M9 5.25a3 3 0 0 1 6 0v7.268a4.5 4.5 0 1 1-6 0V5.25Z" />
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 12.75v3" />
             </svg>
-            <svg *ngSwitchCase="'barcode'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+            <svg *ngSwitchCase="'barcode'" class="h-16 w-16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
               <path stroke-linecap="round" stroke-linejoin="round"
                 d="M3.75 4.5h1.5v15h-1.5V4.5ZM7.5 4.5h.75v15H7.5V4.5ZM12 4.5h.75v15H12V4.5ZM16.5 4.5h.75v15h-.75V4.5ZM20.25 4.5h.75v15h-.75V4.5Z" />
             </svg>
-            <svg *ngSwitchCase="'qr-code'" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-              <path stroke-linecap="round" stroke-linejoin="round"
-                d="M3.75 4.5h4.5v4.5h-4.5V4.5ZM15.75 4.5h4.5v4.5h-4.5V4.5ZM3.75 15.75h4.5v4.5h-4.5v-4.5ZM15.75 15.75h1.5v1.5h-1.5v-1.5ZM20.25 15.75h1.5v1.5h-1.5v-1.5ZM20.25 20.25h1.5v1.5h-1.5v-1.5ZM15.75 20.25h1.5v1.5h-1.5v-1.5ZM19.5 13.5h-3v-3h3v3Z" />
+            <svg *ngSwitchCase="'qr-code'" class="h-5 w-5" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M2 2H6.66667V6.66667H2V2ZM9.33333 2H14V6.66667H9.33333V2ZM2 9.33333H6.66667V14H2V9.33333ZM9.33333 9.33333H11.3333V11.3333H9.33333V9.33333ZM13.3333 13.3333H14V14H13.3333V13.3333Z" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round" stroke="#3D3D3D"/>
             </svg>
           </ng-container>
         </span>
