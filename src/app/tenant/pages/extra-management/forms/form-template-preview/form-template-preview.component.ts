@@ -13,7 +13,11 @@ import { Subject, catchError, finalize, forkJoin, map, of, switchMap } from 'rxj
 import { SharedModule } from '../../../../../shared/shared.module';
 import { DynamicFormFieldMapperService } from '../../../../forms/services/dynamic-form-field.mapper.service';
 import { TenantFormsService } from '../services/tenant-forms.service';
-import { FormSection } from '../models/dynamic-form.models';
+import { FormPreviewBridgeService } from '../services/form-preview-bridge.service';
+import {
+  DynamicFormPayload,
+  FormSection,
+} from '../models/dynamic-form.models';
 import { mapAssignmentSectionsToBuilder } from '../../../employee/utils/assignment-form.mapper';
 import { RegularFormShellComponent } from '../../../employee/regular-form/regular-form-shell.component';
 import { EmployeeAssignmentSectionView } from '../../../../../interfaces/employee-assignment';
@@ -38,6 +42,7 @@ export class FormTemplatePreviewComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly formsService = inject(TenantFormsService);
+  private readonly previewBridge = inject(FormPreviewBridgeService);
   private readonly fieldMapper = inject(DynamicFormFieldMapperService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly reload$ = new Subject<number>();
@@ -91,7 +96,40 @@ export class FormTemplatePreviewComponent implements OnInit {
       return;
     }
 
+    const livePreview = this.previewBridge.consumePreview(templateId);
+    if (livePreview) {
+      this.loadLivePreview(livePreview.formName, livePreview.payload);
+      return;
+    }
+
     this.reload$.next(templateId);
+  }
+
+  /** Render unsaved editor state without saving or fetching the template. */
+  private loadLivePreview(
+    formName: string,
+    payload: DynamicFormPayload,
+  ): void {
+    this.formTitle.set(formName || 'Form Template');
+    const schema = (payload ?? {}) as Record<string, unknown>;
+    const sections = (payload?.sections ?? []) as FormSection[];
+
+    this.hydrateSections(sections, schema)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.loading.set(false)),
+        catchError(() => {
+          this.errorMessage.set(
+            'Unable to load form template preview. Please try again.',
+          );
+          return of([] as EmployeeAssignmentSectionView[]);
+        }),
+      )
+      .subscribe((views) => {
+        if (!this.errorMessage()) {
+          this.sections.set(views);
+        }
+      });
   }
 
   goBack(): void {
