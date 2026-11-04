@@ -92,9 +92,9 @@
           >
             <button
               type="button"
-              class="inline-flex items-center justify-center transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ff9015]/40 disabled:cursor-not-allowed disabled:opacity-40"
+              class="group inline-flex items-center justify-center transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ff9015]/40 disabled:cursor-not-allowed disabled:opacity-40"
               [ngClass]="hasConditionalLogic(field)
-                ? 'h-7 gap-1.5 rounded-full bg-[#161616] px-[20px] py-[20px] text-white hover:bg-black'
+                ? 'h-[35px] w-[35px] rounded-full bg-[#161616] text-white hover:h-7 hover:w-auto hover:gap-1.5 hover:bg-black hover:px-[20px] hover:py-[20px]'
                 : 'h-[35px] w-[35px] rounded-full bg-[#BDBDBD] text-white hover:bg-[#9CA3AF]'"
               [attr.aria-label]="hasConditionalLogic(field) ? 'Edit logic' : 'Conditional logic'"
               [title]="hasConditionalLogic(field) ? 'Edit logic' : 'Conditional logic'"
@@ -103,7 +103,7 @@
             >
               <app-logic-map-icon [size]="14"></app-logic-map-icon>
               @if (hasConditionalLogic(field)) {
-                <span class="text-sm font-semibold leading-none">Edit logic</span>
+                <span class="hidden text-sm font-semibold leading-none group-hover:inline">Edit logic</span>
               }
             </button>
             <button

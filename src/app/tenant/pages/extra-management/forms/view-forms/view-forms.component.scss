@@ -491,12 +491,19 @@
     0 4px 10px rgb(15 23 42 / 8%);
   padding: 0.35rem;
 
-  /* Escapes listing overflow:hidden / overflow-x:auto clipping. */
+  /*
+   * Keep the menu anchored to `.forms-listing__actions-menu` (position: relative).
+   * `!important` overrides the legacy inline fixed top/left from ngStyle so the
+   * dropdown scrolls with its three-dot trigger instead of the viewport.
+   */
   &--fixed {
-    position: fixed;
-    top: auto;
-    right: auto;
-    overflow: auto;
+    position: absolute !important;
+    top: calc(100% + 0.25rem) !important;
+    right: 0 !important;
+    bottom: auto !important;
+    left: auto !important;
+    max-height: none !important;
+    overflow: hidden !important;
   }
 }
 
