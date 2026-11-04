@@ -385,6 +385,16 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
     return ids;
   });
 
+  /**
+   * Palette + every row / add-column / new-row sink.
+   * Connecting row canvases to each other enables cross-row field moves
+   * when the destination still has Width-in-row capacity.
+   */
+  readonly workspaceConnectedDropLists = computed(() => [
+    this.paletteListId,
+    ...this.paletteConnectedDropLists(),
+  ]);
+
   readonly draftStatusLabel = computed(() =>
     this.isEditing() ? 'Editing saved template' : 'Draft · Not saved yet',
   );
@@ -2079,21 +2089,35 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
     this.focusWorkspaceRow(sectionId, rowId);
     const current = this.getRowCanvasSchema(sectionId, rowId);
 
-    // Cross-container insert: if this row has no remaining capacity, start a new row.
-    if (event.previousContainer !== event.container) {
-      const remaining = rowRemainingGridUnits(current);
-      if (current.length > 0 && remaining < 4) {
-        this.onSectionNewRowDrop(sectionId, event);
-        return;
-      }
-    }
-
-    const result = applyCanvasDrop(event, current);
-
+    // Same-row reorder — unchanged.
     if (event.previousContainer === event.container) {
+      const result = applyCanvasDrop(event, current);
       this.replaceRowFieldsFromBuilder(sectionId, rowId, result.schema);
       return;
     }
+
+    // Cross-row move of an existing canvas field (not a palette template).
+    if (!this.isPaletteDropList(String(event.previousContainer.id))) {
+      const movedId = (event.item.data as FormField | undefined)?.id;
+      if (movedId) {
+        this.tryMoveExistingFieldToRow(
+          sectionId,
+          rowId,
+          movedId,
+          event.currentIndex,
+        );
+      }
+      return;
+    }
+
+    // Palette insert: if this row has no remaining capacity, start a new row.
+    const remaining = rowRemainingGridUnits(current);
+    if (current.length > 0 && remaining < 4) {
+      this.onSectionNewRowDrop(sectionId, event);
+      return;
+    }
+
+    const result = applyCanvasDrop(event, current);
 
     const inserted = result.insertedField;
     if (!inserted) {
@@ -2139,8 +2163,23 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
     }
 
     const current = this.getRowCanvasSchema(sectionId, rowId);
+
+    // Existing canvas field → append when Width in row fits; otherwise leave in place.
+    if (!this.isPaletteDropList(String(event.previousContainer.id))) {
+      const movedId = (event.item.data as FormField | undefined)?.id;
+      if (movedId) {
+        this.tryMoveExistingFieldToRow(
+          sectionId,
+          rowId,
+          movedId,
+          current.length,
+        );
+      }
+      return;
+    }
+
     if (!rowHasAvailableColumnSpace(current)) {
-      // Row is full — place the field on a new row instead of overflowing.
+      // Row is full — place the palette field on a new row instead of overflowing.
       this.onSectionNewRowDrop(sectionId, event);
       return;
     }
@@ -2160,6 +2199,15 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
     event: CdkDragDrop<FormField[]>,
   ): void {
     if (event.previousContainer === event.container) {
+      return;
+    }
+
+    // Existing canvas field → move into its own new row (always has capacity).
+    if (!this.isPaletteDropList(String(event.previousContainer.id))) {
+      const movedId = (event.item.data as FormField | undefined)?.id;
+      if (movedId) {
+        this.moveExistingFieldToNewRow(sectionId, movedId);
+      }
       return;
     }
 
@@ -2223,6 +2271,112 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
     });
     this.patchRowFields(sectionId, rowId, () => configs);
     this.rowBuilderFields.set(schema);
+  }
+
+  private isPaletteDropList(listId: string): boolean {
+    return listId === this.paletteListId || listId === this.emptyCanvasListId;
+  }
+
+  private findConfigFieldById(fieldId: string): FormFieldConfig | null {
+    for (const section of this.sections()) {
+      for (const row of section.rows) {
+        const found = row.fields.find((field) => field.id === fieldId);
+        if (found) {
+          return found;
+        }
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Move an existing field into another row when the destination has enough
+   * remaining Width-in-row units for that field's current width. Returns false
+   * (and leaves layout unchanged) when capacity is insufficient.
+   */
+  private tryMoveExistingFieldToRow(
+    destSectionId: string,
+    destRowId: string,
+    fieldId: string,
+    insertIndex: number,
+  ): boolean {
+    const sourceField = this.findConfigFieldById(fieldId);
+    if (!sourceField) {
+      return false;
+    }
+
+    const destRow = this.sections()
+      .find((section) => section.id === destSectionId)
+      ?.rows.find((row) => row.id === destRowId);
+    if (!destRow) {
+      return false;
+    }
+
+    const siblings = destRow.fields.filter((field) => field.id !== fieldId);
+    const needed = widthToGridUnits(sourceField.width);
+    if (siblings.length > 0 && rowRemainingGridUnits(siblings) < needed) {
+      return false;
+    }
+
+    const placed: FormFieldConfig = { ...sourceField };
+    const safeIndex = Math.min(Math.max(insertIndex, 0), siblings.length);
+
+    this.sections.update((list) =>
+      list.map((section) => ({
+        ...section,
+        rows: section.rows.map((row) => {
+          const without = row.fields.filter((field) => field.id !== fieldId);
+          if (section.id === destSectionId && row.id === destRowId) {
+            const next = [...without];
+            next.splice(safeIndex, 0, placed);
+            return { ...row, fields: next };
+          }
+          return without.length === row.fields.length
+            ? row
+            : { ...row, fields: without };
+        }),
+      })),
+    );
+
+    this.focusWorkspaceRow(destSectionId, destRowId);
+    this.onSelectField(mapConfigFieldToBuilder(placed));
+    this.initializeRowLocationDependencies(destSectionId, destRowId);
+    return true;
+  }
+
+  /** Move an existing field out of its row into a new row in `sectionId`. */
+  private moveExistingFieldToNewRow(sectionId: string, fieldId: string): void {
+    const sourceField = this.findConfigFieldById(fieldId);
+    if (!sourceField) {
+      return;
+    }
+
+    const placed: FormFieldConfig = { ...sourceField };
+    const row = createEmptyRow();
+
+    this.sections.update((list) =>
+      list.map((section) => {
+        const rowsWithout = section.rows.map((existing) => {
+          const without = existing.fields.filter((field) => field.id !== fieldId);
+          return without.length === existing.fields.length
+            ? existing
+            : { ...existing, fields: without };
+        });
+
+        if (section.id !== sectionId) {
+          return { ...section, rows: rowsWithout };
+        }
+
+        return {
+          ...section,
+          rows: [...rowsWithout, { ...row, fields: [placed] }],
+        };
+      }),
+    );
+
+    this.focusWorkspaceRow(sectionId, row.id);
+    this.onSelectField(mapConfigFieldToBuilder(placed));
+    this.initializeRowLocationDependencies(sectionId, row.id);
   }
 
   private findFieldLocation(
