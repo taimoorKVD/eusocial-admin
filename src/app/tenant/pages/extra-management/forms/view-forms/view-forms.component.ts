@@ -374,8 +374,15 @@ export class ViewFormsComponent implements OnInit {
     if (!frequency) {
       return '';
     }
-    if (frequency.type === 'atOnce' && frequency.time?.trim()) {
-      return frequency.time.trim();
+    if (frequency.type === 'atOnce') {
+      const atOnceTimes = (
+        Array.isArray(frequency.times) && frequency.times.length
+          ? frequency.times
+          : frequency.time?.trim()
+            ? [frequency.time.trim()]
+            : []
+      ).filter((slot) => !!String(slot ?? '').trim());
+      return atOnceTimes.length ? atOnceTimes.join(' · ') : '';
     }
     // Times live on the recurring config (`times` / legacy `time`), which is
     // what resolveFrequencyScheduleTimes reads from its first argument.

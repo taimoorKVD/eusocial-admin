@@ -1311,6 +1311,8 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
   private applyFrequencyToForm(payload: DynamicFormPayload): void {
     const frequency = payload.frequency ?? ({} as DynamicFormPayload['frequency']);
     const rawRecurring = frequency.recurring ?? createDefaultFrequencyRecurring();
+    const isAtOnce = (frequency.type ?? 'atOnce') === 'atOnce';
+
     // Edit API may expose slots as times / timesAmPm / timesParts (recurring or root).
     const resolvedTimes = resolveFrequencyScheduleTimes(
       rawRecurring,
@@ -1320,29 +1322,51 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
         timesParts?: FrequencyTimeParts[] | null;
       },
     );
+
+    // At Once: same-date repeats live on frequency.times (fallback: single frequency.time).
+    let scheduleTimes: string[];
+    let repeatCount: number;
+    if (isAtOnce) {
+      const rootTimes = Array.isArray(frequency.times) ? frequency.times : null;
+      const atOnceSource =
+        rootTimes && rootTimes.length
+          ? rootTimes
+          : frequency.time?.trim()
+            ? [frequency.time.trim()]
+            : resolvedTimes;
+      repeatCount = Math.max(
+        1,
+        atOnceSource.filter((slot) => !!String(slot ?? '').trim()).length ||
+          Number(rawRecurring.repeatCount) ||
+          1,
+      );
+      scheduleTimes = normalizeFrequencyTimes(atOnceSource, repeatCount);
+    } else {
+      const recurring = sanitizeFrequencyRecurring({
+        ...rawRecurring,
+        times: resolvedTimes,
+      });
+      repeatCount = recurring.repeatCount;
+      scheduleTimes = normalizeFrequencyTimes(recurring.times, repeatCount);
+    }
+
     const recurring = sanitizeFrequencyRecurring({
       ...rawRecurring,
-      times: resolvedTimes,
+      repeatCount,
+      times: scheduleTimes,
     });
-    const isAtOnce = (frequency.type ?? 'atOnce') === 'atOnce';
-    const scheduleTimes = normalizeFrequencyTimes(
-      recurring.times,
-      recurring.repeatCount,
-    );
 
     // Patch scheduling fields first. `repeatCount` valueChanges syncs/pads `times`
     // from the previous value — always apply saved times afterward so edit restore wins.
     this.frequencyForm.patchValue({
       type: frequency.type ?? 'atOnce',
       date: frequency.date ?? null,
-      time: isAtOnce
-        ? frequency.time ?? null
-        : null,
+      time: isAtOnce ? scheduleTimes[0] || frequency.time || null : null,
       startDate: frequency.startDate ?? null,
       endDate: frequency.endDate ?? null,
       every: recurring.every,
       interval: recurring.interval,
-      repeatCount: recurring.repeatCount,
+      repeatCount,
       monthMode: 'dayOfMonth',
       dayOfMonth: recurring.dayOfMonth,
       weekOrder: recurring.weekOrder,
@@ -1480,21 +1504,22 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
 
   /** Clear the opposite type's scheduling fields when switching At Once ↔ Recurring. */
   private resetFieldsForFrequencyType(type: FrequencyType): void {
+    const repeatCount = Math.max(
+      1,
+      Number(this.frequencyForm.controls.repeatCount.value) || 1,
+    );
+
     if (type === 'atOnce') {
       this.frequencyForm.patchValue({
         startDate: null,
         endDate: null,
-        times: [],
         time: null,
+        times: normalizeFrequencyTimes([], repeatCount),
         daysOfWeek: [],
       });
       return;
     }
 
-    const repeatCount = Math.max(
-      1,
-      Number(this.frequencyForm.controls.repeatCount.value) || 1,
-    );
     this.frequencyForm.patchValue({
       date: null,
       time: null,
@@ -1591,10 +1616,17 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
   private syncFrequencyToMeta(): void {
     const value = this.frequencyForm.getRawValue();
     const repeatCount = Math.max(1, Number(value.repeatCount) || 1);
+    const times = normalizeFrequencyTimes(value.times, repeatCount);
+    // At Once keeps `frequencyTime` as the first slot for backward-compatible payloads.
+    const primaryTime =
+      value.type === 'atOnce'
+        ? times.find((slot) => !!slot?.trim())?.trim() || value.time || null
+        : value.time;
+
     this.meta.update((current) => ({
       ...current,
       frequencyDate: value.date,
-      frequencyTime: value.time,
+      frequencyTime: primaryTime,
       frequencyStartDate: value.startDate,
       frequencyEndDate: value.endDate,
       frequencyType: value.type,
@@ -1609,14 +1641,15 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
         onTheMonth: value.onTheMonth,
         yearMonth: value.yearMonth,
         yearDay: Number(value.yearDay) || 1,
-        time: value.time,
-        times: normalizeFrequencyTimes(value.times, repeatCount),
+        time: primaryTime,
+        times,
       }),
     }));
   }
 
   private syncDailyTimesToRepeatCount(repeatCount: number): void {
-    if (this.frequencyForm.controls.type.value !== 'recurring') {
+    const type = this.frequencyForm.controls.type.value;
+    if (type !== 'recurring' && type !== 'atOnce') {
       return;
     }
     const next = normalizeFrequencyTimes(
@@ -1624,6 +1657,9 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
       repeatCount,
     );
     this.frequencyForm.controls.times.setValue(next, { emitEvent: true });
+    if (type === 'atOnce') {
+      this.frequencyForm.controls.time.setValue(next[0] || null, { emitEvent: false });
+    }
   }
 
   /**
@@ -1633,7 +1669,22 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
   isFrequencyScheduleValid(): boolean {
     const meta = this.meta();
     if (meta.frequencyType === 'atOnce') {
-      return !!meta.frequencyDate?.trim() && isValidTimeFieldValue(meta.frequencyTime);
+      if (!meta.frequencyDate?.trim()) {
+        return false;
+      }
+      const repeatCount = Math.max(
+        1,
+        Number(meta.frequencyRecurring?.repeatCount) || 1,
+      );
+      const times = normalizeFrequencyTimes(
+        meta.frequencyRecurring?.times?.length
+          ? meta.frequencyRecurring.times
+          : meta.frequencyTime
+            ? [meta.frequencyTime]
+            : [],
+        repeatCount,
+      );
+      return times.every((slot) => isValidTimeFieldValue(slot));
     }
 
     if (meta.frequencyType !== 'recurring') {
@@ -1855,6 +1906,10 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
     const times = [...this.frequencyForm.controls.times.value];
     times[target] = next ?? '';
     this.frequencyForm.controls.times.setValue(times);
+    // Keep At Once primary `time` aligned with the first slot for payload compat.
+    if (this.frequencyForm.controls.type.value === 'atOnce') {
+      this.frequencyForm.controls.time.setValue(times[0] || null, { emitEvent: false });
+    }
   }
 
   onFrequencyStartDateChange(value: string | null): void {

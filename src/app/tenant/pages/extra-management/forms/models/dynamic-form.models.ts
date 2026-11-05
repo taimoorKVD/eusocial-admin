@@ -773,8 +773,16 @@ export interface DynamicFormPayload {
   frequency: {
     jobPosition: string | null;
     date: string | null;
-    /** At Once time (`HH:mm` 24h); null for recurring. */
+    /**
+     * At Once primary time (`HH:mm` 24h) — first slot / backward compatible.
+     * Null for recurring.
+     */
     time: string | null;
+    /**
+     * At Once same-date occurrence times (`HH:mm` 24h).
+     * Length = Repeat count; all slots share `date`. Null/omitted for recurring.
+     */
+    times?: string[] | null;
     /** Series start (`Y-m-d`) for day/week/month/year recurring; null otherwise. */
     startDate: string | null;
     /** Series end (`Y-m-d`) for day/week/month/year recurring; null otherwise. */
@@ -961,6 +969,27 @@ export function buildDynamicFormPayload(
       recurring.interval === 'month' ||
       recurring.interval === 'year');
 
+  // At Once: Repeat N times → N same-date slots (never additional days).
+  const atOnceRepeatCount = Math.max(
+    1,
+    Number(meta.frequencyRecurring?.repeatCount) || 1,
+  );
+  const atOnceTimes =
+    meta.frequencyType === 'atOnce'
+      ? normalizeFrequencyTimes(
+          meta.frequencyRecurring?.times?.length
+            ? meta.frequencyRecurring.times
+            : meta.frequencyTime?.trim()
+              ? [meta.frequencyTime.trim()]
+              : [],
+          atOnceRepeatCount,
+        )
+      : null;
+  const atOncePrimaryTime =
+    atOnceTimes?.find((slot) => !!slot?.trim())?.trim() ||
+    meta.frequencyTime?.trim() ||
+    null;
+
   return {
     formName: formName.trim(),
     assign: {
@@ -978,10 +1007,8 @@ export function buildDynamicFormPayload(
         ? meta.frequencyJobPosition.join(', ')
         : null,
       date: resolveFrequencyDate(meta.frequencyType, meta.frequencyDate, recurring),
-      time:
-        meta.frequencyType === 'atOnce' && meta.frequencyTime?.trim()
-          ? meta.frequencyTime.trim()
-          : null,
+      time: meta.frequencyType === 'atOnce' ? atOncePrimaryTime : null,
+      times: meta.frequencyType === 'atOnce' ? atOnceTimes : null,
       startDate: hasScheduleWindow ? meta.frequencyStartDate?.trim() || null : null,
       endDate: hasScheduleWindow ? meta.frequencyEndDate?.trim() || null : null,
       type: meta.frequencyType,
