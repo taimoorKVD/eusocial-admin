@@ -48,14 +48,18 @@ import {
 import {
   CONDITION_ACTION_LABELS,
   CONDITION_OPERATOR_LABELS,
+  FieldConditionalLogic,
+  defaultConditionRuleName,
   getPrimaryActionType,
   getPrimaryPredicate,
   getSelectedActionTypes,
-  hasConfiguredSource,
+  fieldHasConfiguredConditionRules,
   normalizeConditionalLogic,
+  normalizeFieldConditionRules,
   pruneConditionalLogicForDeletedFields,
   resolveCollectionConditionalEffects,
   serializeConditionalLogic,
+  serializeFieldConditionRules,
 } from '../../../../../shared/conditional-logic';
 import { resolveCharacterLimit } from '../../../../../shared/dynamic-form/character-limit.utils';
 import {
@@ -2847,12 +2851,11 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
   }
 
   fieldHasConfiguredConditionalLogic(field: FormField | FormFieldConfig): boolean {
-    const logic = normalizeConditionalLogic(field.condition ?? null);
-    return !!logic?.enabled && hasConfiguredSource(logic);
+    return fieldHasConfiguredConditionRules(field.condition ?? null);
   }
 
   normalizeConditionEnabled(field: FormField | FormFieldConfig): boolean {
-    return !!normalizeConditionalLogic(field.condition ?? null)?.enabled;
+    return normalizeFieldConditionRules(field.condition ?? null).some(rule => rule.enabled);
   }
 
   getConditionSourceId(field: FormField): string {
@@ -2938,13 +2941,15 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
   }
 
   onOverviewToggleLogic(field: FormField, enabled: boolean): void {
-    const logic = normalizeConditionalLogic(field.condition ?? null);
-    if (!logic) {
+    const rules = normalizeFieldConditionRules(field.condition ?? null);
+    if (!rules.length) {
       return;
     }
     this.onUpdateField({
       ...field,
-      condition: serializeConditionalLogic({ ...logic, enabled }),
+      condition: serializeFieldConditionRules(
+        rules.map(rule => ({ ...rule, enabled })),
+      ),
     });
   }
 
@@ -2964,33 +2969,43 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
     this.logicRulesPanel()?.toggleRuleEnabled(rule, enabled);
   }
 
-  summarizeFieldCondition(field: FormField): string {
-    const logic = normalizeConditionalLogic(field.condition ?? null);
-    if (!logic) {
-      return 'No conditional logic configured';
-    }
-    const predicate = getPrimaryPredicate(logic);
-    const source =
-      this.logicSchemaFields().find((item) => item.id === predicate.fieldId)?.label ||
-      'a field';
-    const operator =
-      CONDITION_OPERATOR_LABELS[predicate.operator] ?? predicate.operator;
-    const needsValue = !['isEmpty', 'isNotEmpty', 'checked', 'unchecked'].includes(
-      predicate.operator,
-    );
-    const valueText =
-      needsValue && predicate.value != null && String(predicate.value).trim() !== ''
-        ? ` ${String(predicate.value)}`
-        : '';
-    const action = getSelectedActionTypes(logic)
-      .map((type) => CONDITION_ACTION_LABELS[type] ?? type)
-      .join(' + ');
-    return `${action || 'Update field'} when ${source} ${operator}${valueText}`;
+  /** Independent Conditional Logic rules for overview display (named, ordered). */
+  fieldConditionOverviewRules(field: FormField | FormFieldConfig): FieldConditionalLogic[] {
+    return normalizeFieldConditionRules(field.condition ?? null);
   }
 
-  /** List/map display: friendlier action phrasing for Figma chrome. */
-  logicActionNarrative(field: FormField): string {
-    const logic = normalizeConditionalLogic(field.condition ?? null);
+  conditionOverviewRuleName(rule: FieldConditionalLogic, index: number): string {
+    return String(rule?.name ?? '').trim() || defaultConditionRuleName(index);
+  }
+
+  /** Total independent rules across all configured fields (Logic map sidebar count). */
+  configuredConditionalLogicRuleCount(): number {
+    return this.configuredConditionalLogicFields().reduce(
+      (total, field) => total + this.fieldConditionOverviewRules(field).length,
+      0,
+    );
+  }
+
+  summarizeFieldCondition(field: FormField): string {
+    const rules = this.fieldConditionOverviewRules(field);
+    if (!rules.length) {
+      return 'No conditional logic configured';
+    }
+    const multi = rules.length > 1;
+    return rules
+      .map((logic, index) => {
+        const parts = this.logicListSummaryPartsForRule(logic);
+        const summary = `${parts.before}${parts.badge ? ` ${parts.badge} ` : ' '}${parts.after}`.trim();
+        if (!multi) {
+          return summary;
+        }
+        return `${this.conditionOverviewRuleName(logic, index)}: ${summary}`;
+      })
+      .join(' · ');
+  }
+
+  /** List/map display: friendlier action phrasing for a single rule. */
+  logicActionNarrativeForRule(logic: FieldConditionalLogic | null | undefined): string {
     if (!logic?.actions?.length) {
       return 'Updated';
     }
@@ -3027,9 +3042,15 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
     return `${first} and ${rest.join(' and ')}`;
   }
 
-  /** Logic map condition pill (e.g. "is above 5"). */
-  logicMapConditionPill(field: FormField): string {
-    const logic = normalizeConditionalLogic(field.condition ?? null);
+  logicActionNarrative(field: FormField): string {
+    const rules = this.fieldConditionOverviewRules(field);
+    if (!rules.length) {
+      return 'Updated';
+    }
+    return this.logicActionNarrativeForRule(rules[0]);
+  }
+
+  logicMapConditionPillForRule(logic: FieldConditionalLogic | null | undefined): string {
     if (!logic) {
       return 'when condition matches';
     }
@@ -3045,9 +3066,15 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
     return `${operator}${valueText}`.trim();
   }
 
-  /** Logic map action pill (e.g. "shows and requires it"). */
-  logicMapActionPill(field: FormField): string {
-    const narrative = this.logicActionNarrative(field).toLowerCase();
+  /** Logic map condition pill (e.g. "is above 5") — first rule only (legacy). */
+  logicMapConditionPill(field: FormField): string {
+    return this.logicMapConditionPillForRule(
+      this.fieldConditionOverviewRules(field)[0] ?? null,
+    );
+  }
+
+  logicMapActionPillForRule(logic: FieldConditionalLogic | null | undefined): string {
+    const narrative = this.logicActionNarrativeForRule(logic).toLowerCase();
     if (narrative === 'shown and required') {
       return 'shows and requires it';
     }
@@ -3066,13 +3093,18 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
     return `${narrative} it`;
   }
 
-  /** List row: narrative with source field split out for a badge. */
-  logicListSummaryParts(field: FormField): {
+  /** Logic map action pill — first rule only (legacy). */
+  logicMapActionPill(field: FormField): string {
+    return this.logicMapActionPillForRule(
+      this.fieldConditionOverviewRules(field)[0] ?? null,
+    );
+  }
+
+  logicListSummaryPartsForRule(logic: FieldConditionalLogic | null | undefined): {
     before: string;
     badge: string;
     after: string;
   } {
-    const logic = normalizeConditionalLogic(field.condition ?? null);
     if (!logic) {
       return { before: 'No conditional logic configured', badge: '', after: '' };
     }
@@ -3089,10 +3121,53 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
         ? ` ${String(predicate.value)}`
         : '';
     return {
-      before: `${this.logicActionNarrative(field)} when`,
+      before: `${this.logicActionNarrativeForRule(logic)} when`,
       badge: source,
       after: `${operator}${valueText}`.trim(),
     };
+  }
+
+  /** List row summaries for every independent rule on a field. */
+  logicListSummaryParts(field: FormField): Array<{
+    name: string;
+    before: string;
+    badge: string;
+    after: string;
+    action: string;
+  }> {
+    const rules = this.fieldConditionOverviewRules(field);
+    if (!rules.length) {
+      return [
+        {
+          name: '',
+          before: 'No conditional logic configured',
+          badge: '',
+          after: '',
+          action: '',
+        },
+      ];
+    }
+    const multi = rules.length > 1;
+    return rules.map((logic, index) => {
+      const parts = this.logicListSummaryPartsForRule(logic);
+      return {
+        name: multi ? this.conditionOverviewRuleName(logic, index) : '',
+        ...parts,
+        action: this.logicActionNarrativeForRule(logic),
+      };
+    });
+  }
+
+  getConditionSourceIdForRule(logic: FieldConditionalLogic | null | undefined): string {
+    return getPrimaryPredicate(logic).fieldId;
+  }
+
+  getConditionSourceLabelForRule(logic: FieldConditionalLogic | null | undefined): string {
+    const sourceId = this.getConditionSourceIdForRule(logic);
+    return (
+      this.logicSchemaFields().find((item) => item.id === sourceId)?.label ||
+      'No field chosen yet'
+    );
   }
 
   automationListSummaryParts(rule: FormLogicRule): {

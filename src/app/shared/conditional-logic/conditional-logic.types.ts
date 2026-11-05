@@ -102,6 +102,8 @@ export interface FieldConditionalLogic {
   enabled: boolean;
   when: ConditionGroup;
   actions: ConditionAction[];
+  /** Display name for multi-rule UI (e.g. "Rule 2" or a custom label). */
+  name?: string;
 }
 
 /** Legacy builder shape: implied equals + show. */
@@ -110,7 +112,19 @@ export interface LegacyFieldCondition {
   value?: unknown;
 }
 
-export type FieldCondition = FieldConditionalLogic | LegacyFieldCondition;
+/**
+ * Multiple independent IF/WHEN → THEN rules on one field.
+ * Single-rule templates keep storing a plain FieldConditionalLogic (or legacy).
+ */
+export interface FieldConditionalLogicBundle {
+  version: 2;
+  rules: FieldConditionalLogic[];
+}
+
+export type FieldCondition =
+  | FieldConditionalLogic
+  | LegacyFieldCondition
+  | FieldConditionalLogicBundle;
 
 export interface ConditionalFieldEffects {
   visible: boolean;

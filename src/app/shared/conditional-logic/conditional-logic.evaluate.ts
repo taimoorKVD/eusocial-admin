@@ -10,7 +10,7 @@ import {
 import {
   collectSourceFieldIds,
   isConditionGroup,
-  normalizeConditionalLogic,
+  normalizeFieldConditionRules,
 } from './conditional-logic.normalize';
 
 export function operatorRequiresValue(operator: ConditionOperator): boolean {
@@ -264,9 +264,11 @@ export function resolveConditionalEffects(
   const schemaVisible = field.isShow !== false;
   const schemaRequired = !!field.required;
   const schemaDisabled = field.isReadonly === true || field.readonly === true;
-  const logic = normalizeConditionalLogic(field.condition);
+  const rules = normalizeFieldConditionRules(field.condition).filter(
+    logic => !!logic.enabled && collectSourceFieldIds(logic).some(Boolean)
+  );
 
-  if (!logic?.enabled || !collectSourceFieldIds(logic).some(Boolean)) {
+  if (!rules.length) {
     return {
       visible: schemaVisible,
       required: schemaRequired,
@@ -274,36 +276,94 @@ export function resolveConditionalEffects(
     };
   }
 
-  const matched = evaluateConditionGroup(logic.when, valuesByFieldId);
-
+  // Independent rules merge with OR for show / require / enable-style actions
+  // so multiple rules on one field do not cancel each other out.
   let visible = schemaVisible;
   let required = schemaRequired;
   let disabled = schemaDisabled;
 
-  for (const action of logic.actions) {
-    switch (action.type) {
-      case 'show':
-        visible = matched;
-        break;
-      case 'hide':
-        visible = !matched;
-        break;
-      case 'require':
-        required = matched ? true : schemaRequired;
-        break;
-      case 'optional':
-        required = matched ? false : schemaRequired;
-        break;
-      case 'enable':
-        disabled = matched ? false : true;
-        break;
-      case 'disable':
-        disabled = matched ? true : schemaDisabled;
-        break;
-      case 'setValue':
-        // Value application is handled by the form runtime (emitEvent: false).
-        break;
+  let hasShow = false;
+  let anyShowMatched = false;
+  let hasHide = false;
+  let anyHideMatched = false;
+  let hasRequire = false;
+  let anyRequireMatched = false;
+  let hasOptional = false;
+  let anyOptionalMatched = false;
+  let hasEnable = false;
+  let anyEnableMatched = false;
+  let hasDisable = false;
+  let anyDisableMatched = false;
+
+  for (const logic of rules) {
+    const matched = evaluateConditionGroup(logic.when, valuesByFieldId);
+
+    for (const action of logic.actions) {
+      switch (action.type) {
+        case 'show':
+          hasShow = true;
+          if (matched) {
+            anyShowMatched = true;
+          }
+          break;
+        case 'hide':
+          hasHide = true;
+          if (matched) {
+            anyHideMatched = true;
+          }
+          break;
+        case 'require':
+          hasRequire = true;
+          if (matched) {
+            anyRequireMatched = true;
+          }
+          break;
+        case 'optional':
+          hasOptional = true;
+          if (matched) {
+            anyOptionalMatched = true;
+          }
+          break;
+        case 'enable':
+          hasEnable = true;
+          if (matched) {
+            anyEnableMatched = true;
+          }
+          break;
+        case 'disable':
+          hasDisable = true;
+          if (matched) {
+            anyDisableMatched = true;
+          }
+          break;
+        case 'setValue':
+          // Value application is handled by the form runtime (emitEvent: false).
+          break;
+      }
     }
+  }
+
+  if (hasShow) {
+    visible = anyShowMatched;
+  }
+  if (hasHide) {
+    visible = hasShow ? anyShowMatched && !anyHideMatched : !anyHideMatched;
+  }
+  if (hasRequire) {
+    required = anyRequireMatched ? true : schemaRequired;
+  }
+  if (hasOptional) {
+    required = anyOptionalMatched ? false : hasRequire ? required : schemaRequired;
+  }
+  if (hasEnable) {
+    disabled = anyEnableMatched ? false : true;
+  }
+  if (hasDisable) {
+    disabled = anyDisableMatched
+      ? true
+      : hasEnable
+        ? disabled
+        : schemaDisabled;
   }
 
   return { visible, required, disabled };
@@ -325,11 +385,11 @@ export function resolveAllConditionalEffects(
 export function hasEnabledVisibilityCondition(
   field: ConditionalLogicFieldLike
 ): boolean {
-  const logic = normalizeConditionalLogic(field.condition);
-  return (
-    !!logic?.enabled &&
-    collectSourceFieldIds(logic).some(Boolean) &&
-    logic.actions.some(action => action.type === 'show' || action.type === 'hide')
+  return normalizeFieldConditionRules(field.condition).some(
+    logic =>
+      !!logic.enabled &&
+      collectSourceFieldIds(logic).some(Boolean) &&
+      logic.actions.some(action => action.type === 'show' || action.type === 'hide')
   );
 }
 
@@ -420,14 +480,11 @@ export function wouldCreateCircularDependency(
     visited.add(currentId);
 
     const current = fieldsById.get(currentId);
-    const logic = normalizeConditionalLogic(current?.condition);
-    if (!logic) {
-      continue;
-    }
-
-    for (const nextId of collectSourceFieldIds(logic)) {
-      if (nextId) {
-        stack.push(nextId);
+    for (const logic of normalizeFieldConditionRules(current?.condition)) {
+      for (const nextId of collectSourceFieldIds(logic)) {
+        if (nextId) {
+          stack.push(nextId);
+        }
       }
     }
   }

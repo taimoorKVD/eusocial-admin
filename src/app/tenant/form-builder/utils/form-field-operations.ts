@@ -1,8 +1,7 @@
 import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { FormField } from '../models/form-field.model';
 import {
-  collectSourceFieldIds,
-  normalizeConditionalLogic,
+  collectFieldConditionSourceFieldIds,
   pruneConditionalLogicForDeletedFields,
   serializeConditionalLogic,
 } from '../../../shared/conditional-logic';
@@ -171,7 +170,7 @@ export function clearStaleConditionalLogic(
 
   let changed = false;
   const next = schema.map(field => {
-    const referenced = collectSourceFieldIds(normalizeConditionalLogic(field.condition));
+    const referenced = collectFieldConditionSourceFieldIds(field.condition);
     if (!referenced.some(id => ids.has(id))) {
       return field;
     }

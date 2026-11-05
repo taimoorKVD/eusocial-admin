@@ -1351,6 +1351,71 @@
           </div>
 
           <div class="space-y-6 py-5 max-sm:px-4">
+            <!-- Independent rules on this field (same WHEN/THEN editor, switchable) -->
+            <section class="space-y-2.5">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <p class="m-0 text-sm font-semibold text-[#161616]">Logic rules</p>
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-1.5 rounded-lg border border-[#BDBDBD] bg-white px-2.5 py-1.5 text-xs font-semibold text-[#161616] transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ff9015]/30 disabled:cursor-not-allowed disabled:opacity-50"
+                  [disabled]="!conditionRuleControlsEnabled"
+                  (click)="openAddConditionRuleModal()"
+                >
+                  <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                  </svg>
+                  Add rule
+                </button>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                @for (rule of conditionRules; track $index; let i = $index) {
+                  <div
+                    class="inline-flex items-center gap-1 rounded-lg border px-1 py-1"
+                    [ngClass]="i === activeConditionRuleIndex
+                      ? 'border-[#ff9015] bg-[#fff7ed]'
+                      : 'border-[#BDBDBD] bg-white'"
+                  >
+                    <button
+                      type="button"
+                      class="rounded-md px-2.5 py-1 text-xs font-semibold transition focus:outline-none"
+                      [ngClass]="i === activeConditionRuleIndex ? 'text-[#161616]' : 'text-gray-600 hover:text-[#161616]'"
+                      [disabled]="!conditionRuleControlsEnabled"
+                      (click)="selectConditionRule(i)"
+                    >
+                      {{ conditionRuleLabel(i) }}
+                    </button>
+                    <button
+                      type="button"
+                      class="inline-flex h-6 w-6 items-center justify-center rounded-md text-gray-400 transition hover:bg-gray-100 hover:text-[#161616] focus:outline-none disabled:opacity-40"
+                      [disabled]="!conditionRuleControlsEnabled"
+                      [attr.aria-label]="'Rename ' + conditionRuleLabel(i)"
+                      title="Rename rule"
+                      (click)="openRenameConditionRuleModal(i, $event)"
+                    >
+                      <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125" />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      class="inline-flex h-6 w-6 items-center justify-center rounded-md text-gray-400 transition hover:bg-gray-100 hover:text-[#161616] focus:outline-none disabled:opacity-40"
+                      [disabled]="!conditionRuleControlsEnabled"
+                      [attr.aria-label]="'Delete ' + conditionRuleLabel(i)"
+                      title="Delete rule"
+                      (click)="removeConditionRule(i)"
+                    >
+                      <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                }
+              </div>
+              <p class="m-0 text-[12px] leading-relaxed text-[#3D3D3D]">
+                Each rule is independent. Edit one at a time — other rules stay unchanged.
+              </p>
+            </section>
+
             @if (conditionModalPickTargetMode) {
               <!-- Persistent target selector (Add Logic) -->
               <section class="space-y-2.5">
@@ -2435,6 +2500,142 @@
             (click)="saveConditionModal()"
           >
             Save logic
+          </button>
+        </footer>
+      </div>
+    </div>
+  }
+
+  <!-- Add Rule — name prompt -->
+  @if (addConditionRuleModalOpen) {
+    <div
+      class="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/45 p-4 backdrop-blur-[2px]"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="add-condition-rule-modal-title"
+      (click)="closeAddConditionRuleModal()"
+    >
+      <div
+        class="w-full max-w-[26rem] overflow-hidden rounded-2xl border border-[#BDBDBD] bg-white shadow-[0_24px_48px_-16px_rgba(15,23,42,0.35)]"
+        (click)="$event.stopPropagation()"
+      >
+        <header class="flex items-center justify-between gap-3 border-b border-[#E0E0E0] px-5 py-4">
+          <h2 id="add-condition-rule-modal-title" class="m-0 text-base font-bold text-[#161616]">
+            Add rule
+          </h2>
+          <button
+            type="button"
+            class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 transition hover:bg-gray-100 hover:text-[#161616] focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300"
+            aria-label="Close"
+            title="Close"
+            (click)="closeAddConditionRuleModal()"
+          >
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M10.833 0.833374L5.83301 5.83337M5.83301 5.83337L0.833008 10.8334M5.83301 5.83337L0.833008 0.833374M5.83301 5.83337L10.833 10.8334" stroke-width="1.66667" stroke-linecap="round" stroke="black"/>
+            </svg>
+          </button>
+        </header>
+
+        <div class="space-y-2 px-5 py-5">
+          <label class="block text-sm font-semibold text-[#161616]" for="add-condition-rule-name">
+            Rule name
+          </label>
+          <input
+            id="add-condition-rule-name"
+            type="text"
+            class="w-full rounded-xl border border-[#BDBDBD] bg-white px-[0.85rem] py-[0.7rem] text-sm font-medium text-[#161616] placeholder:text-gray-400 focus:border-[#ff9015] focus:outline-none focus:shadow-[0_0_0_3px_rgba(255,144,21,0.12)]"
+            [(ngModel)]="addConditionRuleNameDraft"
+            (keydown.enter)="$event.preventDefault(); confirmAddConditionRule()"
+            placeholder="Rule 2"
+            autocomplete="off"
+          />
+          <p class="m-0 text-[12px] leading-relaxed text-[#3D3D3D]">
+            This name appears on the rule tab and is saved with the template.
+          </p>
+        </div>
+
+        <footer class="flex items-center justify-end gap-2 border-t border-[#E0E0E0] px-5 py-4">
+          <button
+            type="button"
+            class="rounded-lg border border-[#BDBDBD] bg-white px-3.5 py-2 text-sm font-medium text-[#161616] transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300"
+            (click)="closeAddConditionRuleModal()"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="rounded-lg border border-transparent bg-[#161616] px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-black focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ff9015]/30"
+            (click)="confirmAddConditionRule()"
+          >
+            Add Rule
+          </button>
+        </footer>
+      </div>
+    </div>
+  }
+
+  <!-- Rename Rule — name prompt -->
+  @if (renameConditionRuleModalOpen) {
+    <div
+      class="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/45 p-4 backdrop-blur-[2px]"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="rename-condition-rule-modal-title"
+      (click)="closeRenameConditionRuleModal()"
+    >
+      <div
+        class="w-full max-w-[26rem] overflow-hidden rounded-2xl border border-[#BDBDBD] bg-white shadow-[0_24px_48px_-16px_rgba(15,23,42,0.35)]"
+        (click)="$event.stopPropagation()"
+      >
+        <header class="flex items-center justify-between gap-3 border-b border-[#E0E0E0] px-5 py-4">
+          <h2 id="rename-condition-rule-modal-title" class="m-0 text-base font-bold text-[#161616]">
+            Rename rule
+          </h2>
+          <button
+            type="button"
+            class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 transition hover:bg-gray-100 hover:text-[#161616] focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300"
+            aria-label="Close"
+            title="Close"
+            (click)="closeRenameConditionRuleModal()"
+          >
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M10.833 0.833374L5.83301 5.83337M5.83301 5.83337L0.833008 10.8334M5.83301 5.83337L0.833008 0.833374M5.83301 5.83337L10.833 10.8334" stroke-width="1.66667" stroke-linecap="round" stroke="black"/>
+            </svg>
+          </button>
+        </header>
+
+        <div class="space-y-2 px-5 py-5">
+          <label class="block text-sm font-semibold text-[#161616]" for="rename-condition-rule-name">
+            Rule name
+          </label>
+          <input
+            id="rename-condition-rule-name"
+            type="text"
+            class="w-full rounded-xl border border-[#BDBDBD] bg-white px-[0.85rem] py-[0.7rem] text-sm font-medium text-[#161616] placeholder:text-gray-400 focus:border-[#ff9015] focus:outline-none focus:shadow-[0_0_0_3px_rgba(255,144,21,0.12)]"
+            [(ngModel)]="renameConditionRuleNameDraft"
+            (keydown.enter)="$event.preventDefault(); confirmRenameConditionRule()"
+            placeholder="Rule name"
+            autocomplete="off"
+          />
+          <p class="m-0 text-[12px] leading-relaxed text-[#3D3D3D]">
+            This name appears on the rule tab and is saved with the template.
+          </p>
+        </div>
+
+        <footer class="flex items-center justify-end gap-2 border-t border-[#E0E0E0] px-5 py-4">
+          <button
+            type="button"
+            class="rounded-lg border border-[#BDBDBD] bg-white px-3.5 py-2 text-sm font-medium text-[#161616] transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300"
+            (click)="closeRenameConditionRuleModal()"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="rounded-lg border border-transparent bg-[#161616] px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-black focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ff9015]/30"
+            (click)="confirmRenameConditionRule()"
+          >
+            Save
           </button>
         </footer>
       </div>
