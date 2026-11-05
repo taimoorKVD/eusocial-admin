@@ -765,7 +765,7 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
 
   // ── Dynamic Options ──────────────────────────────────────────
   readonly jobPositionOptions = signal<{ id: string; name: string }[]>([]);
-  readonly userOptions = signal<{ id: string; name: string; jobPosition?: string }[]>([]);
+  readonly userOptions = signal<{ id: string; name: string; email?: string; jobPosition?: string }[]>([]);
 
   constructor() {
     this.frequencyForm.valueChanges
@@ -1150,6 +1150,11 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
           const fields = schema?.fields || [];
           const nameField = fields.find((f: any) => f.name === 'name') || fields.find((f: any) => (f.label || '').toLowerCase() === 'name');
           const nameFieldId = nameField?.id || null;
+          const emailField =
+            fields.find((f: any) => f.name === 'email') ||
+            fields.find((f: any) => (f.label || '').toLowerCase() === 'email') ||
+            fields.find((f: any) => f.type === 'email');
+          const emailFieldId = emailField?.id || null;
 
           this.userService
             .getUsers(1)
@@ -1161,6 +1166,7 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
                   this.userOptions.set(data.map((u: any) => ({
                     id: String(u.id),
                     name: nameFieldId ? String(u[nameFieldId] ?? '') : '',
+                    email: this.resolveUserEmail(u, emailFieldId),
                     jobPosition: u.job_position?.name || u.jobPosition?.name || '',
                   })));
                 }
@@ -1183,6 +1189,7 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
                   this.userOptions.set(data.map((u: any) => ({
                     id: String(u.id),
                     name: '',
+                    email: this.resolveUserEmail(u, null),
                     jobPosition: u.job_position?.name || u.jobPosition?.name || '',
                   })));
                 }
@@ -1195,6 +1202,16 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
             });
         },
       });
+  }
+
+  /** Prefer users-form email field id; fall back to top-level `email` on the API record. */
+  private resolveUserEmail(user: any, emailFieldId: string | null): string {
+    const fromField = emailFieldId ? String(user?.[emailFieldId] ?? '').trim() : '';
+    if (fromField) {
+      return fromField;
+    }
+    const fromRoot = typeof user?.email === 'string' ? user.email.trim() : '';
+    return fromRoot;
   }
 
   // ── Edit Mode (load / populate) ───────────────────────────────

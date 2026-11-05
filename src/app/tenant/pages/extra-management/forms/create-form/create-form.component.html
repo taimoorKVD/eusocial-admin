@@ -1267,7 +1267,12 @@
                               </svg>
                             }
                             <span class="flex flex-col min-w-0">
-                              <span class="truncate">{{ opt.name }}</span>
+                              <span class="truncate">
+                                <span class="font-medium">{{ opt.name }}</span>
+                                @if (opt.email) {
+                                  <span class="text-xs font-normal opacity-60 ml-1">({{ opt.email }})</span>
+                                }
+                              </span>
                               @if (opt.jobPosition) {
                                 <span class="text-xs opacity-60 truncate">{{ opt.jobPosition }}</span>
                               }
@@ -1440,7 +1445,12 @@
                               </svg>
                             }
                             <span class="flex flex-col min-w-0">
-                              <span class="truncate">{{ opt.name }}</span>
+                              <span class="truncate">
+                                <span class="font-medium">{{ opt.name }}</span>
+                                @if (opt.email) {
+                                  <span class="text-xs font-normal opacity-60 ml-1">({{ opt.email }})</span>
+                                }
+                              </span>
                               @if (opt.jobPosition) {
                                 <span class="text-xs opacity-60 truncate">{{ opt.jobPosition }}</span>
                               }
