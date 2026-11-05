@@ -171,6 +171,11 @@ export function formatAssignReportModeLabel(
 export interface FrequencyRecurringConfig {
   every: number;
   interval: FrequencyInterval;
+  /**
+   * How many times the form runs within each recurrence period
+   * (e.g. 3 times per day when interval is `day`), NOT how many periods
+   * the schedule spans. Drives the length of `times`.
+   */
   repeatCount: number;
   daysOfWeek: string[];
   monthMode: FrequencyMonthMode;
@@ -185,8 +190,8 @@ export interface FrequencyRecurringConfig {
    */
   time: string | null;
   /**
-   * Per-occurrence assignment times for recurring schedules (`HH:mm` 24h).
-   * Length should match `repeatCount`.
+   * Per-period assignment times for recurring schedules (`HH:mm` 24h).
+   * Length should match `repeatCount` (N times within each day/week/month occurrence).
    */
   times: string[];
 }
@@ -564,44 +569,24 @@ function firstMonthlyOccurrence(
 }
 
 /**
- * First daily occurrence boundary: start + (every * repeatCount) days.
- * Example: start Oct 2, every 4, repeat 1 → Oct 6.
+ * Minimum daily End Date boundary: start + `every` days.
+ * `repeatCount` is times-per-day (time slots), not additional days.
+ * Example: start Oct 2, every 4 → Oct 6 (independent of Repeat times).
  */
-function firstDailyOccurrence(
-  start: Date,
-  every: number,
-  repeatCount: number,
-): Date {
+function firstDailyOccurrenceBoundary(start: Date, every: number): Date {
   const interval = Math.max(1, Number(every) || 1);
-  const times = Math.max(1, Number(repeatCount) || 1);
   const result = startOfLocalDay(start);
-  result.setDate(result.getDate() + interval * times);
-  return result;
-}
-
-/**
- * Advance a first occurrence by additional repeat cycles (repeatCount - 1).
- */
-function advanceByRepeatCycles(
-  first: Date,
-  every: number,
-  repeatCount: number,
-  unit: 'week' | 'month',
-): Date {
-  const interval = Math.max(1, Number(every) || 1);
-  const extra = Math.max(0, (Math.max(1, Number(repeatCount) || 1) - 1) * interval);
-  const result = new Date(first.getFullYear(), first.getMonth(), first.getDate());
-  if (unit === 'week') {
-    result.setDate(result.getDate() + extra * 7);
-  } else {
-    result.setMonth(result.getMonth() + extra);
-  }
+  result.setDate(result.getDate() + interval);
   return result;
 }
 
 /**
  * Minimum valid Schedule End Date for day / week / month / year recurring.
  * Returns null when start/config is incomplete (e.g. weekly with no days).
+ *
+ * End Date spans the schedule window across periods (`every` / interval).
+ * It must NOT grow with `repeatCount` — that value is how many times the form
+ * runs within each period (size of `times`), e.g. 3 times per day.
  */
 export function resolveMinimumFrequencyEndDate(
   startDate: string | null | undefined,
@@ -613,33 +598,27 @@ export function resolveMinimumFrequencyEndDate(
   }
 
   const every = Math.max(1, Number(recurring.every) || 1);
-  const repeatCount = Math.max(1, Number(recurring.repeatCount) || 1);
   let boundary: Date | null = null;
 
   switch (recurring.interval) {
     case 'day':
-      boundary = firstDailyOccurrence(start, every, repeatCount);
+      boundary = firstDailyOccurrenceBoundary(start, every);
       break;
     case 'week': {
-      const first = firstWeeklyOccurrence(start, every, recurring.daysOfWeek ?? []);
-      boundary = first
-        ? advanceByRepeatCycles(first, every, repeatCount, 'week')
-        : null;
+      // First matching weekday on/after start is enough for one period.
+      boundary = firstWeeklyOccurrence(start, every, recurring.daysOfWeek ?? []);
       break;
     }
     case 'month': {
-      const first = firstMonthlyOccurrence(
+      boundary = firstMonthlyOccurrence(
         start,
         every,
         Number(recurring.dayOfMonth) || 1,
       );
-      boundary = first
-        ? advanceByRepeatCycles(first, every, repeatCount, 'month')
-        : null;
       break;
     }
     case 'year': {
-      // Year-based window: minimum End Year = Start Year + repeat interval.
+      // Year-based window: minimum End Year = Start Year + interval (`every`).
       const startYear = start.getFullYear();
       const minEndYear = startYear + every;
       return `${minEndYear}-01-01`;
