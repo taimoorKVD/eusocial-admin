@@ -475,13 +475,15 @@ export class ViewFormsComponent implements OnInit {
 
     const rect = trigger.getBoundingClientRect();
     const menuWidth = 184; // ~11.5rem
+    const estimatedMenuHeight = 104; // Edit/View + divider + Delete/Restore
     const menuMaxHeight = 220;
     const gap = 4;
     const viewportPadding = 8;
 
     const spaceBelow = window.innerHeight - rect.bottom - viewportPadding;
     const spaceAbove = rect.top - viewportPadding;
-    const openUpward = spaceBelow < 120 && spaceAbove > spaceBelow;
+    const openUpward =
+      spaceBelow < estimatedMenuHeight && spaceAbove > spaceBelow;
 
     let left = rect.right - menuWidth;
     left = Math.min(
@@ -490,7 +492,10 @@ export class ViewFormsComponent implements OnInit {
     );
 
     if (openUpward) {
-      const bottom = Math.max(viewportPadding, window.innerHeight - rect.top + gap);
+      const bottom = Math.max(
+        viewportPadding,
+        window.innerHeight - rect.top + gap,
+      );
       this.actionsMenuStyle.set({
         position: 'fixed',
         top: 'auto',
@@ -498,7 +503,7 @@ export class ViewFormsComponent implements OnInit {
         left: `${Math.round(left)}px`,
         right: 'auto',
         zIndex: '80',
-        maxHeight: `${Math.min(menuMaxHeight, spaceAbove)}px`,
+        maxHeight: `${Math.min(menuMaxHeight, Math.max(80, spaceAbove))}px`,
         overflowY: 'auto',
       });
       return;
