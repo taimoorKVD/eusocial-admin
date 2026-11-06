@@ -260,6 +260,10 @@ export class FieldSettingsComponent {
   renameConditionRuleModalOpen = false;
   renameConditionRuleIndex = -1;
   renameConditionRuleNameDraft = '';
+  /** Ellipsis menu in the vertical rules sidebar (`null` = closed). */
+  conditionRuleMenuIndex: number | null = null;
+  /** Fixed viewport coords for the rule ellipsis menu (avoids sidebar scroll expansion). */
+  conditionRuleMenuStyle: Record<string, string> | null = null;
   /** UI-only: Conditional Logic popup visibility. */
   conditionModalOpen = false;
   /**
@@ -1407,7 +1411,11 @@ export class FieldSettingsComponent {
   }
 
   selectFieldLabel(fields: ReadonlyArray<FormField>, fieldId: string): string {
-    return fields.find(field => field.id === fieldId)?.label ?? '';
+    const id = String(fieldId ?? '').trim();
+    if (!id) {
+      return '';
+    }
+    return fields.find(field => String(field.id) === id)?.label ?? '';
   }
 
   selectColumnLabel(
@@ -1497,8 +1505,61 @@ export class FieldSettingsComponent {
     this.conditionModalPickTargetMode = false;
     this.conditionModalTargetConfirmed = false;
     this.retainConditionModalOnFieldSwitch = false;
+    this.closeConditionRuleMenu();
     this.closeAddConditionRuleModal();
     this.closeRenameConditionRuleModal();
+  }
+
+  toggleConditionRuleMenu(index: number, event?: Event): void {
+    event?.stopPropagation();
+    if (!this.conditionRuleControlsEnabled) {
+      return;
+    }
+    if (this.conditionRuleMenuIndex === index) {
+      this.closeConditionRuleMenu();
+      return;
+    }
+    const trigger = event?.currentTarget as HTMLElement | undefined;
+    this.conditionRuleMenuIndex = index;
+    this.conditionRuleMenuStyle = this.buildConditionRuleMenuStyle(trigger ?? null);
+  }
+
+  closeConditionRuleMenu(): void {
+    this.conditionRuleMenuIndex = null;
+    this.conditionRuleMenuStyle = null;
+  }
+
+  private buildConditionRuleMenuStyle(
+    trigger: HTMLElement | null,
+  ): Record<string, string> {
+    const menuWidth = 160;
+    const menuHeight = 84;
+    const gap = 4;
+    const edge = 8;
+
+    if (!trigger) {
+      return {
+        top: `${edge}px`,
+        left: `${edge}px`,
+        width: `${menuWidth}px`,
+      };
+    }
+
+    const rect = trigger.getBoundingClientRect();
+    const openAbove = window.innerHeight - rect.bottom < menuHeight + gap;
+    const top = openAbove
+      ? Math.max(edge, rect.top - gap - menuHeight)
+      : Math.min(rect.bottom + gap, window.innerHeight - menuHeight - edge);
+    const left = Math.min(
+      Math.max(edge, rect.right - menuWidth),
+      window.innerWidth - menuWidth - edge,
+    );
+
+    return {
+      top: `${top}px`,
+      left: `${left}px`,
+      width: `${menuWidth}px`,
+    };
   }
 
   /**
@@ -1549,6 +1610,7 @@ export class FieldSettingsComponent {
   }
 
   selectConditionRule(index: number): void {
+    this.closeConditionRuleMenu();
     if (index < 0 || index >= this.conditionRules.length || index === this.activeConditionRuleIndex) {
       return;
     }
@@ -1568,6 +1630,7 @@ export class FieldSettingsComponent {
     if (!this._field || !this.isFieldEditable || !this.conditionRuleControlsEnabled) {
       return;
     }
+    this.closeConditionRuleMenu();
     this.addConditionRuleNameDraft = defaultConditionRuleName(this.conditionRules.length);
     this.addConditionRuleModalOpen = true;
   }
@@ -1595,6 +1658,26 @@ export class FieldSettingsComponent {
     this.onChange();
   }
 
+  /** Duplicate the active rule (Add Rule section secondary action). */
+  duplicateActiveConditionRule(): void {
+    if (!this._field || !this.isFieldEditable || !this.conditionRuleControlsEnabled) {
+      return;
+    }
+
+    this.commitActiveConditionRule();
+    const source =
+      this.conditionRules[this.activeConditionRuleIndex] ?? this.conditionEditor;
+    const clone = JSON.parse(JSON.stringify(source)) as FieldConditionalLogic;
+    clone.name = defaultConditionRuleName(this.conditionRules.length);
+    clone.enabled = true;
+
+    this.conditionRules = [...this.conditionRules, clone];
+    this.activeConditionRuleIndex = this.conditionRules.length - 1;
+    this.conditionEditor = JSON.parse(JSON.stringify(clone)) as FieldConditionalLogic;
+    this._field.condition = this.serializeActiveConditionRules();
+    this.onChange();
+  }
+
   openRenameConditionRuleModal(index: number, event?: Event): void {
     event?.stopPropagation();
     if (!this._field || !this.isFieldEditable || !this.conditionRuleControlsEnabled) {
@@ -1603,6 +1686,7 @@ export class FieldSettingsComponent {
     if (index < 0 || index >= this.conditionRules.length) {
       return;
     }
+    this.closeConditionRuleMenu();
     this.renameConditionRuleIndex = index;
     this.renameConditionRuleNameDraft = this.conditionRuleLabel(index);
     this.renameConditionRuleModalOpen = true;
@@ -1649,6 +1733,7 @@ export class FieldSettingsComponent {
     if (!this._field || !this.isFieldEditable) {
       return;
     }
+    this.closeConditionRuleMenu();
     if (this.conditionRules.length <= 1) {
       // Keep a single empty rule rather than clearing the modal state.
       this.conditionRules = [createEmptyConditionalLogic({ name: defaultConditionRuleName(0) })];
@@ -1781,12 +1866,12 @@ export class FieldSettingsComponent {
   }
 
   get conditionSourceField(): FormField | null {
-    const sourceId = this.conditionSourceFieldId;
+    const sourceId = String(this.conditionSourceFieldId ?? '').trim();
     if (!sourceId) {
       return null;
     }
 
-    return this.schemaSignal().find(field => field.id === sourceId) ?? null;
+    return this.schemaSignal().find(field => String(field.id) === sourceId) ?? null;
   }
 
   get conditionSourceOptions(): Array<{ label: string; value: string | number }> {
@@ -2983,13 +3068,21 @@ export class FieldSettingsComponent {
       return;
     }
 
-    const sourceId = getPrimaryPredicate(this.conditionEditor).fieldId;
+    const sourceId = String(getPrimaryPredicate(this.conditionEditor).fieldId ?? '').trim();
     if (!sourceId) {
       return;
     }
 
-    const isValidSource = this.validConditionSourceFields.some(field => field.id === sourceId);
-    if (isValidSource) {
+    const schema = this.schemaSignal();
+    // Schema not hydrated yet — never wipe a saved WHEN source during load/churn.
+    if (!schema.length) {
+      return;
+    }
+
+    // Keep saved sources that still exist on the form. Circular filtering belongs to
+    // new picks (`onConditionSourceChange`), not load-time restoration.
+    const existsInSchema = schema.some(field => String(field.id) === sourceId);
+    if (existsInSchema) {
       return;
     }
 
@@ -2997,9 +3090,10 @@ export class FieldSettingsComponent {
       ...setPrimaryPredicate(this.conditionEditor, { fieldId: '', value: '' }),
       enabled: false,
     };
-    this.persistConditionEditor();
 
+    // Avoid rewriting `_field.condition` during assignField / schema hydration.
     if (emit) {
+      this.persistConditionEditor();
       this.onChange();
     }
   }
