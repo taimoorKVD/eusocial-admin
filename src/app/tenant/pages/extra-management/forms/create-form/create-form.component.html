@@ -134,7 +134,8 @@
             [class.text-[#161616]]="isStepActive(step.number)"
             [class.text-[#5E5E5E]]="!isStepActive(step.number)"
             [class.font-medium]="!isStepActive(step.number)"
-            [disabled]="step.number > currentStep()"
+            [class.cursor-pointer]="canNavigateToStep(step.number) && !isStepActive(step.number)"
+            [disabled]="!canNavigateToStep(step.number)"
             (click)="goToStep(step.number)"
           >
             <span

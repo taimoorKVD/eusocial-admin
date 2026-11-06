@@ -912,11 +912,24 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
     }
   }
 
-  goToStep(stepNum: number): void {
-    if (stepNum < this.currentStep()) {
-      this.showBuilderPalette();
-      this.currentStep.set(stepNum);
+  /**
+   * Step tabs: prior steps always; the immediate next step only when
+   * Save & continue would also allow advancing (`canProceed`).
+   */
+  canNavigateToStep(stepNum: number): boolean {
+    const current = this.currentStep();
+    if (stepNum <= current) {
+      return true;
     }
+    return stepNum === current + 1 && this.canProceed();
+  }
+
+  goToStep(stepNum: number): void {
+    if (!this.canNavigateToStep(stepNum) || stepNum === this.currentStep()) {
+      return;
+    }
+    this.showBuilderPalette();
+    this.currentStep.set(stepNum);
   }
 
   /** Header primary action: advance wizard, or persist on the last step. */
