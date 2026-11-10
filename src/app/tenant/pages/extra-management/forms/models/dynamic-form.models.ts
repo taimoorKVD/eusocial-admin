@@ -803,6 +803,9 @@ export interface DynamicFormPayload {
   conditionalRules?: FormLogicRule[];
 }
 
+/** Template lifecycle as returned by data-collection APIs (`active` = published). */
+export type FormTemplateStatus = 'active' | 'draft' | 'archived';
+
 export interface SavedDynamicForm {
   id: string;
   formName: string;
@@ -810,6 +813,8 @@ export interface SavedDynamicForm {
   sectionTypes: string[];
   createdAt: string;
   payload: DynamicFormPayload;
+  /** Present when the API returns lifecycle status (or `isActive`). */
+  status?: FormTemplateStatus;
 }
 
 export const FIELD_TYPE_OPTIONS: { label: string; value: FieldType }[] = [

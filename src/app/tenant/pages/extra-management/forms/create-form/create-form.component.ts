@@ -21,7 +21,7 @@ import { FormBuilder, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
-import { finalize, Observable, startWith, take } from 'rxjs';
+import { finalize, startWith, take } from 'rxjs';
 import { CreateFormCanDeactivate } from './create-form-can-deactivate.interface';
 import flatpickr from 'flatpickr';
 import { Instance as FlatpickrInstance } from 'flatpickr/dist/types/instance';
@@ -118,6 +118,7 @@ import {
   FormMetaConfig,
   FormRow,
   FormSection,
+  FormTemplateStatus,
   FormSelectOption,
   FrequencyInterval,
   FrequencyMonthMode,
@@ -294,14 +295,36 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
   readonly sections = signal<FormSection[]>([]);
 
   // ── Edit Mode State ───────────────────────────────────────────
-  /** Template id when the wizard is opened from View Forms → Edit. */
+  /** Template id when the wizard is opened from View Forms → Edit (or after first draft autosave). */
   readonly formId = signal<string>('');
   readonly isEditing = computed(() => !!this.formId());
+  /**
+   * API lifecycle status. `null` = new create session (draft workflow).
+   * `active` = published; draft autosave must never run for it.
+   */
+  readonly templateStatus = signal<FormTemplateStatus | null>(null);
+  readonly isPublishedTemplate = computed(() => this.templateStatus() === 'active');
+  /** New templates and drafts use Publish + draft autosave; published uses Update only. */
+  readonly usesDraftWorkflow = computed(() => {
+    const status = this.templateStatus();
+    return status === null || status === 'draft';
+  });
   readonly loading = signal(false);
-  /** True while create/update form template API is in flight. */
+  /** True while create/update/publish API is in flight. */
   readonly submitting = signal(false);
-  /** True while manual Save as Draft API is in flight. */
+  /** True while draft autosave API is in flight. */
   readonly savingDraft = signal(false);
+  /** Subtle draft-save indicator (only while leaving / flushing a draft). */
+  readonly draftSaveState = signal<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  /** Snapshot of the last successful draft persist (leave-time save). */
+  private lastAutosavedSnapshot = '';
+  private draftAutosaveQueued = false;
+  private pendingDraftAutosaveOptions: {
+    force?: boolean;
+    leaveAfter?: boolean;
+    resolveNavigation?: boolean;
+    onDone?: (ok: boolean) => void;
+  } | null = null;
   readonly showUnsavedChangesModal = signal(false);
   private loadedSchema: DynamicFormPayload | null = null;
 
@@ -399,9 +422,21 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
     ...this.paletteConnectedDropLists(),
   ]);
 
-  readonly draftStatusLabel = computed(() =>
-    this.isEditing() ? 'Editing saved template' : 'Draft · Not saved yet',
-  );
+  readonly draftStatusLabel = computed(() => {
+    if (this.isPublishedTemplate()) {
+      return 'Editing published template';
+    }
+    if (this.draftSaveState() === 'saving' || this.savingDraft()) {
+      return 'Saving draft…';
+    }
+    if (this.draftSaveState() === 'error') {
+      return 'Draft save failed';
+    }
+    if (this.draftSaveState() === 'saved' || this.templateStatus() === 'draft') {
+      return this.formId() ? 'Draft saved' : 'Draft · Not saved yet';
+    }
+    return this.formId() ? 'Editing draft' : 'Draft · Not saved yet';
+  });
 
   /** Stable per-row builder schemas for canvas CDK lists (rebuilt when sections change). */
   readonly rowCanvasSchemas = computed(() => {
@@ -932,37 +967,47 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
     this.currentStep.set(stepNum);
   }
 
-  /** Header primary action: advance wizard, or persist on the last step. */
-  saveAndContinue(): void {
-    if (this.isLastStep()) {
-      this.save();
-      return;
-    }
-    this.nextStep();
-  }
-
-  /** Disabled state for the Figma “Save & continue” control. */
-  canSaveAndContinue(): boolean {
-    if (this.isLastStep()) {
-      return this.canSave() && !this.submitting();
-    }
-    return this.canProceed();
+  /**
+   * Publish for new/draft templates. Visible from Step 1; enabled only on
+   * Step 3 when all wizard requirements pass.
+   */
+  canPublish(): boolean {
+    return (
+      this.usesDraftWorkflow() &&
+      this.isLastStep() &&
+      this.step1Valid() &&
+      this.step2Valid() &&
+      this.isFrequencyScheduleValid() &&
+      !this.submitting() &&
+      !this.savingDraft()
+    );
   }
 
   /**
-   * Edit mode only: enable Update without requiring the user to reach the last tab.
-   * Reuses the same canSave / updateTemplate path as the final-step Update action.
+   * Published templates only: enable Update when the full template is valid.
    */
   canUpdateExistingTemplate(): boolean {
-    return this.isEditing() && this.canSave() && !this.submitting();
+    return (
+      this.isPublishedTemplate() &&
+      this.canSave() &&
+      !this.submitting()
+    );
   }
 
-  /** Edit mode: persist current changes via the existing update API (no step advance). */
+  /** Published edit: persist via PUT without changing status. */
   updateExistingTemplate(): void {
     if (!this.canUpdateExistingTemplate()) {
       return;
     }
-    this.save();
+    this.savePublishedTemplate();
+  }
+
+  /** Header primary CTA click (Publish for draft workflow). */
+  onPrimaryPublish(): void {
+    if (!this.canPublish()) {
+      return;
+    }
+    this.publishTemplate();
   }
 
   // ── Lifecycle ────────────────────────────────────────────────
@@ -980,6 +1025,7 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
 
       // Create mode: empty template is the clean baseline (not unsaved).
       this.markBaseline();
+      this.lastAutosavedSnapshot = this.captureSnapshot();
       return;
     }
 
@@ -994,6 +1040,8 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
 
   /** Restore the unsaved editor exactly as it was before opening Preview. */
   private restorePreviewState(state: FormEditorPreviewState): void {
+    this.formId.set(state.formId || this.formId());
+    this.templateStatus.set(state.templateStatus);
     this.formName.set(state.formName);
     this.sections.set(state.sections);
     this.logicRules.set(state.logicRules);
@@ -1004,11 +1052,42 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
     this.baselineReady = state.baselineReady;
     this.freezeBaseline = state.freezeBaseline;
     this.currentStep.set(state.currentStep);
+    this.lastAutosavedSnapshot = state.savedSnapshot;
     this.wireRowLocationDependencies();
   }
 
   canDeactivate(): boolean | Promise<boolean> {
-    if (this.allowNavigation || !this.hasUnsavedChanges()) {
+    if (this.allowNavigation) {
+      return true;
+    }
+
+    // Draft workflow: persist latest changes once on leave (not while editing).
+    if (this.usesDraftWorkflow()) {
+      if (!this.hasPendingDraftChanges() && !this.savingDraft()) {
+        return true;
+      }
+      if (this.formName().trim()) {
+        return new Promise<boolean>((resolve) => {
+          this.persistDraftOnLeave({
+            onDone: (ok) => {
+              if (ok) {
+                this.allowNavigation = true;
+                resolve(true);
+                return;
+              }
+              this.showUnsavedChangesModal.set(true);
+              this.navigationResolver = resolve;
+            },
+          });
+        });
+      }
+      this.showUnsavedChangesModal.set(true);
+      return new Promise<boolean>((resolve) => {
+        this.navigationResolver = resolve;
+      });
+    }
+
+    if (!this.hasUnsavedChanges()) {
       return true;
     }
 
@@ -1030,30 +1109,12 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
     return dirty;
   }
 
-  canSaveAsDraft(): boolean {
-    const hasName = this.formName().trim().length > 0;
-    return hasName && !this.savingDraft() && !this.submitting();
-  }
-
-  /** Header: save incomplete/complete template via draft endpoint, then leave. */
-  saveAsDraft(): void {
-    if (!this.canSaveAsDraft()) {
-      return;
+  /** True when draft workflow has edits not yet persisted via the Draft API. */
+  hasPendingDraftChanges(): boolean {
+    if (!this.usesDraftWorkflow() || !this.baselineReady) {
+      return false;
     }
-
-    this.performSaveDraft()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: () => {
-          this.toastr.success('Draft saved successfully');
-          this.freezeBaseline = false;
-          this.markBaseline();
-          this.leaveAfterSave();
-        },
-        error: (err) => {
-          this.toastr.error(err?.error?.message || 'Failed to save draft');
-        },
-      });
+    return this.captureSnapshot() !== this.lastAutosavedSnapshot;
   }
 
   onUnsavedStayHere(): void {
@@ -1075,46 +1136,20 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
     this.router.navigate(['/dynamic-forms']);
   }
 
-  onUnsavedSaveAsDraft(): void {
-    if (!this.canSaveAsDraft()) {
+  /** Published leave modal: persist via Update then navigate away. */
+  onUnsavedSavePublished(): void {
+    if (!this.isPublishedTemplate() || !this.canSave() || this.submitting()) {
       return;
     }
-
-    this.performSaveDraft()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: () => {
-          this.toastr.success('Draft saved successfully');
-          this.freezeBaseline = false;
-          this.markBaseline();
-          this.showUnsavedChangesModal.set(false);
-          this.allowNavigation = true;
-          if (this.navigationResolver) {
-            this.navigationResolver(true);
-            this.navigationResolver = null;
-            return;
-          }
-          this.router.navigate(['/dynamic-forms']);
-        },
-        error: (err) => {
-          this.toastr.error(err?.error?.message || 'Failed to save draft');
-        },
-      });
+    this.savePublishedTemplate({ leaveAfter: true, resolveNavigation: true });
   }
 
-  private performSaveDraft(): Observable<unknown> {
-    this.savingDraft.set(true);
-    const body = {
-      name: this.formName().trim() || 'Untitled form',
-      schema: this.buildPayload(),
-    };
-    const persistedId = Number(this.formId());
-    const request$ =
-      Number.isFinite(persistedId) && persistedId > 0
-        ? this.formsService.updateTemplateDraft(persistedId, body)
-        : this.formsService.saveTemplateDraft(body);
-
-    return request$.pipe(finalize(() => this.savingDraft.set(false)));
+  /** Draft leave modal: persist draft then navigate away. */
+  onUnsavedSaveDraftAndLeave(): void {
+    if (!this.usesDraftWorkflow() || !this.formName().trim()) {
+      return;
+    }
+    this.persistDraftOnLeave({ leaveAfter: true, resolveNavigation: true });
   }
 
   private leaveAfterSave(): void {
@@ -1253,6 +1288,11 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
   private populateForm(template: SavedDynamicForm): void {
     const payload = template.payload ?? ({} as DynamicFormPayload);
 
+    // Prefer API status; if missing on edit, treat as published so we never
+    // demote an active template via draft autosave.
+    this.templateStatus.set(
+      template.status ?? (this.formId() ? 'active' : null),
+    );
     this.formName.set(payload.formName?.trim() || template.formName || '');
     const sections = this.deserializeSections(payload.sections ?? []);
     this.applyFrequencyToForm(payload);
@@ -1267,6 +1307,7 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
         this.sections.set(hydratedSections);
         this.wireRowLocationDependencies();
         this.markBaseline();
+        this.lastAutosavedSnapshot = this.captureSnapshot();
       });
   }
 
@@ -4218,8 +4259,23 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
   /**
    * Open the shared Form Template preview page (FormTemplatePreviewComponent).
    * Create mode renders the in-memory schema without saving or calling the preview API.
+   * Draft workflow: flush pending changes once before leaving the wizard.
    */
   openTemplatePreview(): void {
+    if (
+      this.usesDraftWorkflow() &&
+      this.hasPendingDraftChanges() &&
+      this.formName().trim()
+    ) {
+      this.persistDraftOnLeave({
+        onDone: () => this.navigateToTemplatePreview(),
+      });
+      return;
+    }
+    this.navigateToTemplatePreview();
+  }
+
+  private navigateToTemplatePreview(): void {
     const id = this.formId();
     const payload = this.buildPayload();
 
@@ -4229,7 +4285,7 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
         payload,
       });
       this.previewBridge.setEditorState({
-        formId: '',
+        formId: this.formId(),
         formName: this.formName(),
         sections: this.sections(),
         meta: this.meta(),
@@ -4239,12 +4295,16 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
         baselineReady: this.baselineReady,
         freezeBaseline: this.freezeBaseline,
         currentStep: this.currentStep(),
+        templateStatus: this.templateStatus(),
       });
 
       this.allowNavigation = true;
+      const returnTo = this.formId()
+        ? `/dynamic-forms/edit/${this.formId()}`
+        : '/dynamic-forms/create';
       void this.router
         .navigate(['/dynamic-forms', 'preview'], {
-          queryParams: { returnTo: '/dynamic-forms/create' },
+          queryParams: { returnTo },
         })
         .then((navigated) => {
           if (!navigated) {
@@ -4275,6 +4335,7 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
       baselineReady: this.baselineReady,
       freezeBaseline: this.freezeBaseline,
       currentStep: this.currentStep(),
+      templateStatus: this.templateStatus(),
     });
 
     // Preview must not trigger the unsaved-changes guard or save the template.
@@ -4299,24 +4360,26 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
     this.router.navigate(['/dynamic-forms']);
   }
 
-  save(): void {
-    if (this.submitting()) {
+  /**
+   * Publish a new or draft template via create/PUT (existing publish path).
+   * Never calls draft endpoints.
+   */
+  publishTemplate(): void {
+    if (!this.canPublish()) {
       return;
     }
 
-    if (!this.canSave()) return;
-
     const payload = this.buildPayload();
     const id = this.formId();
+    const body = {
+      name: this.formName().trim(),
+      schema: payload,
+    };
 
     this.submitting.set(true);
-
     const request$ = id
-      ? this.formsService.updateTemplate(Number(id), {
-          name: this.formName(),
-          schema: payload,
-        })
-      : this.formsService.createForm({ name: this.formName(), schema: payload });
+      ? this.formsService.updateTemplate(Number(id), body)
+      : this.formsService.createForm(body);
 
     request$
       .pipe(
@@ -4324,18 +4387,198 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-        next: () => {
-          this.toastr.success(id ? 'Form updated successfully' : 'Form created successfully');
+        next: (response) => {
+          const publishedId = this.formsService.extractTemplateId(response) ?? Number(id);
+          if (Number.isFinite(publishedId) && publishedId > 0) {
+            this.formId.set(String(publishedId));
+          }
+          this.templateStatus.set('active');
+          this.toastr.success('Form published successfully');
           this.freezeBaseline = false;
           this.markBaseline();
+          this.lastAutosavedSnapshot = this.captureSnapshot();
           this.leaveAfterSave();
         },
         error: (err) => {
-          this.toastr.error(
-            err?.error?.message || (id ? 'Failed to update form' : 'Failed to create form'),
-          );
+          this.toastr.error(err?.error?.message || 'Failed to publish form');
         },
       });
+  }
+
+  /**
+   * Update an already-published template via PUT. Does not touch draft APIs
+   * and does not change lifecycle status client-side.
+   */
+  savePublishedTemplate(options?: {
+    leaveAfter?: boolean;
+    resolveNavigation?: boolean;
+  }): void {
+    if (this.submitting() || !this.canSave()) {
+      return;
+    }
+    if (!this.isPublishedTemplate()) {
+      return;
+    }
+
+    const id = this.formId();
+    if (!id) {
+      return;
+    }
+
+    this.submitting.set(true);
+    this.formsService
+      .updateTemplate(Number(id), {
+        name: this.formName().trim(),
+        schema: this.buildPayload(),
+      })
+      .pipe(
+        finalize(() => this.submitting.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: () => {
+          this.toastr.success('Form updated successfully');
+          this.freezeBaseline = false;
+          this.markBaseline();
+          this.showUnsavedChangesModal.set(false);
+          if (options?.leaveAfter) {
+            this.allowNavigation = true;
+            if (options.resolveNavigation && this.navigationResolver) {
+              this.navigationResolver(true);
+              this.navigationResolver = null;
+              return;
+            }
+            this.leaveAfterSave();
+          }
+        },
+        error: (err) => {
+          this.toastr.error(err?.error?.message || 'Failed to update form');
+        },
+      });
+  }
+
+  /** @deprecated Use publishTemplate / savePublishedTemplate. Kept for any stray callers. */
+  save(): void {
+    if (this.usesDraftWorkflow()) {
+      this.publishTemplate();
+      return;
+    }
+    this.savePublishedTemplate({ leaveAfter: true });
+  }
+
+  /**
+   * Persist the current wizard state via the Draft API when leaving.
+   * Skips the request when nothing has changed since the last successful save.
+   */
+  private persistDraftOnLeave(options?: {
+    leaveAfter?: boolean;
+    resolveNavigation?: boolean;
+    onDone?: (ok: boolean) => void;
+  }): void {
+    if (!this.usesDraftWorkflow() || this.submitting()) {
+      options?.onDone?.(false);
+      return;
+    }
+
+    const name = this.formName().trim();
+    if (!name) {
+      options?.onDone?.(false);
+      return;
+    }
+
+    const snap = this.captureSnapshot();
+    if (snap === this.lastAutosavedSnapshot) {
+      options?.onDone?.(true);
+      if (options?.leaveAfter) {
+        this.showUnsavedChangesModal.set(false);
+        this.allowNavigation = true;
+        if (options.resolveNavigation && this.navigationResolver) {
+          this.navigationResolver(true);
+          this.navigationResolver = null;
+          return;
+        }
+        this.leaveAfterSave();
+      }
+      return;
+    }
+
+    if (this.savingDraft()) {
+      this.draftAutosaveQueued = true;
+      this.pendingDraftAutosaveOptions = {
+        force: true,
+        leaveAfter: options?.leaveAfter,
+        resolveNavigation: options?.resolveNavigation,
+        onDone: options?.onDone,
+      };
+      return;
+    }
+
+    this.savingDraft.set(true);
+    this.draftSaveState.set('saving');
+    const body = {
+      name,
+      schema: this.buildPayload(),
+    };
+    const persistedId = Number(this.formId());
+    const request$ =
+      Number.isFinite(persistedId) && persistedId > 0
+        ? this.formsService.updateTemplateDraft(persistedId, body)
+        : this.formsService.saveTemplateDraft(body);
+
+    request$
+      .pipe(
+        finalize(() => this.savingDraft.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (response) => {
+          this.applyDraftSaveSuccess(response, snap);
+          options?.onDone?.(true);
+          if (options?.leaveAfter) {
+            this.showUnsavedChangesModal.set(false);
+            this.allowNavigation = true;
+            if (options.resolveNavigation && this.navigationResolver) {
+              this.navigationResolver(true);
+              this.navigationResolver = null;
+              return;
+            }
+            this.leaveAfterSave();
+            return;
+          }
+          this.flushQueuedDraftPersist();
+        },
+        error: (err) => {
+          this.draftSaveState.set('error');
+          this.toastr.error(err?.error?.message || 'Failed to save draft');
+          options?.onDone?.(false);
+          this.flushQueuedDraftPersist();
+        },
+      });
+  }
+
+  private flushQueuedDraftPersist(): void {
+    const pending = this.pendingDraftAutosaveOptions;
+    this.pendingDraftAutosaveOptions = null;
+    this.draftAutosaveQueued = false;
+
+    if (pending) {
+      this.persistDraftOnLeave(pending);
+    }
+  }
+
+  private applyDraftSaveSuccess(response: unknown, snap: string): void {
+    const newId = this.formsService.extractTemplateId(response);
+    if (newId && !this.formId()) {
+      // Keep the in-session editor mounted; subsequent autosaves / Publish use this id.
+      this.formId.set(String(newId));
+    }
+    if (this.templateStatus() !== 'draft') {
+      this.templateStatus.set('draft');
+    }
+    this.lastAutosavedSnapshot = snap;
+    this.freezeBaseline = false;
+    this.markBaseline();
+    this.draftSaveState.set('saved');
   }
 
   private buildPayload() {

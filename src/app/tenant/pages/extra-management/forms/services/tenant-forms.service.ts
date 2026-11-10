@@ -2,7 +2,11 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../../../../../environments/environment';
-import { SavedDynamicForm, createId } from '../models/dynamic-form.models';
+import {
+  FormTemplateStatus,
+  SavedDynamicForm,
+  createId,
+} from '../models/dynamic-form.models';
 
 /** Template lifecycle statuses accepted by listing/search filters. */
 export type TenantFormStatusFilter = 'active' | 'draft' | 'archived';
@@ -263,6 +267,49 @@ export class TenantFormsService {
       sectionTypes: sections.map((section) => String(section?.type ?? '')),
       createdAt: item.createdAt ?? item.created_at ?? '',
       payload: schema as SavedDynamicForm['payload'],
+      status: this.normalizeLifecycleStatus(item.status, item.isActive),
     };
+  }
+
+  /** Map API status / isActive onto listing + wizard lifecycle values. */
+  normalizeLifecycleStatus(
+    status?: string | null,
+    isActive?: boolean | null,
+  ): FormTemplateStatus | undefined {
+    const raw = String(status ?? '')
+      .trim()
+      .toLowerCase();
+    if (raw === 'draft' || raw === 'drafts') {
+      return 'draft';
+    }
+    if (raw === 'active' || raw === 'published' || raw === 'publish') {
+      return 'active';
+    }
+    if (raw === 'archived' || raw === 'archive') {
+      return 'archived';
+    }
+    if (isActive === true) {
+      return 'active';
+    }
+    if (isActive === false) {
+      return 'draft';
+    }
+    return undefined;
+  }
+
+  /** Best-effort id from create/draft/update response bodies. */
+  extractTemplateId(response: TenantFormsApiResponse | unknown): number | null {
+    if (!response || typeof response !== 'object') {
+      return null;
+    }
+    const root = response as Record<string, unknown>;
+    const data = root['data'];
+    const fromData =
+      data && typeof data === 'object' && !Array.isArray(data)
+        ? (data as Record<string, unknown>)['id']
+        : undefined;
+    const id = fromData ?? root['id'];
+    const numeric = Number(id);
+    return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
   }
 }

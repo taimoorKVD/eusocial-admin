@@ -4,6 +4,7 @@ import {
   DynamicFormPayload,
   FormMetaConfig,
   FormSection,
+  FormTemplateStatus,
 } from '../models/dynamic-form.models';
 
 export interface FormPreviewPayload {
@@ -28,6 +29,7 @@ export interface FormEditorPreviewState {
   baselineReady: boolean;
   freezeBaseline: boolean;
   currentStep: number;
+  templateStatus: FormTemplateStatus | null;
 }
 
 /**

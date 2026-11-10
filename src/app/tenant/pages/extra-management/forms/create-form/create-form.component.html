@@ -60,59 +60,51 @@
       </button>
       <button
         type="button"
-        class="inline-flex shrink-0 items-center justify-center rounded-lg border border-[#E5E7EB] bg-white px-2.5 px-[16px] py-[10px] text-sm font-semibold text-[#161616] transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 disabled:cursor-not-allowed disabled:opacity-50 sm:px-3"
-        [disabled]="!canSaveAsDraft()"
-        title="Save current progress as a draft"
-        (click)="saveAsDraft()"
-      >
-        @if (savingDraft()) {
-          Saving draft…
-        } @else {
-          Save as Draft
-        }
-      </button>
-      <button
-        type="button"
         class="inline-flex shrink-0 items-center justify-center rounded-lg border border-[#E5E7EB] bg-white px-[16px] py-[10px] text-sm font-medium text-[#6B7280] transition hover:bg-gray-50 hover:text-[#161616] focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 disabled:cursor-not-allowed disabled:opacity-50 sm:px-3"
         [attr.title]="'Preview form template'"
         (click)="openTemplatePreview()"
       >
         Preview
       </button>
-      @if (isEditing() && !isLastStep()) {
+      @if (usesDraftWorkflow()) {
         <button
           type="button"
-          class="inline-flex shrink-0 items-center justify-center rounded-lg border border-[#E5E7EB] bg-white px-2.5 px-[16px] py-[10px] text-sm font-semibold text-[#161616] transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 disabled:cursor-not-allowed disabled:opacity-50 sm:px-3"
+          class="text-[#3D3D3D] inline-flex min-w-0 flex-1 items-center justify-center rounded-lg px-[16px] py-[10px] text-sm font-bold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e600]/50 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none sm:px-3.5"
+          [class.bg-[#E5E7EB]]="!canPublish()"
+          [class.text-[#9CA3AF]]="!canPublish()"
+          [class.bg-[#d4e600]]="canPublish()"
+          [class.text-[#161616]]="canPublish()"
+          [class.hover:bg-[#c5d700]]="canPublish()"
+          [disabled]="!canPublish()"
+          title="Publish when Schedule (step 3) and all required fields are complete"
+          (click)="onPrimaryPublish()"
+        >
+          @if (submitting()) {
+            Publishing…
+          } @else {
+            <span class="truncate">Publish</span>
+          }
+        </button>
+      } @else {
+        <button
+          type="button"
+          class="text-[#3D3D3D] inline-flex min-w-0 flex-1 items-center justify-center rounded-lg px-[16px] py-[10px] text-sm font-bold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e600]/50 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none sm:px-3.5"
+          [class.bg-[#E5E7EB]]="!canUpdateExistingTemplate()"
+          [class.text-[#9CA3AF]]="!canUpdateExistingTemplate()"
+          [class.bg-[#d4e600]]="canUpdateExistingTemplate()"
+          [class.text-[#161616]]="canUpdateExistingTemplate()"
+          [class.hover:bg-[#c5d700]]="canUpdateExistingTemplate()"
           [disabled]="!canUpdateExistingTemplate()"
-          title="Save changes without continuing"
+          title="Save changes to this published template"
           (click)="updateExistingTemplate()"
         >
           @if (submitting()) {
             Updating…
           } @else {
-            Update
+            <span class="truncate">Update</span>
           }
         </button>
       }
-      <button
-        type="button"
-        class=" text-[#3D3D3D] inline-flex min-w-0 flex-1 items-center justify-center rounded-lg px-[16px] py-[10px] text-sm font-bold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e600]/50 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none sm:px-3.5"
-        [class.bg-[#E5E7EB]]="!canSaveAndContinue()"
-        [class.text-[#9CA3AF]]="!canSaveAndContinue()"
-        [class.bg-[#d4e600]]="canSaveAndContinue()"
-        [class.text-[#161616]]="canSaveAndContinue()"
-        [class.hover:bg-[#c5d700]]="canSaveAndContinue()"
-        [disabled]="!canSaveAndContinue()"
-        (click)="saveAndContinue()"
-      >
-        @if (submitting()) {
-          {{ isEditing() ? 'Updating…' : 'Saving…' }}
-        } @else if (isLastStep()) {
-          {{ isEditing() ? 'Update' : 'Save' }}
-        } @else {
-          <span class="truncate">Save &amp; continue</span>
-        }
-      </button>
     </div>
 
     <!-- Center: pill stepper (md–lg: own row; xl+: middle column) -->
@@ -1072,13 +1064,17 @@
             Unsaved Changes
           </h4>
           <p class="mt-3 text-sm leading-6 text-[#6B7280]">
-            You have unsaved changes to this template. Would you like to save them as a draft before leaving?
+            @if (isPublishedTemplate()) {
+              You have unsaved changes to this published template. Save them before leaving?
+            } @else {
+              You have unsaved changes. Save them as a draft before leaving?
+            }
           </p>
           <div class="mt-6 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:justify-end">
             <button
               type="button"
               class="rounded-lg border border-[#E5E7EB] bg-white px-4 py-2.5 text-sm font-semibold text-[#161616] transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300"
-              [disabled]="savingDraft()"
+              [disabled]="savingDraft() || submitting()"
               (click)="onUnsavedStayHere()"
             >
               Stay Here
@@ -1086,23 +1082,38 @@
             <button
               type="button"
               class="rounded-lg border border-[#E5E7EB] bg-white px-4 py-2.5 text-sm font-semibold text-[#6B7280] transition hover:bg-gray-50 hover:text-[#161616] focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300"
-              [disabled]="savingDraft()"
+              [disabled]="savingDraft() || submitting()"
               (click)="onUnsavedDiscardChanges()"
             >
               Discard Changes
             </button>
-            <button
-              type="button"
-              class="rounded-lg bg-[#d4e600] px-4 py-2.5 text-sm font-bold text-[#161616] transition hover:bg-[#c5d700] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e600]/50 disabled:cursor-not-allowed disabled:opacity-50"
-              [disabled]="!canSaveAsDraft()"
-              (click)="onUnsavedSaveAsDraft()"
-            >
-              @if (savingDraft()) {
-                Saving draft…
-              } @else {
-                Save as Draft
-              }
-            </button>
+            @if (isPublishedTemplate()) {
+              <button
+                type="button"
+                class="rounded-lg bg-[#d4e600] px-4 py-2.5 text-sm font-bold text-[#161616] transition hover:bg-[#c5d700] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e600]/50 disabled:cursor-not-allowed disabled:opacity-50"
+                [disabled]="!canSave() || submitting()"
+                (click)="onUnsavedSavePublished()"
+              >
+                @if (submitting()) {
+                  Saving…
+                } @else {
+                  Save
+                }
+              </button>
+            } @else {
+              <button
+                type="button"
+                class="rounded-lg bg-[#d4e600] px-4 py-2.5 text-sm font-bold text-[#161616] transition hover:bg-[#c5d700] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d4e600]/50 disabled:cursor-not-allowed disabled:opacity-50"
+                [disabled]="!formName().trim() || savingDraft()"
+                (click)="onUnsavedSaveDraftAndLeave()"
+              >
+                @if (savingDraft()) {
+                  Saving draft…
+                } @else {
+                  Save draft
+                }
+              </button>
+            }
           </div>
         </div>
       </div>
