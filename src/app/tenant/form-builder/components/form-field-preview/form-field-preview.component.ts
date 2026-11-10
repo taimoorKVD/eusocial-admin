@@ -45,7 +45,7 @@ import { resolveImageDisplayUrl } from '../../utils/image-field.utils';
   imports: [CommonModule, FormsModule],
   templateUrl: './form-field-preview.component.html',
   host: {
-    class: 'block pointer-events-none select-none',
+    class: 'block min-w-0 pointer-events-none select-none',
   },
 })
 export class FormFieldPreviewComponent implements OnChanges {
@@ -73,7 +73,7 @@ export class FormFieldPreviewComponent implements OnChanges {
 
   /** Figma filled control classes (Form Template Build). */
   readonly ftControlClass =
-    'w-full min-w-0 rounded-lg border-0 bg-[#F3F4F6] px-3 py-2.5 text-sm text-[#161616] placeholder:text-[#9CA3AF] focus:outline-none disabled:cursor-default disabled:text-[#6B7280]';
+    'w-full min-w-0 truncate rounded-lg border-0 bg-[#F3F4F6] px-3 py-2.5 text-sm text-[#161616] placeholder:text-[#9CA3AF] focus:outline-none disabled:cursor-default disabled:text-[#6B7280]';
 
   get controlClass(): string {
     return this.formTemplateBuildUi ? this.ftControlClass : this.defaultControlClass;
@@ -81,7 +81,7 @@ export class FormFieldPreviewComponent implements OnChanges {
 
   get labelClass(): string {
     return this.formTemplateBuildUi
-      ? 'min-w-0 flex-1 text-sm font-medium leading-5 text-[#161616]'
+      ? 'min-w-0 flex-1 truncate text-sm font-medium leading-5 text-[#161616]'
       : 'mb-1 block text-xs font-medium text-slate-500';
   }
 
@@ -90,6 +90,20 @@ export class FormFieldPreviewComponent implements OnChanges {
       this.formTemplateBuildUi &&
       (this.isSelectField || this.isRadioField || this.isCheckboxField)
     );
+  }
+
+  /** Full chip labels for the truncated one-line preview tooltip. */
+  get choiceChipsTitle(): string {
+    if (this.loadingOptions) {
+      return 'Loading options...';
+    }
+    if (this.optionsError) {
+      return 'Unable to load options';
+    }
+    if (!this.displayOptions.length) {
+      return this.field?.placeholder || 'No options selected';
+    }
+    return this.displayOptions.map((option) => option.label).join(', ');
   }
 
   get previewValue(): unknown {

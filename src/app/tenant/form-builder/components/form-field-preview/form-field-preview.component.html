@@ -1,7 +1,7 @@
 @if (formTemplateBuildUi) {
-  <div class="mb-2 flex min-w-0 items-start gap-2">
+  <div class="mb-2 flex min-w-0 items-center gap-2">
     <span
-      class="mt-0.5 inline-flex shrink-0 text-[#9CA3AF]"
+      class="inline-flex shrink-0 text-[#9CA3AF]"
       aria-hidden="true"
       title="Drag to reorder"
     >
@@ -14,7 +14,7 @@
         <circle cx="11" cy="12" r="1.25" />
       </svg>
     </span>
-    <label [class]="labelClass">
+    <label [class]="labelClass" [attr.title]="field.label">
       {{ field.label }}
       <span *ngIf="field.required" class="text-red-500">*</span>
       <span *ngIf="isReadonly" class="ml-1 text-[10px] font-normal text-slate-400">(readonly)</span>
@@ -73,24 +73,38 @@
   [attr.maxlength]="field.characterLimit || 5000"
   disabled
   readonly
-  rows="3"
+  [attr.rows]="formTemplateBuildUi ? 1 : 3"
   tabindex="-1"
   aria-disabled="true"
   [class]="controlClass + ' resize-none'"
+  [class.overflow-hidden]="formTemplateBuildUi"
+  [class.whitespace-nowrap]="formTemplateBuildUi"
 ></textarea>
 
-<!-- Form Template Build: option fields as Figma chips -->
-<div *ngIf="showChoiceChips" class="flex flex-wrap gap-2">
-  <p *ngIf="loadingOptions" class="text-xs text-slate-400">Loading options...</p>
-  <p *ngIf="optionsError && !loadingOptions" class="text-xs text-slate-400">
+<!-- Form Template Build: option chips stay on one clipped row so field cards stay uniform -->
+<div
+  *ngIf="showChoiceChips"
+  class="flex min-h-[2.625rem] min-w-0 flex-nowrap items-center gap-2 overflow-hidden rounded-lg bg-[#F3F4F6] px-3 py-2"
+  [attr.title]="choiceChipsTitle"
+>
+  <p *ngIf="loadingOptions" class="truncate text-xs text-slate-400">Loading options...</p>
+  <p *ngIf="optionsError && !loadingOptions" class="truncate text-xs text-slate-400">
     Unable to load options
   </p>
-  <span
-    *ngFor="let opt of displayOptions; trackBy: trackByOptionValue"
-    class="inline-flex max-w-full items-center truncate rounded-md bg-[#F3F4F6] px-3 py-1.5 text-sm text-[#161616]"
-  >
-    {{ opt.label }}
-  </span>
+  <ng-container *ngIf="!loadingOptions && !optionsError">
+    <span
+      *ngIf="!displayOptions.length"
+      class="truncate text-sm text-[#9CA3AF]"
+    >
+      {{ field.placeholder || 'No options selected' }}
+    </span>
+    <span
+      *ngFor="let opt of displayOptions; trackBy: trackByOptionValue"
+      class="inline-flex max-w-[9rem] shrink-0 items-center truncate rounded-md bg-white px-2.5 py-1 text-sm text-[#161616]"
+    >
+      {{ opt.label }}
+    </span>
+  </ng-container>
 </div>
 
 <select
