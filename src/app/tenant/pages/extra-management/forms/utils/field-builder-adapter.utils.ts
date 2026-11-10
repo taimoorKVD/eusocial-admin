@@ -99,6 +99,7 @@ export function createDraftBuilderField(
     label: '',
     placeholder: '',
     required: false,
+    width: ROW_WIDTH_UNITS.third,
     options:
       formFieldType === 'select' || formFieldType === 'radio' || formFieldType === 'checkbox'
         ? []
@@ -531,6 +532,19 @@ export function largestFittingBuilderWidth(remainingUnits: number): number {
     return ROW_WIDTH_UNITS.third;
   }
   return 0;
+}
+
+/**
+ * Default Width-in-row for newly added Form Template fields: 1/3 when it fits,
+ * otherwise the largest preset that still fits the remaining capacity.
+ */
+export function preferredNewFieldBuilderWidth(
+  remainingUnits: number = ROW_CAPACITY_UNITS,
+): number {
+  if (remainingUnits >= ROW_WIDTH_UNITS.third) {
+    return ROW_WIDTH_UNITS.third;
+  }
+  return largestFittingBuilderWidth(remainingUnits);
 }
 
 /**

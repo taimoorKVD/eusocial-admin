@@ -89,6 +89,7 @@ import {
   mapBuilderWidthToPercent,
   mapConfigFieldToBuilder,
   normalizeBuilderWidthUnits,
+  preferredNewFieldBuilderWidth,
   rowHasAvailableColumnSpace,
   rowRemainingGridUnits,
   widthToGridUnits,
@@ -2186,7 +2187,11 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
 
     const section = createCustomSection(this.nextDefaultSectionName());
     const row = createEmptyRow();
-    const mapped = mapBuilderFieldToConfig(result.insertedField, {
+    const withDefaultWidth: FormField = {
+      ...result.insertedField,
+      width: preferredNewFieldBuilderWidth(),
+    };
+    const mapped = mapBuilderFieldToConfig(withDefaultWidth, {
       preserveId: true,
     });
 
@@ -2256,7 +2261,7 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
     }
 
     const siblings = result.schema.filter((field) => field.id !== inserted.id);
-    const fittingWidth = largestFittingBuilderWidth(
+    const fittingWidth = preferredNewFieldBuilderWidth(
       rowRemainingGridUnits(siblings),
     );
     const widthAdjusted: FormField = {
@@ -2347,7 +2352,11 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
     }
 
     const row = createEmptyRow();
-    const mapped = mapBuilderFieldToConfig(result.insertedField, {
+    const withDefaultWidth: FormField = {
+      ...result.insertedField,
+      width: preferredNewFieldBuilderWidth(),
+    };
+    const mapped = mapBuilderFieldToConfig(withDefaultWidth, {
       preserveId: true,
     });
 
@@ -2826,10 +2835,23 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
 
   onCanvasDrop(event: Parameters<typeof applyCanvasDrop>[0]): void {
     const result = applyCanvasDrop(event, this.builderSchema());
-    this.builderSchema.set(result.schema);
-    if (result.insertedField) {
-      this.onSelectField(result.insertedField);
+    if (!result.insertedField) {
+      this.builderSchema.set(result.schema);
+      return;
     }
+
+    const siblings = result.schema.filter(
+      (field) => field.id !== result.insertedField!.id,
+    );
+    const widthAdjusted: FormField = {
+      ...result.insertedField,
+      width: preferredNewFieldBuilderWidth(rowRemainingGridUnits(siblings)),
+    };
+    const nextSchema = result.schema.map((field) =>
+      field.id === widthAdjusted.id ? widthAdjusted : field,
+    );
+    this.builderSchema.set(nextSchema);
+    this.onSelectField(widthAdjusted);
   }
 
   onSelectField(field: FormField): void {
@@ -4070,7 +4092,7 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
 
     // Row already full — start a new row instead of overflowing capacity.
     if (currentFields.length > 0 && !rowHasAvailableColumnSpace(currentFields)) {
-      const fittingWidth = largestFittingBuilderWidth(12);
+      const fittingWidth = preferredNewFieldBuilderWidth();
       const newField: FormFieldConfig = {
         ...field,
         width: mapBuilderWidthToPercent(fittingWidth),
@@ -4096,11 +4118,9 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
     }
 
     const remaining = rowRemainingGridUnits(currentFields);
-    const requested = widthToGridUnits(field.width);
-    const fitting =
-      currentFields.length === 0
-        ? normalizeBuilderWidthUnits(requested)
-        : largestFittingBuilderWidth(remaining) || requested;
+    const fitting = preferredNewFieldBuilderWidth(
+      currentFields.length === 0 ? undefined : remaining,
+    );
     const newField: FormFieldConfig = {
       ...field,
       width: mapBuilderWidthToPercent(fitting),
