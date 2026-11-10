@@ -4,7 +4,11 @@
   width: 100%;
 }
 
-/* Soft enter when a wizard step mounts (tabs / Save & continue / back). */
+/* Soft enter when a wizard step mounts (tabs / Save & continue / back).
+   Fill mode is backwards only. forwards/both would keep opacity (and
+   transform) on this panel, and that opacity — even at 1 — is a stacking
+   context. Modals inside the step would then lose to the form header
+   (z-30) and the app sidebar (z-50). */
 @keyframes create-form-step-enter {
   from {
     opacity: 0;
@@ -13,12 +17,12 @@
 
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: none;
   }
 }
 
 .wizard-step-panel {
-  animation: create-form-step-enter 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: create-form-step-enter 220ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
 
 @media (prefers-reduced-motion: reduce) {
