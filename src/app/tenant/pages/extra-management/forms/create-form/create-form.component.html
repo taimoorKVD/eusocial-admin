@@ -1245,11 +1245,11 @@
                           <button
                             type="button"
                             class="w-full text-left px-4 py-2 text-sm font-ibm flex items-center gap-2 cursor-pointer"
-                            [class]="meta().assignMode === opt.value ? 'bg-[#fff5eb] text-[#FF9015]' : 'hover:bg-[#FF9015] hover:text-white text-[#525252]'"
+                            [class]="meta().assignMode === opt.value ? 'bg-[#fff5eb] text-[#c57a10]' : 'hover:bg-[#c57a10] hover:text-white text-[#525252]'"
                             (click)="selectAssignMode(opt.value)"
                           >
                             @if (meta().assignMode === opt.value) {
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="text-[#FF9015] shrink-0">
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="text-[#c57a10] shrink-0">
                                 <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/>
                               </svg>
                             }
@@ -1287,11 +1287,11 @@
                       </span>
                     }
                     @for (user of meta().assignUsers; track user) {
-                      <span class="inline-flex items-center gap-1 bg-[#fff5eb] border border-[#ffd9b3] rounded px-1.5 py-0.5 text-xs font-medium text-[#FF9015]">
+                      <span class="inline-flex items-center gap-1 bg-[#fff5eb] border border-[#ffd9b3] rounded px-1.5 py-0.5 text-xs font-medium text-[#c57a10]">
                         {{ user }}
                         <button
                           type="button"
-                          class="ml-0.5 text-[#FF9015] hover:text-[#e07800] font-semibold leading-none pointer-events-auto"
+                          class="ml-0.5 text-[#c57a10] hover:text-[#a3650d] font-semibold leading-none pointer-events-auto"
                           (click)="$event.stopPropagation(); removeMultiSelectOption('assignUsers', user)"
                         >×</button>
                       </span>
@@ -1306,7 +1306,7 @@
                     <div class="p-2 border-b border-[#E0E0E0]">
                       <input
                         type="text"
-                        class="w-full px-3 py-2 text-sm font-ibm border border-[#E0E0E0] rounded-md focus:outline-none focus:border-[#FF9015]"
+                        class="w-full px-3 py-2 text-sm font-ibm border border-[#E0E0E0] rounded-md focus:outline-none focus:border-[#c57a10]"
                         placeholder="Search users..."
                         [value]="assignUsersSearch()"
                         (input)="onMultiSelectSearch($event, assignUsersSearch)"
@@ -1319,11 +1319,11 @@
                           <button
                             type="button"
                             class="w-full text-left px-4 py-2 text-sm font-ibm flex items-center gap-2 cursor-pointer"
-                            [class]="opt.selected ? 'bg-[#fff5eb] text-[#FF9015]' : 'hover:bg-[#FF9015] hover:text-white text-[#525252]'"
+                            [class]="opt.selected ? 'bg-[#fff5eb] text-[#c57a10]' : 'hover:bg-[#c57a10] hover:text-white text-[#525252]'"
                             (click)="toggleMultiSelectOption('assignUsers', opt.name)"
                           >
                             @if (opt.selected) {
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="text-[#FF9015] shrink-0">
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="text-[#c57a10] shrink-0">
                                 <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/>
                               </svg>
                             }
@@ -1370,11 +1370,11 @@
                       </span>
                     }
                     @for (pos of meta().assignJobPosition; track pos) {
-                      <span class="inline-flex items-center gap-1 bg-[#fff5eb] border border-[#ffd9b3] rounded px-1.5 py-0.5 text-xs font-medium text-[#FF9015]">
+                      <span class="inline-flex items-center gap-1 bg-[#fff5eb] border border-[#ffd9b3] rounded px-1.5 py-0.5 text-xs font-medium text-[#c57a10]">
                         {{ pos }}
                         <button
                           type="button"
-                          class="ml-0.5 text-[#FF9015] hover:text-[#e07800] font-semibold leading-none pointer-events-auto"
+                          class="ml-0.5 text-[#c57a10] hover:text-[#a3650d] font-semibold leading-none pointer-events-auto"
                           (click)="$event.stopPropagation(); removeMultiSelectOption('assignJobPosition', pos)"
                         >×</button>
                       </span>
@@ -1389,7 +1389,7 @@
                     <div class="p-2 border-b border-[#E0E0E0]">
                       <input
                         type="text"
-                        class="w-full px-3 py-2 text-sm font-ibm border border-[#E0E0E0] rounded-md focus:outline-none focus:border-[#FF9015]"
+                        class="w-full px-3 py-2 text-sm font-ibm border border-[#E0E0E0] rounded-md focus:outline-none focus:border-[#c57a10]"
                         placeholder="Search job positions..."
                         [value]="assignPositionsSearch()"
                         (input)="onMultiSelectSearch($event, assignPositionsSearch)"
@@ -1402,11 +1402,11 @@
                           <button
                             type="button"
                             class="w-full text-left px-4 py-2 text-sm font-ibm flex items-center gap-2 cursor-pointer"
-                            [class]="opt.selected ? 'bg-[#fff5eb] text-[#FF9015]' : 'hover:bg-[#FF9015] hover:text-white text-[#525252]'"
+                            [class]="opt.selected ? 'bg-[#fff5eb] text-[#c57a10]' : 'hover:bg-[#c57a10] hover:text-white text-[#525252]'"
                             (click)="toggleMultiSelectOption('assignJobPosition', opt.name)"
                           >
                             @if (opt.selected) {
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="text-[#FF9015] shrink-0">
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="text-[#c57a10] shrink-0">
                                 <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/>
                               </svg>
                             }
@@ -1465,11 +1465,11 @@
                       </span>
                     }
                     @for (user of meta().reportUsers; track user) {
-                      <span class="inline-flex items-center gap-1 bg-[#fff5eb] border border-[#ffd9b3] rounded px-1.5 py-0.5 text-xs font-medium text-[#FF9015]">
+                      <span class="inline-flex items-center gap-1 bg-[#ecfdf5] border border-[#a7f3d0] rounded px-1.5 py-0.5 text-xs font-medium text-[#047857]">
                         {{ user }}
                         <button
                           type="button"
-                          class="ml-0.5 text-[#FF9015] hover:text-[#e07800] font-semibold leading-none pointer-events-auto"
+                          class="ml-0.5 text-[#047857] hover:text-[#065f46] font-semibold leading-none pointer-events-auto"
                           (click)="$event.stopPropagation(); removeMultiSelectOption('reportUsers', user)"
                         >×</button>
                       </span>
@@ -1484,7 +1484,7 @@
                     <div class="p-2 border-b border-[#E0E0E0]">
                       <input
                         type="text"
-                        class="w-full px-3 py-2 text-sm font-ibm border border-[#E0E0E0] rounded-md focus:outline-none focus:border-[#FF9015]"
+                        class="w-full px-3 py-2 text-sm font-ibm border border-[#E0E0E0] rounded-md focus:outline-none focus:border-[#047857]"
                         placeholder="Search users..."
                         [value]="reportUsersSearch()"
                         (input)="onMultiSelectSearch($event, reportUsersSearch)"
@@ -1497,11 +1497,11 @@
                           <button
                             type="button"
                             class="w-full text-left px-4 py-2 text-sm font-ibm flex items-center gap-2 cursor-pointer"
-                            [class]="opt.selected ? 'bg-[#fff5eb] text-[#FF9015]' : 'hover:bg-[#FF9015] hover:text-white text-[#525252]'"
+                            [class]="opt.selected ? 'bg-[#ecfdf5] text-[#047857]' : 'hover:bg-[#047857] hover:text-white text-[#525252]'"
                             (click)="toggleMultiSelectOption('reportUsers', opt.name)"
                           >
                             @if (opt.selected) {
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="text-[#FF9015] shrink-0">
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="text-[#047857] shrink-0">
                                 <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/>
                               </svg>
                             }
@@ -1548,11 +1548,11 @@
                       </span>
                     }
                     @for (pos of meta().reportJobPosition; track pos) {
-                      <span class="inline-flex items-center gap-1 bg-[#fff5eb] border border-[#ffd9b3] rounded px-1.5 py-0.5 text-xs font-medium text-[#FF9015]">
+                      <span class="inline-flex items-center gap-1 bg-[#ecfdf5] border border-[#a7f3d0] rounded px-1.5 py-0.5 text-xs font-medium text-[#047857]">
                         {{ pos }}
                         <button
                           type="button"
-                          class="ml-0.5 text-[#FF9015] hover:text-[#e07800] font-semibold leading-none pointer-events-auto"
+                          class="ml-0.5 text-[#047857] hover:text-[#065f46] font-semibold leading-none pointer-events-auto"
                           (click)="$event.stopPropagation(); removeMultiSelectOption('reportJobPosition', pos)"
                         >×</button>
                       </span>
@@ -1567,7 +1567,7 @@
                     <div class="p-2 border-b border-[#E0E0E0]">
                       <input
                         type="text"
-                        class="w-full px-3 py-2 text-sm font-ibm border border-[#E0E0E0] rounded-md focus:outline-none focus:border-[#FF9015]"
+                        class="w-full px-3 py-2 text-sm font-ibm border border-[#E0E0E0] rounded-md focus:outline-none focus:border-[#047857]"
                         placeholder="Search job positions..."
                         [value]="reportPositionsSearch()"
                         (input)="onMultiSelectSearch($event, reportPositionsSearch)"
@@ -1580,11 +1580,11 @@
                           <button
                             type="button"
                             class="w-full text-left px-4 py-2 text-sm font-ibm flex items-center gap-2 cursor-pointer"
-                            [class]="opt.selected ? 'bg-[#fff5eb] text-[#FF9015]' : 'hover:bg-[#FF9015] hover:text-white text-[#525252]'"
+                            [class]="opt.selected ? 'bg-[#ecfdf5] text-[#047857]' : 'hover:bg-[#047857] hover:text-white text-[#525252]'"
                             (click)="toggleMultiSelectOption('reportJobPosition', opt.name)"
                           >
                             @if (opt.selected) {
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="text-[#FF9015] shrink-0">
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="text-[#047857] shrink-0">
                                 <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/>
                               </svg>
                             }
