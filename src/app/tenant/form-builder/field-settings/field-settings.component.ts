@@ -2,11 +2,17 @@ import {
   Component,
   EventEmitter,
   Input,
+  OnDestroy,
   Output,
+  TemplateRef,
+  ViewChild,
+  ViewContainerRef,
   computed,
   inject,
   signal,
 } from '@angular/core';
+import { Overlay, OverlayRef } from '@angular/cdk/overlay';
+import { TemplatePortal } from '@angular/cdk/portal';
 import { ToastrService } from 'ngx-toastr';
 import {
   CONDITION_ACTION_LABELS,
@@ -71,7 +77,7 @@ import {
 } from '../utils/image-field.utils';
 import { FormImageUploadService } from '../services/form-image-upload.service';
 import { normalizeOptionSource } from '../utils/option-source.utils';
-import { forkJoin, of } from 'rxjs';
+import { Subscription, forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import {
   getCharacterLimitExceededMessage,
@@ -133,12 +139,19 @@ interface LoadModuleDataOptions {
   templateUrl: './field-settings.component.html',
   styleUrl: './field-settings.component.scss',
 })
-export class FieldSettingsComponent {
+export class FieldSettingsComponent implements OnDestroy {
   private readonly toastr = inject(ToastrService);
   private readonly overlayService = inject(DropdownOverlayService);
+  private readonly overlay = inject(Overlay);
+  private readonly viewContainerRef = inject(ViewContainerRef);
   private readonly schemaSignal = signal<FormField[]>([]);
   private readonly selectedFieldIdSignal = signal<string | null>(null);
   readonly dynamicOptionsDropdownGroup = 'form-builder-dynamic-options';
+
+  @ViewChild('dynamicOptionsExpandTpl')
+  private dynamicOptionsExpandTpl?: TemplateRef<unknown>;
+  private dynamicOptionsExpandOverlayRef: OverlayRef | null = null;
+  private dynamicOptionsExpandOverlaySubs = new Subscription();
 
   @Input() activeModuleName = '';
 
@@ -296,6 +309,10 @@ export class FieldSettingsComponent {
   /** All records from the selected module with resolved display labels. */
   availableDynamicOptions: FieldOption[] = [];
   dynamicOptionsSearchQuery = '';
+  /** Expanded Dynamic Options picker (draft until Apply). */
+  dynamicOptionsExpandOpen = false;
+  dynamicOptionsExpandSearchQuery = '';
+  draftSelectedDynamicOptions: FieldOption[] = [];
 
   modulesLoading = false;
   modulesError: string | null = null;
@@ -318,6 +335,10 @@ export class FieldSettingsComponent {
     private dynamicModuleOptionsService: DynamicModuleOptionsService,
     private formImageUploadService: FormImageUploadService,
   ) {}
+
+  ngOnDestroy(): void {
+    this.closeDynamicOptionsExpand();
+  }
 
   /**
    * Compact Input Customization visual variant (UI only).
@@ -2752,6 +2773,238 @@ export class FieldSettingsComponent {
       return this.resolveDynamicOptionLabel(first) || '1 option selected';
     }
     return `${count} options selected`;
+  }
+
+  /** Expand icon for Dynamic Options subset management (any list length). */
+  get canExpandDynamicOptions(): boolean {
+    return (
+      this.showDynamicSelectOptions &&
+      this.isFieldEditable &&
+      !this.recordsLoading &&
+      this.availableDynamicOptions.length > 0
+    );
+  }
+
+  get filteredExpandDynamicOptions(): FieldOption[] {
+    const query = this.dynamicOptionsExpandSearchQuery.trim().toLowerCase();
+    if (!query) {
+      return this.availableDynamicOptions;
+    }
+
+    return this.availableDynamicOptions.filter((option) =>
+      String(option.label ?? '')
+        .toLowerCase()
+        .includes(query),
+    );
+  }
+
+  get draftDynamicOptionsCount(): number {
+    return this.draftSelectedDynamicOptions.length;
+  }
+
+  get isDraftSelectAllChecked(): boolean {
+    const targets = this.filteredExpandDynamicOptions;
+    return (
+      targets.length > 0 &&
+      targets.every((option) => this.isDraftDynamicOptionSelected(option))
+    );
+  }
+
+  get isDraftSelectAllIndeterminate(): boolean {
+    const targets = this.filteredExpandDynamicOptions;
+    if (!targets.length) {
+      return false;
+    }
+
+    const selectedCount = targets.filter((option) =>
+      this.isDraftDynamicOptionSelected(option),
+    ).length;
+
+    return selectedCount > 0 && selectedCount < targets.length;
+  }
+
+  openDynamicOptionsExpand(event?: MouseEvent): void {
+    event?.preventDefault();
+    event?.stopPropagation();
+    if (!this.canExpandDynamicOptions || this.dynamicOptionsExpandOpen) {
+      return;
+    }
+
+    const template = this.dynamicOptionsExpandTpl;
+    if (!template) {
+      return;
+    }
+
+    this.overlayService.close();
+    this.draftSelectedDynamicOptions = this.cloneDynamicFieldOptions(
+      this._field?.options,
+    );
+    this.dynamicOptionsExpandSearchQuery = '';
+    this.dynamicOptionsExpandOpen = true;
+
+    this.dynamicOptionsExpandOverlayRef = this.overlay.create({
+      hasBackdrop: false,
+      scrollStrategy: this.overlay.scrollStrategies.block(),
+      positionStrategy: this.overlay.position().global().top('0').left('0'),
+      width: '100vw',
+      height: '100vh',
+      panelClass: 'dynamic-options-expand-overlay-pane',
+    });
+
+    this.dynamicOptionsExpandOverlaySubs.unsubscribe();
+    this.dynamicOptionsExpandOverlaySubs = new Subscription();
+    this.dynamicOptionsExpandOverlaySubs.add(
+      this.dynamicOptionsExpandOverlayRef.keydownEvents().subscribe((keydown) => {
+        if (keydown.key === 'Escape') {
+          this.closeDynamicOptionsExpand();
+        }
+      }),
+    );
+
+    this.dynamicOptionsExpandOverlayRef.attach(
+      new TemplatePortal(template, this.viewContainerRef),
+    );
+  }
+
+  closeDynamicOptionsExpand(): void {
+    this.dynamicOptionsExpandOverlaySubs.unsubscribe();
+    this.dynamicOptionsExpandOverlaySubs = new Subscription();
+    this.dynamicOptionsExpandOverlayRef?.dispose();
+    this.dynamicOptionsExpandOverlayRef = null;
+    this.dynamicOptionsExpandOpen = false;
+    this.dynamicOptionsExpandSearchQuery = '';
+    this.draftSelectedDynamicOptions = [];
+  }
+
+  applyDynamicOptionsExpand(): void {
+    if (!this._field || !this.canExpandDynamicOptions) {
+      this.closeDynamicOptionsExpand();
+      return;
+    }
+
+    this._field.options = this.draftSelectedDynamicOptions.map((option) => ({
+      id: typeof option.value === 'number' ? option.value : undefined,
+      label: option.label,
+      value: option.value,
+    }));
+    this._field.optionSource = this.buildDynamicOptionSource();
+    this.skipFieldReinitialize = true;
+    this.onChange();
+    this.closeDynamicOptionsExpand();
+  }
+
+  onDynamicOptionsExpandSearch(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.dynamicOptionsExpandSearchQuery = input.value ?? '';
+  }
+
+  isDraftDynamicOptionSelected(option: FieldOption): boolean {
+    return this.draftSelectedDynamicOptions.some(
+      (item) => String(item.value) === String(option.value),
+    );
+  }
+
+  toggleDraftDynamicOption(option: FieldOption): void {
+    if (!this.isFieldEditable) {
+      return;
+    }
+
+    const current = [...this.draftSelectedDynamicOptions];
+    const existingIndex = current.findIndex(
+      (item) => String(item.value) === String(option.value),
+    );
+
+    if (existingIndex >= 0) {
+      current.splice(existingIndex, 1);
+    } else {
+      current.push({
+        id: typeof option.value === 'number' ? option.value : undefined,
+        label: option.label,
+        value: option.value,
+      });
+    }
+
+    this.draftSelectedDynamicOptions = current;
+  }
+
+  toggleDraftSelectAllDynamicOptions(): void {
+    if (!this.isFieldEditable) {
+      return;
+    }
+
+    const targets = this.filteredExpandDynamicOptions;
+    if (!targets.length) {
+      return;
+    }
+
+    const current = [...this.draftSelectedDynamicOptions];
+    const allTargetsSelected = targets.every((option) =>
+      this.isDraftDynamicOptionSelected(option),
+    );
+
+    if (allTargetsSelected) {
+      const removeValues = new Set(targets.map((option) => String(option.value)));
+      this.draftSelectedDynamicOptions = current.filter(
+        (item) => !removeValues.has(String(item.value)),
+      );
+      return;
+    }
+
+    for (const option of targets) {
+      const exists = current.some(
+        (item) => String(item.value) === String(option.value),
+      );
+      if (!exists) {
+        current.push({
+          id: typeof option.value === 'number' ? option.value : undefined,
+          label: option.label,
+          value: option.value,
+        });
+      }
+    }
+    this.draftSelectedDynamicOptions = current;
+  }
+
+  private cloneDynamicFieldOptions(
+    options: FormField['options'] | undefined,
+  ): FieldOption[] {
+    const next: FieldOption[] = [];
+
+    for (const item of options || []) {
+      if (typeof item === 'string' || typeof item === 'number') {
+        const match = this.availableDynamicOptions.find(
+          (option) => String(option.value) === String(item),
+        );
+        next.push(
+          match
+            ? {
+                id: typeof match.value === 'number' ? match.value : undefined,
+                label: match.label,
+                value: match.value,
+              }
+            : { label: String(item), value: item },
+        );
+        continue;
+      }
+
+      const normalized = normalizeFieldOption(item);
+      if (!normalized || normalized.value == null || normalized.value === '') {
+        continue;
+      }
+
+      const match = this.availableDynamicOptions.find(
+        (option) => String(option.value) === String(normalized.value),
+      );
+      next.push({
+        id: typeof (match?.value ?? normalized.value) === 'number'
+          ? Number(match?.value ?? normalized.value)
+          : undefined,
+        label: match?.label ?? normalized.label,
+        value: match?.value ?? normalized.value,
+      });
+    }
+
+    return next;
   }
 
   private readOptionValue(option: string | number | FieldOption): string | number | null {
