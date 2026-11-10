@@ -6,6 +6,13 @@
 @import '@ng-select/ng-select/themes/default.theme.css';
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&display=swap');
 
+/* Dynamic Options expand modal — CDK overlay pane must fill the viewport */
+.cdk-overlay-pane.dynamic-options-expand-overlay-pane {
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  pointer-events: auto !important;
+}
+
 /* Tenant form searchable selects (panel appends to body) */
 .ng-dropdown-panel.tenant-ng-select {
   --sa-orange: #ff9015;
