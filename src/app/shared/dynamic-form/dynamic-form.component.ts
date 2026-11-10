@@ -34,7 +34,7 @@ import {
   extractRelatedRecordsFromResponse,
   getPrimarySetValueSource,
   hasSetValueAction,
-  normalizeConditionalLogic,
+  normalizeFieldConditionRules,
   normalizeRelatedEndpointKey,
   normalizeValueSource,
   RelatedRecordLookup,
@@ -1848,43 +1848,58 @@ export class DynamicFormComponent implements OnDestroy {
       return;
     }
 
-    const logic = normalizeConditionalLogic(field.condition);
-    if (!logic?.enabled || !hasSetValueAction(logic)) {
-      return;
-    }
-
-    // Empty WHEN (fieldId "") is common for Set Value–only rules from Field Settings.
-    // Treat unconfigured WHEN as always matched; evaluate only when a source is set.
-    const whenConfigured = collectWhenFieldIds(logic).some(Boolean);
-    if (whenConfigured && !evaluateConditionGroup(logic.when, valuesByFieldId)) {
-      return;
-    }
-
-    const action = logic.actions.find(item => item.type === 'setValue');
-    const source = getPrimarySetValueSource(logic);
-    if (source && this.needsRelatedRecords(source, fieldsById)) {
-      this.ensureRelatedRecordsLoaded(source, fieldsById);
-    }
-
-    let nextValue = resolveSetValueFromAction(
-      field,
-      action,
-      valuesByFieldId,
-      fieldsById,
-      lookup,
+    // Apply each matching setValue rule in order; later matches win.
+    const rules = normalizeFieldConditionRules(field.condition).filter(
+      logic => !!logic.enabled && hasSetValueAction(logic),
     );
-
-    if (nextValue === undefined) {
+    if (!rules.length) {
       return;
     }
 
-    if (isMeasurementFieldType(field.type)) {
-      nextValue = normalizeMeasurementValue(nextValue, field.type, {
-        unitMode: normalizeMeasurementUnitMode(field.unitMode),
-        unit: field.unit,
-      });
-    } else if (field.type === 'time') {
-      nextValue = normalizeTimeFieldValue(nextValue);
+    let appliedValue: unknown = undefined;
+    let didApply = false;
+
+    for (const logic of rules) {
+      // Empty WHEN (fieldId "") is common for Set Value–only rules from Field Settings.
+      // Treat unconfigured WHEN as always matched; evaluate only when a source is set.
+      const whenConfigured = collectWhenFieldIds(logic).some(Boolean);
+      if (whenConfigured && !evaluateConditionGroup(logic.when, valuesByFieldId)) {
+        continue;
+      }
+
+      const action = logic.actions.find(item => item.type === 'setValue');
+      const source = getPrimarySetValueSource(logic);
+      if (source && this.needsRelatedRecords(source, fieldsById)) {
+        this.ensureRelatedRecordsLoaded(source, fieldsById);
+      }
+
+      let nextValue = resolveSetValueFromAction(
+        field,
+        action,
+        valuesByFieldId,
+        fieldsById,
+        lookup,
+      );
+
+      if (nextValue === undefined) {
+        continue;
+      }
+
+      if (isMeasurementFieldType(field.type)) {
+        nextValue = normalizeMeasurementValue(nextValue, field.type, {
+          unitMode: normalizeMeasurementUnitMode(field.unitMode),
+          unit: field.unit,
+        });
+      } else if (field.type === 'time') {
+        nextValue = normalizeTimeFieldValue(nextValue);
+      }
+
+      appliedValue = nextValue;
+      didApply = true;
+    }
+
+    if (!didApply) {
+      return;
     }
 
     const control = this.form.get(field.name);
@@ -1892,12 +1907,12 @@ export class DynamicFormComponent implements OnDestroy {
       return;
     }
 
-    if (setValuesEqual(control.value, nextValue)) {
+    if (setValuesEqual(control.value, appliedValue)) {
       return;
     }
 
-    control.setValue(nextValue, { emitEvent: false });
-    valuesByFieldId[field.id] = nextValue;
+    control.setValue(appliedValue, { emitEvent: false });
+    valuesByFieldId[field.id] = appliedValue;
   }
 
   private needsRelatedRecords(
@@ -1955,38 +1970,39 @@ export class DynamicFormComponent implements OnDestroy {
     const endpoints = new Set<string>();
 
     for (const field of fields) {
-      const logic = normalizeConditionalLogic(field.condition);
-      if (!logic?.enabled || !hasSetValueAction(logic)) {
-        continue;
-      }
+      const rules = normalizeFieldConditionRules(field.condition).filter(
+        logic => !!logic.enabled && hasSetValueAction(logic),
+      );
 
-      const source = getPrimarySetValueSource(logic);
-      if (!source) {
-        continue;
-      }
-
-      for (const fieldId of collectValueSourceFieldIds(source)) {
-        const sourceField = fields.find(item => item.id === fieldId);
-        const endpoint = String(sourceField?.optionSource?.endpoint ?? '').trim();
-        if (endpoint) {
-          endpoints.add(endpoint);
+      for (const logic of rules) {
+        const source = getPrimarySetValueSource(logic);
+        if (!source) {
+          continue;
         }
-      }
 
-      const visit = (value: ReturnType<typeof normalizeValueSource>): void => {
-        if (value.kind === 'relatedData') {
-          const sourceField = fields.find(item => item.id === value.sourceFieldId);
+        for (const fieldId of collectValueSourceFieldIds(source)) {
+          const sourceField = fields.find(item => item.id === fieldId);
           const endpoint = String(sourceField?.optionSource?.endpoint ?? '').trim();
           if (endpoint) {
             endpoints.add(endpoint);
           }
         }
-        if (value.kind === 'expression') {
-          visit(normalizeValueSource(value.left));
-          visit(normalizeValueSource(value.right));
-        }
-      };
-      visit(normalizeValueSource(source));
+
+        const visit = (value: ReturnType<typeof normalizeValueSource>): void => {
+          if (value.kind === 'relatedData') {
+            const sourceField = fields.find(item => item.id === value.sourceFieldId);
+            const endpoint = String(sourceField?.optionSource?.endpoint ?? '').trim();
+            if (endpoint) {
+              endpoints.add(endpoint);
+            }
+          }
+          if (value.kind === 'expression') {
+            visit(normalizeValueSource(value.left));
+            visit(normalizeValueSource(value.right));
+          }
+        };
+        visit(normalizeValueSource(source));
+      }
     }
 
     this.loadRelatedRecordsForEndpoints(endpoints);

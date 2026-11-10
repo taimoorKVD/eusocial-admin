@@ -92,32 +92,43 @@
           >
             <button
               type="button"
-              class="group inline-flex items-center justify-center transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ff9015]/40 disabled:cursor-not-allowed disabled:opacity-40"
+              class="group inline-flex h-[35px] items-center justify-center overflow-hidden rounded-full transition-[background-color,padding,gap] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ff9015]/40 disabled:cursor-not-allowed disabled:opacity-40"
               [ngClass]="hasConditionalLogic(field)
-                ? 'h-[35px] w-[35px] rounded-full bg-[#161616] text-white hover:h-7 hover:w-auto hover:gap-1.5 hover:bg-black hover:px-[20px] hover:py-[20px]'
-                : 'h-[35px] w-[35px] rounded-full bg-[#BDBDBD] text-white hover:bg-[#9CA3AF]'"
+                ? 'bg-[#161616] text-white hover:gap-1.5 hover:bg-black hover:pl-2.5 hover:pr-4'
+                : 'w-[35px] bg-[#BDBDBD] text-white hover:bg-[#9CA3AF]'"
               [attr.aria-label]="hasConditionalLogic(field) ? 'Edit logic' : 'Conditional logic'"
               [title]="hasConditionalLogic(field) ? 'Edit logic' : 'Conditional logic'"
               [disabled]="interactionsDisabled"
               (click)="onQuickActionClick($event, field, 'condition')"
             >
-              <app-logic-map-icon [size]="14"></app-logic-map-icon>
+              <span class="inline-flex h-[35px] w-[35px] shrink-0 items-center justify-center" aria-hidden="true">
+                <app-logic-map-icon [size]="14"></app-logic-map-icon>
+              </span>
               @if (hasConditionalLogic(field)) {
-                <span class="hidden text-sm font-semibold leading-none group-hover:inline">Edit logic</span>
+                <span
+                  class="max-w-0 overflow-hidden whitespace-nowrap text-sm font-semibold leading-none opacity-0 transition-[max-width,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:max-w-[5.5rem] group-hover:opacity-100"
+                >Edit logic</span>
               }
             </button>
             <button
               type="button"
-              class="inline-flex h-[35px] w-[35px] items-center justify-center rounded-full transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ff9015]/40 disabled:cursor-not-allowed disabled:opacity-40"
+              class="group inline-flex h-[35px] items-center justify-center overflow-hidden rounded-full transition-[background-color,padding,gap] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ff9015]/40 disabled:cursor-not-allowed disabled:opacity-40"
               [ngClass]="hasAutomationRules(field)
-                ? 'bg-[#D0DD28] text-[#161616] hover:bg-[#c5d700]'
-                : 'bg-[#BDBDBD] text-white hover:bg-[#9CA3AF]'"
-              aria-label="Automation Rules"
-              title="Automation Rules"
+                ? 'bg-[#D0DD28] text-[#161616] hover:gap-1.5 hover:bg-[#c5d700] hover:pl-2.5 hover:pr-4'
+                : 'w-[35px] bg-[#BDBDBD] text-white hover:bg-[#9CA3AF]'"
+              [attr.aria-label]="hasAutomationRules(field) ? 'Edit automation' : 'Automation Rules'"
+              [title]="hasAutomationRules(field) ? 'Edit automation' : 'Automation Rules'"
               [disabled]="interactionsDisabled"
               (click)="onQuickActionClick($event, field, 'automation')"
             >
-              <app-automation-rule-icon></app-automation-rule-icon>
+              <span class="inline-flex h-[35px] w-[35px] shrink-0 items-center justify-center" aria-hidden="true">
+                <app-automation-rule-icon></app-automation-rule-icon>
+              </span>
+              @if (hasAutomationRules(field)) {
+                <span
+                  class="max-w-0 overflow-hidden whitespace-nowrap text-sm font-semibold leading-none opacity-0 transition-[max-width,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:max-w-[8rem] group-hover:opacity-100"
+                >Edit automation</span>
+              }
             </button>
           </div>
         }

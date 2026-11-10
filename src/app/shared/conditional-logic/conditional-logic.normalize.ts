@@ -8,6 +8,7 @@ import {
   ConditionPredicate,
   FieldCondition,
   FieldConditionalLogic,
+  FieldConditionalLogicBundle,
   LegacyFieldCondition,
   ValueSource,
 } from './conditional-logic.types';
@@ -39,8 +40,24 @@ export function isConditionGroup(value: unknown): value is ConditionGroup {
   return (record['logic'] === 'and' || record['logic'] === 'or') && Array.isArray(record['rules']);
 }
 
-export function isFieldConditionalLogic(value: unknown): value is FieldConditionalLogic {
+export function isFieldConditionalLogicBundle(
+  value: unknown
+): value is FieldConditionalLogicBundle {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return false;
+  }
+
+  const record = value as Record<string, unknown>;
+  return record['version'] === 2 && Array.isArray(record['rules']);
+}
+
+export function isFieldConditionalLogic(value: unknown): value is FieldConditionalLogic {
+  if (
+    !value ||
+    typeof value !== 'object' ||
+    Array.isArray(value) ||
+    isFieldConditionalLogicBundle(value)
+  ) {
     return false;
   }
 
@@ -53,22 +70,47 @@ export function isFieldConditionalLogic(value: unknown): value is FieldCondition
 }
 
 export function isLegacyFieldCondition(value: unknown): value is LegacyFieldCondition {
-  if (!value || typeof value !== 'object' || Array.isArray(value) || isFieldConditionalLogic(value)) {
+  if (
+    !value ||
+    typeof value !== 'object' ||
+    Array.isArray(value) ||
+    isFieldConditionalLogicBundle(value) ||
+    isFieldConditionalLogic(value)
+  ) {
     return false;
   }
 
   return 'fieldId' in value;
 }
 
-export function createEmptyConditionalLogic(): FieldConditionalLogic {
+export function createEmptyConditionalLogic(
+  options?: { name?: string; enabled?: boolean }
+): FieldConditionalLogic {
   return {
-    enabled: false,
+    enabled: options?.enabled === true,
+    name: (options?.name || '').trim() || defaultConditionRuleName(0),
     when: {
       logic: 'and',
       rules: [{ fieldId: '', operator: 'equals', value: '' }],
     },
     actions: [{ type: 'show' }],
   };
+}
+
+/** Default tab/payload label for a rule at zero-based index (`Rule 1`, `Rule 2`, …). */
+export function defaultConditionRuleName(index: number): string {
+  const safeIndex = Number.isFinite(index) ? Math.max(0, Math.floor(index)) : 0;
+  return `Rule ${safeIndex + 1}`;
+}
+
+/** Ensure every rule has a non-empty display name (legacy rules get Rule N). */
+export function withConditionRuleNames(
+  rules: FieldConditionalLogic[]
+): FieldConditionalLogic[] {
+  return rules.map((rule, index) => {
+    const name = String(rule?.name ?? '').trim() || defaultConditionRuleName(index);
+    return { ...rule, name };
+  });
 }
 
 export function normalizeOperator(raw: unknown): ConditionOperator {
@@ -250,11 +292,30 @@ export function normalizeConditionalLogic(
     return null;
   }
 
+  // Multi-rule payload: callers that expect a single rule get the first one.
+  // Prefer normalizeFieldConditionRules() when all rules matter.
+  if (isFieldConditionalLogicBundle(raw)) {
+    const first = raw.rules.find(rule => !!normalizeSingleConditionalLogic(rule));
+    return first ? normalizeSingleConditionalLogic(first) : null;
+  }
+
+  return normalizeSingleConditionalLogic(raw);
+}
+
+function normalizeSingleConditionalLogic(
+  raw?: FieldCondition | null
+): FieldConditionalLogic | null {
+  if (!raw || typeof raw !== 'object' || isFieldConditionalLogicBundle(raw)) {
+    return null;
+  }
+
   if (isFieldConditionalLogic(raw)) {
+    const name = typeof raw.name === 'string' ? raw.name.trim() : '';
     return {
       enabled: !!raw.enabled,
       when: normalizeGroup(raw.when),
       actions: normalizeActions(raw.actions),
+      ...(name ? { name } : {}),
     };
   }
 
@@ -277,15 +338,98 @@ export function normalizeConditionalLogic(
   return null;
 }
 
-export function cloneConditionalLogic(
+/** All independent conditional logic rules stored on a field. */
+export function normalizeFieldConditionRules(
   raw?: FieldCondition | null
-): FieldConditionalLogic | undefined {
-  const normalized = normalizeConditionalLogic(raw);
-  if (!normalized) {
+): FieldConditionalLogic[] {
+  if (!raw || typeof raw !== 'object') {
+    return [];
+  }
+
+  let rules: FieldConditionalLogic[] = [];
+
+  if (isFieldConditionalLogicBundle(raw)) {
+    rules = raw.rules
+      .map(rule => normalizeSingleConditionalLogic(rule))
+      .filter((rule): rule is FieldConditionalLogic => !!rule);
+  } else {
+    const single = normalizeSingleConditionalLogic(raw);
+    rules = single ? [single] : [];
+  }
+
+  return withConditionRuleNames(rules);
+}
+
+/**
+ * Persist one or more rules on `field.condition`.
+ * One configured rule stays a plain object (legacy-compatible);
+ * two or more use `{ version: 2, rules }`.
+ * Each rule always includes the exact display `name`.
+ */
+export function serializeFieldConditionRules(
+  rules: Array<FieldConditionalLogic | null | undefined> | null | undefined
+): FieldCondition | undefined {
+  const prepared = withConditionRuleNames(
+    (rules ?? []).filter((rule): rule is FieldConditionalLogic => !!rule)
+  );
+
+  const normalized = prepared
+    .map(rule => {
+      if (!rule.enabled && !hasConfiguredSource(rule)) {
+        return undefined;
+      }
+      return JSON.parse(JSON.stringify(rule)) as FieldConditionalLogic;
+    })
+    .filter((rule): rule is FieldConditionalLogic => !!rule);
+
+  if (!normalized.length) {
     return undefined;
   }
 
-  return JSON.parse(JSON.stringify(normalized)) as FieldConditionalLogic;
+  if (normalized.length === 1) {
+    return normalized[0];
+  }
+
+  return {
+    version: 2,
+    rules: normalized,
+  };
+}
+
+export function fieldHasConfiguredConditionRules(
+  raw?: FieldCondition | null
+): boolean {
+  return normalizeFieldConditionRules(raw).some(
+    rule => !!rule.enabled && hasConfiguredSource(rule)
+  );
+}
+
+export function collectFieldConditionSourceFieldIds(
+  raw?: FieldCondition | null
+): string[] {
+  const ids: string[] = [];
+  for (const rule of normalizeFieldConditionRules(raw)) {
+    ids.push(...collectSourceFieldIds(rule));
+  }
+  return ids;
+}
+
+export function cloneConditionalLogic(
+  raw?: FieldCondition | null
+): FieldConditionalLogic | undefined {
+  const rules = normalizeFieldConditionRules(raw);
+  if (!rules.length) {
+    return undefined;
+  }
+
+  return JSON.parse(JSON.stringify(rules[0])) as FieldConditionalLogic;
+}
+
+/** Deep-clone the full condition payload (single rule or multi-rule bundle). */
+export function cloneFieldCondition(
+  raw?: FieldCondition | null
+): FieldCondition | undefined {
+  return serializeFieldConditionRules(normalizeFieldConditionRules(raw));
 }
 
 /** Field ids referenced only by the WHEN / condition group (not setValue sources). */
@@ -333,11 +477,18 @@ export function hasConfiguredSource(logic: FieldConditionalLogic | null | undefi
   return collectSourceFieldIds(logic).some(Boolean);
 }
 
-/** Persist configured logic; omit empty dummy conditions. */
+/**
+ * Persist configured logic; omit empty dummy conditions.
+ * Passes through multi-rule bundles intact; single rules stay plain objects.
+ */
 export function serializeConditionalLogic(
   raw?: FieldCondition | null
-): FieldConditionalLogic | undefined {
-  const normalized = normalizeConditionalLogic(raw);
+): FieldCondition | undefined {
+  if (isFieldConditionalLogicBundle(raw)) {
+    return serializeFieldConditionRules(normalizeFieldConditionRules(raw));
+  }
+
+  const normalized = normalizeSingleConditionalLogic(raw);
 
   if (!normalized) {
     return undefined;
@@ -347,7 +498,7 @@ export function serializeConditionalLogic(
     return undefined;
   }
 
-  return cloneConditionalLogic(normalized);
+  return JSON.parse(JSON.stringify(normalized)) as FieldConditionalLogic;
 }
 
 export function getPrimaryPredicate(
@@ -535,28 +686,29 @@ export function setPrimarySetValueSource(
 export function pruneConditionalLogicForDeletedFields(
   raw: FieldCondition | null | undefined,
   deletedIds: Iterable<string>
-): FieldConditionalLogic | undefined {
-  const logic = normalizeConditionalLogic(raw);
-  if (!logic) {
+): FieldCondition | undefined {
+  const rules = normalizeFieldConditionRules(raw);
+  if (!rules.length) {
     return undefined;
   }
 
   const deleted = deletedIds instanceof Set ? deletedIds : new Set(deletedIds);
   if (!deleted.size) {
-    return cloneConditionalLogic(logic);
+    return serializeFieldConditionRules(rules);
   }
 
-  const referenced = collectSourceFieldIds(logic);
-  const lostSource = referenced.some(id => deleted.has(id));
+  const nextRules = rules.map(logic => {
+    const referenced = collectSourceFieldIds(logic);
+    const lostSource = referenced.some(id => deleted.has(id));
+    return {
+      ...logic,
+      enabled: lostSource ? false : logic.enabled,
+      when: pruneGroup(logic.when, deleted),
+      actions: pruneActionsForDeletedFields(logic.actions, deleted),
+    };
+  });
 
-  const next: FieldConditionalLogic = {
-    ...logic,
-    enabled: lostSource ? false : logic.enabled,
-    when: pruneGroup(logic.when, deleted),
-    actions: pruneActionsForDeletedFields(logic.actions, deleted),
-  };
-
-  return serializeConditionalLogic(next);
+  return serializeFieldConditionRules(nextRules);
 }
 
 function pruneGroup(group: ConditionGroup, deletedIds: Set<string>): ConditionGroup {

@@ -1,4 +1,4 @@
-import { cloneConditionalLogic, serializeConditionalLogic } from '../../../../../shared/conditional-logic';
+import { cloneFieldCondition, serializeConditionalLogic } from '../../../../../shared/conditional-logic';
 import {
   getDefaultCharacterLimit,
   resolveCharacterLimit,
@@ -129,7 +129,7 @@ export function mapConfigFieldToBuilder(field: FormFieldConfig): FormField {
     value: field.value,
     defaultValue: field.defaultValue ?? field.value ?? '',
     validations: field.validations ? { ...field.validations } : {},
-    condition: cloneConditionalLogic(field.condition),
+    condition: cloneFieldCondition(field.condition),
     maxRating: field.maxRating,
     rangeType: formFieldType === 'range' ? normalizeRangeType(field.rangeType) : undefined,
     rangeMin: field.rangeMin,

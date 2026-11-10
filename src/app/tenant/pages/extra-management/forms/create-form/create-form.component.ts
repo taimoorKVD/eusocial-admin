@@ -21,7 +21,7 @@ import { FormBuilder, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
-import { finalize, Observable, startWith, take } from 'rxjs';
+import { finalize, startWith, take } from 'rxjs';
 import { CreateFormCanDeactivate } from './create-form-can-deactivate.interface';
 import flatpickr from 'flatpickr';
 import { Instance as FlatpickrInstance } from 'flatpickr/dist/types/instance';
@@ -48,14 +48,18 @@ import {
 import {
   CONDITION_ACTION_LABELS,
   CONDITION_OPERATOR_LABELS,
+  FieldConditionalLogic,
+  defaultConditionRuleName,
   getPrimaryActionType,
   getPrimaryPredicate,
   getSelectedActionTypes,
-  hasConfiguredSource,
+  fieldHasConfiguredConditionRules,
   normalizeConditionalLogic,
+  normalizeFieldConditionRules,
   pruneConditionalLogicForDeletedFields,
   resolveCollectionConditionalEffects,
   serializeConditionalLogic,
+  serializeFieldConditionRules,
 } from '../../../../../shared/conditional-logic';
 import { resolveCharacterLimit } from '../../../../../shared/dynamic-form/character-limit.utils';
 import {
@@ -114,6 +118,7 @@ import {
   FormMetaConfig,
   FormRow,
   FormSection,
+  FormTemplateStatus,
   FormSelectOption,
   FrequencyInterval,
   FrequencyMonthMode,
@@ -290,14 +295,36 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
   readonly sections = signal<FormSection[]>([]);
 
   // ── Edit Mode State ───────────────────────────────────────────
-  /** Template id when the wizard is opened from View Forms → Edit. */
+  /** Template id when the wizard is opened from View Forms → Edit (or after first draft autosave). */
   readonly formId = signal<string>('');
   readonly isEditing = computed(() => !!this.formId());
+  /**
+   * API lifecycle status. `null` = new create session (draft workflow).
+   * `active` = published; draft autosave must never run for it.
+   */
+  readonly templateStatus = signal<FormTemplateStatus | null>(null);
+  readonly isPublishedTemplate = computed(() => this.templateStatus() === 'active');
+  /** New templates and drafts use Publish + draft autosave; published uses Update only. */
+  readonly usesDraftWorkflow = computed(() => {
+    const status = this.templateStatus();
+    return status === null || status === 'draft';
+  });
   readonly loading = signal(false);
-  /** True while create/update form template API is in flight. */
+  /** True while create/update/publish API is in flight. */
   readonly submitting = signal(false);
-  /** True while manual Save as Draft API is in flight. */
+  /** True while draft autosave API is in flight. */
   readonly savingDraft = signal(false);
+  /** Subtle draft-save indicator (only while leaving / flushing a draft). */
+  readonly draftSaveState = signal<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  /** Snapshot of the last successful draft persist (leave-time save). */
+  private lastAutosavedSnapshot = '';
+  private draftAutosaveQueued = false;
+  private pendingDraftAutosaveOptions: {
+    force?: boolean;
+    leaveAfter?: boolean;
+    resolveNavigation?: boolean;
+    onDone?: (ok: boolean) => void;
+  } | null = null;
   readonly showUnsavedChangesModal = signal(false);
   private loadedSchema: DynamicFormPayload | null = null;
 
@@ -395,9 +422,21 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
     ...this.paletteConnectedDropLists(),
   ]);
 
-  readonly draftStatusLabel = computed(() =>
-    this.isEditing() ? 'Editing saved template' : 'Draft · Not saved yet',
-  );
+  readonly draftStatusLabel = computed(() => {
+    if (this.isPublishedTemplate()) {
+      return 'Editing published template';
+    }
+    if (this.draftSaveState() === 'saving' || this.savingDraft()) {
+      return 'Saving draft…';
+    }
+    if (this.draftSaveState() === 'error') {
+      return 'Draft save failed';
+    }
+    if (this.draftSaveState() === 'saved' || this.templateStatus() === 'draft') {
+      return this.formId() ? 'Draft saved' : 'Draft · Not saved yet';
+    }
+    return this.formId() ? 'Editing draft' : 'Draft · Not saved yet';
+  });
 
   /** Stable per-row builder schemas for canvas CDK lists (rebuilt when sections change). */
   readonly rowCanvasSchemas = computed(() => {
@@ -765,7 +804,7 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
 
   // ── Dynamic Options ──────────────────────────────────────────
   readonly jobPositionOptions = signal<{ id: string; name: string }[]>([]);
-  readonly userOptions = signal<{ id: string; name: string; jobPosition?: string }[]>([]);
+  readonly userOptions = signal<{ id: string; name: string; email?: string; jobPosition?: string }[]>([]);
 
   constructor() {
     this.frequencyForm.valueChanges
@@ -908,44 +947,67 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
     }
   }
 
-  goToStep(stepNum: number): void {
-    if (stepNum < this.currentStep()) {
-      this.showBuilderPalette();
-      this.currentStep.set(stepNum);
+  /**
+   * Step tabs: prior steps always; the immediate next step only when
+   * Save & continue would also allow advancing (`canProceed`).
+   */
+  canNavigateToStep(stepNum: number): boolean {
+    const current = this.currentStep();
+    if (stepNum <= current) {
+      return true;
     }
+    return stepNum === current + 1 && this.canProceed();
   }
 
-  /** Header primary action: advance wizard, or persist on the last step. */
-  saveAndContinue(): void {
-    if (this.isLastStep()) {
-      this.save();
+  goToStep(stepNum: number): void {
+    if (!this.canNavigateToStep(stepNum) || stepNum === this.currentStep()) {
       return;
     }
-    this.nextStep();
-  }
-
-  /** Disabled state for the Figma “Save & continue” control. */
-  canSaveAndContinue(): boolean {
-    if (this.isLastStep()) {
-      return this.canSave() && !this.submitting();
-    }
-    return this.canProceed();
+    this.showBuilderPalette();
+    this.currentStep.set(stepNum);
   }
 
   /**
-   * Edit mode only: enable Update without requiring the user to reach the last tab.
-   * Reuses the same canSave / updateTemplate path as the final-step Update action.
+   * Publish for new/draft templates. Visible from Step 1; enabled only on
+   * Step 3 when all wizard requirements pass.
    */
-  canUpdateExistingTemplate(): boolean {
-    return this.isEditing() && this.canSave() && !this.submitting();
+  canPublish(): boolean {
+    return (
+      this.usesDraftWorkflow() &&
+      this.isLastStep() &&
+      this.step1Valid() &&
+      this.step2Valid() &&
+      this.isFrequencyScheduleValid() &&
+      !this.submitting() &&
+      !this.savingDraft()
+    );
   }
 
-  /** Edit mode: persist current changes via the existing update API (no step advance). */
+  /**
+   * Published templates only: enable Update when the full template is valid.
+   */
+  canUpdateExistingTemplate(): boolean {
+    return (
+      this.isPublishedTemplate() &&
+      this.canSave() &&
+      !this.submitting()
+    );
+  }
+
+  /** Published edit: persist via PUT without changing status. */
   updateExistingTemplate(): void {
     if (!this.canUpdateExistingTemplate()) {
       return;
     }
-    this.save();
+    this.savePublishedTemplate();
+  }
+
+  /** Header primary CTA click (Publish for draft workflow). */
+  onPrimaryPublish(): void {
+    if (!this.canPublish()) {
+      return;
+    }
+    this.publishTemplate();
   }
 
   // ── Lifecycle ────────────────────────────────────────────────
@@ -963,6 +1025,7 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
 
       // Create mode: empty template is the clean baseline (not unsaved).
       this.markBaseline();
+      this.lastAutosavedSnapshot = this.captureSnapshot();
       return;
     }
 
@@ -977,6 +1040,8 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
 
   /** Restore the unsaved editor exactly as it was before opening Preview. */
   private restorePreviewState(state: FormEditorPreviewState): void {
+    this.formId.set(state.formId || this.formId());
+    this.templateStatus.set(state.templateStatus);
     this.formName.set(state.formName);
     this.sections.set(state.sections);
     this.logicRules.set(state.logicRules);
@@ -987,11 +1052,42 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
     this.baselineReady = state.baselineReady;
     this.freezeBaseline = state.freezeBaseline;
     this.currentStep.set(state.currentStep);
+    this.lastAutosavedSnapshot = state.savedSnapshot;
     this.wireRowLocationDependencies();
   }
 
   canDeactivate(): boolean | Promise<boolean> {
-    if (this.allowNavigation || !this.hasUnsavedChanges()) {
+    if (this.allowNavigation) {
+      return true;
+    }
+
+    // Draft workflow: persist latest changes once on leave (not while editing).
+    if (this.usesDraftWorkflow()) {
+      if (!this.hasPendingDraftChanges() && !this.savingDraft()) {
+        return true;
+      }
+      if (this.formName().trim()) {
+        return new Promise<boolean>((resolve) => {
+          this.persistDraftOnLeave({
+            onDone: (ok) => {
+              if (ok) {
+                this.allowNavigation = true;
+                resolve(true);
+                return;
+              }
+              this.showUnsavedChangesModal.set(true);
+              this.navigationResolver = resolve;
+            },
+          });
+        });
+      }
+      this.showUnsavedChangesModal.set(true);
+      return new Promise<boolean>((resolve) => {
+        this.navigationResolver = resolve;
+      });
+    }
+
+    if (!this.hasUnsavedChanges()) {
       return true;
     }
 
@@ -1013,30 +1109,12 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
     return dirty;
   }
 
-  canSaveAsDraft(): boolean {
-    const hasName = this.formName().trim().length > 0;
-    return hasName && !this.savingDraft() && !this.submitting();
-  }
-
-  /** Header: save incomplete/complete template via draft endpoint, then leave. */
-  saveAsDraft(): void {
-    if (!this.canSaveAsDraft()) {
-      return;
+  /** True when draft workflow has edits not yet persisted via the Draft API. */
+  hasPendingDraftChanges(): boolean {
+    if (!this.usesDraftWorkflow() || !this.baselineReady) {
+      return false;
     }
-
-    this.performSaveDraft()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: () => {
-          this.toastr.success('Draft saved successfully');
-          this.freezeBaseline = false;
-          this.markBaseline();
-          this.leaveAfterSave();
-        },
-        error: (err) => {
-          this.toastr.error(err?.error?.message || 'Failed to save draft');
-        },
-      });
+    return this.captureSnapshot() !== this.lastAutosavedSnapshot;
   }
 
   onUnsavedStayHere(): void {
@@ -1058,46 +1136,20 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
     this.router.navigate(['/dynamic-forms']);
   }
 
-  onUnsavedSaveAsDraft(): void {
-    if (!this.canSaveAsDraft()) {
+  /** Published leave modal: persist via Update then navigate away. */
+  onUnsavedSavePublished(): void {
+    if (!this.isPublishedTemplate() || !this.canSave() || this.submitting()) {
       return;
     }
-
-    this.performSaveDraft()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: () => {
-          this.toastr.success('Draft saved successfully');
-          this.freezeBaseline = false;
-          this.markBaseline();
-          this.showUnsavedChangesModal.set(false);
-          this.allowNavigation = true;
-          if (this.navigationResolver) {
-            this.navigationResolver(true);
-            this.navigationResolver = null;
-            return;
-          }
-          this.router.navigate(['/dynamic-forms']);
-        },
-        error: (err) => {
-          this.toastr.error(err?.error?.message || 'Failed to save draft');
-        },
-      });
+    this.savePublishedTemplate({ leaveAfter: true, resolveNavigation: true });
   }
 
-  private performSaveDraft(): Observable<unknown> {
-    this.savingDraft.set(true);
-    const body = {
-      name: this.formName().trim() || 'Untitled form',
-      schema: this.buildPayload(),
-    };
-    const persistedId = Number(this.formId());
-    const request$ =
-      Number.isFinite(persistedId) && persistedId > 0
-        ? this.formsService.updateTemplateDraft(persistedId, body)
-        : this.formsService.saveTemplateDraft(body);
-
-    return request$.pipe(finalize(() => this.savingDraft.set(false)));
+  /** Draft leave modal: persist draft then navigate away. */
+  onUnsavedSaveDraftAndLeave(): void {
+    if (!this.usesDraftWorkflow() || !this.formName().trim()) {
+      return;
+    }
+    this.persistDraftOnLeave({ leaveAfter: true, resolveNavigation: true });
   }
 
   private leaveAfterSave(): void {
@@ -1150,6 +1202,11 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
           const fields = schema?.fields || [];
           const nameField = fields.find((f: any) => f.name === 'name') || fields.find((f: any) => (f.label || '').toLowerCase() === 'name');
           const nameFieldId = nameField?.id || null;
+          const emailField =
+            fields.find((f: any) => f.name === 'email') ||
+            fields.find((f: any) => (f.label || '').toLowerCase() === 'email') ||
+            fields.find((f: any) => f.type === 'email');
+          const emailFieldId = emailField?.id || null;
 
           this.userService
             .getUsers(1)
@@ -1161,6 +1218,7 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
                   this.userOptions.set(data.map((u: any) => ({
                     id: String(u.id),
                     name: nameFieldId ? String(u[nameFieldId] ?? '') : '',
+                    email: this.resolveUserEmail(u, emailFieldId),
                     jobPosition: u.job_position?.name || u.jobPosition?.name || '',
                   })));
                 }
@@ -1183,6 +1241,7 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
                   this.userOptions.set(data.map((u: any) => ({
                     id: String(u.id),
                     name: '',
+                    email: this.resolveUserEmail(u, null),
                     jobPosition: u.job_position?.name || u.jobPosition?.name || '',
                   })));
                 }
@@ -1195,6 +1254,16 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
             });
         },
       });
+  }
+
+  /** Prefer users-form email field id; fall back to top-level `email` on the API record. */
+  private resolveUserEmail(user: any, emailFieldId: string | null): string {
+    const fromField = emailFieldId ? String(user?.[emailFieldId] ?? '').trim() : '';
+    if (fromField) {
+      return fromField;
+    }
+    const fromRoot = typeof user?.email === 'string' ? user.email.trim() : '';
+    return fromRoot;
   }
 
   // ── Edit Mode (load / populate) ───────────────────────────────
@@ -1219,6 +1288,11 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
   private populateForm(template: SavedDynamicForm): void {
     const payload = template.payload ?? ({} as DynamicFormPayload);
 
+    // Prefer API status; if missing on edit, treat as published so we never
+    // demote an active template via draft autosave.
+    this.templateStatus.set(
+      template.status ?? (this.formId() ? 'active' : null),
+    );
     this.formName.set(payload.formName?.trim() || template.formName || '');
     const sections = this.deserializeSections(payload.sections ?? []);
     this.applyFrequencyToForm(payload);
@@ -1233,6 +1307,7 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
         this.sections.set(hydratedSections);
         this.wireRowLocationDependencies();
         this.markBaseline();
+        this.lastAutosavedSnapshot = this.captureSnapshot();
       });
   }
 
@@ -1311,6 +1386,8 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
   private applyFrequencyToForm(payload: DynamicFormPayload): void {
     const frequency = payload.frequency ?? ({} as DynamicFormPayload['frequency']);
     const rawRecurring = frequency.recurring ?? createDefaultFrequencyRecurring();
+    const isAtOnce = (frequency.type ?? 'atOnce') === 'atOnce';
+
     // Edit API may expose slots as times / timesAmPm / timesParts (recurring or root).
     const resolvedTimes = resolveFrequencyScheduleTimes(
       rawRecurring,
@@ -1320,29 +1397,51 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
         timesParts?: FrequencyTimeParts[] | null;
       },
     );
+
+    // At Once: same-date repeats live on frequency.times (fallback: single frequency.time).
+    let scheduleTimes: string[];
+    let repeatCount: number;
+    if (isAtOnce) {
+      const rootTimes = Array.isArray(frequency.times) ? frequency.times : null;
+      const atOnceSource =
+        rootTimes && rootTimes.length
+          ? rootTimes
+          : frequency.time?.trim()
+            ? [frequency.time.trim()]
+            : resolvedTimes;
+      repeatCount = Math.max(
+        1,
+        atOnceSource.filter((slot) => !!String(slot ?? '').trim()).length ||
+          Number(rawRecurring.repeatCount) ||
+          1,
+      );
+      scheduleTimes = normalizeFrequencyTimes(atOnceSource, repeatCount);
+    } else {
+      const recurring = sanitizeFrequencyRecurring({
+        ...rawRecurring,
+        times: resolvedTimes,
+      });
+      repeatCount = recurring.repeatCount;
+      scheduleTimes = normalizeFrequencyTimes(recurring.times, repeatCount);
+    }
+
     const recurring = sanitizeFrequencyRecurring({
       ...rawRecurring,
-      times: resolvedTimes,
+      repeatCount,
+      times: scheduleTimes,
     });
-    const isAtOnce = (frequency.type ?? 'atOnce') === 'atOnce';
-    const scheduleTimes = normalizeFrequencyTimes(
-      recurring.times,
-      recurring.repeatCount,
-    );
 
     // Patch scheduling fields first. `repeatCount` valueChanges syncs/pads `times`
     // from the previous value — always apply saved times afterward so edit restore wins.
     this.frequencyForm.patchValue({
       type: frequency.type ?? 'atOnce',
       date: frequency.date ?? null,
-      time: isAtOnce
-        ? frequency.time ?? null
-        : null,
+      time: isAtOnce ? scheduleTimes[0] || frequency.time || null : null,
       startDate: frequency.startDate ?? null,
       endDate: frequency.endDate ?? null,
       every: recurring.every,
       interval: recurring.interval,
-      repeatCount: recurring.repeatCount,
+      repeatCount,
       monthMode: 'dayOfMonth',
       dayOfMonth: recurring.dayOfMonth,
       weekOrder: recurring.weekOrder,
@@ -1480,21 +1579,22 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
 
   /** Clear the opposite type's scheduling fields when switching At Once ↔ Recurring. */
   private resetFieldsForFrequencyType(type: FrequencyType): void {
+    const repeatCount = Math.max(
+      1,
+      Number(this.frequencyForm.controls.repeatCount.value) || 1,
+    );
+
     if (type === 'atOnce') {
       this.frequencyForm.patchValue({
         startDate: null,
         endDate: null,
-        times: [],
         time: null,
+        times: normalizeFrequencyTimes([], repeatCount),
         daysOfWeek: [],
       });
       return;
     }
 
-    const repeatCount = Math.max(
-      1,
-      Number(this.frequencyForm.controls.repeatCount.value) || 1,
-    );
     this.frequencyForm.patchValue({
       date: null,
       time: null,
@@ -1591,10 +1691,17 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
   private syncFrequencyToMeta(): void {
     const value = this.frequencyForm.getRawValue();
     const repeatCount = Math.max(1, Number(value.repeatCount) || 1);
+    const times = normalizeFrequencyTimes(value.times, repeatCount);
+    // At Once keeps `frequencyTime` as the first slot for backward-compatible payloads.
+    const primaryTime =
+      value.type === 'atOnce'
+        ? times.find((slot) => !!slot?.trim())?.trim() || value.time || null
+        : value.time;
+
     this.meta.update((current) => ({
       ...current,
       frequencyDate: value.date,
-      frequencyTime: value.time,
+      frequencyTime: primaryTime,
       frequencyStartDate: value.startDate,
       frequencyEndDate: value.endDate,
       frequencyType: value.type,
@@ -1609,14 +1716,15 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
         onTheMonth: value.onTheMonth,
         yearMonth: value.yearMonth,
         yearDay: Number(value.yearDay) || 1,
-        time: value.time,
-        times: normalizeFrequencyTimes(value.times, repeatCount),
+        time: primaryTime,
+        times,
       }),
     }));
   }
 
   private syncDailyTimesToRepeatCount(repeatCount: number): void {
-    if (this.frequencyForm.controls.type.value !== 'recurring') {
+    const type = this.frequencyForm.controls.type.value;
+    if (type !== 'recurring' && type !== 'atOnce') {
       return;
     }
     const next = normalizeFrequencyTimes(
@@ -1624,6 +1732,9 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
       repeatCount,
     );
     this.frequencyForm.controls.times.setValue(next, { emitEvent: true });
+    if (type === 'atOnce') {
+      this.frequencyForm.controls.time.setValue(next[0] || null, { emitEvent: false });
+    }
   }
 
   /**
@@ -1633,7 +1744,22 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
   isFrequencyScheduleValid(): boolean {
     const meta = this.meta();
     if (meta.frequencyType === 'atOnce') {
-      return !!meta.frequencyDate?.trim() && isValidTimeFieldValue(meta.frequencyTime);
+      if (!meta.frequencyDate?.trim()) {
+        return false;
+      }
+      const repeatCount = Math.max(
+        1,
+        Number(meta.frequencyRecurring?.repeatCount) || 1,
+      );
+      const times = normalizeFrequencyTimes(
+        meta.frequencyRecurring?.times?.length
+          ? meta.frequencyRecurring.times
+          : meta.frequencyTime
+            ? [meta.frequencyTime]
+            : [],
+        repeatCount,
+      );
+      return times.every((slot) => isValidTimeFieldValue(slot));
     }
 
     if (meta.frequencyType !== 'recurring') {
@@ -1855,6 +1981,10 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
     const times = [...this.frequencyForm.controls.times.value];
     times[target] = next ?? '';
     this.frequencyForm.controls.times.setValue(times);
+    // Keep At Once primary `time` aligned with the first slot for payload compat.
+    if (this.frequencyForm.controls.type.value === 'atOnce') {
+      this.frequencyForm.controls.time.setValue(times[0] || null, { emitEvent: false });
+    }
   }
 
   onFrequencyStartDateChange(value: string | null): void {
@@ -2775,12 +2905,11 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
   }
 
   fieldHasConfiguredConditionalLogic(field: FormField | FormFieldConfig): boolean {
-    const logic = normalizeConditionalLogic(field.condition ?? null);
-    return !!logic?.enabled && hasConfiguredSource(logic);
+    return fieldHasConfiguredConditionRules(field.condition ?? null);
   }
 
   normalizeConditionEnabled(field: FormField | FormFieldConfig): boolean {
-    return !!normalizeConditionalLogic(field.condition ?? null)?.enabled;
+    return normalizeFieldConditionRules(field.condition ?? null).some(rule => rule.enabled);
   }
 
   getConditionSourceId(field: FormField): string {
@@ -2866,13 +2995,15 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
   }
 
   onOverviewToggleLogic(field: FormField, enabled: boolean): void {
-    const logic = normalizeConditionalLogic(field.condition ?? null);
-    if (!logic) {
+    const rules = normalizeFieldConditionRules(field.condition ?? null);
+    if (!rules.length) {
       return;
     }
     this.onUpdateField({
       ...field,
-      condition: serializeConditionalLogic({ ...logic, enabled }),
+      condition: serializeFieldConditionRules(
+        rules.map(rule => ({ ...rule, enabled })),
+      ),
     });
   }
 
@@ -2892,33 +3023,43 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
     this.logicRulesPanel()?.toggleRuleEnabled(rule, enabled);
   }
 
-  summarizeFieldCondition(field: FormField): string {
-    const logic = normalizeConditionalLogic(field.condition ?? null);
-    if (!logic) {
-      return 'No conditional logic configured';
-    }
-    const predicate = getPrimaryPredicate(logic);
-    const source =
-      this.logicSchemaFields().find((item) => item.id === predicate.fieldId)?.label ||
-      'a field';
-    const operator =
-      CONDITION_OPERATOR_LABELS[predicate.operator] ?? predicate.operator;
-    const needsValue = !['isEmpty', 'isNotEmpty', 'checked', 'unchecked'].includes(
-      predicate.operator,
-    );
-    const valueText =
-      needsValue && predicate.value != null && String(predicate.value).trim() !== ''
-        ? ` ${String(predicate.value)}`
-        : '';
-    const action = getSelectedActionTypes(logic)
-      .map((type) => CONDITION_ACTION_LABELS[type] ?? type)
-      .join(' + ');
-    return `${action || 'Update field'} when ${source} ${operator}${valueText}`;
+  /** Independent Conditional Logic rules for overview display (named, ordered). */
+  fieldConditionOverviewRules(field: FormField | FormFieldConfig): FieldConditionalLogic[] {
+    return normalizeFieldConditionRules(field.condition ?? null);
   }
 
-  /** List/map display: friendlier action phrasing for Figma chrome. */
-  logicActionNarrative(field: FormField): string {
-    const logic = normalizeConditionalLogic(field.condition ?? null);
+  conditionOverviewRuleName(rule: FieldConditionalLogic, index: number): string {
+    return String(rule?.name ?? '').trim() || defaultConditionRuleName(index);
+  }
+
+  /** Total independent rules across all configured fields (Logic map sidebar count). */
+  configuredConditionalLogicRuleCount(): number {
+    return this.configuredConditionalLogicFields().reduce(
+      (total, field) => total + this.fieldConditionOverviewRules(field).length,
+      0,
+    );
+  }
+
+  summarizeFieldCondition(field: FormField): string {
+    const rules = this.fieldConditionOverviewRules(field);
+    if (!rules.length) {
+      return 'No conditional logic configured';
+    }
+    const multi = rules.length > 1;
+    return rules
+      .map((logic, index) => {
+        const parts = this.logicListSummaryPartsForRule(logic);
+        const summary = `${parts.before}${parts.badge ? ` ${parts.badge} ` : ' '}${parts.after}`.trim();
+        if (!multi) {
+          return summary;
+        }
+        return `${this.conditionOverviewRuleName(logic, index)}: ${summary}`;
+      })
+      .join(' · ');
+  }
+
+  /** List/map display: friendlier action phrasing for a single rule. */
+  logicActionNarrativeForRule(logic: FieldConditionalLogic | null | undefined): string {
     if (!logic?.actions?.length) {
       return 'Updated';
     }
@@ -2955,9 +3096,15 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
     return `${first} and ${rest.join(' and ')}`;
   }
 
-  /** Logic map condition pill (e.g. "is above 5"). */
-  logicMapConditionPill(field: FormField): string {
-    const logic = normalizeConditionalLogic(field.condition ?? null);
+  logicActionNarrative(field: FormField): string {
+    const rules = this.fieldConditionOverviewRules(field);
+    if (!rules.length) {
+      return 'Updated';
+    }
+    return this.logicActionNarrativeForRule(rules[0]);
+  }
+
+  logicMapConditionPillForRule(logic: FieldConditionalLogic | null | undefined): string {
     if (!logic) {
       return 'when condition matches';
     }
@@ -2973,9 +3120,15 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
     return `${operator}${valueText}`.trim();
   }
 
-  /** Logic map action pill (e.g. "shows and requires it"). */
-  logicMapActionPill(field: FormField): string {
-    const narrative = this.logicActionNarrative(field).toLowerCase();
+  /** Logic map condition pill (e.g. "is above 5") — first rule only (legacy). */
+  logicMapConditionPill(field: FormField): string {
+    return this.logicMapConditionPillForRule(
+      this.fieldConditionOverviewRules(field)[0] ?? null,
+    );
+  }
+
+  logicMapActionPillForRule(logic: FieldConditionalLogic | null | undefined): string {
+    const narrative = this.logicActionNarrativeForRule(logic).toLowerCase();
     if (narrative === 'shown and required') {
       return 'shows and requires it';
     }
@@ -2994,13 +3147,18 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
     return `${narrative} it`;
   }
 
-  /** List row: narrative with source field split out for a badge. */
-  logicListSummaryParts(field: FormField): {
+  /** Logic map action pill — first rule only (legacy). */
+  logicMapActionPill(field: FormField): string {
+    return this.logicMapActionPillForRule(
+      this.fieldConditionOverviewRules(field)[0] ?? null,
+    );
+  }
+
+  logicListSummaryPartsForRule(logic: FieldConditionalLogic | null | undefined): {
     before: string;
     badge: string;
     after: string;
   } {
-    const logic = normalizeConditionalLogic(field.condition ?? null);
     if (!logic) {
       return { before: 'No conditional logic configured', badge: '', after: '' };
     }
@@ -3017,10 +3175,53 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
         ? ` ${String(predicate.value)}`
         : '';
     return {
-      before: `${this.logicActionNarrative(field)} when`,
+      before: `${this.logicActionNarrativeForRule(logic)} when`,
       badge: source,
       after: `${operator}${valueText}`.trim(),
     };
+  }
+
+  /** List row summaries for every independent rule on a field. */
+  logicListSummaryParts(field: FormField): Array<{
+    name: string;
+    before: string;
+    badge: string;
+    after: string;
+    action: string;
+  }> {
+    const rules = this.fieldConditionOverviewRules(field);
+    if (!rules.length) {
+      return [
+        {
+          name: '',
+          before: 'No conditional logic configured',
+          badge: '',
+          after: '',
+          action: '',
+        },
+      ];
+    }
+    const multi = rules.length > 1;
+    return rules.map((logic, index) => {
+      const parts = this.logicListSummaryPartsForRule(logic);
+      return {
+        name: multi ? this.conditionOverviewRuleName(logic, index) : '',
+        ...parts,
+        action: this.logicActionNarrativeForRule(logic),
+      };
+    });
+  }
+
+  getConditionSourceIdForRule(logic: FieldConditionalLogic | null | undefined): string {
+    return getPrimaryPredicate(logic).fieldId;
+  }
+
+  getConditionSourceLabelForRule(logic: FieldConditionalLogic | null | undefined): string {
+    const sourceId = this.getConditionSourceIdForRule(logic);
+    return (
+      this.logicSchemaFields().find((item) => item.id === sourceId)?.label ||
+      'No field chosen yet'
+    );
   }
 
   automationListSummaryParts(rule: FormLogicRule): {
@@ -4058,8 +4259,23 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
   /**
    * Open the shared Form Template preview page (FormTemplatePreviewComponent).
    * Create mode renders the in-memory schema without saving or calling the preview API.
+   * Draft workflow: flush pending changes once before leaving the wizard.
    */
   openTemplatePreview(): void {
+    if (
+      this.usesDraftWorkflow() &&
+      this.hasPendingDraftChanges() &&
+      this.formName().trim()
+    ) {
+      this.persistDraftOnLeave({
+        onDone: () => this.navigateToTemplatePreview(),
+      });
+      return;
+    }
+    this.navigateToTemplatePreview();
+  }
+
+  private navigateToTemplatePreview(): void {
     const id = this.formId();
     const payload = this.buildPayload();
 
@@ -4069,7 +4285,7 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
         payload,
       });
       this.previewBridge.setEditorState({
-        formId: '',
+        formId: this.formId(),
         formName: this.formName(),
         sections: this.sections(),
         meta: this.meta(),
@@ -4079,12 +4295,16 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
         baselineReady: this.baselineReady,
         freezeBaseline: this.freezeBaseline,
         currentStep: this.currentStep(),
+        templateStatus: this.templateStatus(),
       });
 
       this.allowNavigation = true;
+      const returnTo = this.formId()
+        ? `/dynamic-forms/edit/${this.formId()}`
+        : '/dynamic-forms/create';
       void this.router
         .navigate(['/dynamic-forms', 'preview'], {
-          queryParams: { returnTo: '/dynamic-forms/create' },
+          queryParams: { returnTo },
         })
         .then((navigated) => {
           if (!navigated) {
@@ -4115,6 +4335,7 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
       baselineReady: this.baselineReady,
       freezeBaseline: this.freezeBaseline,
       currentStep: this.currentStep(),
+      templateStatus: this.templateStatus(),
     });
 
     // Preview must not trigger the unsaved-changes guard or save the template.
@@ -4139,24 +4360,26 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
     this.router.navigate(['/dynamic-forms']);
   }
 
-  save(): void {
-    if (this.submitting()) {
+  /**
+   * Publish a new or draft template via create/PUT (existing publish path).
+   * Never calls draft endpoints.
+   */
+  publishTemplate(): void {
+    if (!this.canPublish()) {
       return;
     }
 
-    if (!this.canSave()) return;
-
     const payload = this.buildPayload();
     const id = this.formId();
+    const body = {
+      name: this.formName().trim(),
+      schema: payload,
+    };
 
     this.submitting.set(true);
-
     const request$ = id
-      ? this.formsService.updateTemplate(Number(id), {
-          name: this.formName(),
-          schema: payload,
-        })
-      : this.formsService.createForm({ name: this.formName(), schema: payload });
+      ? this.formsService.updateTemplate(Number(id), body)
+      : this.formsService.createForm(body);
 
     request$
       .pipe(
@@ -4164,18 +4387,198 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-        next: () => {
-          this.toastr.success(id ? 'Form updated successfully' : 'Form created successfully');
+        next: (response) => {
+          const publishedId = this.formsService.extractTemplateId(response) ?? Number(id);
+          if (Number.isFinite(publishedId) && publishedId > 0) {
+            this.formId.set(String(publishedId));
+          }
+          this.templateStatus.set('active');
+          this.toastr.success('Form published successfully');
           this.freezeBaseline = false;
           this.markBaseline();
+          this.lastAutosavedSnapshot = this.captureSnapshot();
           this.leaveAfterSave();
         },
         error: (err) => {
-          this.toastr.error(
-            err?.error?.message || (id ? 'Failed to update form' : 'Failed to create form'),
-          );
+          this.toastr.error(err?.error?.message || 'Failed to publish form');
         },
       });
+  }
+
+  /**
+   * Update an already-published template via PUT. Does not touch draft APIs
+   * and does not change lifecycle status client-side.
+   */
+  savePublishedTemplate(options?: {
+    leaveAfter?: boolean;
+    resolveNavigation?: boolean;
+  }): void {
+    if (this.submitting() || !this.canSave()) {
+      return;
+    }
+    if (!this.isPublishedTemplate()) {
+      return;
+    }
+
+    const id = this.formId();
+    if (!id) {
+      return;
+    }
+
+    this.submitting.set(true);
+    this.formsService
+      .updateTemplate(Number(id), {
+        name: this.formName().trim(),
+        schema: this.buildPayload(),
+      })
+      .pipe(
+        finalize(() => this.submitting.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: () => {
+          this.toastr.success('Form updated successfully');
+          this.freezeBaseline = false;
+          this.markBaseline();
+          this.showUnsavedChangesModal.set(false);
+          if (options?.leaveAfter) {
+            this.allowNavigation = true;
+            if (options.resolveNavigation && this.navigationResolver) {
+              this.navigationResolver(true);
+              this.navigationResolver = null;
+              return;
+            }
+            this.leaveAfterSave();
+          }
+        },
+        error: (err) => {
+          this.toastr.error(err?.error?.message || 'Failed to update form');
+        },
+      });
+  }
+
+  /** @deprecated Use publishTemplate / savePublishedTemplate. Kept for any stray callers. */
+  save(): void {
+    if (this.usesDraftWorkflow()) {
+      this.publishTemplate();
+      return;
+    }
+    this.savePublishedTemplate({ leaveAfter: true });
+  }
+
+  /**
+   * Persist the current wizard state via the Draft API when leaving.
+   * Skips the request when nothing has changed since the last successful save.
+   */
+  private persistDraftOnLeave(options?: {
+    leaveAfter?: boolean;
+    resolveNavigation?: boolean;
+    onDone?: (ok: boolean) => void;
+  }): void {
+    if (!this.usesDraftWorkflow() || this.submitting()) {
+      options?.onDone?.(false);
+      return;
+    }
+
+    const name = this.formName().trim();
+    if (!name) {
+      options?.onDone?.(false);
+      return;
+    }
+
+    const snap = this.captureSnapshot();
+    if (snap === this.lastAutosavedSnapshot) {
+      options?.onDone?.(true);
+      if (options?.leaveAfter) {
+        this.showUnsavedChangesModal.set(false);
+        this.allowNavigation = true;
+        if (options.resolveNavigation && this.navigationResolver) {
+          this.navigationResolver(true);
+          this.navigationResolver = null;
+          return;
+        }
+        this.leaveAfterSave();
+      }
+      return;
+    }
+
+    if (this.savingDraft()) {
+      this.draftAutosaveQueued = true;
+      this.pendingDraftAutosaveOptions = {
+        force: true,
+        leaveAfter: options?.leaveAfter,
+        resolveNavigation: options?.resolveNavigation,
+        onDone: options?.onDone,
+      };
+      return;
+    }
+
+    this.savingDraft.set(true);
+    this.draftSaveState.set('saving');
+    const body = {
+      name,
+      schema: this.buildPayload(),
+    };
+    const persistedId = Number(this.formId());
+    const request$ =
+      Number.isFinite(persistedId) && persistedId > 0
+        ? this.formsService.updateTemplateDraft(persistedId, body)
+        : this.formsService.saveTemplateDraft(body);
+
+    request$
+      .pipe(
+        finalize(() => this.savingDraft.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (response) => {
+          this.applyDraftSaveSuccess(response, snap);
+          options?.onDone?.(true);
+          if (options?.leaveAfter) {
+            this.showUnsavedChangesModal.set(false);
+            this.allowNavigation = true;
+            if (options.resolveNavigation && this.navigationResolver) {
+              this.navigationResolver(true);
+              this.navigationResolver = null;
+              return;
+            }
+            this.leaveAfterSave();
+            return;
+          }
+          this.flushQueuedDraftPersist();
+        },
+        error: (err) => {
+          this.draftSaveState.set('error');
+          this.toastr.error(err?.error?.message || 'Failed to save draft');
+          options?.onDone?.(false);
+          this.flushQueuedDraftPersist();
+        },
+      });
+  }
+
+  private flushQueuedDraftPersist(): void {
+    const pending = this.pendingDraftAutosaveOptions;
+    this.pendingDraftAutosaveOptions = null;
+    this.draftAutosaveQueued = false;
+
+    if (pending) {
+      this.persistDraftOnLeave(pending);
+    }
+  }
+
+  private applyDraftSaveSuccess(response: unknown, snap: string): void {
+    const newId = this.formsService.extractTemplateId(response);
+    if (newId && !this.formId()) {
+      // Keep the in-session editor mounted; subsequent autosaves / Publish use this id.
+      this.formId.set(String(newId));
+    }
+    if (this.templateStatus() !== 'draft') {
+      this.templateStatus.set('draft');
+    }
+    this.lastAutosavedSnapshot = snap;
+    this.freezeBaseline = false;
+    this.markBaseline();
+    this.draftSaveState.set('saved');
   }
 
   private buildPayload() {

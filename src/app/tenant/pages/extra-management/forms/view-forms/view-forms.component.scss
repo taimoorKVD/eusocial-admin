@@ -492,18 +492,13 @@
   padding: 0.35rem;
 
   /*
-   * Keep the menu anchored to `.forms-listing__actions-menu` (position: relative).
-   * `!important` overrides the legacy inline fixed top/left from ngStyle so the
-   * dropdown scrolls with its three-dot trigger instead of the viewport.
+   * Viewport-anchored via [ngStyle] from positionActionsMenu().
+   * Must stay `fixed` so the listing shell (`overflow: hidden`) cannot clip
+   * the menu on the last / only row.
    */
   &--fixed {
-    position: absolute !important;
-    top: calc(100% + 0.25rem) !important;
-    right: 0 !important;
-    bottom: auto !important;
-    left: auto !important;
-    max-height: none !important;
-    overflow: hidden !important;
+    position: fixed;
+    z-index: 80;
   }
 }
 
