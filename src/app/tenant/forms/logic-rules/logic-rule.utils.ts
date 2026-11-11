@@ -145,7 +145,9 @@ function normalizeLogicRule(raw: unknown): FormLogicRule | null {
       match: matchFromJoins(normalizedItems, match),
       items: normalizedItems,
     },
-    actions: actions.length ? actions : [createEmptyLogicAction()],
+    // Allow empty actions — do not silently insert Purchase Request.
+    // New rules still start with a default action via createEmptyLogicRule.
+    actions,
   };
 }
 
