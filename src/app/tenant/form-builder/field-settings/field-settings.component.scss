@@ -438,3 +438,11 @@ $theme-text: #334155;
   transform: rotate(180deg);
 }
 
+/* Conditional Logic modal — dropdown option hover (pale orange + orange border) */
+.conditional-logic-modal {
+  .condition-dropdown-option:hover {
+    background-color: #fff7ed;
+    border-color: #ff9015;
+  }
+}
+

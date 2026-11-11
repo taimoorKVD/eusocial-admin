@@ -1180,7 +1180,7 @@
       (click)="closeConditionModal()"
     >
       <div
-        class="flex max-h-[min(92vh,44rem)] w-full max-w-[64rem] flex-col overflow-hidden rounded-2xl border border-[#BDBDBD] bg-white shadow-[0_24px_48px_-16px_rgba(15,23,42,0.35)] max-sm:max-h-[94vh] max-sm:max-w-full"
+        class="conditional-logic-modal flex max-h-[min(92vh,44rem)] w-full max-w-[64rem] flex-col overflow-hidden rounded-2xl border border-[#BDBDBD] bg-white shadow-[0_24px_48px_-16px_rgba(15,23,42,0.35)] max-sm:max-h-[94vh] max-sm:max-w-full"
         (click)="$event.stopPropagation(); closeConditionRuleMenu()"
       >
         <header class="flex shrink-0 items-center justify-between gap-3 border-b border-[#E0E0E0] px-5 py-4 max-sm:px-4">
@@ -1342,6 +1342,14 @@
                   <button
                     type="button"
                     role="menuitem"
+                    class="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium text-[#161616] transition hover:bg-[#F9FAFB] focus:outline-none"
+                    (click)="duplicateConditionRule(conditionRuleMenuIndex, $event)"
+                  >
+                    Duplicate rule
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
                     class="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium text-[#B91C1C] transition hover:bg-[#FEF2F2] focus:outline-none"
                     (click)="removeConditionRule(conditionRuleMenuIndex)"
                   >
@@ -1350,36 +1358,17 @@
                 </div>
               }
 
-              <div class="shrink-0 space-y-3 px-3 pb-4 pt-1">
+              <div class="shrink-0 px-3 pb-4 pt-1">
                 <button
                   type="button"
-                  class="flex h-10 w-full items-center justify-between gap-2 rounded-lg border border-[#E5E7EB] bg-white px-3 text-left text-sm font-medium text-[#161616] transition hover:bg-[#FAFAFA] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ff9015]/30 disabled:cursor-not-allowed disabled:opacity-50"
+                  class="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-[#E5E7EB] bg-white px-3 text-sm font-semibold text-[#161616] transition hover:border-[#D1D5DB] hover:bg-[#F9FAFB] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ff9015]/30 disabled:cursor-not-allowed disabled:opacity-50"
                   [disabled]="!conditionRuleControlsEnabled"
                   (click)="openAddConditionRuleModal()"
                 >
-                  <span class="inline-flex min-w-0 items-center gap-2">
-                    <svg class="h-4 w-4 shrink-0 text-[#161616]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                    </svg>
-                    <span>Add rule</span>
-                  </span>
-                  <svg class="h-4 w-4 shrink-0 text-[#9CA3AF]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                  <svg class="h-4 w-4 shrink-0 text-[#161616]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                   </svg>
-                </button>
-
-                <div class="border-t border-[#E5E7EB]" role="separator"></div>
-
-                <button
-                  type="button"
-                  class="flex w-full items-center gap-2 rounded-md px-1 py-1.5 text-left text-xs font-medium text-[#4B5563] transition hover:bg-[#F9FAFB] hover:text-[#161616] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ff9015]/30 disabled:cursor-not-allowed disabled:opacity-50"
-                  [disabled]="!conditionRuleControlsEnabled"
-                  (click)="duplicateActiveConditionRule()"
-                >
-                  <svg class="h-3.5 w-3.5 shrink-0 text-[#6B7280]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 0 1-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75m9.75 10.125H9.375a1.125 1.125 0 0 1-1.125-1.125v-9.75c0-.621.504-1.125 1.125-1.125h9.75c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125Z" />
-                  </svg>
-                  Duplicate rule...
+                  Add rule
                 </button>
               </div>
             </aside>
@@ -1445,7 +1434,7 @@
                         <div class="absolute left-0 right-0 top-[calc(100%+4px)] z-[200] max-h-64 overflow-y-auto rounded-[0.85rem] border border-[#BDBDBD] bg-white p-[0.35rem] shadow-[0_16px_32px_-12px_rgba(15,23,42,0.22)]">
                           <button
                             type="button"
-                            class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                            class="condition-dropdown-option block w-full rounded-lg border border-transparent bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700"
                             (click)="onConditionTargetFieldPick('')"
                           >
                             Choose a field...
@@ -1453,7 +1442,7 @@
                           @for (target of conditionTargetFields; track target.id) {
                             <button
                               type="button"
-                              class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                              class="condition-dropdown-option block w-full rounded-lg border border-transparent bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700"
                               [class.bg-[#f7fee7]]="conditionTargetSelectValue === target.id"
                               [class.font-semibold]="conditionTargetSelectValue === target.id"
                               [class.text-[#3f6212]]="conditionTargetSelectValue === target.id"
@@ -1523,7 +1512,7 @@
                           <div class="absolute left-0 right-0 top-[calc(100%+4px)] z-[200] max-h-64 overflow-y-auto rounded-[0.85rem] border border-[#BDBDBD] bg-white p-[0.35rem] shadow-[0_16px_32px_-12px_rgba(15,23,42,0.22)]">
                             <button
                               type="button"
-                              class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                              class="condition-dropdown-option block w-full rounded-lg border border-transparent bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700"
                               (click)="onConditionSourceChange('')"
                             >
                               Choose a field...
@@ -1531,7 +1520,7 @@
                             @for (source of validConditionSourceFields; track source.id) {
                               <button
                                 type="button"
-                                class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                class="condition-dropdown-option block w-full rounded-lg border border-transparent bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700"
                                 [class.bg-[#f7fee7]]="isSelectOptionSelected(source.id, conditionSourceFieldId)"
                                 [class.font-semibold]="isSelectOptionSelected(source.id, conditionSourceFieldId)"
                                 [class.text-[#3f6212]]="isSelectOptionSelected(source.id, conditionSourceFieldId)"
@@ -1580,7 +1569,7 @@
                             @for (operator of conditionOperators; track operator.value) {
                               <button
                                 type="button"
-                                class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                class="condition-dropdown-option block w-full rounded-lg border border-transparent bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700"
                                 [class.bg-[#f7fee7]]="conditionOperator === operator.value"
                                 [class.font-semibold]="conditionOperator === operator.value"
                                 [class.text-[#3f6212]]="conditionOperator === operator.value"
@@ -1630,7 +1619,7 @@
                               <div class="absolute left-0 right-0 top-[calc(100%+4px)] z-[200] max-h-64 overflow-y-auto rounded-[0.85rem] border border-[#BDBDBD] bg-white p-[0.35rem] shadow-[0_16px_32px_-12px_rgba(15,23,42,0.22)]">
                                 <button
                                   type="button"
-                                  class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                  class="condition-dropdown-option block w-full rounded-lg border border-transparent bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700"
                                   (click)="onConditionValueChange('')"
                                 >
                                   Value
@@ -1638,7 +1627,7 @@
                                 @for (option of conditionSourceOptions; track option.value) {
                                   <button
                                     type="button"
-                                    class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                    class="condition-dropdown-option block w-full rounded-lg border border-transparent bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700"
                                     [class.bg-[#f7fee7]]="isSelectOptionSelected(option.value, conditionCompareValue)"
                                     [class.font-semibold]="isSelectOptionSelected(option.value, conditionCompareValue)"
                                     [class.text-[#3f6212]]="isSelectOptionSelected(option.value, conditionCompareValue)"
@@ -1753,7 +1742,7 @@
                         @for (kind of valueSourceKinds; track kind.value) {
                           <button
                             type="button"
-                            class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                            class="condition-dropdown-option block w-full rounded-lg border border-transparent bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700"
                             [class.bg-[#f7fee7]]="setValueSourceKind === kind.value"
                             [class.font-semibold]="setValueSourceKind === kind.value"
                             [class.text-[#3f6212]]="setValueSourceKind === kind.value"
@@ -1816,7 +1805,7 @@
                         <div class="absolute left-0 right-0 top-[calc(100%+4px)] z-[200] max-h-64 overflow-y-auto rounded-[0.85rem] border border-[#BDBDBD] bg-white p-[0.35rem] shadow-[0_16px_32px_-12px_rgba(15,23,42,0.22)]">
                           <button
                             type="button"
-                            class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                            class="condition-dropdown-option block w-full rounded-lg border border-transparent bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700"
                             (click)="onSetValueFieldChange('')"
                           >
                             Select a field
@@ -1824,7 +1813,7 @@
                           @for (source of setValueFormFields; track source.id) {
                             <button
                               type="button"
-                              class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                              class="condition-dropdown-option block w-full rounded-lg border border-transparent bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700"
                               [class.bg-[#f7fee7]]="setValueFieldId === source.id"
                               [class.font-semibold]="setValueFieldId === source.id"
                               [class.text-[#3f6212]]="setValueFieldId === source.id"
@@ -1875,7 +1864,7 @@
                           <div class="absolute left-0 right-0 top-[calc(100%+4px)] z-[200] max-h-64 overflow-y-auto rounded-[0.85rem] border border-[#BDBDBD] bg-white p-[0.35rem] shadow-[0_16px_32px_-12px_rgba(15,23,42,0.22)]">
                             <button
                               type="button"
-                              class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                              class="condition-dropdown-option block w-full rounded-lg border border-transparent bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700"
                               (click)="onSetValueRelatedSourceChange('')"
                             >
                               Select source
@@ -1883,7 +1872,7 @@
                             @for (source of dynamicConditionSourceFields; track source.id) {
                               <button
                                 type="button"
-                                class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                class="condition-dropdown-option block w-full rounded-lg border border-transparent bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700"
                                 [class.bg-[#f7fee7]]="setValueRelatedSourceFieldId === source.id"
                                 [class.font-semibold]="setValueRelatedSourceFieldId === source.id"
                                 [class.text-[#3f6212]]="setValueRelatedSourceFieldId === source.id"
@@ -1936,7 +1925,7 @@
                           <div class="absolute left-0 right-0 top-[calc(100%+4px)] z-[200] max-h-64 overflow-y-auto rounded-[0.85rem] border border-[#BDBDBD] bg-white p-[0.35rem] shadow-[0_16px_32px_-12px_rgba(15,23,42,0.22)]">
                             <button
                               type="button"
-                              class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                              class="condition-dropdown-option block w-full rounded-lg border border-transparent bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700"
                               (click)="onSetValueRelatedPropertyChange('')"
                             >
                               Select property
@@ -1944,7 +1933,7 @@
                             @for (column of relatedPropertiesFor(setValueRelatedSourceFieldId); track column.id) {
                               <button
                                 type="button"
-                                class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                class="condition-dropdown-option block w-full rounded-lg border border-transparent bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700"
                                 [class.bg-[#f7fee7]]="setValueRelatedProperty === column.id"
                                 [class.font-semibold]="setValueRelatedProperty === column.id"
                                 [class.text-[#3f6212]]="setValueRelatedProperty === column.id"
@@ -2000,7 +1989,7 @@
                             @for (kind of operandSourceKinds('left'); track kind.value) {
                               <button
                                 type="button"
-                                class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                class="condition-dropdown-option block w-full rounded-lg border border-transparent bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700"
                                 [class.bg-[#f7fee7]]="setValueExpressionLeftKind === kind.value"
                                 [class.font-semibold]="setValueExpressionLeftKind === kind.value"
                                 [class.text-[#3f6212]]="setValueExpressionLeftKind === kind.value"
@@ -2057,7 +2046,7 @@
                             <div class="absolute left-0 right-0 top-[calc(100%+4px)] z-[200] max-h-64 overflow-y-auto rounded-[0.85rem] border border-[#BDBDBD] bg-white p-[0.35rem] shadow-[0_16px_32px_-12px_rgba(15,23,42,0.22)]">
                               <button
                                 type="button"
-                                class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                class="condition-dropdown-option block w-full rounded-lg border border-transparent bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700"
                                 (click)="onSetValueExpressionSideFieldChange('left', '')"
                               >
                                 Select a field
@@ -2065,7 +2054,7 @@
                               @for (source of setValueFormFields; track source.id) {
                                 <button
                                   type="button"
-                                  class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                  class="condition-dropdown-option block w-full rounded-lg border border-transparent bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700"
                                   [class.bg-[#f7fee7]]="setValueExpressionLeftFieldId === source.id"
                                   [class.font-semibold]="setValueExpressionLeftFieldId === source.id"
                                   [class.text-[#3f6212]]="setValueExpressionLeftFieldId === source.id"
@@ -2112,7 +2101,7 @@
                             <div class="absolute left-0 right-0 top-[calc(100%+4px)] z-[200] max-h-64 overflow-y-auto rounded-[0.85rem] border border-[#BDBDBD] bg-white p-[0.35rem] shadow-[0_16px_32px_-12px_rgba(15,23,42,0.22)]">
                               <button
                                 type="button"
-                                class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                class="condition-dropdown-option block w-full rounded-lg border border-transparent bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700"
                                 (click)="onSetValueExpressionSideRelatedSourceChange('left', '')"
                               >
                                 Select source
@@ -2120,7 +2109,7 @@
                               @for (source of dynamicConditionSourceFields; track source.id) {
                                 <button
                                   type="button"
-                                  class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                  class="condition-dropdown-option block w-full rounded-lg border border-transparent bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700"
                                   [class.bg-[#f7fee7]]="setValueExpressionLeftRelatedSourceFieldId === source.id"
                                   [class.font-semibold]="setValueExpressionLeftRelatedSourceFieldId === source.id"
                                   [class.text-[#3f6212]]="setValueExpressionLeftRelatedSourceFieldId === source.id"
@@ -2164,7 +2153,7 @@
                             <div class="absolute left-0 right-0 top-[calc(100%+4px)] z-[200] max-h-64 overflow-y-auto rounded-[0.85rem] border border-[#BDBDBD] bg-white p-[0.35rem] shadow-[0_16px_32px_-12px_rgba(15,23,42,0.22)]">
                               <button
                                 type="button"
-                                class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                class="condition-dropdown-option block w-full rounded-lg border border-transparent bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700"
                                 (click)="onSetValueExpressionSideRelatedPropertyChange('left', '')"
                               >
                                 Select property
@@ -2172,7 +2161,7 @@
                               @for (column of relatedPropertiesFor(setValueExpressionLeftRelatedSourceFieldId); track column.id) {
                                 <button
                                   type="button"
-                                  class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                  class="condition-dropdown-option block w-full rounded-lg border border-transparent bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700"
                                   [class.bg-[#f7fee7]]="setValueExpressionLeftRelatedProperty === column.id"
                                   [class.font-semibold]="setValueExpressionLeftRelatedProperty === column.id"
                                   [class.text-[#3f6212]]="setValueExpressionLeftRelatedProperty === column.id"
@@ -2222,7 +2211,7 @@
                             @for (op of expressionOps; track op.value) {
                               <button
                                 type="button"
-                                class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                class="condition-dropdown-option block w-full rounded-lg border border-transparent bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700"
                                 [class.bg-[#f7fee7]]="setValueExpressionOp === op.value"
                                 [class.font-semibold]="setValueExpressionOp === op.value"
                                 [class.text-[#3f6212]]="setValueExpressionOp === op.value"
@@ -2271,7 +2260,7 @@
                             @for (kind of operandSourceKinds('right'); track kind.value) {
                               <button
                                 type="button"
-                                class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                class="condition-dropdown-option block w-full rounded-lg border border-transparent bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700"
                                 [class.bg-[#f7fee7]]="setValueExpressionRightKind === kind.value"
                                 [class.font-semibold]="setValueExpressionRightKind === kind.value"
                                 [class.text-[#3f6212]]="setValueExpressionRightKind === kind.value"
@@ -2328,7 +2317,7 @@
                             <div class="absolute left-0 right-0 top-[calc(100%+4px)] z-[200] max-h-64 overflow-y-auto rounded-[0.85rem] border border-[#BDBDBD] bg-white p-[0.35rem] shadow-[0_16px_32px_-12px_rgba(15,23,42,0.22)]">
                               <button
                                 type="button"
-                                class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                class="condition-dropdown-option block w-full rounded-lg border border-transparent bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700"
                                 (click)="onSetValueExpressionSideFieldChange('right', '')"
                               >
                                 Select a field
@@ -2336,7 +2325,7 @@
                               @for (source of setValueFormFields; track source.id) {
                                 <button
                                   type="button"
-                                  class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                  class="condition-dropdown-option block w-full rounded-lg border border-transparent bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700"
                                   [class.bg-[#f7fee7]]="setValueExpressionRightFieldId === source.id"
                                   [class.font-semibold]="setValueExpressionRightFieldId === source.id"
                                   [class.text-[#3f6212]]="setValueExpressionRightFieldId === source.id"
@@ -2383,7 +2372,7 @@
                             <div class="absolute left-0 right-0 top-[calc(100%+4px)] z-[200] max-h-64 overflow-y-auto rounded-[0.85rem] border border-[#BDBDBD] bg-white p-[0.35rem] shadow-[0_16px_32px_-12px_rgba(15,23,42,0.22)]">
                               <button
                                 type="button"
-                                class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                class="condition-dropdown-option block w-full rounded-lg border border-transparent bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700"
                                 (click)="onSetValueExpressionSideRelatedSourceChange('right', '')"
                               >
                                 Select source
@@ -2391,7 +2380,7 @@
                               @for (source of dynamicConditionSourceFields; track source.id) {
                                 <button
                                   type="button"
-                                  class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                  class="condition-dropdown-option block w-full rounded-lg border border-transparent bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700"
                                   [class.bg-[#f7fee7]]="setValueExpressionRightRelatedSourceFieldId === source.id"
                                   [class.font-semibold]="setValueExpressionRightRelatedSourceFieldId === source.id"
                                   [class.text-[#3f6212]]="setValueExpressionRightRelatedSourceFieldId === source.id"
@@ -2435,7 +2424,7 @@
                             <div class="absolute left-0 right-0 top-[calc(100%+4px)] z-[200] max-h-64 overflow-y-auto rounded-[0.85rem] border border-[#BDBDBD] bg-white p-[0.35rem] shadow-[0_16px_32px_-12px_rgba(15,23,42,0.22)]">
                               <button
                                 type="button"
-                                class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                class="condition-dropdown-option block w-full rounded-lg border border-transparent bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700"
                                 (click)="onSetValueExpressionSideRelatedPropertyChange('right', '')"
                               >
                                 Select property
@@ -2443,7 +2432,7 @@
                               @for (column of relatedPropertiesFor(setValueExpressionRightRelatedSourceFieldId); track column.id) {
                                 <button
                                   type="button"
-                                  class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                  class="condition-dropdown-option block w-full rounded-lg border border-transparent bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700"
                                   [class.bg-[#f7fee7]]="setValueExpressionRightRelatedProperty === column.id"
                                   [class.font-semibold]="setValueExpressionRightRelatedProperty === column.id"
                                   [class.text-[#3f6212]]="setValueExpressionRightRelatedProperty === column.id"
