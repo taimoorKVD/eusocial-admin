@@ -29,12 +29,15 @@ import {
   VALUE_SOURCE_KINDS,
   ValueSource,
   ValueSourceKind,
+  ConditionRuleValidationIssue,
   collectValueSourceFieldIds,
   createDefaultValueSource,
   createEmptyConditionalLogic,
   defaultConditionRuleName,
   fieldHasConfiguredConditionRules,
   filterRelatedPropertiesForTargetKind,
+  firstConditionValidationIssue,
+  getOperatorsForConditionSourceField,
   getPrimaryActionType,
   getPrimaryPredicate,
   getPrimarySetValueSource,
@@ -54,6 +57,8 @@ import {
   setPrimarySetValueSource,
   supportsSetValueFieldType,
   toggleConditionAction,
+  validateConditionRule,
+  validateConditionRules,
   wouldCreateCircularDependency,
 } from '../../../shared/conditional-logic';
 import { FormField, FieldOption, OptionSource, RangeFieldType, RangeTimeFormat } from '../models/form-field.model';
@@ -286,6 +291,15 @@ export class FieldSettingsComponent implements OnDestroy {
   conditionModalPickTargetMode = false;
   /** Add Logic: false until the user explicitly picks a target field. */
   conditionModalTargetConfirmed = false;
+  /**
+   * While true, modal edits stay in a local draft and do not mutate the saved
+   * field.condition / parent form until Save.
+   */
+  private conditionModalIsDraft = false;
+  /** Deep-cloned saved condition at modal open (for Cancel discard). */
+  private conditionModalBaseline: FormField['condition'] = undefined;
+  /** Field-level validation messages for the Conditional Logic modal. */
+  conditionValidationIssues: ConditionRuleValidationIssue[] = [];
   private retainConditionModalOnFieldSwitch = false;
   private placeholderManuallyEdited = false;
   private skipFieldReinitialize = false;
@@ -1495,7 +1509,58 @@ export class FieldSettingsComponent implements OnDestroy {
     if (this.conditionModalPickTargetMode && !this.conditionModalTargetConfirmed) {
       return false;
     }
-    return this.isFieldEditable && !!this.conditionSourceFieldId;
+    return this.isFieldEditable;
+  }
+
+  conditionValidationMessage(
+    field: ConditionRuleValidationIssue['field'],
+  ): string {
+    const active = this.activeConditionRuleIndex;
+    return (
+      this.conditionValidationIssues.find(
+        (issue) => issue.ruleIndex === active && issue.field === field,
+      )?.message ?? ''
+    );
+  }
+
+  private buildConditionValidationContext(): {
+    targetField: FormField | null;
+    schema: FormField[];
+  } {
+    return {
+      targetField: this._field ?? null,
+      schema: this.schemaSignal(),
+    };
+  }
+
+  private clearConditionValidation(): void {
+    this.conditionValidationIssues = [];
+  }
+
+  private applyConditionValidationIssues(
+    issues: ConditionRuleValidationIssue[],
+  ): void {
+    this.conditionValidationIssues = issues;
+    const first = firstConditionValidationIssue(issues);
+    if (!first) {
+      return;
+    }
+    if (first.ruleIndex !== this.activeConditionRuleIndex) {
+      this.selectConditionRule(first.ruleIndex);
+    }
+    const ruleLabel = this.conditionRuleLabel(first.ruleIndex);
+    this.toastr.warning(`${ruleLabel}: ${first.message}`);
+  }
+
+  private validateConditionDraft(
+    options?: { treatAllAsEnabled?: boolean },
+  ): ConditionRuleValidationIssue[] {
+    this.commitActiveConditionRule();
+    const ctx = this.buildConditionValidationContext();
+    const rules = options?.treatAllAsEnabled
+      ? this.conditionRules.map((rule) => ({ ...rule, enabled: true }))
+      : this.conditionRules;
+    return validateConditionRules(rules, ctx);
   }
 
   /** Bound value for the persistent Add Logic target selector. */
@@ -1521,6 +1586,15 @@ export class FieldSettingsComponent implements OnDestroy {
 
     this.overlayService.close();
 
+    // Snapshot saved config; modal edits stay in a local draft until Save.
+    this.conditionModalBaseline =
+      this._field.condition == null
+        ? undefined
+        : (JSON.parse(JSON.stringify(this._field.condition)) as FormField['condition']);
+    this.loadConditionRulesFromField(this._field.condition);
+    this.conditionModalIsDraft = true;
+    this.clearConditionValidation();
+
     if (options?.pickTargetField) {
       // Add Logic: show persistent target selector; do not preselect a host field.
       this.conditionModalPickTargetMode = true;
@@ -1537,6 +1611,7 @@ export class FieldSettingsComponent implements OnDestroy {
   }
 
   closeConditionModal(): void {
+    this.discardConditionModalDraft();
     this.conditionModalOpen = false;
     this.conditionModalPickTargetMode = false;
     this.conditionModalTargetConfirmed = false;
@@ -1544,6 +1619,20 @@ export class FieldSettingsComponent implements OnDestroy {
     this.closeConditionRuleMenu();
     this.closeAddConditionRuleModal();
     this.closeRenameConditionRuleModal();
+  }
+
+  private discardConditionModalDraft(): void {
+    if (!this.conditionModalIsDraft) {
+      this.clearConditionValidation();
+      return;
+    }
+    // Restore local editor from the saved baseline (parent was never mutated).
+    this.loadConditionRulesFromField(
+      this.conditionModalBaseline ?? this._field?.condition,
+    );
+    this.conditionModalIsDraft = false;
+    this.conditionModalBaseline = undefined;
+    this.clearConditionValidation();
   }
 
   toggleConditionRuleMenu(index: number, event?: Event): void {
@@ -1686,9 +1775,9 @@ export class FieldSettingsComponent implements OnDestroy {
     this.conditionRules = [...this.conditionRules, next];
     this.activeConditionRuleIndex = this.conditionRules.length - 1;
     this.conditionEditor = JSON.parse(JSON.stringify(next)) as FieldConditionalLogic;
-    this._field.condition = this.serializeActiveConditionRules();
+    this.clearConditionValidation();
     this.closeAddConditionRuleModal();
-    this.onChange();
+    this.syncConditionDraftOrPersist();
   }
 
   /** Duplicate a rule from the three-dot menu (defaults to the active rule). */
@@ -1714,8 +1803,8 @@ export class FieldSettingsComponent implements OnDestroy {
     this.conditionRules = [...this.conditionRules, clone];
     this.activeConditionRuleIndex = this.conditionRules.length - 1;
     this.conditionEditor = JSON.parse(JSON.stringify(clone)) as FieldConditionalLogic;
-    this._field.condition = this.serializeActiveConditionRules();
-    this.onChange();
+    this.clearConditionValidation();
+    this.syncConditionDraftOrPersist();
   }
 
   openRenameConditionRuleModal(index: number, event?: Event): void {
@@ -1764,9 +1853,9 @@ export class FieldSettingsComponent implements OnDestroy {
       };
     }
 
-    this._field.condition = this.serializeActiveConditionRules();
+    this.clearConditionValidation();
     this.closeRenameConditionRuleModal();
-    this.onChange();
+    this.syncConditionDraftOrPersist();
   }
 
   removeConditionRule(index: number): void {
@@ -1775,14 +1864,19 @@ export class FieldSettingsComponent implements OnDestroy {
     }
     this.closeConditionRuleMenu();
     if (this.conditionRules.length <= 1) {
-      // Keep a single empty rule rather than clearing the modal state.
-      this.conditionRules = [createEmptyConditionalLogic({ name: defaultConditionRuleName(0) })];
+      // Deleting the only rule leaves an empty OFF placeholder — never an empty ON rule.
+      this.conditionRules = [
+        createEmptyConditionalLogic({
+          name: defaultConditionRuleName(0),
+          enabled: false,
+        }),
+      ];
       this.activeConditionRuleIndex = 0;
       this.conditionEditor = JSON.parse(
         JSON.stringify(this.conditionRules[0]),
       ) as FieldConditionalLogic;
-      this._field.condition = this.serializeActiveConditionRules();
-      this.onChange();
+      this.clearConditionValidation();
+      this.syncConditionDraftOrPersist();
       return;
     }
 
@@ -1799,8 +1893,8 @@ export class FieldSettingsComponent implements OnDestroy {
     this.conditionEditor = JSON.parse(
       JSON.stringify(next[nextIndex]),
     ) as FieldConditionalLogic;
-    this._field.condition = this.serializeActiveConditionRules();
-    this.onChange();
+    this.clearConditionValidation();
+    this.syncConditionDraftOrPersist();
   }
 
   saveConditionModal(): void {
@@ -1808,17 +1902,31 @@ export class FieldSettingsComponent implements OnDestroy {
       return;
     }
 
+    const issues = this.validateConditionDraft();
+    if (issues.length) {
+      this.applyConditionValidationIssues(issues);
+      return;
+    }
+
+    this.clearConditionValidation();
     this.commitActiveConditionRule();
     if (this._field) {
       this._field.condition = this.serializeActiveConditionRules();
     }
+    this.conditionModalIsDraft = false;
+    this.conditionModalBaseline = undefined;
     this.onChange();
     this.conditionModalOpen = false;
+    this.conditionModalPickTargetMode = false;
+    this.conditionModalTargetConfirmed = false;
+    this.closeConditionRuleMenu();
+    this.closeAddConditionRuleModal();
+    this.closeRenameConditionRuleModal();
   }
 
   /**
    * Sidebar toggle: flip only the targeted rule's enabled flag.
-   * Config is preserved. Does not force the main toggle OFF while siblings stay ON.
+   * Enabling an incomplete rule is blocked; disabling is always allowed.
    */
   onConditionRuleEnabledChange(
     index: number,
@@ -1837,6 +1945,21 @@ export class FieldSettingsComponent implements OnDestroy {
     }
 
     this.commitActiveConditionRule();
+
+    if (enabled) {
+      const rule = this.conditionRules[index];
+      const issues = validateConditionRule(
+        rule,
+        index,
+        this.buildConditionValidationContext(),
+        { requireComplete: true },
+      );
+      if (issues.length) {
+        this.applyConditionValidationIssues(issues);
+        return;
+      }
+    }
+
     const next = this.conditionRules.map((rule, ruleIndex) =>
       ruleIndex === index ? { ...rule, enabled } : rule,
     );
@@ -1849,11 +1972,11 @@ export class FieldSettingsComponent implements OnDestroy {
       };
     }
 
-    this._field.condition = this.serializeActiveConditionRules();
+    this.clearConditionValidation();
     if (enabled && index === this.activeConditionRuleIndex && hasSetValueAction(this.conditionEditor)) {
       this.prefetchSetValueRelatedProperties();
     }
-    this.onChange();
+    this.syncConditionDraftOrPersist();
   }
 
   private commitActiveConditionRule(): void {
@@ -1985,7 +2108,7 @@ export class FieldSettingsComponent implements OnDestroy {
 
   /**
    * Main "Conditional logic is on" toggle.
-   * Master control for all rules on the current field (same as Automation).
+   * OFF turns all rules OFF. ON requires every rule to be complete first.
    */
   onConditionEnabledChange(enabled: boolean): void {
     if (!this._field || !this.isFieldEditable) {
@@ -1993,6 +2116,15 @@ export class FieldSettingsComponent implements OnDestroy {
     }
 
     this.commitActiveConditionRule();
+
+    if (enabled) {
+      const issues = this.validateConditionDraft({ treatAllAsEnabled: true });
+      if (issues.length) {
+        this.applyConditionValidationIssues(issues);
+        return;
+      }
+    }
+
     this.conditionRules = this.conditionRules.map((rule) => ({
       ...rule,
       enabled,
@@ -2005,11 +2137,12 @@ export class FieldSettingsComponent implements OnDestroy {
         ? this.conditionEditor.actions
         : [{ type: 'show' }],
     };
+    this.clearConditionValidation();
     this.persistConditionEditor();
     if (enabled && hasSetValueAction(this.conditionEditor)) {
       this.prefetchSetValueRelatedProperties();
     }
-    this.onChange();
+    this.syncConditionDraftOrPersist();
   }
 
   onConditionSourceChange(fieldId: string): void {
@@ -2026,12 +2159,22 @@ export class FieldSettingsComponent implements OnDestroy {
       return;
     }
 
+    const sourceField = this.schemaSignal().find((item) => item.id === fieldId) ?? null;
+    const allowed = getOperatorsForConditionSourceField(sourceField);
+    const currentOperator = getPrimaryPredicate(this.conditionEditor).operator;
+    const nextOperator = allowed.includes(currentOperator)
+      ? currentOperator
+      : (allowed[0] ?? 'equals');
+
     this.conditionEditor = setPrimaryPredicate(this.conditionEditor, {
       fieldId,
+      operator: nextOperator,
+      // Always clear — previous field's value must not leak into the new source.
       value: '',
     });
+    this.clearConditionValidation();
     this.persistConditionEditor();
-    this.onChange();
+    this.syncConditionDraftOrPersist();
   }
 
   onConditionOperatorChange(operator: ConditionOperator): void {
@@ -2040,14 +2183,37 @@ export class FieldSettingsComponent implements OnDestroy {
       return;
     }
 
+    const sourceField = this.conditionSourceField;
+    const allowed = getOperatorsForConditionSourceField(sourceField);
+    if (sourceField && !allowed.includes(operator)) {
+      this.toastr.warning('Choose an operator that is valid for this field type.');
+      return;
+    }
+
+    const previousValue = getPrimaryPredicate(this.conditionEditor).value ?? '';
+    const needsValue = operatorRequiresValue(operator);
+    let nextValue: unknown = '';
+    if (needsValue) {
+      // Keep previous value only when it remains valid for the current source.
+      const options = this.conditionSourceOptions;
+      if (!options.length) {
+        nextValue = previousValue;
+      } else if (
+        options.some((option) => String(option.value) === String(previousValue))
+      ) {
+        nextValue = previousValue;
+      } else {
+        nextValue = '';
+      }
+    }
+
     this.conditionEditor = setPrimaryPredicate(this.conditionEditor, {
       operator,
-      value: operatorRequiresValue(operator)
-        ? getPrimaryPredicate(this.conditionEditor).value ?? ''
-        : '',
+      value: nextValue,
     });
+    this.clearConditionValidation();
     this.persistConditionEditor();
-    this.onChange();
+    this.syncConditionDraftOrPersist();
   }
 
   onConditionValueChange(value: unknown): void {
@@ -2057,8 +2223,9 @@ export class FieldSettingsComponent implements OnDestroy {
     }
 
     this.conditionEditor = setPrimaryPredicate(this.conditionEditor, { value });
+    this.clearConditionValidation();
     this.persistConditionEditor();
-    this.onChange();
+    this.syncConditionDraftOrPersist();
   }
 
   onConditionActionChange(type: ConditionActionType): void {
@@ -2084,13 +2251,14 @@ export class FieldSettingsComponent implements OnDestroy {
     }
 
     this.conditionEditor = toggleConditionAction(this.conditionEditor, type);
+    this.clearConditionValidation();
     this.persistConditionEditor();
 
     if (hasSetValueAction(this.conditionEditor)) {
       this.prefetchSetValueRelatedProperties();
     }
 
-    this.onChange();
+    this.syncConditionDraftOrPersist();
   }
 
   get conditionUsesSetValue(): boolean {
@@ -2481,8 +2649,9 @@ export class FieldSettingsComponent implements OnDestroy {
     }
 
     this.conditionEditor = setPrimarySetValueSource(this.conditionEditor, nextSource);
+    this.clearConditionValidation();
     this.persistConditionEditor();
-    this.onChange();
+    this.syncConditionDraftOrPersist();
   }
 
   private prefetchSetValueRelatedProperties(): void {
@@ -3401,7 +3570,24 @@ export class FieldSettingsComponent implements OnDestroy {
     if (!this._field) {
       return;
     }
+    this.commitActiveConditionRule();
+    if (this.conditionModalIsDraft) {
+      // Draft mode: keep changes local until Save.
+      return;
+    }
     this._field.condition = this.serializeActiveConditionRules();
+  }
+
+  /**
+   * After a draft edit: either keep local-only, or persist + emit when not drafting.
+   */
+  private syncConditionDraftOrPersist(): void {
+    this.commitActiveConditionRule();
+    if (this.conditionModalIsDraft || !this._field) {
+      return;
+    }
+    this._field.condition = this.serializeActiveConditionRules();
+    this.onChange();
   }
 
   private ensureConditionSourceIsValid(emit: boolean): void {
