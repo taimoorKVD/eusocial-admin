@@ -1679,15 +1679,22 @@ export class FieldSettingsComponent implements OnDestroy {
     this.onChange();
   }
 
-  /** Duplicate the active rule (Add Rule section secondary action). */
-  duplicateActiveConditionRule(): void {
+  /** Duplicate a rule from the three-dot menu (defaults to the active rule). */
+  duplicateConditionRule(index?: number | null, event?: Event): void {
+    event?.stopPropagation();
     if (!this._field || !this.isFieldEditable || !this.conditionRuleControlsEnabled) {
       return;
     }
 
+    this.closeConditionRuleMenu();
     this.commitActiveConditionRule();
+
+    const sourceIndex =
+      typeof index === 'number' && index >= 0 && index < this.conditionRules.length
+        ? index
+        : this.activeConditionRuleIndex;
     const source =
-      this.conditionRules[this.activeConditionRuleIndex] ?? this.conditionEditor;
+      this.conditionRules[sourceIndex] ?? this.conditionEditor;
     const clone = JSON.parse(JSON.stringify(source)) as FieldConditionalLogic;
     clone.name = defaultConditionRuleName(this.conditionRules.length);
     clone.enabled = true;
@@ -1789,15 +1796,19 @@ export class FieldSettingsComponent implements OnDestroy {
       return;
     }
 
-    if (!this.conditionEnabled) {
-      this.onConditionEnabledChange(true);
-    } else {
-      this.commitActiveConditionRule();
-      if (this._field) {
-        this._field.condition = this.serializeActiveConditionRules();
-      }
-      this.onChange();
+    this.commitActiveConditionRule();
+    // Re-enable every rule on save (pre–Active/Inactive modal behavior).
+    this.conditionRules = this.conditionRules.map((rule) =>
+      rule.enabled ? rule : { ...rule, enabled: true },
+    );
+    this.conditionEditor = {
+      ...this.conditionEditor,
+      enabled: true,
+    };
+    if (this._field) {
+      this._field.condition = this.serializeActiveConditionRules();
     }
+    this.onChange();
     this.conditionModalOpen = false;
   }
 
