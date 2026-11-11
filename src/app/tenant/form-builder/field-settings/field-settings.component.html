@@ -2827,21 +2827,32 @@
         }
       </div>
 
-      <footer class="flex shrink-0 items-center justify-end gap-2 border-t border-[#E0E0E0] px-5 py-4 max-sm:px-4">
-        <button
-          type="button"
-          class="rounded-lg border border-[#BDBDBD] bg-white px-3.5 py-2 text-sm font-medium text-[#161616] transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300"
-          (click)="closeDynamicOptionsExpand()"
-        >
-          Cancel
-        </button>
-        <button
-          type="button"
-          class="rounded-lg border border-transparent bg-[#161616] px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-black focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ff9015]/30"
-          (click)="applyDynamicOptionsExpand()"
-        >
-          Apply
-        </button>
+      <footer class="flex shrink-0 flex-col gap-2 border-t border-[#E0E0E0] px-5 py-4 max-sm:px-4">
+        @if (showDynamicOptionsExpandEmptyError) {
+          <p class="m-0 text-sm text-red-600" role="alert">
+            Please select at least one option.
+          </p>
+        }
+        <div class="flex items-center justify-end gap-2">
+          <button
+            type="button"
+            class="rounded-lg border border-[#BDBDBD] bg-white px-3.5 py-2 text-sm font-medium text-[#161616] transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300"
+            (click)="closeDynamicOptionsExpand()"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="rounded-lg border border-transparent px-3.5 py-2 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ff9015]/30 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
+            [ngClass]="canApplyDynamicOptionsExpand
+              ? 'bg-[#161616] text-white hover:bg-black'
+              : 'bg-gray-100 text-gray-400'"
+            [disabled]="!canApplyDynamicOptionsExpand"
+            (click)="applyDynamicOptionsExpand()"
+          >
+            Apply
+          </button>
+        </div>
       </footer>
     </div>
   </div>

@@ -2802,6 +2802,18 @@ export class FieldSettingsComponent implements OnDestroy {
     return this.draftSelectedDynamicOptions.length;
   }
 
+  /** Apply requires at least one selected option in the expand modal. */
+  get canApplyDynamicOptionsExpand(): boolean {
+    return this.draftSelectedDynamicOptions.length > 0;
+  }
+
+  get showDynamicOptionsExpandEmptyError(): boolean {
+    return (
+      this.dynamicOptionsExpandOpen &&
+      this.draftSelectedDynamicOptions.length === 0
+    );
+  }
+
   get isDraftSelectAllChecked(): boolean {
     const targets = this.filteredExpandDynamicOptions;
     return (
@@ -2879,6 +2891,10 @@ export class FieldSettingsComponent implements OnDestroy {
   applyDynamicOptionsExpand(): void {
     if (!this._field || !this.canExpandDynamicOptions) {
       this.closeDynamicOptionsExpand();
+      return;
+    }
+
+    if (!this.canApplyDynamicOptionsExpand) {
       return;
     }
 
