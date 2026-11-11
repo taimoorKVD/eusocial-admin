@@ -87,7 +87,8 @@ export function createEmptyConditionalLogic(
   options?: { name?: string; enabled?: boolean }
 ): FieldConditionalLogic {
   return {
-    enabled: options?.enabled === true,
+    // Missing / undefined defaults to ON (matches Automation + backward compat).
+    enabled: options?.enabled !== false,
     name: (options?.name || '').trim() || defaultConditionRuleName(0),
     when: {
       logic: 'and',
@@ -312,7 +313,8 @@ function normalizeSingleConditionalLogic(
   if (isFieldConditionalLogic(raw)) {
     const name = typeof raw.name === 'string' ? raw.name.trim() : '';
     return {
-      enabled: !!raw.enabled,
+      // Missing `enabled` (legacy payloads) defaults to ON.
+      enabled: raw.enabled !== false,
       when: normalizeGroup(raw.when),
       actions: normalizeActions(raw.actions),
       ...(name ? { name } : {}),
@@ -369,18 +371,13 @@ export function normalizeFieldConditionRules(
 export function serializeFieldConditionRules(
   rules: Array<FieldConditionalLogic | null | undefined> | null | undefined
 ): FieldCondition | undefined {
-  const prepared = withConditionRuleNames(
+  // Keep every rule as-is — including empty + disabled.
+  // Enabled/disabled must never remove a rule from the list; only Delete does.
+  const normalized = withConditionRuleNames(
     (rules ?? []).filter((rule): rule is FieldConditionalLogic => !!rule)
+  ).map(
+    (rule) => JSON.parse(JSON.stringify(rule)) as FieldConditionalLogic
   );
-
-  const normalized = prepared
-    .map(rule => {
-      if (!rule.enabled && !hasConfiguredSource(rule)) {
-        return undefined;
-      }
-      return JSON.parse(JSON.stringify(rule)) as FieldConditionalLogic;
-    })
-    .filter((rule): rule is FieldConditionalLogic => !!rule);
 
   if (!normalized.length) {
     return undefined;
@@ -478,7 +475,7 @@ export function hasConfiguredSource(logic: FieldConditionalLogic | null | undefi
 }
 
 /**
- * Persist configured logic; omit empty dummy conditions.
+ * Persist logic rules (including empty/disabled).
  * Passes through multi-rule bundles intact; single rules stay plain objects.
  */
 export function serializeConditionalLogic(
@@ -491,10 +488,6 @@ export function serializeConditionalLogic(
   const normalized = normalizeSingleConditionalLogic(raw);
 
   if (!normalized) {
-    return undefined;
-  }
-
-  if (!normalized.enabled && !hasConfiguredSource(normalized)) {
     return undefined;
   }
 

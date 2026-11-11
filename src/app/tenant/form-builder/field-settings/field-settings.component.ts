@@ -1460,7 +1460,28 @@ export class FieldSettingsComponent implements OnDestroy {
   }
 
   get conditionEnabled(): boolean {
-    return this.conditionEditor.enabled;
+    return this.isAnyConditionRuleEnabled;
+  }
+
+  /** Per-rule ON/OFF — active editor wins for the selected row. */
+  isConditionRuleEnabled(index: number): boolean {
+    if (index === this.activeConditionRuleIndex) {
+      return this.conditionEditor.enabled !== false;
+    }
+    return this.conditionRules[index]?.enabled !== false;
+  }
+
+  /**
+   * Main footer toggle: ON when any individual rule on this field is ON
+   * (same aggregate behavior as Automation).
+   */
+  get isAnyConditionRuleEnabled(): boolean {
+    if (!this.conditionRules.length) {
+      return this.conditionEditor.enabled !== false;
+    }
+    return this.conditionRules.some((_, index) =>
+      this.isConditionRuleEnabled(index),
+    );
   }
 
   get conditionActionLabel(): string {
@@ -1501,21 +1522,15 @@ export class FieldSettingsComponent implements OnDestroy {
     this.overlayService.close();
 
     if (options?.pickTargetField) {
-      // Add Logic: show persistent target selector; do not preselect/enable a host field.
+      // Add Logic: show persistent target selector; do not preselect a host field.
       this.conditionModalPickTargetMode = true;
       this.conditionModalTargetConfirmed = false;
     } else if (!this.conditionModalPickTargetMode) {
       // Field-level icon: target is already the current field.
       this.conditionModalTargetConfirmed = true;
-      if (!this.conditionEnabled) {
-        this.onConditionEnabledChange(true);
-      }
     } else {
-      // Add Logic after target switch / re-open: keep picker, ensure logic enabled.
+      // Add Logic after target switch / re-open: keep picker.
       this.conditionModalTargetConfirmed = true;
-      if (!this.conditionEnabled) {
-        this.onConditionEnabledChange(true);
-      }
     }
 
     this.conditionModalOpen = true;
@@ -1596,9 +1611,6 @@ export class FieldSettingsComponent implements OnDestroy {
 
     if (this._field?.id === nextId) {
       this.conditionModalTargetConfirmed = true;
-      if (!this.conditionEnabled) {
-        this.onConditionEnabledChange(true);
-      }
       return;
     }
 
@@ -1797,19 +1809,51 @@ export class FieldSettingsComponent implements OnDestroy {
     }
 
     this.commitActiveConditionRule();
-    // Re-enable every rule on save (pre–Active/Inactive modal behavior).
-    this.conditionRules = this.conditionRules.map((rule) =>
-      rule.enabled ? rule : { ...rule, enabled: true },
-    );
-    this.conditionEditor = {
-      ...this.conditionEditor,
-      enabled: true,
-    };
     if (this._field) {
       this._field.condition = this.serializeActiveConditionRules();
     }
     this.onChange();
     this.conditionModalOpen = false;
+  }
+
+  /**
+   * Sidebar toggle: flip only the targeted rule's enabled flag.
+   * Config is preserved. Does not force the main toggle OFF while siblings stay ON.
+   */
+  onConditionRuleEnabledChange(
+    index: number,
+    enabled: boolean,
+    event?: Event,
+  ): void {
+    event?.stopPropagation();
+    if (
+      !this._field ||
+      !this.isFieldEditable ||
+      !this.conditionRuleControlsEnabled ||
+      index < 0 ||
+      index >= this.conditionRules.length
+    ) {
+      return;
+    }
+
+    this.commitActiveConditionRule();
+    const next = this.conditionRules.map((rule, ruleIndex) =>
+      ruleIndex === index ? { ...rule, enabled } : rule,
+    );
+    this.conditionRules = next;
+
+    if (index === this.activeConditionRuleIndex) {
+      this.conditionEditor = {
+        ...this.conditionEditor,
+        enabled,
+      };
+    }
+
+    this._field.condition = this.serializeActiveConditionRules();
+    if (enabled && index === this.activeConditionRuleIndex && hasSetValueAction(this.conditionEditor)) {
+      this.prefetchSetValueRelatedProperties();
+    }
+    this.onChange();
   }
 
   private commitActiveConditionRule(): void {
@@ -1939,11 +1983,20 @@ export class FieldSettingsComponent implements OnDestroy {
     );
   }
 
+  /**
+   * Main "Conditional logic is on" toggle.
+   * Master control for all rules on the current field (same as Automation).
+   */
   onConditionEnabledChange(enabled: boolean): void {
     if (!this._field || !this.isFieldEditable) {
       return;
     }
 
+    this.commitActiveConditionRule();
+    this.conditionRules = this.conditionRules.map((rule) => ({
+      ...rule,
+      enabled,
+    }));
     this.conditionEditor = {
       ...this.conditionEditor,
       enabled,
