@@ -196,7 +196,7 @@
     (click)="closeEditor()"
   >
     <div
-      class="flex max-h-[min(92vh,52rem)] w-full flex-col overflow-hidden rounded-2xl border border-[#BDBDBD] bg-white shadow-[0_24px_48px_-16px_rgba(15,23,42,0.35)] max-sm:max-h-[94vh] max-sm:max-w-full"
+      class="logic-rules-modal flex max-h-[min(92vh,52rem)] w-full flex-col overflow-hidden rounded-2xl border border-[#BDBDBD] bg-white shadow-[0_24px_48px_-16px_rgba(15,23,42,0.35)] max-sm:max-h-[94vh] max-sm:max-w-full"
       [class.max-w-[55rem]]="!isFieldScopedEditor"
       [class.max-w-[64rem]]="isFieldScopedEditor"
       [class.logic-anim-modal-in]="!editorClosing"
@@ -577,7 +577,7 @@
                             >
                               <button
                                 type="button"
-                                class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                class="logic-dropdown-option block w-full rounded-lg border border-transparent bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700"
                                 (click)="selectConditionField(condition, '')"
                               >
                                 Choose an answer…
@@ -585,7 +585,7 @@
                               @for (field of eligibleFields; track field.id) {
                                 <button
                                   type="button"
-                                  class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-black font-medium hover:bg-gray-50"
+                                  class="logic-dropdown-option block w-full rounded-lg border border-transparent bg-white px-3 py-[0.55rem] text-left text-sm text-black font-medium"
                                   [class.bg-[#f7fee7]]="condition.fieldId === field.id"
                                   [class.font-semibold]="condition.fieldId === field.id"
                                   [class.text-[#3f6212]]="condition.fieldId === field.id"
@@ -644,7 +644,7 @@
                               @for (op of operatorsFor(condition); track op) {
                                 <button
                                   type="button"
-                                  class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-black font-medium hover:bg-gray-50"
+                                  class="logic-dropdown-option block w-full rounded-lg border border-transparent bg-white px-3 py-[0.55rem] text-left text-sm text-black font-medium"
                                   [class.bg-[#f7fee7]]="condition.operator === op"
                                   [class.font-semibold]="condition.operator === op"
                                   [class.text-[#3f6212]]="condition.operator === op"
@@ -706,7 +706,7 @@
                                 ) {
                                   <button
                                     type="button"
-                                    class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-black font-medium hover:bg-gray-50"
+                                    class="logic-dropdown-option block w-full rounded-lg border border-transparent bg-white px-3 py-[0.55rem] text-left text-sm text-black font-medium"
                                     [class.bg-[#f7fee7]]="
                                       condition.comparison.type === option.value
                                     "
@@ -782,7 +782,7 @@
                               >
                                 <button
                                   type="button"
-                                  class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                  class="logic-dropdown-option block w-full rounded-lg border border-transparent bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700"
                                   (click)="selectFixedOption(condition, '')"
                                 >
                                   Choose a value…
@@ -790,7 +790,7 @@
                                 @for (option of fixedValueOptions(condition); track option.value) {
                                   <button
                                     type="button"
-                                    class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                    class="logic-dropdown-option block w-full rounded-lg border border-transparent bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700"
                                     [class.bg-[#f7fee7]]="
                                       isFixedOptionSelected(condition, option.value)
                                     "
@@ -908,7 +908,7 @@
                             >
                               <button
                                 type="button"
-                                class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                class="logic-dropdown-option block w-full rounded-lg border border-transparent bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700"
                                 (click)="selectCompareField(condition, '')"
                               >
                                 Choose an answer…
@@ -916,7 +916,7 @@
                               @for (field of compatibleFieldsFor(condition); track field.id) {
                                 <button
                                   type="button"
-                                  class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                  class="logic-dropdown-option block w-full rounded-lg border border-transparent bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700"
                                   [class.bg-[#f7fee7]]="condition.comparison.fieldId === field.id"
                                   [class.font-semibold]="condition.comparison.fieldId === field.id"
                                   [class.text-[#3f6212]]="condition.comparison.fieldId === field.id"
@@ -1002,7 +1002,7 @@
                                   >
                                     <button
                                       type="button"
-                                      class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                      class="logic-dropdown-option block w-full rounded-lg border border-transparent bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700"
                                       (click)="selectRelatedSource(condition, '')"
                                     >
                                       Choose an item…
@@ -1010,7 +1010,7 @@
                                     @for (field of dynamicSourceFields; track field.id) {
                                       <button
                                         type="button"
-                                        class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                        class="logic-dropdown-option block w-full rounded-lg border border-transparent bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700"
                                         [class.bg-[#f7fee7]]="
                                           condition.comparison.sourceFieldId === field.id
                                         "
@@ -1083,7 +1083,7 @@
                                   >
                                     <button
                                       type="button"
-                                      class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                      class="logic-dropdown-option block w-full rounded-lg border border-transparent bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700"
                                       (click)="selectRelatedProperty(condition, '')"
                                     >
                                       Choose a detail…
@@ -1097,7 +1097,7 @@
                                     ) {
                                       <button
                                         type="button"
-                                        class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                                        class="logic-dropdown-option block w-full rounded-lg border border-transparent bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700"
                                         [class.bg-[#f7fee7]]="
                                           condition.comparison.property === column.id
                                         "
@@ -1196,7 +1196,7 @@
                           >
                             <button
                               type="button"
-                              class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                              class="logic-dropdown-option block w-full rounded-lg border border-transparent bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700"
                               [class.bg-[#f7fee7]]="conditionJoin(nextCondition) === 'and'"
                               [class.font-semibold]="conditionJoin(nextCondition) === 'and'"
                               [class.text-[#3f6212]]="conditionJoin(nextCondition) === 'and'"
@@ -1206,7 +1206,7 @@
                             </button>
                             <button
                               type="button"
-                              class="block w-full rounded-lg bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700 hover:bg-gray-50"
+                              class="logic-dropdown-option block w-full rounded-lg border border-transparent bg-white px-3 py-[0.55rem] text-left text-sm text-gray-700"
                               [class.bg-[#f7fee7]]="conditionJoin(nextCondition) === 'or'"
                               [class.font-semibold]="conditionJoin(nextCondition) === 'or'"
                               [class.text-[#3f6212]]="conditionJoin(nextCondition) === 'or'"
@@ -1404,7 +1404,7 @@
                     @for (option of friendlyActionOptions; track option.value) {
                       <button
                         type="button"
-                        class="flex w-full items-start gap-3 rounded-xl border border-transparent bg-white p-3 text-left transition hover:bg-[#F6F9D3]"
+                        class="logic-dropdown-option flex w-full items-start gap-3 rounded-xl border border-transparent bg-white p-3 text-left transition"
                         [class.border-[#bef264]]="isActionTypeSelected(option.value)"
                         [class.bg-[#f7fee7]]="isActionTypeSelected(option.value)"
                         (click)="toggleActionType(option.value, $event)"

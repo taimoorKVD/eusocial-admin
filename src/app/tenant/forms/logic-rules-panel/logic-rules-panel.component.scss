@@ -2,6 +2,15 @@
   display: block;
 }
 
+/* Automation Rules modal — dropdown option hover (pale orange + orange border).
+   Scoped to .logic-rules-modal so other modules are unaffected. */
+.logic-rules-modal {
+  .logic-dropdown-option:hover {
+    background-color: #fff7ed;
+    border-color: #ff9015;
+  }
+}
+
 /* Enter/leave animations for the editor modal (not expressible as static Tailwind utilities). */
 .logic-anim-overlay-in {
   animation: logic-fade-in 0.22s ease-out;
