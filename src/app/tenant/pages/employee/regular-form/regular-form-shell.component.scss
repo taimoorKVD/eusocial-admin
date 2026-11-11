@@ -269,13 +269,19 @@
   box-shadow: none;
 }
 
+/*
+ * Row gap is the label→control space inside each subgrid pair.
+ * Extra space between field rows comes from .field-control-stack padding.
+ */
 .regular-form-shell__content ::ng-deep .dynamic-form > .grid {
-  gap: 1.25rem 1.5rem;
+  row-gap: 0.45rem;
+  column-gap: 1.5rem;
 }
 
 @media (min-width: 768px) {
   .regular-form-shell__content ::ng-deep .dynamic-form > .grid {
-    gap: 1.4rem 1.75rem;
+    row-gap: 0.45rem;
+    column-gap: 1.75rem;
   }
 }
 
@@ -305,18 +311,50 @@
   grid-column-start: 1;
 }
 
-.regular-form-shell__content ::ng-deep .field-shell {
+/*
+ * Each labeled field spans two parent grid rows (label | control) via
+ * subgrid, so every control in a row shares the same start line while
+ * labels stay directly above their own control. Tall controls (e.g. radios)
+ * may extend further; only the start edge is aligned.
+ */
+.regular-form-shell__content ::ng-deep .field-shell:has(.field-label) {
+  display: grid;
+  grid-template-rows: subgrid;
+  grid-row: span 2;
+  align-self: stretch;
   margin: 0;
 }
 
-.regular-form-shell__content ::ng-deep .form-group {
+.regular-form-shell__content ::ng-deep .field-shell:has(.field-label) > .form-group {
+  display: contents;
+}
+
+.regular-form-shell__content ::ng-deep .field-shell:not(:has(.field-label)) {
+  margin: 0;
+}
+
+.regular-form-shell__content ::ng-deep .field-shell:not(:has(.field-label)) > .form-group {
+  display: flex;
+  flex-direction: column;
   gap: 0.45rem;
 }
 
-/*
- * Equal-height label slot so row inputs share one baseline.
- * Sized for two lines of label text (wrapping labels no longer shift controls).
- */
+.regular-form-shell__content ::ng-deep .field-control-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  min-width: 0;
+  align-self: start;
+  /* Restores prior inter-row spacing: old row-gap 1.25/1.4 − label gap 0.45 */
+  padding-bottom: 0.8rem;
+}
+
+@media (min-width: 768px) {
+  .regular-form-shell__content ::ng-deep .field-control-stack {
+    padding-bottom: 0.95rem;
+  }
+}
+
 .regular-form-shell__content ::ng-deep .field-label,
 .regular-form-shell__content ::ng-deep label.field-label {
   display: block;
@@ -329,7 +367,7 @@
   letter-spacing: -0.01em;
   text-transform: none;
   color: #3f3f46;
-  min-height: calc(1.375em * 2);
+  align-self: start;
 }
 
 .regular-form-shell__content ::ng-deep .field-required {
@@ -337,7 +375,6 @@
 }
 
 .regular-form-shell__content ::ng-deep .dynamic-control {
-  min-height: 2.75rem;
   border-radius: 0.65rem;
   border: 1px solid #e2e5ea;
   background: #fcfcfd;
@@ -374,8 +411,36 @@
   border-radius: 0.65rem;
   border-color: #e2e5ea;
   background: #fcfcfd;
-  min-height: 2.65rem;
   padding: 0.65rem 0.85rem;
+}
+
+/*
+ * Uniform 44px control height. Nested app-dynamic-form styles use different
+ * paddings/min-heights (text ~0.85rem pad, option 2.5rem, select 2.625rem) and
+ * equal-specificity ::ng-deep loses to them — pin height under .dynamic-form.
+ */
+.regular-form-shell__content ::ng-deep .dynamic-form {
+  input.dynamic-control[type='text'],
+  input.dynamic-control[type='email'],
+  input.dynamic-control[type='number'],
+  input.dynamic-control[type='password'],
+  input.dynamic-control[type='tel'],
+  input.dynamic-control[type='url'],
+  .option-item,
+  button.global-filter__control {
+    box-sizing: border-box;
+    height: 2.75rem;
+    min-height: 2.75rem;
+    max-height: 2.75rem;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  .option-item,
+  button.global-filter__control {
+    display: flex;
+    align-items: center;
+  }
 }
 
 .regular-form-shell__content ::ng-deep .option-item:hover {
@@ -946,7 +1011,6 @@
 .regular-form-shell--preview ::ng-deep label.field-label {
   color: #111827;
   font-weight: 700;
-  min-height: 0;
 }
 
 .regular-form-shell--preview ::ng-deep .dynamic-control {
@@ -959,6 +1023,30 @@
   border-color: #e5e7eb;
   border-radius: 0.5rem;
   background: #ffffff;
+}
+
+.regular-form-shell--preview ::ng-deep .dynamic-form {
+  input.dynamic-control[type='text'],
+  input.dynamic-control[type='email'],
+  input.dynamic-control[type='number'],
+  input.dynamic-control[type='password'],
+  input.dynamic-control[type='tel'],
+  input.dynamic-control[type='url'],
+  .option-item,
+  button.global-filter__control {
+    box-sizing: border-box;
+    height: 2.75rem;
+    min-height: 2.75rem;
+    max-height: 2.75rem;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  .option-item,
+  button.global-filter__control {
+    display: flex;
+    align-items: center;
+  }
 }
 
 @media (max-width: 767px) {

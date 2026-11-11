@@ -2680,17 +2680,19 @@
             [placeholder]="'Option ' + (i + 1)"
             class="static-options-repeater__input"
           />
-          <button
-            type="button"
-            class="static-options-repeater__remove"
-            (click)="removeStaticOption(i)"
-            [disabled]="!isFieldEditable"
-            [attr.aria-label]="'Remove option ' + (i + 1)"
-          >
-            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-            </svg>
-          </button>
+          @if (canRemoveStaticOption) {
+            <button
+              type="button"
+              class="static-options-repeater__remove"
+              (click)="removeStaticOption(i)"
+              [disabled]="!isFieldEditable"
+              [attr.aria-label]="'Remove option ' + (i + 1)"
+            >
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+              </svg>
+            </button>
+          }
         </div>
       }
     </div>
@@ -2827,21 +2829,32 @@
         }
       </div>
 
-      <footer class="flex shrink-0 items-center justify-end gap-2 border-t border-[#E0E0E0] px-5 py-4 max-sm:px-4">
-        <button
-          type="button"
-          class="rounded-lg border border-[#BDBDBD] bg-white px-3.5 py-2 text-sm font-medium text-[#161616] transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300"
-          (click)="closeDynamicOptionsExpand()"
-        >
-          Cancel
-        </button>
-        <button
-          type="button"
-          class="rounded-lg border border-transparent bg-[#161616] px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-black focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ff9015]/30"
-          (click)="applyDynamicOptionsExpand()"
-        >
-          Apply
-        </button>
+      <footer class="flex shrink-0 flex-col gap-2 border-t border-[#E0E0E0] px-5 py-4 max-sm:px-4">
+        @if (showDynamicOptionsExpandEmptyError) {
+          <p class="m-0 text-sm text-red-600" role="alert">
+            Please select at least one option.
+          </p>
+        }
+        <div class="flex items-center justify-end gap-2">
+          <button
+            type="button"
+            class="rounded-lg border border-[#BDBDBD] bg-white px-3.5 py-2 text-sm font-medium text-[#161616] transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300"
+            (click)="closeDynamicOptionsExpand()"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="rounded-lg border border-transparent px-3.5 py-2 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ff9015]/30 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
+            [ngClass]="canApplyDynamicOptionsExpand
+              ? 'bg-[#161616] text-white hover:bg-black'
+              : 'bg-gray-100 text-gray-400'"
+            [disabled]="!canApplyDynamicOptionsExpand"
+            (click)="applyDynamicOptionsExpand()"
+          >
+            Apply
+          </button>
+        </div>
       </footer>
     </div>
   </div>

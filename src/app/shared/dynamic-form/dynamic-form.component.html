@@ -44,6 +44,7 @@
             </label>
           }
 
+          <div class="field-control-stack">
           @switch (field.type) {
             @case ('text') {
               @if (field.name === 'password') {
@@ -880,6 +881,7 @@
               {{ msg }}
             </small>
           }
+          </div>
         </div>
       </div>
         }
