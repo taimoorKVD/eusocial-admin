@@ -196,10 +196,12 @@
     (click)="closeEditor()"
   >
     <div
-      class="flex max-h-[min(92vh,52rem)] w-full max-w-[55rem] flex-col overflow-hidden rounded-2xl border border-[#BDBDBD] bg-white shadow-[0_24px_48px_-16px_rgba(15,23,42,0.35)] max-sm:max-h-[94vh] max-sm:max-w-full"
+      class="flex max-h-[min(92vh,52rem)] w-full flex-col overflow-hidden rounded-2xl border border-[#BDBDBD] bg-white shadow-[0_24px_48px_-16px_rgba(15,23,42,0.35)] max-sm:max-h-[94vh] max-sm:max-w-full"
+      [class.max-w-[55rem]]="!isFieldScopedEditor"
+      [class.max-w-[64rem]]="isFieldScopedEditor"
       [class.logic-anim-modal-in]="!editorClosing"
       [class.logic-anim-modal-out]="editorClosing"
-      (click)="$event.stopPropagation()"
+      (click)="$event.stopPropagation(); closeFieldRuleMenu()"
     >
       <header
         class="relative z-30 flex shrink-0 items-center justify-between gap-4 bg-white px-6 pb-3 pt-5 max-sm:px-[1.1rem] max-sm:pb-2 max-sm:pt-4"
@@ -224,7 +226,11 @@
             </svg>
           </span>
           <h2 id="logic-rule-drawer-title" class="truncate text-lg font-bold text-[#161616]">
-            {{ isNewRule ? 'New automation' : 'Edit automation' }}
+            @if (isFieldScopedEditor) {
+              Automations
+            } @else {
+              {{ isNewRule ? 'New automation' : 'Edit automation' }}
+            }
           </h2>
         </div>
         <button
@@ -252,8 +258,141 @@
       </header>
 
       <div
-        class="relative z-40 flex min-h-0 flex-1 flex-col gap-5 overflow-x-hidden overflow-y-auto bg-white px-6 pb-5 pt-2 max-sm:px-[1.1rem] max-sm:pb-4 max-sm:pt-[0.35rem]"
+        class="relative z-40 flex min-h-0 flex-1 flex-col overflow-hidden bg-white"
+        [class.md:flex-row]="isFieldScopedEditor"
       >
+        @if (isFieldScopedEditor) {
+          <aside
+            class="flex min-h-0 w-full shrink-0 flex-col border-b border-[#E5E7EB] bg-white md:w-[15.5rem] md:border-b-0 md:border-r"
+            aria-label="Automations"
+          >
+            <div class="flex items-center gap-2 px-3 pb-3 pt-4">
+              <p class="m-0 text-sm font-semibold text-[#161616]">Automations</p>
+              <span class="inline-flex items-center rounded-full bg-[#F3F4F6] px-2 py-0.5 text-[11px] font-medium text-[#6B7280]">
+                {{ fieldScopedRuleCount }} {{ fieldScopedRuleCount === 1 ? 'rule' : 'rules' }}
+              </span>
+            </div>
+
+            <div
+              class="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 pb-2"
+              (scroll)="closeFieldRuleMenu()"
+            >
+              @for (scopedRule of fieldScopedRules; track trackByRuleId($index, scopedRule); let i = $index) {
+                <div
+                  class="flex w-full items-center gap-0.5 rounded-lg border bg-white transition"
+                  [ngClass]="i === activeFieldRuleIndex
+                    ? 'border-[#ff9015]'
+                    : 'border-[#E5E7EB] hover:border-[#D1D5DB]'"
+                >
+                  <button
+                    type="button"
+                    class="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2.5 py-2.5 text-left focus:outline-none"
+                    [attr.aria-current]="i === activeFieldRuleIndex ? 'true' : null"
+                    (click)="selectFieldAutomation(i)"
+                  >
+                    <span class="inline-flex shrink-0 text-[#9CA3AF]" aria-hidden="true">
+                      <svg class="h-4 w-4" viewBox="0 0 16 16" fill="currentColor">
+                        <circle cx="5" cy="4" r="1.25" />
+                        <circle cx="11" cy="4" r="1.25" />
+                        <circle cx="5" cy="8" r="1.25" />
+                        <circle cx="11" cy="8" r="1.25" />
+                        <circle cx="5" cy="12" r="1.25" />
+                        <circle cx="11" cy="12" r="1.25" />
+                      </svg>
+                    </span>
+                    <span
+                      class="min-w-0 flex-1 truncate text-sm font-medium"
+                      [ngClass]="i === activeFieldRuleIndex ? 'text-[#161616]' : 'text-[#4B5563]'"
+                    >
+                      {{ fieldAutomationLabel(i) }}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    class="mr-1 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[#9CA3AF] transition hover:bg-[#F3F4F6] hover:text-[#161616] focus:outline-none"
+                    [attr.aria-label]="'More actions for ' + fieldAutomationLabel(i)"
+                    [attr.aria-expanded]="fieldRuleMenuIndex === i"
+                    title="More actions"
+                    (click)="toggleFieldRuleMenu(i, $event)"
+                  >
+                    <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                      <circle cx="4" cy="10" r="1.5" />
+                      <circle cx="10" cy="10" r="1.5" />
+                      <circle cx="16" cy="10" r="1.5" />
+                    </svg>
+                  </button>
+                </div>
+              }
+            </div>
+
+            @if (fieldRuleMenuIndex !== null) {
+              <div
+                class="fixed z-[300] w-40 overflow-hidden rounded-lg border border-[#E5E7EB] bg-white py-1 shadow-[0_8px_24px_-8px_rgba(15,23,42,0.25)]"
+                role="menu"
+                [ngStyle]="fieldRuleMenuStyle"
+                (click)="$event.stopPropagation()"
+              >
+                <button
+                  type="button"
+                  role="menuitem"
+                  class="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium text-[#161616] transition hover:bg-[#F9FAFB] focus:outline-none"
+                  (click)="openRenameFieldAutomationModal(fieldRuleMenuIndex, $event)"
+                >
+                  Rename
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  class="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium text-[#161616] transition hover:bg-[#F9FAFB] focus:outline-none"
+                  (click)="duplicateFieldAutomation(fieldRuleMenuIndex, $event)"
+                >
+                  Duplicate
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  class="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium text-[#B91C1C] transition hover:bg-[#FEF2F2] focus:outline-none"
+                  (click)="removeFieldAutomation(fieldRuleMenuIndex)"
+                >
+                  Delete
+                </button>
+              </div>
+            }
+
+            <div class="shrink-0 px-3 pb-4 pt-1">
+              <button
+                type="button"
+                class="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-[#E5E7EB] bg-white px-3 text-sm font-semibold text-[#161616] transition hover:border-[#D1D5DB] hover:bg-[#F9FAFB] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ff9015]/30"
+                (click)="openAddFieldAutomationModal()"
+              >
+                <svg class="h-4 w-4 shrink-0 text-[#161616]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Add automation
+              </button>
+            </div>
+          </aside>
+        }
+
+        <div
+          class="relative flex min-h-0 flex-1 flex-col gap-5 overflow-x-hidden overflow-y-auto bg-white px-6 pb-5 pt-2 max-sm:px-[1.1rem] max-sm:pb-4 max-sm:pt-[0.35rem]"
+        >
+        @if (isFieldScopedEditor) {
+          <div class="space-y-1.5">
+            <div class="flex min-w-0 flex-wrap items-center gap-2">
+              <span class="inline-flex items-center rounded-md bg-[#FFF7ED] px-2 py-0.5 text-[11px] font-semibold text-[#C2410C]">
+                Automation {{ activeFieldRuleIndex + 1 }}
+              </span>
+              <p class="m-0 truncate text-sm font-bold text-[#161616]">
+                {{ fieldAutomationLabel(activeFieldRuleIndex) }}
+              </p>
+            </div>
+            <p class="m-0 text-[12px] leading-relaxed text-[#3D3D3D]">
+              Each automation is independent. Edit one at a time — other automations stay unchanged.
+            </p>
+          </div>
+        }
+
         <!-- Automation name -->
         <div class="flex flex-col">
           <label
@@ -1288,6 +1427,7 @@
             </div>
           </section>
         </div>
+        </div>
       </div>
 
       <footer
@@ -1322,9 +1462,144 @@
             class="inline-flex items-center justify-center gap-[0.4rem] rounded-[0.65rem] border border-[#BDBDBD] bg-gray-100 px-[1.1rem] py-[0.6rem] text-sm font-semibold text-[#161616] transition hover:border-gray-300 hover:bg-gray-200 focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(148,163,184,0.25)]"
             (click)="saveEditor()"
           >
-            {{ isNewRule ? 'Save rule' : 'Update rule' }}
+            @if (isFieldScopedEditor) {
+              Save automations
+            } @else {
+              {{ isNewRule ? 'Save rule' : 'Update rule' }}
+            }
           </button>
         </div>
+      </footer>
+    </div>
+  </div>
+}
+
+@if (addFieldAutomationModalOpen) {
+  <div
+    class="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/45 p-4 backdrop-blur-[2px]"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="add-field-automation-modal-title"
+    (click)="closeAddFieldAutomationModal()"
+  >
+    <div
+      class="w-full max-w-[26rem] overflow-hidden rounded-2xl border border-[#BDBDBD] bg-white shadow-[0_24px_48px_-16px_rgba(15,23,42,0.35)]"
+      (click)="$event.stopPropagation()"
+    >
+      <header class="flex items-center justify-between gap-3 border-b border-[#E0E0E0] px-5 py-4">
+        <h2 id="add-field-automation-modal-title" class="m-0 text-base font-bold text-[#161616]">
+          Add automation
+        </h2>
+        <button
+          type="button"
+          class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 transition hover:bg-gray-100 hover:text-[#161616] focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300"
+          aria-label="Close"
+          title="Close"
+          (click)="closeAddFieldAutomationModal()"
+        >
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10.833 0.833374L5.83301 5.83337M5.83301 5.83337L0.833008 10.8334M5.83301 5.83337L0.833008 0.833374M5.83301 5.83337L10.833 10.8334" stroke-width="1.66667" stroke-linecap="round" stroke="black"/>
+          </svg>
+        </button>
+      </header>
+
+      <div class="space-y-2 px-5 py-5">
+        <label class="block text-sm font-semibold text-[#161616]" for="add-field-automation-name">
+          Automation name
+        </label>
+        <input
+          id="add-field-automation-name"
+          type="text"
+          class="w-full rounded-xl border border-[#BDBDBD] bg-white px-[0.85rem] py-[0.7rem] text-sm font-medium text-[#161616] placeholder:text-gray-400 focus:border-[#ff9015] focus:outline-none focus:shadow-[0_0_0_3px_rgba(255,144,21,0.12)]"
+          [(ngModel)]="addFieldAutomationNameDraft"
+          (keydown.enter)="$event.preventDefault(); confirmAddFieldAutomation()"
+          placeholder="Automation 2"
+          autocomplete="off"
+        />
+        <p class="m-0 text-[12px] leading-relaxed text-[#3D3D3D]">
+          This name appears in the automations list and is saved with the template.
+        </p>
+      </div>
+
+      <footer class="flex items-center justify-end gap-2 border-t border-[#E0E0E0] px-5 py-4">
+        <button
+          type="button"
+          class="rounded-lg border border-[#BDBDBD] bg-white px-3.5 py-2 text-sm font-medium text-[#161616] transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300"
+          (click)="closeAddFieldAutomationModal()"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="rounded-lg border border-transparent bg-[#161616] px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-black focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ff9015]/30"
+          (click)="confirmAddFieldAutomation()"
+        >
+          Add automation
+        </button>
+      </footer>
+    </div>
+  </div>
+}
+
+@if (renameFieldAutomationModalOpen) {
+  <div
+    class="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/45 p-4 backdrop-blur-[2px]"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="rename-field-automation-modal-title"
+    (click)="closeRenameFieldAutomationModal()"
+  >
+    <div
+      class="w-full max-w-[26rem] overflow-hidden rounded-2xl border border-[#BDBDBD] bg-white shadow-[0_24px_48px_-16px_rgba(15,23,42,0.35)]"
+      (click)="$event.stopPropagation()"
+    >
+      <header class="flex items-center justify-between gap-3 border-b border-[#E0E0E0] px-5 py-4">
+        <h2 id="rename-field-automation-modal-title" class="m-0 text-base font-bold text-[#161616]">
+          Rename automation
+        </h2>
+        <button
+          type="button"
+          class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 transition hover:bg-gray-100 hover:text-[#161616] focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300"
+          aria-label="Close"
+          title="Close"
+          (click)="closeRenameFieldAutomationModal()"
+        >
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10.833 0.833374L5.83301 5.83337M5.83301 5.83337L0.833008 10.8334M5.83301 5.83337L0.833008 0.833374M5.83301 5.83337L10.833 10.8334" stroke-width="1.66667" stroke-linecap="round" stroke="black"/>
+          </svg>
+        </button>
+      </header>
+
+      <div class="space-y-2 px-5 py-5">
+        <label class="block text-sm font-semibold text-[#161616]" for="rename-field-automation-name">
+          Automation name
+        </label>
+        <input
+          id="rename-field-automation-name"
+          type="text"
+          class="w-full rounded-xl border border-[#BDBDBD] bg-white px-[0.85rem] py-[0.7rem] text-sm font-medium text-[#161616] placeholder:text-gray-400 focus:border-[#ff9015] focus:outline-none focus:shadow-[0_0_0_3px_rgba(255,144,21,0.12)]"
+          [(ngModel)]="renameFieldAutomationNameDraft"
+          (keydown.enter)="$event.preventDefault(); confirmRenameFieldAutomation()"
+          placeholder="Automation 1"
+          autocomplete="off"
+        />
+      </div>
+
+      <footer class="flex items-center justify-end gap-2 border-t border-[#E0E0E0] px-5 py-4">
+        <button
+          type="button"
+          class="rounded-lg border border-[#BDBDBD] bg-white px-3.5 py-2 text-sm font-medium text-[#161616] transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300"
+          (click)="closeRenameFieldAutomationModal()"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="rounded-lg border border-transparent bg-[#161616] px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-black focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ff9015]/30"
+          (click)="confirmRenameFieldAutomation()"
+        >
+          Save name
+        </button>
       </footer>
     </div>
   </div>
