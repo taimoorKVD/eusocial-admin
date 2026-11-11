@@ -3121,13 +3121,21 @@ export class FieldSettingsComponent implements OnDestroy {
     this.applyStaticOptionLabels(labels);
   }
 
+  /**
+   * Static options (Dropdown / Checkbox / Radio) must keep at least one row.
+   * Hide delete when only one option remains.
+   */
+  get canRemoveStaticOption(): boolean {
+    return this.getStaticOptionLabels().length > 1;
+  }
+
   removeStaticOption(index: number): void {
     if (!this._field || !this.isFieldEditable) {
       return;
     }
 
     const labels = this.getStaticOptionLabels();
-    if (index < 0 || index >= labels.length) {
+    if (index < 0 || index >= labels.length || labels.length <= 1) {
       return;
     }
 
