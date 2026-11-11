@@ -46,7 +46,6 @@ import {
   hasConditionActionType,
   hasSetValueAction,
   isCompatibleSetValueSourceField,
-  isConditionActionDisabled,
   normalizeFieldConditionRules,
   normalizeValueSource,
   operatorRequiresValue,
@@ -2048,10 +2047,6 @@ export class FieldSettingsComponent implements OnDestroy {
     return hasConditionActionType(this.conditionEditor, type);
   }
 
-  isConditionActionOptionDisabled(type: ConditionActionType): boolean {
-    return isConditionActionDisabled(this.conditionEditor, type);
-  }
-
   get conditionNeedsValue(): boolean {
     return operatorRequiresValue(this.conditionOperator);
   }
@@ -2233,10 +2228,6 @@ export class FieldSettingsComponent implements OnDestroy {
       return;
     }
 
-    if (this.isConditionActionOptionDisabled(type)) {
-      return;
-    }
-
     if (type === 'setValue' && !supportsSetValueFieldType(this._field.type)) {
       this.toastr.warning('Set Value is not available for this field type.');
       return;
@@ -2250,6 +2241,7 @@ export class FieldSettingsComponent implements OnDestroy {
       return;
     }
 
+    // toggleConditionAction removes any mutually exclusive opposite (Show/Hide, etc.).
     this.conditionEditor = toggleConditionAction(this.conditionEditor, type);
     this.clearConditionValidation();
     this.persistConditionEditor();

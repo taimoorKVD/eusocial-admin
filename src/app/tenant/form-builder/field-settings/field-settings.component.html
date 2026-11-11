@@ -1717,7 +1717,7 @@
                         [ngClass]="isConditionActionSelected(action.value)
                           ? 'border-[#161616] bg-[#161616] text-white'
                           : 'border-[#BDBDBD] bg-white text-black hover:border-gray-300 hover:bg-gray-50'"
-                        [disabled]="!isFieldEditable || isConditionActionOptionDisabled(action.value)"
+                        [disabled]="!isFieldEditable"
                         [attr.aria-pressed]="isConditionActionSelected(action.value)"
                         (click)="onConditionActionChange(action.value)"
                       >
