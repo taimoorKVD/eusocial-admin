@@ -375,7 +375,6 @@
 }
 
 .regular-form-shell__content ::ng-deep .dynamic-control {
-  min-height: 2.75rem;
   border-radius: 0.65rem;
   border: 1px solid #e2e5ea;
   background: #fcfcfd;
@@ -412,14 +411,36 @@
   border-radius: 0.65rem;
   border-color: #e2e5ea;
   background: #fcfcfd;
-  /* Match .dynamic-control so text / radio / select share one control height. */
-  min-height: 2.75rem;
   padding: 0.65rem 0.85rem;
 }
 
-.regular-form-shell__content ::ng-deep .global-filter__control {
-  box-sizing: border-box;
-  min-height: 2.75rem;
+/*
+ * Uniform 44px control height. Nested app-dynamic-form styles use different
+ * paddings/min-heights (text ~0.85rem pad, option 2.5rem, select 2.625rem) and
+ * equal-specificity ::ng-deep loses to them — pin height under .dynamic-form.
+ */
+.regular-form-shell__content ::ng-deep .dynamic-form {
+  input.dynamic-control[type='text'],
+  input.dynamic-control[type='email'],
+  input.dynamic-control[type='number'],
+  input.dynamic-control[type='password'],
+  input.dynamic-control[type='tel'],
+  input.dynamic-control[type='url'],
+  .option-item,
+  button.global-filter__control {
+    box-sizing: border-box;
+    height: 2.75rem;
+    min-height: 2.75rem;
+    max-height: 2.75rem;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  .option-item,
+  button.global-filter__control {
+    display: flex;
+    align-items: center;
+  }
 }
 
 .regular-form-shell__content ::ng-deep .option-item:hover {
@@ -1002,12 +1023,30 @@
   border-color: #e5e7eb;
   border-radius: 0.5rem;
   background: #ffffff;
-  min-height: 2.75rem;
 }
 
-.regular-form-shell--preview ::ng-deep .global-filter__control {
-  box-sizing: border-box;
-  min-height: 2.75rem;
+.regular-form-shell--preview ::ng-deep .dynamic-form {
+  input.dynamic-control[type='text'],
+  input.dynamic-control[type='email'],
+  input.dynamic-control[type='number'],
+  input.dynamic-control[type='password'],
+  input.dynamic-control[type='tel'],
+  input.dynamic-control[type='url'],
+  .option-item,
+  button.global-filter__control {
+    box-sizing: border-box;
+    height: 2.75rem;
+    min-height: 2.75rem;
+    max-height: 2.75rem;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  .option-item,
+  button.global-filter__control {
+    display: flex;
+    align-items: center;
+  }
 }
 
 @media (max-width: 767px) {
