@@ -367,6 +367,80 @@ export class LogicRulesPanelComponent implements OnChanges, OnDestroy {
     return named || this.defaultFieldAutomationName(index);
   }
 
+  /** Per-automation ON/OFF — active editor wins for the selected row. */
+  isFieldAutomationEnabled(index: number): boolean {
+    if (index === this.activeFieldRuleIndex && this.editingRule) {
+      return this.editingRule.enabled !== false;
+    }
+    return this.fieldScopedRules[index]?.enabled !== false;
+  }
+
+  /**
+   * Footer master toggle in field-scoped mode:
+   * ON when any individual automation on this field is ON.
+   */
+  get isAnyFieldAutomationEnabled(): boolean {
+    if (!this.isFieldScopedEditor || !this.fieldScopedRules.length) {
+      return this.editingRule?.enabled !== false;
+    }
+    return this.fieldScopedRules.some((_, index) =>
+      this.isFieldAutomationEnabled(index),
+    );
+  }
+
+  /**
+   * Sidebar toggle: flip only the targeted automation's enabled flag.
+   * Config (conditions/actions) is preserved. Does not force the master
+   * toggle OFF while any sibling automation remains ON.
+   */
+  onFieldAutomationEnabledChange(
+    index: number,
+    enabled: boolean,
+    event?: Event,
+  ): void {
+    event?.stopPropagation();
+    if (
+      !this.isFieldScopedEditor ||
+      index < 0 ||
+      index >= this.fieldScopedRules.length
+    ) {
+      return;
+    }
+
+    const next = [...this.fieldScopedRules];
+    next[index] = { ...next[index], enabled };
+    this.fieldScopedRules = next;
+
+    if (index === this.activeFieldRuleIndex && this.editingRule) {
+      this.editingRule = { ...this.editingRule, enabled };
+    }
+    this.cdr.markForCheck();
+  }
+
+  /**
+   * Footer "Automation is on" toggle.
+   * Field-scoped: master control for all automations on the current field.
+   * Single-rule: toggles only the editing rule (unchanged).
+   */
+  onEditingRuleEnabledChange(enabled: boolean): void {
+    if (!this.editingRule) {
+      return;
+    }
+
+    if (this.isFieldScopedEditor && this.fieldScopedRules.length) {
+      this.fieldScopedRules = this.fieldScopedRules.map((rule) => ({
+        ...rule,
+        enabled,
+      }));
+      this.editingRule = { ...this.editingRule, enabled };
+      this.cdr.markForCheck();
+      return;
+    }
+
+    this.editingRule = { ...this.editingRule, enabled };
+    this.cdr.markForCheck();
+  }
+
   selectFieldAutomation(index: number): void {
     this.closeFieldRuleMenu();
     if (

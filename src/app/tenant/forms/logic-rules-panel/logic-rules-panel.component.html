@@ -307,6 +307,23 @@
                       {{ fieldAutomationLabel(i) }}
                     </span>
                   </button>
+                  <label
+                    class="relative mr-0.5 inline-flex shrink-0 cursor-pointer"
+                    [attr.aria-label]="isFieldAutomationEnabled(i) ? 'Turn automation off' : 'Turn automation on'"
+                    [attr.title]="isFieldAutomationEnabled(i) ? 'Automation is on' : 'Automation is off'"
+                    (click)="$event.stopPropagation()"
+                  >
+                    <input
+                      type="checkbox"
+                      class="peer sr-only"
+                      [checked]="isFieldAutomationEnabled(i)"
+                      (change)="onFieldAutomationEnabledChange(i, $any($event.target).checked, $event)"
+                    />
+                    <span
+                      class="relative inline-block h-[1.15rem] w-8 rounded-full bg-gray-300 transition after:absolute after:left-[0.12rem] after:top-[0.12rem] after:h-[0.9rem] after:w-[0.9rem] after:rounded-full after:bg-white after:shadow after:transition peer-checked:bg-[#161616] peer-checked:after:translate-x-[0.85rem] peer-focus-visible:shadow-[0_0_0_3px_rgba(22,22,22,0.15)]"
+                      aria-hidden="true"
+                    ></span>
+                  </label>
                   <button
                     type="button"
                     class="mr-1 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[#9CA3AF] transition hover:bg-[#F3F4F6] hover:text-[#161616] focus:outline-none"
@@ -1436,16 +1453,21 @@
         <div class="flex min-w-0 items-center gap-2.5">
           <label
             class="relative inline-flex cursor-pointer"
-            [attr.aria-label]="rule.enabled ? 'Turn automation off' : 'Turn automation on'"
+            [attr.aria-label]="(isFieldScopedEditor ? isAnyFieldAutomationEnabled : rule.enabled) ? 'Turn automation off' : 'Turn automation on'"
           >
-            <input type="checkbox" class="peer sr-only" [(ngModel)]="rule.enabled" />
+            <input
+              type="checkbox"
+              class="peer sr-only"
+              [ngModel]="isFieldScopedEditor ? isAnyFieldAutomationEnabled : rule.enabled"
+              (ngModelChange)="onEditingRuleEnabledChange($event)"
+            />
             <span
               class="relative inline-block h-[1.4rem] w-10 rounded-full bg-gray-300 transition after:absolute after:left-[0.15rem] after:top-[0.15rem] after:h-[1.1rem] after:w-[1.1rem] after:rounded-full after:bg-white after:shadow after:transition peer-checked:bg-[#161616] peer-checked:after:translate-x-[1.1rem] peer-focus-visible:shadow-[0_0_0_3px_rgba(22,22,22,0.15)]"
               aria-hidden="true"
             ></span>
           </label>
           <span class="text-sm font-medium text-[#161616]">
-            {{ rule.enabled ? 'Automation is on' : 'Automation is off' }}
+            {{ (isFieldScopedEditor ? isAnyFieldAutomationEnabled : rule.enabled) ? 'Automation is on' : 'Automation is off' }}
           </span>
         </div>
 
