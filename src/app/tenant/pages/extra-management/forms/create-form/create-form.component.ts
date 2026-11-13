@@ -2876,7 +2876,7 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
   }
 
   /**
-   * Form Template canvas shortcut: open existing Automation Rules editor popup.
+   * Form Template canvas shortcut: open field-scoped multi-automation editor.
    */
   onOpenFieldAutomationRules(field: FormField): void {
     this.logicOverviewOpen.set(false);
@@ -2887,18 +2887,12 @@ export class CreateFormComponent implements OnInit, CreateFormCanDeactivate {
     this.selectedFieldId.set(field.id);
     this.cdr.detectChanges();
 
-    const existing = findLogicRulesUsingField(this.logicRules(), field.id);
     const panel = this.logicRulesPanel();
     if (!panel) {
       return;
     }
 
-    if (existing.length) {
-      panel.openEditEditor(existing[0], field.id);
-      return;
-    }
-
-    panel.openCreateEditor(field.id);
+    panel.openFieldAutomationsEditor(field.id);
   }
 
   onExistingFieldQuickAction(

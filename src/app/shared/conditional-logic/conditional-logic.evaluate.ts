@@ -58,6 +58,15 @@ function unwrapComparableValue(value: unknown): unknown {
   return value;
 }
 
+/**
+ * Meaningful emptiness for conditional logic.
+ * - `null` / `undefined` → empty
+ * - whitespace-only strings → empty
+ * - empty arrays (e.g. no image/file selection) → empty
+ * - `0` and `false` → NOT empty (valid numeric / unchecked checkbox values)
+ * - measurement `{ value|amount|quantity, unit }` → based on the unwrapped amount
+ * - media/signature objects → empty only when no url/path/key is present
+ */
 export function isEmptyValue(value: unknown): boolean {
   if (value === null || value === undefined) {
     return true;
@@ -67,18 +76,40 @@ export function isEmptyValue(value: unknown): boolean {
     return value.trim() === '';
   }
 
-  if (Array.isArray(value)) {
-    return value.length === 0;
+  if (typeof value === 'number') {
+    // Numeric zero is a meaningful value, not empty.
+    return false;
   }
 
   if (typeof value === 'boolean') {
+    // Checkbox `false` is unchecked, not an empty field.
     return false;
+  }
+
+  if (Array.isArray(value)) {
+    // Empty multi-select / no uploaded images. Non-empty arrays keep existing
+    // semantics (presence of entries = not empty), including `[0]` / `[false]`.
+    return value.length === 0;
   }
 
   if (typeof value === 'object') {
     const unwrapped = unwrapComparableValue(value);
     if (unwrapped !== value) {
       return isEmptyValue(unwrapped);
+    }
+
+    // Image / file / signature metadata without a resolvable location is empty.
+    const record = value as Record<string, unknown>;
+    if (
+      Object.prototype.hasOwnProperty.call(record, 'url') ||
+      Object.prototype.hasOwnProperty.call(record, 'path') ||
+      Object.prototype.hasOwnProperty.call(record, 'key') ||
+      Object.prototype.hasOwnProperty.call(record, 'fileName')
+    ) {
+      const url = String(record['url'] ?? '').trim();
+      const path = String(record['path'] ?? '').trim();
+      const key = String(record['key'] ?? '').trim();
+      return !url && !path && !key;
     }
   }
 

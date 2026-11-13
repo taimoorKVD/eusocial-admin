@@ -1305,6 +1305,25 @@
                         {{ conditionRuleLabel(i) }}
                       </span>
                     </button>
+                    <label
+                      class="relative mr-0.5 inline-flex shrink-0 cursor-pointer"
+                      [class.cursor-not-allowed]="!conditionRuleControlsEnabled"
+                      [attr.aria-label]="isConditionRuleEnabled(i) ? 'Turn rule off' : 'Turn rule on'"
+                      [attr.title]="isConditionRuleEnabled(i) ? 'Rule is on' : 'Rule is off'"
+                      (click)="$event.stopPropagation()"
+                    >
+                      <input
+                        type="checkbox"
+                        class="peer sr-only"
+                        [checked]="isConditionRuleEnabled(i)"
+                        [disabled]="!conditionRuleControlsEnabled"
+                        (change)="onConditionRuleEnabledChange(i, $any($event.target).checked, $event)"
+                      />
+                      <span
+                        class="relative inline-block h-[1.15rem] w-8 rounded-full bg-gray-300 transition after:absolute after:left-[0.12rem] after:top-[0.12rem] after:h-[0.9rem] after:w-[0.9rem] after:rounded-full after:bg-white after:shadow after:transition peer-checked:bg-[#161616] peer-checked:after:translate-x-[0.85rem] peer-focus-visible:shadow-[0_0_0_3px_rgba(22,22,22,0.15)] peer-disabled:opacity-50"
+                        aria-hidden="true"
+                      ></span>
+                    </label>
                     <button
                       type="button"
                       class="mr-1 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[#9CA3AF] transition hover:bg-[#F3F4F6] hover:text-[#161616] focus:outline-none disabled:opacity-40"
@@ -1386,6 +1405,12 @@
                 <p class="m-0 text-[12px] leading-relaxed text-[#3D3D3D]">
                   Each rule is independent. Edit one at a time — other rules stay unchanged.
                 </p>
+                @if (conditionValidationMessage('name')) {
+                  <p class="m-0 text-xs font-medium text-[#B91C1C]">{{ conditionValidationMessage('name') }}</p>
+                }
+                @if (conditionValidationMessage('general')) {
+                  <p class="m-0 text-xs font-medium text-[#B91C1C]">{{ conditionValidationMessage('general') }}</p>
+                }
               </div>
 
             @if (conditionModalPickTargetMode) {
@@ -1488,7 +1513,8 @@
                       >
                         <button
                           type="button"
-                          class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl border border-[#BDBDBD] bg-white px-[0.85rem] py-[0.7rem] text-left text-sm font-medium leading-5 text-black transition hover:border-gray-300 hover:bg-[#fafafa] focus-visible:border-[#ff9015] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] aria-expanded:border-[#ff9015] aria-expanded:bg-white aria-expanded:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
+                          class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl border bg-white px-[0.85rem] py-[0.7rem] text-left text-sm font-medium leading-5 text-black transition hover:border-gray-300 hover:bg-[#fafafa] focus-visible:border-[#ff9015] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] aria-expanded:border-[#ff9015] aria-expanded:bg-white aria-expanded:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
+                          [ngClass]="conditionValidationMessage('source') ? 'border-[#DC2626]' : 'border-[#BDBDBD]'"
                           (click)="conditionSourceDropdown.toggle($event)"
                           [disabled]="!conditionRuleControlsEnabled"
                           [attr.aria-expanded]="conditionSourceDropdown.isOpen"
@@ -1532,6 +1558,9 @@
                           </div>
                         }
                       </div>
+                      @if (conditionValidationMessage('source')) {
+                        <p class="m-0 mt-1 text-xs font-medium text-[#B91C1C]">{{ conditionValidationMessage('source') }}</p>
+                      }
                     </div>
 
                     <div class="min-w-0">
@@ -1544,7 +1573,8 @@
                       >
                         <button
                           type="button"
-                          class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl border border-[#BDBDBD] bg-white px-[0.85rem] py-[0.7rem] text-left text-sm font-medium leading-5 text-black transition hover:border-gray-300 hover:bg-[#fafafa] focus-visible:border-[#ff9015] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] aria-expanded:border-[#ff9015] aria-expanded:bg-white aria-expanded:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
+                          class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl border bg-white px-[0.85rem] py-[0.7rem] text-left text-sm font-medium leading-5 text-black transition hover:border-gray-300 hover:bg-[#fafafa] focus-visible:border-[#ff9015] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] aria-expanded:border-[#ff9015] aria-expanded:bg-white aria-expanded:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
+                          [ngClass]="conditionValidationMessage('operator') ? 'border-[#DC2626]' : 'border-[#BDBDBD]'"
                           (click)="conditionOperatorDropdown.toggle($event)"
                           [disabled]="!isFieldEditable"
                           [attr.aria-expanded]="conditionOperatorDropdown.isOpen"
@@ -1581,6 +1611,9 @@
                           </div>
                         }
                       </div>
+                      @if (conditionValidationMessage('operator')) {
+                        <p class="m-0 mt-1 text-xs font-medium text-[#B91C1C]">{{ conditionValidationMessage('operator') }}</p>
+                      }
                     </div>
 
                     @if (conditionNeedsValue) {
@@ -1595,7 +1628,8 @@
                           >
                             <button
                               type="button"
-                              class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl border border-[#BDBDBD] bg-white px-[0.85rem] py-[0.7rem] text-left text-sm font-medium leading-5 text-black transition hover:border-gray-300 hover:bg-[#fafafa] focus-visible:border-[#ff9015] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] aria-expanded:border-[#ff9015] aria-expanded:bg-white aria-expanded:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
+                              class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl border bg-white px-[0.85rem] py-[0.7rem] text-left text-sm font-medium leading-5 text-black transition hover:border-gray-300 hover:bg-[#fafafa] focus-visible:border-[#ff9015] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] aria-expanded:border-[#ff9015] aria-expanded:bg-white aria-expanded:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
+                              [ngClass]="conditionValidationMessage('value') ? 'border-[#DC2626]' : 'border-[#BDBDBD]'"
                               (click)="conditionValueDropdown.toggle($event)"
                               [disabled]="!isFieldEditable"
                               [attr.aria-expanded]="conditionValueDropdown.isOpen"
@@ -1642,13 +1676,17 @@
                         } @else {
                           <input
                             type="text"
-                            class="w-full rounded-lg border border-transparent bg-gray-100 px-3 py-2.5 text-sm text-[#161616] placeholder:text-gray-400 focus:border-[#ff9015] focus:bg-white focus:outline-none focus:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:text-gray-400"
+                            class="w-full rounded-lg border bg-gray-100 px-3 py-2.5 text-sm text-[#161616] placeholder:text-gray-400 focus:border-[#ff9015] focus:bg-white focus:outline-none focus:shadow-[0_0_0_3px_rgba(255,144,21,0.12)] disabled:cursor-not-allowed disabled:text-gray-400"
+                            [ngClass]="conditionValidationMessage('value') ? 'border-[#DC2626]' : 'border-transparent'"
                             [ngModel]="conditionCompareValue"
                             (ngModelChange)="onConditionValueChange($event)"
                             [disabled]="!isFieldEditable"
                             placeholder="Value"
                             aria-label="Value"
                           />
+                        }
+                        @if (conditionValidationMessage('value')) {
+                          <p class="m-0 mt-1 text-xs font-medium text-[#B91C1C]">{{ conditionValidationMessage('value') }}</p>
                         }
                       </div>
                     } @else {
@@ -1679,7 +1717,7 @@
                         [ngClass]="isConditionActionSelected(action.value)
                           ? 'border-[#161616] bg-[#161616] text-white'
                           : 'border-[#BDBDBD] bg-white text-black hover:border-gray-300 hover:bg-gray-50'"
-                        [disabled]="!isFieldEditable || isConditionActionOptionDisabled(action.value)"
+                        [disabled]="!isFieldEditable"
                         [attr.aria-pressed]="isConditionActionSelected(action.value)"
                         (click)="onConditionActionChange(action.value)"
                       >
@@ -1701,12 +1739,18 @@
                   <p class="m-0 text-[13px] leading-relaxed text-[#3D3D3D]">
                     Pick one or more compatible actions. Show/Hide, Require/Optional, and Enable/Disable cannot be combined.
                   </p>
+                  @if (conditionValidationMessage('setValue') && !conditionUsesSetValue) {
+                    <p class="m-0 text-xs font-medium text-[#B91C1C]">{{ conditionValidationMessage('setValue') }}</p>
+                  }
                 </div>
               </div>
             </section>
 
             @if (conditionUsesSetValue) {
               <div class="space-y-3 rounded-xl border border-dashed border-[#BDBDBD] bg-gray-50 px-3.5 py-3.5">
+                @if (conditionValidationMessage('setValue')) {
+                  <p class="m-0 text-xs font-medium text-[#B91C1C]">{{ conditionValidationMessage('setValue') }}</p>
+                }
                 <div>
                   <label class="mb-1.5 block text-xs font-medium text-gray-600">Set value from</label>
                   <div
@@ -2455,25 +2499,50 @@
           </div>
         </div>
 
-        <footer class="flex shrink-0 items-center justify-end gap-2 border-t border-[#E0E0E0]  px-5 py-4 max-sm:px-4">
-          <button
-            type="button"
-            class="rounded-lg border border-[#BDBDBD] bg-white px-3.5 py-2 text-sm font-medium text-[#161616] transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300"
-            (click)="closeConditionModal()"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            class="rounded-lg border border-transparent px-3.5 py-2 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ff9015]/30 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
-            [ngClass]="canSaveConditionLogic
-              ? 'bg-[#161616] text-white hover:bg-black'
-              : 'bg-gray-100 text-gray-400'"
-            [disabled]="!canSaveConditionLogic"
-            (click)="saveConditionModal()"
-          >
-            Save logic
-          </button>
+        <footer class="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-[#E0E0E0] px-5 py-4 max-sm:px-4">
+          <div class="flex min-w-0 items-center gap-2.5">
+            <label
+              class="relative inline-flex cursor-pointer"
+              [class.cursor-not-allowed]="!conditionRuleControlsEnabled"
+              [attr.aria-label]="isAnyConditionRuleEnabled ? 'Turn conditional logic off' : 'Turn conditional logic on'"
+            >
+              <input
+                type="checkbox"
+                class="peer sr-only"
+                [ngModel]="isAnyConditionRuleEnabled"
+                [disabled]="!conditionRuleControlsEnabled"
+                (ngModelChange)="onConditionEnabledChange($event)"
+              />
+              <span
+                class="relative inline-block h-[1.4rem] w-10 rounded-full bg-gray-300 transition after:absolute after:left-[0.15rem] after:top-[0.15rem] after:h-[1.1rem] after:w-[1.1rem] after:rounded-full after:bg-white after:shadow after:transition peer-checked:bg-[#161616] peer-checked:after:translate-x-[1.1rem] peer-focus-visible:shadow-[0_0_0_3px_rgba(22,22,22,0.15)] peer-disabled:opacity-50"
+                aria-hidden="true"
+              ></span>
+            </label>
+            <span class="text-sm font-medium text-[#161616]">
+              {{ isAnyConditionRuleEnabled ? 'Conditional logic is on' : 'Conditional logic is off' }}
+            </span>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              class="rounded-lg border border-[#BDBDBD] bg-white px-3.5 py-2 text-sm font-medium text-[#161616] transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300"
+              (click)="closeConditionModal()"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="rounded-lg border border-transparent px-3.5 py-2 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ff9015]/30 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
+              [ngClass]="canSaveConditionLogic
+                ? 'bg-[#161616] text-white hover:bg-black'
+                : 'bg-gray-100 text-gray-400'"
+              [disabled]="!canSaveConditionLogic"
+              (click)="saveConditionModal()"
+            >
+              Save logic
+            </button>
+          </div>
         </footer>
       </div>
     </div>

@@ -9,6 +9,7 @@ import {
   Output,
   SimpleChanges,
 } from '@angular/core';
+import { ToastrService } from 'ngx-toastr';
 import { FormField } from '../../form-builder/models/form-field.model';
 import {
   DynamicModuleOptionsService,
@@ -32,7 +33,9 @@ import {
   createEmptyLogicAction,
   createEmptyLogicCondition,
   createEmptyLogicRule,
+  createLogicRuleId,
   filterRelatedPropertiesForLogicField,
+  findLogicRulesUsingField,
   fixedOptionLabelForValue,
   getCompatibleCompareFields,
   getDynamicSourceEndpoint,
@@ -51,6 +54,14 @@ import {
   operatorNeedsComparisonValue,
   summarizeRuleCard,
 } from '../logic-rules/logic-rule.utils';
+import {
+  firstLogicValidationIssue,
+  LogicRuleValidationIssue,
+  sanitizeLogicRuleOperators,
+  validateLogicRule,
+  validateLogicRuleNames,
+  validateLogicRules,
+} from '../logic-rules/logic-rule.validate';
 
 @Component({
   selector: 'app-logic-rules-panel',
@@ -109,12 +120,33 @@ export class LogicRulesPanelComponent implements OnChanges, OnDestroy {
   editingRule: FormLogicRule | null = null;
   isNewRule = false;
 
+  /**
+   * Field-scoped multi-automation session (Form Template canvas shortcut).
+   * When set, the editor shows a Conditional Logic–style sidebar for all
+   * automations that reference this field.
+   */
+  fieldScopeId: string | null = null;
+  fieldScopedRules: FormLogicRule[] = [];
+  activeFieldRuleIndex = 0;
+  private originalFieldRuleIds = new Set<string>();
+
+  fieldRuleMenuIndex: number | null = null;
+  fieldRuleMenuStyle: Record<string, string> = {};
+  addFieldAutomationModalOpen = false;
+  addFieldAutomationNameDraft = '';
+  renameFieldAutomationModalOpen = false;
+  renameFieldAutomationIndex = -1;
+  renameFieldAutomationNameDraft = '';
+
   /** UI-only state driving the drawer leave animation before unmount. */
   editorClosing = false;
   private editorCloseTimer: ReturnType<typeof setTimeout> | null = null;
 
   deleteModalOpen = false;
   pendingDeleteRule: FormLogicRule | null = null;
+
+  /** Field-level validation issues for the open editor. */
+  logicValidationIssues: LogicRuleValidationIssue[] = [];
 
   relatedPropertyCache = new Map<string, ModuleColumnOption[]>();
   relatedRecordsCache = new Map<string, Record<string, unknown>[]>();
@@ -130,6 +162,7 @@ export class LogicRulesPanelComponent implements OnChanges, OnDestroy {
     private readonly dynamicModuleOptions: DynamicModuleOptionsService,
     private readonly overlayService: DropdownOverlayService,
     private readonly cdr: ChangeDetectorRef,
+    private readonly toastr: ToastrService,
   ) {}
 
   ngOnDestroy(): void {
@@ -206,15 +239,25 @@ export class LogicRulesPanelComponent implements OnChanges, OnDestroy {
     return label || null;
   }
 
+  get isFieldScopedEditor(): boolean {
+    return !!this.fieldScopeId;
+  }
+
+  get fieldScopedRuleCount(): number {
+    return this.fieldScopedRules.length;
+  }
+
   /**
    * @param seedFieldId Optional Form Template field shortcut: preselect this
    * field on the first IF condition so the modal opens ready to configure.
    */
   openCreateEditor(seedFieldId?: string): void {
+    this.clearFieldScopeSession();
     this.clearEditorCloseTimer();
     this.editorClosing = false;
     this.isNewRule = true;
     this.editingRule = createEmptyLogicRule('');
+    this.clearLogicValidation();
     this.editorOpen = true;
 
     const seed = (seedFieldId || '').trim();
@@ -231,10 +274,15 @@ export class LogicRulesPanelComponent implements OnChanges, OnDestroy {
   }
 
   openEditEditor(rule: FormLogicRule, preferredFieldId?: string): void {
+    this.clearFieldScopeSession();
     this.clearEditorCloseTimer();
     this.editorClosing = false;
     this.isNewRule = false;
-    this.editingRule = cloneLogicRule(rule);
+    this.editingRule = sanitizeLogicRuleOperators(
+      cloneLogicRule(rule),
+      this.schema || [],
+    );
+    this.clearLogicValidation();
     this.editorOpen = true;
 
     const preferred = (preferredFieldId || '').trim();
@@ -262,13 +310,59 @@ export class LogicRulesPanelComponent implements OnChanges, OnDestroy {
     this.cdr.markForCheck();
   }
 
+  /**
+   * Form Template field shortcut: manage all automations that reference this
+   * field in one multi-item editor (Conditional Logic–style sidebar).
+   */
+  openFieldAutomationsEditor(fieldId: string): void {
+    const scopeId = (fieldId || '').trim();
+    if (!scopeId) {
+      return;
+    }
+
+    this.clearEditorCloseTimer();
+    this.editorClosing = false;
+    this.isNewRule = false;
+    this.fieldScopeId = scopeId;
+
+    const existing = findLogicRulesUsingField(this.localRules, scopeId).map(
+      (rule) =>
+        sanitizeLogicRuleOperators(cloneLogicRule(rule), this.schema || []),
+    );
+    this.originalFieldRuleIds = new Set(existing.map((rule) => rule.id));
+
+    if (existing.length) {
+      this.fieldScopedRules = existing;
+      this.activeFieldRuleIndex = 0;
+      this.editingRule = cloneLogicRule(existing[0]);
+      this.surfacePreferredFieldOnEditingRule(scopeId);
+    } else {
+      const seeded = this.createSeededFieldAutomation(
+        scopeId,
+        this.defaultFieldAutomationName(0),
+      );
+      this.fieldScopedRules = [seeded];
+      this.activeFieldRuleIndex = 0;
+      this.editingRule = cloneLogicRule(seeded);
+    }
+
+    this.clearLogicValidation();
+    this.editorOpen = true;
+    this.prefetchRelatedPropertiesForRule(this.editingRule);
+    this.cdr.markForCheck();
+  }
+
   closeEditor(): void {
     this.overlayService.close();
+    this.closeFieldRuleMenu();
+    this.closeAddFieldAutomationModal();
+    this.closeRenameFieldAutomationModal();
     if (!this.editorOpen || this.editorClosing) {
       return;
     }
     // Play the leave animation first, then unmount. Rule data is untouched.
     this.editorClosing = true;
+    this.clearLogicValidation();
     this.cdr.markForCheck();
     this.clearEditorCloseTimer();
     this.editorCloseTimer = setTimeout(() => {
@@ -277,8 +371,389 @@ export class LogicRulesPanelComponent implements OnChanges, OnDestroy {
       this.editorOpen = false;
       this.editingRule = null;
       this.isNewRule = false;
+      this.clearFieldScopeSession();
       this.cdr.markForCheck();
     }, 220);
+  }
+
+  fieldAutomationLabel(index: number): string {
+    if (index === this.activeFieldRuleIndex && this.editingRule) {
+      const live = String(this.editingRule.name ?? '').trim();
+      if (live) {
+        return live;
+      }
+    }
+    const rule = this.fieldScopedRules[index];
+    const named = String(rule?.name ?? '').trim();
+    return named || this.defaultFieldAutomationName(index);
+  }
+
+  /** Per-automation ON/OFF — active editor wins for the selected row. */
+  isFieldAutomationEnabled(index: number): boolean {
+    if (index === this.activeFieldRuleIndex && this.editingRule) {
+      return this.editingRule.enabled !== false;
+    }
+    return this.fieldScopedRules[index]?.enabled !== false;
+  }
+
+  /**
+   * Footer master toggle in field-scoped mode:
+   * ON when any individual automation on this field is ON.
+   */
+  get isAnyFieldAutomationEnabled(): boolean {
+    if (!this.isFieldScopedEditor || !this.fieldScopedRules.length) {
+      return this.editingRule?.enabled !== false;
+    }
+    return this.fieldScopedRules.some((_, index) =>
+      this.isFieldAutomationEnabled(index),
+    );
+  }
+
+  /**
+   * Sidebar toggle: flip only the targeted automation's enabled flag.
+   * Turning ON validates first; turning OFF always remains possible.
+   */
+  onFieldAutomationEnabledChange(
+    index: number,
+    enabled: boolean,
+    event?: Event,
+  ): void {
+    event?.stopPropagation();
+    if (
+      !this.isFieldScopedEditor ||
+      index < 0 ||
+      index >= this.fieldScopedRules.length
+    ) {
+      return;
+    }
+
+    this.commitActiveFieldAutomation();
+
+    if (!enabled) {
+      const next = [...this.fieldScopedRules];
+      next[index] = { ...next[index], enabled: false };
+      this.fieldScopedRules = next;
+      if (index === this.activeFieldRuleIndex && this.editingRule) {
+        this.editingRule = { ...this.editingRule, enabled: false };
+      }
+      this.clearLogicValidation();
+      this.cdr.markForCheck();
+      return;
+    }
+
+    const candidate = sanitizeLogicRuleOperators(
+      { ...cloneLogicRule(this.fieldScopedRules[index]), enabled: true },
+      this.schema || [],
+    );
+    const issues = validateLogicRule(
+      candidate,
+      index,
+      this.buildLogicValidationContext(),
+      { requireComplete: true },
+    );
+    const nameIssues = this.validateScopedNamesAgainstForm(
+      this.fieldScopedRules.map((rule, ruleIndex) =>
+        ruleIndex === index ? candidate : rule,
+      ),
+    ).filter((issue) => issue.ruleIndex === index);
+    const allIssues = [...nameIssues, ...issues];
+    if (allIssues.length) {
+      this.applyLogicValidationIssues(allIssues);
+      this.cdr.markForCheck();
+      return;
+    }
+
+    const next = [...this.fieldScopedRules];
+    next[index] = candidate;
+    this.fieldScopedRules = next;
+    if (index === this.activeFieldRuleIndex) {
+      this.editingRule = cloneLogicRule(candidate);
+    }
+    this.clearLogicValidation();
+    this.cdr.markForCheck();
+  }
+
+  /**
+   * Footer "Automation is on" toggle.
+   * Field-scoped: master control for all automations on the current field.
+   * Single-rule: toggles only the editing rule.
+   * Turning ON validates first; turning OFF always remains possible.
+   */
+  onEditingRuleEnabledChange(enabled: boolean): void {
+    if (!this.editingRule) {
+      return;
+    }
+
+    if (this.isFieldScopedEditor && this.fieldScopedRules.length) {
+      this.commitActiveFieldAutomation();
+
+      if (!enabled) {
+        this.fieldScopedRules = this.fieldScopedRules.map((rule) => ({
+          ...rule,
+          enabled: false,
+        }));
+        this.editingRule = { ...this.editingRule, enabled: false };
+        this.clearLogicValidation();
+        this.cdr.markForCheck();
+        return;
+      }
+
+      const candidates = this.fieldScopedRules.map((rule) =>
+        sanitizeLogicRuleOperators(
+          { ...cloneLogicRule(rule), enabled: true },
+          this.schema || [],
+        ),
+      );
+      const issues = [
+        ...this.validateScopedNamesAgainstForm(candidates),
+        ...candidates.flatMap((rule, index) =>
+          validateLogicRule(rule, index, this.buildLogicValidationContext(), {
+            requireComplete: true,
+          }),
+        ),
+      ];
+      if (issues.length) {
+        this.applyLogicValidationIssues(issues);
+        this.cdr.markForCheck();
+        return;
+      }
+
+      this.fieldScopedRules = candidates;
+      this.editingRule = cloneLogicRule(
+        candidates[this.activeFieldRuleIndex] ?? candidates[0],
+      );
+      this.clearLogicValidation();
+      this.cdr.markForCheck();
+      return;
+    }
+
+    if (!enabled) {
+      this.editingRule = { ...this.editingRule, enabled: false };
+      this.clearLogicValidation();
+      this.cdr.markForCheck();
+      return;
+    }
+
+    const candidate = sanitizeLogicRuleOperators(
+      { ...cloneLogicRule(this.editingRule), enabled: true },
+      this.schema || [],
+    );
+    const issues = [
+      ...this.validateSingleRuleNames(candidate),
+      ...validateLogicRule(candidate, 0, this.buildLogicValidationContext(), {
+        requireComplete: true,
+      }),
+    ];
+    if (issues.length) {
+      this.editingRule = { ...this.editingRule, enabled: false };
+      this.applyLogicValidationIssues(issues);
+      this.cdr.markForCheck();
+      return;
+    }
+
+    this.editingRule = candidate;
+    this.clearLogicValidation();
+    this.cdr.markForCheck();
+  }
+
+  selectFieldAutomation(index: number): void {
+    this.closeFieldRuleMenu();
+    if (
+      !this.isFieldScopedEditor ||
+      !this.editingRule ||
+      index < 0 ||
+      index >= this.fieldScopedRules.length ||
+      index === this.activeFieldRuleIndex
+    ) {
+      return;
+    }
+    this.commitActiveFieldAutomation();
+    this.activeFieldRuleIndex = index;
+    this.editingRule = sanitizeLogicRuleOperators(
+      cloneLogicRule(this.fieldScopedRules[index]),
+      this.schema || [],
+    );
+    this.clearLogicValidation();
+    this.prefetchRelatedPropertiesForRule(this.editingRule);
+    this.cdr.markForCheck();
+  }
+
+  openAddFieldAutomationModal(): void {
+    if (!this.isFieldScopedEditor) {
+      return;
+    }
+    this.closeFieldRuleMenu();
+    this.addFieldAutomationNameDraft = this.defaultFieldAutomationName(
+      this.fieldScopedRules.length,
+    );
+    this.addFieldAutomationModalOpen = true;
+    this.cdr.markForCheck();
+  }
+
+  closeAddFieldAutomationModal(): void {
+    this.addFieldAutomationModalOpen = false;
+    this.addFieldAutomationNameDraft = '';
+  }
+
+  confirmAddFieldAutomation(): void {
+    if (!this.isFieldScopedEditor || !this.fieldScopeId) {
+      return;
+    }
+
+    const fallback = this.defaultFieldAutomationName(this.fieldScopedRules.length);
+    const name = this.addFieldAutomationNameDraft.trim() || fallback;
+
+    this.commitActiveFieldAutomation();
+    const next = this.createSeededFieldAutomation(this.fieldScopeId, name);
+    this.fieldScopedRules = [...this.fieldScopedRules, next];
+    this.activeFieldRuleIndex = this.fieldScopedRules.length - 1;
+    this.editingRule = cloneLogicRule(next);
+    this.closeAddFieldAutomationModal();
+    this.prefetchRelatedPropertiesForRule(this.editingRule);
+    this.cdr.markForCheck();
+  }
+
+  duplicateFieldAutomation(index?: number | null, event?: Event): void {
+    event?.stopPropagation();
+    if (!this.isFieldScopedEditor || !this.editingRule) {
+      return;
+    }
+
+    this.closeFieldRuleMenu();
+    this.commitActiveFieldAutomation();
+
+    const sourceIndex =
+      typeof index === 'number' &&
+      index >= 0 &&
+      index < this.fieldScopedRules.length
+        ? index
+        : this.activeFieldRuleIndex;
+    const source =
+      this.fieldScopedRules[sourceIndex] ?? this.editingRule;
+    const clone = this.cloneAutomationWithNewIds(source);
+    clone.name = this.defaultFieldAutomationName(this.fieldScopedRules.length);
+    clone.enabled = true;
+
+    this.fieldScopedRules = [...this.fieldScopedRules, clone];
+    this.activeFieldRuleIndex = this.fieldScopedRules.length - 1;
+    this.editingRule = cloneLogicRule(clone);
+    this.prefetchRelatedPropertiesForRule(this.editingRule);
+    this.cdr.markForCheck();
+  }
+
+  openRenameFieldAutomationModal(index: number, event?: Event): void {
+    event?.stopPropagation();
+    if (!this.isFieldScopedEditor) {
+      return;
+    }
+    if (index < 0 || index >= this.fieldScopedRules.length) {
+      return;
+    }
+    this.closeFieldRuleMenu();
+    this.renameFieldAutomationIndex = index;
+    this.renameFieldAutomationNameDraft = this.fieldAutomationLabel(index);
+    this.renameFieldAutomationModalOpen = true;
+    this.cdr.markForCheck();
+  }
+
+  closeRenameFieldAutomationModal(): void {
+    this.renameFieldAutomationModalOpen = false;
+    this.renameFieldAutomationIndex = -1;
+    this.renameFieldAutomationNameDraft = '';
+  }
+
+  confirmRenameFieldAutomation(): void {
+    if (!this.isFieldScopedEditor) {
+      return;
+    }
+
+    const index = this.renameFieldAutomationIndex;
+    if (index < 0 || index >= this.fieldScopedRules.length) {
+      this.closeRenameFieldAutomationModal();
+      return;
+    }
+
+    const fallback = this.defaultFieldAutomationName(index);
+    const name = this.renameFieldAutomationNameDraft.trim() || fallback;
+
+    this.commitActiveFieldAutomation();
+    const next = [...this.fieldScopedRules];
+    next[index] = { ...next[index], name };
+    this.fieldScopedRules = next;
+
+    if (index === this.activeFieldRuleIndex && this.editingRule) {
+      this.editingRule = { ...this.editingRule, name };
+    }
+
+    this.closeRenameFieldAutomationModal();
+    this.cdr.markForCheck();
+  }
+
+  removeFieldAutomation(index: number): void {
+    if (!this.isFieldScopedEditor || !this.fieldScopeId) {
+      return;
+    }
+    this.closeFieldRuleMenu();
+
+    if (this.fieldScopedRules.length <= 1) {
+      const seeded = this.createSeededFieldAutomation(
+        this.fieldScopeId,
+        this.defaultFieldAutomationName(0),
+      );
+      this.fieldScopedRules = [seeded];
+      this.activeFieldRuleIndex = 0;
+      this.editingRule = cloneLogicRule(seeded);
+      this.prefetchRelatedPropertiesForRule(this.editingRule);
+      this.cdr.markForCheck();
+      return;
+    }
+
+    this.commitActiveFieldAutomation();
+    const next = this.fieldScopedRules.filter((_, i) => i !== index);
+    const nextIndex = Math.min(
+      index > this.activeFieldRuleIndex
+        ? this.activeFieldRuleIndex
+        : Math.max(0, this.activeFieldRuleIndex - 1),
+      next.length - 1,
+    );
+    this.fieldScopedRules = next;
+    this.activeFieldRuleIndex = nextIndex;
+    this.editingRule = cloneLogicRule(next[nextIndex]);
+    this.prefetchRelatedPropertiesForRule(this.editingRule);
+    this.cdr.markForCheck();
+  }
+
+  toggleFieldRuleMenu(index: number, event?: Event): void {
+    event?.stopPropagation();
+    if (this.fieldRuleMenuIndex === index) {
+      this.closeFieldRuleMenu();
+      return;
+    }
+
+    const target = event?.currentTarget as HTMLElement | undefined;
+    if (target) {
+      const rect = target.getBoundingClientRect();
+      const menuWidth = 160;
+      const left = Math.min(
+        Math.max(8, rect.right - menuWidth),
+        window.innerWidth - menuWidth - 8,
+      );
+      const top = Math.min(rect.bottom + 4, window.innerHeight - 120);
+      this.fieldRuleMenuStyle = {
+        top: `${top}px`,
+        left: `${left}px`,
+      };
+    }
+    this.fieldRuleMenuIndex = index;
+    this.cdr.markForCheck();
+  }
+
+  closeFieldRuleMenu(): void {
+    if (this.fieldRuleMenuIndex === null) {
+      return;
+    }
+    this.fieldRuleMenuIndex = null;
+    this.fieldRuleMenuStyle = {};
   }
 
   fieldLabelById(fieldId: string | undefined | null): string {
@@ -383,6 +858,7 @@ export class LogicRulesPanelComponent implements OnChanges, OnDestroy {
       return;
     }
 
+    this.clearLogicValidation();
     if (this.isActionTypeSelected(type)) {
       const toRemove = this.editingRule.actions.filter(
         (action) => action.type === type,
@@ -413,10 +889,40 @@ export class LogicRulesPanelComponent implements OnChanges, OnDestroy {
   }
 
   toggleRuleEnabled(rule: FormLogicRule, enabled: boolean): void {
-    const next = this.localRules.map((item) =>
-      item.id === rule.id ? { ...item, enabled } : item,
+    // Turning OFF always remains possible.
+    if (!enabled) {
+      const next = this.localRules.map((item) =>
+        item.id === rule.id ? { ...item, enabled: false } : item,
+      );
+      this.emitRules(next);
+      return;
+    }
+
+    const candidate = sanitizeLogicRuleOperators(
+      { ...cloneLogicRule(rule), enabled: true },
+      this.schema || [],
     );
-    this.emitRules(next);
+    const prospective = this.localRules.map((item) =>
+      item.id === rule.id ? candidate : item,
+    );
+    const issues = validateLogicRules(
+      prospective,
+      this.buildLogicValidationContext(),
+    ).filter((issue) => {
+      const index = prospective.findIndex((item) => item.id === rule.id);
+      return issue.ruleIndex === index;
+    });
+
+    if (issues.length) {
+      const first = firstLogicValidationIssue(issues);
+      this.toastr.warning(
+        `${rule.name || 'Untitled Rule'}: ${first?.message ?? 'Complete this automation before turning it on.'}`,
+      );
+      this.cdr.markForCheck();
+      return;
+    }
+
+    this.emitRules(prospective);
   }
 
   requestDelete(rule: FormLogicRule): void {
@@ -446,16 +952,73 @@ export class LogicRulesPanelComponent implements OnChanges, OnDestroy {
     if (!this.editingRule) {
       return;
     }
-    const name = this.editingRule.name?.trim() || 'Untitled Rule';
+
+    if (this.isFieldScopedEditor) {
+      this.commitActiveFieldAutomation();
+
+      const scoped = this.fieldScopedRules.map((rule, index) =>
+        sanitizeLogicRuleOperators(
+          {
+            ...cloneLogicRule(rule),
+            name: rule.name?.trim() || this.defaultFieldAutomationName(index),
+          },
+          this.schema || [],
+        ),
+      );
+      this.fieldScopedRules = scoped;
+
+      // Validate every automation that will be saved as ON.
+      // Incomplete OFF automations may remain as drafts.
+      const nameIssues = this.validateScopedNamesAgainstForm(scoped);
+      const completenessIssues = scoped.flatMap((rule, index) =>
+        validateLogicRule(rule, index, this.buildLogicValidationContext(), {
+          requireComplete: rule.enabled !== false,
+        }),
+      );
+      const issues = [...nameIssues, ...completenessIssues];
+      if (issues.length) {
+        this.applyLogicValidationIssues(issues);
+        this.cdr.markForCheck();
+        return;
+      }
+
+      const kept = this.localRules.filter(
+        (rule) => !this.originalFieldRuleIds.has(rule.id),
+      );
+      this.clearLogicValidation();
+      this.emitRules([...kept, ...scoped]);
+      this.closeEditor();
+      return;
+    }
+
+    const sanitized = sanitizeLogicRuleOperators(
+      cloneLogicRule(this.editingRule),
+      this.schema || [],
+    );
+    const name = sanitized.name?.trim() || 'Untitled Rule';
     const saved: FormLogicRule = {
-      ...cloneLogicRule(this.editingRule),
+      ...sanitized,
       name,
     };
+    this.editingRule = saved;
+
+    const issues = [
+      ...this.validateSingleRuleNames(saved),
+      ...validateLogicRule(saved, 0, this.buildLogicValidationContext(), {
+        requireComplete: saved.enabled !== false,
+      }),
+    ];
+    if (issues.length) {
+      this.applyLogicValidationIssues(issues);
+      this.cdr.markForCheck();
+      return;
+    }
 
     const next = this.isNewRule
       ? [...this.localRules, saved]
       : this.localRules.map((rule) => (rule.id === saved.id ? saved : rule));
 
+    this.clearLogicValidation();
     this.emitRules(next);
     this.closeEditor();
   }
@@ -509,6 +1072,7 @@ export class LogicRulesPanelComponent implements OnChanges, OnDestroy {
     if (!this.editingRule) {
       return;
     }
+    this.clearLogicValidation();
     const items = [
       ...this.editingRule.conditions.items,
       createEmptyLogicCondition('and'),
@@ -527,6 +1091,7 @@ export class LogicRulesPanelComponent implements OnChanges, OnDestroy {
     if (!this.editingRule) {
       return;
     }
+    this.clearLogicValidation();
     const filtered = this.editingRule.conditions.items.filter(
       (item) => item.id !== conditionId,
     );
@@ -898,6 +1463,7 @@ export class LogicRulesPanelComponent implements OnChanges, OnDestroy {
     if (!this.editingRule) {
       return;
     }
+    this.clearLogicValidation();
     this.editingRule = {
       ...this.editingRule,
       conditions: {
@@ -933,6 +1499,206 @@ export class LogicRulesPanelComponent implements OnChanges, OnDestroy {
     this.localRules = next;
     this.rulesChange.emit(next);
     this.cdr.markForCheck();
+  }
+
+  logicValidationMessage(
+    field: LogicRuleValidationIssue['field'],
+    conditionIndex?: number,
+  ): string {
+    const active = this.isFieldScopedEditor ? this.activeFieldRuleIndex : 0;
+    return (
+      this.logicValidationIssues.find((issue) => {
+        if (issue.ruleIndex !== active || issue.field !== field) {
+          return false;
+        }
+        if (conditionIndex !== undefined) {
+          return issue.conditionIndex === conditionIndex;
+        }
+        return issue.conditionIndex === undefined;
+      })?.message ?? ''
+    );
+  }
+
+  private buildLogicValidationContext(): {
+    schema: FormField[];
+    resolveRelatedColumns: (
+      sourceFieldId: string,
+    ) => Array<{ id: string; label: string }>;
+    resolveRelatedRecords: (
+      sourceFieldId: string,
+    ) => Record<string, unknown>[];
+  } {
+    return {
+      schema: this.schema || [],
+      resolveRelatedColumns: (sourceFieldId) =>
+        this.relatedPropertyCache.get(sourceFieldId) ?? [],
+      resolveRelatedRecords: (sourceFieldId) =>
+        this.relatedRecordsCache.get(sourceFieldId) ?? [],
+    };
+  }
+
+  private clearLogicValidation(): void {
+    this.logicValidationIssues = [];
+  }
+
+  private applyLogicValidationIssues(issues: LogicRuleValidationIssue[]): void {
+    this.logicValidationIssues = issues;
+    const first = firstLogicValidationIssue(issues);
+    if (!first) {
+      return;
+    }
+
+    if (
+      this.isFieldScopedEditor &&
+      first.ruleIndex !== this.activeFieldRuleIndex &&
+      first.ruleIndex >= 0 &&
+      first.ruleIndex < this.fieldScopedRules.length
+    ) {
+      this.commitActiveFieldAutomation();
+      this.activeFieldRuleIndex = first.ruleIndex;
+      this.editingRule = sanitizeLogicRuleOperators(
+        cloneLogicRule(this.fieldScopedRules[first.ruleIndex]),
+        this.schema || [],
+      );
+      this.prefetchRelatedPropertiesForRule(this.editingRule);
+    }
+
+    const ruleLabel = this.isFieldScopedEditor
+      ? this.fieldAutomationLabel(first.ruleIndex)
+      : this.editingRule?.name?.trim() || 'Untitled Rule';
+    this.toastr.warning(`${ruleLabel}: ${first.message}`);
+  }
+
+  /** Duplicate-name check for the single-rule editor against the rest of the form. */
+  private validateSingleRuleNames(
+    rule: FormLogicRule,
+  ): LogicRuleValidationIssue[] {
+    const prospective = this.isNewRule
+      ? [...this.localRules, rule]
+      : this.localRules.map((item) => (item.id === rule.id ? rule : item));
+    const index = prospective.findIndex((item) => item.id === rule.id);
+    return validateLogicRuleNames(prospective)
+      .filter((issue) => issue.ruleIndex === index)
+      .map((issue) => ({ ...issue, ruleIndex: 0 }));
+  }
+
+  /**
+   * Duplicate-name check for field-scoped automations against the full form
+   * (including rules outside this field scope).
+   */
+  private validateScopedNamesAgainstForm(
+    scoped: FormLogicRule[],
+  ): LogicRuleValidationIssue[] {
+    const kept = this.localRules.filter(
+      (rule) => !this.originalFieldRuleIds.has(rule.id),
+    );
+    const merged = [...kept, ...scoped];
+    const scopedIdToIndex = new Map(
+      scoped.map((rule, index) => [rule.id, index] as const),
+    );
+    return validateLogicRuleNames(merged)
+      .map((issue) => {
+        const rule = merged[issue.ruleIndex];
+        const scopedIndex = rule ? scopedIdToIndex.get(rule.id) : undefined;
+        if (scopedIndex === undefined) {
+          return null;
+        }
+        return { ...issue, ruleIndex: scopedIndex };
+      })
+      .filter((issue): issue is LogicRuleValidationIssue => issue != null);
+  }
+
+  private clearFieldScopeSession(): void {
+    this.fieldScopeId = null;
+    this.fieldScopedRules = [];
+    this.activeFieldRuleIndex = 0;
+    this.originalFieldRuleIds = new Set();
+    this.closeFieldRuleMenu();
+    this.closeAddFieldAutomationModal();
+    this.closeRenameFieldAutomationModal();
+  }
+
+  private defaultFieldAutomationName(index: number): string {
+    return `Automation ${index + 1}`;
+  }
+
+  private commitActiveFieldAutomation(): void {
+    if (!this.editingRule || !this.fieldScopedRules.length) {
+      if (this.editingRule) {
+        this.fieldScopedRules = [cloneLogicRule(this.editingRule)];
+        this.activeFieldRuleIndex = 0;
+      }
+      return;
+    }
+    const index = Math.min(
+      Math.max(this.activeFieldRuleIndex, 0),
+      this.fieldScopedRules.length - 1,
+    );
+    const next = [...this.fieldScopedRules];
+    next[index] = cloneLogicRule(this.editingRule);
+    this.fieldScopedRules = next;
+    this.activeFieldRuleIndex = index;
+  }
+
+  private createSeededFieldAutomation(
+    fieldId: string,
+    name: string,
+  ): FormLogicRule {
+    const rule = createEmptyLogicRule(name);
+    if (rule.conditions.items[0]) {
+      // Temporarily bind editingRule so onConditionFieldChange can patch items.
+      const previous = this.editingRule;
+      this.editingRule = rule;
+      this.onConditionFieldChange(rule.conditions.items[0], fieldId);
+      const seeded = this.editingRule
+        ? cloneLogicRule(this.editingRule)
+        : rule;
+      this.editingRule = previous;
+      return { ...seeded, name };
+    }
+    return rule;
+  }
+
+  private cloneAutomationWithNewIds(rule: FormLogicRule): FormLogicRule {
+    const clone = cloneLogicRule(rule);
+    clone.id = createLogicRuleId();
+    clone.conditions = {
+      ...clone.conditions,
+      items: clone.conditions.items.map((item) => ({
+        ...item,
+        id: createLogicRuleId(),
+      })),
+    };
+    clone.actions = clone.actions.map((action) => ({
+      ...action,
+      id: createLogicRuleId(),
+    }));
+    return clone;
+  }
+
+  private surfacePreferredFieldOnEditingRule(preferredFieldId: string): void {
+    if (!this.editingRule || !preferredFieldId) {
+      return;
+    }
+    if (this.editingRule.conditions.items.length <= 1) {
+      return;
+    }
+    const matchIndex = this.editingRule.conditions.items.findIndex(
+      (item) => item.fieldId === preferredFieldId,
+    );
+    if (matchIndex <= 0) {
+      return;
+    }
+    const items = [...this.editingRule.conditions.items];
+    const [match] = items.splice(matchIndex, 1);
+    items.unshift({ ...match, join: undefined });
+    if (items[1]) {
+      items[1] = { ...items[1], join: items[1].join ?? 'and' };
+    }
+    this.editingRule = {
+      ...this.editingRule,
+      conditions: { ...this.editingRule.conditions, items },
+    };
   }
 
   private prefetchRelatedPropertiesForRules(rules: FormLogicRule[]): void {
