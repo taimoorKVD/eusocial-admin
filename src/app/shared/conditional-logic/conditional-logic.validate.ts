@@ -63,47 +63,68 @@ function normalizeRuleNameKey(name: string | undefined | null): string {
     .toLowerCase();
 }
 
-/** Operators allowed for a WHEN source field type (aligned with Automation Rules). */
+/** Emptiness operators available for every supported WHEN source field type. */
+const UNIVERSAL_EMPTINESS_OPERATORS: readonly ConditionOperator[] = [
+  'isEmpty',
+  'isNotEmpty',
+];
+
+function withUniversalEmptinessOperators(
+  operators: readonly ConditionOperator[],
+): ConditionOperator[] {
+  const typeSpecific = operators.filter(
+    (operator): operator is ConditionOperator =>
+      operator !== 'isEmpty' && operator !== 'isNotEmpty',
+  );
+  return [...typeSpecific, ...UNIVERSAL_EMPTINESS_OPERATORS];
+}
+
+/**
+ * Operators allowed for a WHEN source field type.
+ * Type-specific operators stay restricted; `isEmpty` / `isNotEmpty` are universal.
+ */
 export function getOperatorsForConditionSourceField(
   field: { type?: string; rangeType?: string } | null | undefined
 ): ConditionOperator[] {
   const kind = resolveSetValueFieldKind(field);
   switch (kind) {
     case 'numeric':
-      return [
+      return withUniversalEmptinessOperators([
         'equals',
         'notEquals',
         'greaterThan',
         'greaterThanOrEqual',
         'lessThan',
         'lessThanOrEqual',
-      ];
+      ]);
     case 'boolean':
-      return ['checked', 'unchecked', 'equals', 'notEquals'];
+      return withUniversalEmptinessOperators([
+        'checked',
+        'unchecked',
+        'equals',
+        'notEquals',
+      ]);
     case 'select':
-      return ['equals', 'notEquals', 'isEmpty', 'isNotEmpty'];
+      return withUniversalEmptinessOperators(['equals', 'notEquals']);
     case 'date':
     case 'time':
-      return [
+      return withUniversalEmptinessOperators([
         'equals',
         'notEquals',
         'greaterThan',
         'lessThan',
-        'isEmpty',
-        'isNotEmpty',
-      ];
+      ]);
     case 'text':
     default:
-      return [
+      // text/email/textarea + other supported types (image, file, signature, …)
+      return withUniversalEmptinessOperators([
         'equals',
         'notEquals',
         'contains',
         'notContains',
         'startsWith',
         'endsWith',
-        'isEmpty',
-        'isNotEmpty',
-      ];
+      ]);
   }
 }
 
